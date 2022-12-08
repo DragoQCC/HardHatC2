@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <LangVersion>11</LangVersion>
+    <Platforms>AnyCPU;x64</Platforms>
+    <UserSecretsId>f1390c44-136e-47f5-8d89-dedea3376548</UserSecretsId>
+  </PropertyGroup>
+
+<PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+<EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
+</PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DonutCore" Version="1.0.0" />
+    <PackageReference Include="ILRepack.Lib.NET" Version="2.0.0" />
+    <PackageReference Include="Microsoft.AspNet.SignalR.Core" Version="2.4.3" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3.0" />
+    <PackageReference Include="NetSerializer" Version="4.1.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="RestSharp" Version="108.0.2" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ApiModels\ApiModels.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Downloads\" />
+    <Folder Include="wwwroot\" />
+    <Folder Include="Programs\Builtin\" />
+    <Folder Include="Programs\Users\" />
+    <Folder Include="temp\" />
+  </ItemGroup>
+
+</Project>

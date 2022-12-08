@@ -1,0 +1,164 @@
+﻿@using Blazored.Toast.Configuration
+@using HardHatC2Client.Pages
+@using HardHatC2Client.Services
+@using System.Net;
+@inherits LayoutComponentBase
+@inject IJSRuntime js
+
+
+<BlazoredToasts 
+    Position="ToastPosition.BottomRight"
+    IconType="IconType.FontAwesome"
+				
+	SuccessIcon="fas fa-thumbs-up"
+	ErrorIcon="fas fa-bug"
+	InfoIcon="fas fa-info-circle"
+	WarningIcon="fas fa-exclamation-triangle"
+    SuccessClass="success-toast-override"
+    Timeout="6"
+	ShowCloseButton="true"
+    ShowProgressBar="true"/>
+
+<MudThemeProvider Theme="MyCustomTheme" @bind-IsDarkMode="@Settings.IsCheckedBox"/>
+<MudDialogProvider/>
+<MudSnackbarProvider/>
+    
+
+<MudLayout>
+    <MudAppBar Color="MudBlazor.Color.Dark" Dense="true" Elevation="5">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
+        <MudSpacer />
+        @if (TeamServerStatus.Equals("online", StringComparison.CurrentCultureIgnoreCase))
+        {
+            <MudAlert Variant="Variant.Filled" Dense="true"  Severity="Severity.Success">Status: teamserver is @TeamServerStatus</MudAlert>
+        }
+        else if(TeamServerStatus.Equals("offline", StringComparison.CurrentCultureIgnoreCase))
+        {
+            <MudAlert Variant="Variant.Filled" Dense="true" Severity="Severity.Error">Status: teamserver is @TeamServerStatus</MudAlert>
+        }
+        else
+        {
+            <MudAlert Variant="Variant.Filled" Dense="true" Severity="Severity.Warning">Status: teamserver is @TeamServerStatus</MudAlert>
+        }
+        <MudSpacer />
+        <MudIconButton Icon="@Icons.Custom.Brands.GitHub" Color="Color.Inherit" Link="https://github.com/queen-city-cyber/" Target="_blank" />
+    </MudAppBar>
+    <MudDrawer  ClipMode="DrawerClipMode.Docked" @bind-Open="@open" Elevation="10" Variant="@DrawerVariant.Mini" OpenMiniOnHover="false">
+        <MudNavMenu Color="Color.Warning" Margin="Margin.Dense" Bordered="true">
+            <MudNavLink Class="py-2" href="" Icon="@Icons.Material.Outlined.Home" Match="NavLinkMatch.All">Home</MudNavLink>
+            <MudNavLink Class="py-2" href="Managers" Icon="@Icons.Material.Outlined.Headphones" Match="NavLinkMatch.All">Managers</MudNavLink>
+            <MudNavLink Class="py-2" href="Engineers" Icon="@Icons.Material.Outlined.Construction" Match="NavLinkMatch.All">Engineers</MudNavLink>
+            <MudNavLink Class="py-2" href="Interact" Icon="@Icons.Material.Outlined.Engineering" Match="NavLinkMatch.All">Interact</MudNavLink>
+            <MudNavLink Class="py-2" href="ToolBoxes" Icon="@Icons.Material.Outlined.BuildCircle" Match="NavLinkMatch.All">ToolBoxes</MudNavLink>
+            <MudNavLink Class="py-2" href="PivotProxy" Icon="@Icons.Material.Outlined.CompareArrows" Match="NavLinkMatch.All">Pivot Proxy</MudNavLink>
+            <MudNavLink Class="py-2" href="EventHistory" Icon="@Icons.Material.Outlined.History" Match="NavLinkMatch.All">Event History</MudNavLink>
+            <MudNavLink Class="py-2" href="Credentials" Icon="@Icons.Material.Outlined.CreditCard" Match="NavLinkMatch.All">Credentials</MudNavLink>
+            <MudNavLink Class="py-2" href="Downloads" Icon="@Icons.Material.Outlined.Download" Match="NavLinkMatch.All">Downloads</MudNavLink>
+            <MudNavLink Class="py-2" href="HostedFiles" Icon="@Icons.Material.Outlined.Upload" Match="NavLinkMatch.All">Hosted Files</MudNavLink>
+            <MudNavLink Class="py-2"  href="Settings" Icon="@Icons.Material.Outlined.Settings" Match="NavLinkMatch.All">Settings</MudNavLink>
+        </MudNavMenu>
+    </MudDrawer>
+    <MudMainContent Class="px-4">
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+@code{
+    public static string TeamServerStatus { get; set; } = "Unknown";
+    public static bool open { get; set; } = false;
+    MudTheme MyCustomTheme = new MudTheme()
+        {
+            Palette = new Palette()
+            {
+                Primary = "#FB8C00",
+                Warning = "#FB8C00",
+            },
+            PaletteDark = new Palette()
+            {
+                Black = "#27272f",
+                Background = "#32333d",
+                BackgroundGrey = "#27272f",
+                Surface = "#373740",
+                DrawerBackground = "#2d2d38", //Custom = #2d2d38 , original = #27272f
+                DrawerText = "rgba(255,255,255, 0.50)",
+                DrawerIcon = "rgba(255,255,255, 0.50)",
+                AppbarBackground = "#27272f",
+                AppbarText = "rgba(255,255,255, 0.70)",
+                TextPrimary = "rgba(255,255,255, 0.70)",
+                TextSecondary = "rgba(255,255,255, 0.50)",
+                ActionDefault = "#adadb1",
+                ActionDisabled = "rgba(255,255,255, 0.26)",
+                ActionDisabledBackground = "rgba(255,255,255, 0.12)",
+                Primary = "#FB8C00",
+                Warning = "#FB8C00",
+                //Dark = "#c1c1c1"
+            }
+        };
+
+    public static async Task ToggleDrawer()
+    {
+        if (open)
+        {
+            open = false;
+        }
+        else
+        {
+            open = true;
+        }
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var themeFromLocalStorage = await js.InvokeAsync<string>("readLocalStorage", "theme");
+            if (!string.IsNullOrEmpty(themeFromLocalStorage))
+            {
+                Settings.selectedTheme = themeFromLocalStorage;
+            }
+            try
+            {
+                bool isChecked = await js.InvokeAsync<bool>("readLocalStorage", "checkbox");
+                Settings.IsCheckedBox = isChecked;
+            }
+            catch (Exception)
+            {
+                // ignore
+            }
+        }
+    } 
+
+    protected override async Task OnInitializedAsync()
+    {
+        var TeamserverIp = HardHatHubClient.TeamserverIp;
+        HttpClient http = new HttpClient( new HttpClientHandler { ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true });
+        HttpResponseMessage response;
+        try
+        {
+            //every 30 seconds using a timer make a Get request to TeamserverIp/swagger to get the status of the teamserver
+            var timer = new Timer(async (state) =>
+            {
+            try
+            {
+                response = await http.GetAsync($"{TeamserverIp}/swagger");
+                if (response.StatusCode == HttpStatusCode.OK)
+                {
+                    TeamServerStatus = "Online";
+                }
+                else
+                {
+                    TeamServerStatus = "Offline";
+                }
+            }
+            catch (Exception)
+            {
+                TeamServerStatus = "Unknown";
+            }
+            }, null, 0, 30000);
+        }
+        catch (Exception)
+        {
+            TeamServerStatus = "Unknown";
+        }
+    }
+}

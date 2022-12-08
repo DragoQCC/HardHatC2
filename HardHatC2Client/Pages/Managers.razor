@@ -1,0 +1,540 @@
+﻿@page "/Managers"
+@using ApiModels.Requests
+@using ApiModels.Responses
+@using Models
+@using RestSharp
+@using System.Collections.Generic
+@using System.Net
+@using System.Text.RegularExpressions
+@using BlazorXTabs
+@inject RestClient _restClient
+@inject IToastService toastService
+
+
+<!-- top half of page being a table of the current managers in the managersList with headers such as Name, type, ConnectionAddress, ConnectionPort, CreationTime, Active -->
+<h3 class="text-center">Managers</h3>
+<br>
+
+<MudTable Items="@managersList" Virtualize="true" HorizontalScrollbar="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Outlined="true" Striped="true">
+	<HeaderContent>
+				<MudTh Style="@setStyle(Settings.IsCheckedBox)">Name</MudTh>
+				<MudTh Style="@setStyle(Settings.IsCheckedBox)">Type</MudTh>
+				<MudTh Style="@setStyle(Settings.IsCheckedBox)">Connection Address</MudTh>
+				<MudTh Style="@setStyle(Settings.IsCheckedBox)">Connection Port</MudTh>
+				<MudTh Style="@setStyle(Settings.IsCheckedBox)">Created Time</MudTh>
+				<MudTh Style="@setStyle(Settings.IsCheckedBox)">Active</MudTh>
+                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Options</MudTh>
+	</HeaderContent>
+		<RowTemplate>
+			<MudTd>@context.Name</MudTd>
+            <MudTd>@context.Type @displayConnectionMode(context)</MudTd>
+			<MudTd>@context.ConnectionAddress</MudTd>
+			<MudTd>@context.ConnectionPort</MudTd>
+			<MudTd>@context.CreationTime</MudTd>
+			<MudTd>@context.Active</MudTd>
+            <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
+                                <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown">
+                                    <MudMenuItem OnClick="() =>ContextMenuItems(0,context)">Remove</MudMenuItem>
+                                    <MudMenuItem OnClick="() =>ContextMenuItems(1,context)">Edit</MudMenuItem>
+                                </MudMenu>
+           </MudButtonGroup>
+		</RowTemplate>
+</MudTable>
+
+
+
+
+<!-- bottom half of page being a form to add a new Manager -->
+<br>
+<br>
+<div class ="container-fluid">
+<h3 class="text-center position-relative">Create New Managers</h3>
+<br>
+
+@if(formSubmitManager.Type == Manager.ManagerType.smb)
+    {
+        IsSmbSelected = true;
+        IsHttpSelected = false;
+        IsTcpSelected = false;
+    }
+    else if (formSubmitManager.Type == Manager.ManagerType.tcp)
+    {
+        IsSmbSelected = false;
+        IsHttpSelected = false;
+        IsTcpSelected = true;
+    }
+    else
+    {
+        IsSmbSelected = false;
+        IsHttpSelected = true;
+        IsTcpSelected = false;
+    }
+
+<MudForm @bind-IsValid="@success" @bind-Errors="@errors">
+        <XTabs Style="@setTabStyle(Settings.IsCheckedBox)" RenderMode="BlazorXTabs.Configuration.RenderMode.Steps">
+            @if (String.IsNullOrEmpty(formSubmitManager.Name))
+            {
+                <XTab  Title="Step1">
+                    <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Name" Required="true" @bind-value="formSubmitManager.Name" RequiredError="manager name is required!" />
+                <MudSelect Class="mb-4" T="Manager.ManagerType" Variant="Variant.Filled" Clearable="true" Label="Manager Type" Required="true" @bind-value="formSubmitManager.Type" RequiredError="Type is required!">
+                    <MudSelectItem Value="@(Manager.ManagerType.http)" />
+                    <MudSelectItem Value="@(Manager.ManagerType.https)" />
+                    <MudSelectItem Value="@(Manager.ManagerType.tcp)" />
+                    <MudSelectItem Value="@(Manager.ManagerType.smb)" />
+                </MudSelect>
+            </XTab>
+            }
+            <XTab Title="Step2">
+            @if (formSubmitManager.Type == Manager.ManagerType.http && !String.IsNullOrEmpty(formSubmitManager.Name) || formSubmitManager.Type == Manager.ManagerType.https && !String.IsNullOrEmpty(formSubmitManager.Name))
+                {
+                        <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Connection Address" Required=@IsHttpSelected @bind-value="formSubmitManager.ConnectionAddress" RequiredError="callback address is required!" />
+                        <MudTextField Class="mb-4 mt-4" T="int"  Variant="Variant.Filled" Clearable="true" Label="Connection Port" Required=@IsHttpSelected @bind-value="formSubmitManager.ConnectionPort" RequiredError="port is required!" />
+                        <div class="d-flex align-center justify-space-between">
+                            <MudSelect Class="mb-4" T="ApiModels.Requests.C2Profile" Variant="Variant.Filled" Clearable="true" Label="C2 Profile" Required="true" @bind-value="formSubmitManager.C2profile" RequiredError="C2 Profile required!">
+                            @foreach(ApiModels.Requests.C2Profile profile in C2profiles)
+                                    {
+                                        <MudSelectItem Value="@(profile)">@profile.Name</MudSelectItem>
+                                    }
+                            </MudSelect>
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@((e) => OpenEditDialog(formSubmitManager.C2profile))" Variant="Variant.Filled" Color="Color.Primary"></MudIconButton>
+                            <MudIconButton Icon="@Icons.Material.Filled.Add" @onclick="OpenCreateDialog" Variant="Variant.Filled" Color="Color.Primary"></MudIconButton>
+                        </div>
+                }
+                else if(formSubmitManager.Type == Manager.ManagerType.tcp && !String.IsNullOrEmpty(formSubmitManager.Name))
+                {
+                    bool IsBind = false;
+                    bool IsReverse = false;
+                    if (formSubmitManager.connectionMode == Manager.ConnectionMode.bind)
+                    {
+                        IsBind = true;
+                        IsReverse = false;
+                    }
+                    else if (formSubmitManager.connectionMode == Manager.ConnectionMode.reverse)
+                    {
+                        IsBind = false;
+                        IsReverse = true;
+                    }
+                    <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Connection Address" Required=@IsReverse Disabled=@IsBind @bind-value="formSubmitManager.ConnectionAddress" RequiredError="callback address is required!" />
+                    <MudTextField Class="mb-4 mt-4" T="int" Variant="Variant.Filled" Clearable="true" Label="Connect Port" Required=@IsReverse Disabled=@IsBind @bind-value="formSubmitManager.BindPort" RequiredError="bind port is required!" />
+                    <MudTextField Class="mb-4 mt-4" T="int" Variant="Variant.Filled" Clearable="true" Label="Listen Port" Required=@IsBind Disabled=@IsReverse @bind-value="formSubmitManager.ListenPort" RequiredError="listen port is required!" />
+                        <MudTextField Class="mb-4 mt-4" T="bool" Variant="Variant.Filled" Clearable="true" Label="Listen on Local host only?" Required=@IsBind Disabled=@IsReverse @bind-value="formSubmitManager.IsLocalHost" RequiredError="is localhost only required!" />
+                        <MudSelect Class="mb-4" T="Manager.ConnectionMode" Variant="Variant.Filled" Clearable="true" Label="Connection Direction" Required=@IsTcpSelected @bind-value="formSubmitManager.connectionMode" RequiredError="connection mode is required!">
+                            <MudSelectItem Value="@(Manager.ConnectionMode.bind)" />
+                            <MudSelectItem Value="@(Manager.ConnectionMode.reverse)" />
+                        </MudSelect>
+
+                }
+                else if(formSubmitManager.Type == Manager.ManagerType.smb)
+                {
+                    bool IsBind = false;
+                    bool IsReverse = false;
+                    if (formSubmitManager.connectionMode == Manager.ConnectionMode.bind)
+                    {
+                        IsBind = true;
+                        IsReverse = false;
+                    }
+                    else if (formSubmitManager.connectionMode == Manager.ConnectionMode.reverse)
+                    {
+                        IsBind = false;
+                        IsReverse = true;
+                    }
+                        <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Named Pipe" Required=@IsSmbSelected @bind-value="formSubmitManager.NamedPipe" RequiredError="namedpipe is required!" />
+                        <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Connection Address" Required=@IsReverse Disabled=@IsBind @bind-value="formSubmitManager.ConnectionAddress" RequiredError="callback address is required!" />
+                        <MudSelect Class="mb-4" T="Manager.ConnectionMode" Variant="Variant.Filled" Clearable="true" Label="Connection Direction" Required=@IsSmbSelected @bind-value="formSubmitManager.connectionMode" RequiredError="connection mode is required!">
+                            <MudSelectItem Value="@(Manager.ConnectionMode.bind)" />
+                            <MudSelectItem Value="@(Manager.ConnectionMode.reverse)" />
+                        </MudSelect>
+                    }
+            </XTab>
+        </XTabs>
+        <br>
+     <MudButton StartIcon="@Icons.Filled.Bolt" Variant="Variant.Filled" Color="Color.Success" Disabled="@(!success)" @onclick="@handleValidSubmit"> Create</MudButton>
+</MudForm>
+
+</div>
+
+@code {
+    private Manager formSubmitManager = new Manager();
+    protected internal static List<Manager> managersList = new List<Manager>();
+    private static ToastService _toastService;
+    private static RestClient restClient;
+    //private static Mapper mapper;
+    private bool success;
+    private string[] errors = { };
+    private bool IsHttpSelected = false;
+    private bool IsSmbSelected = false;
+    private bool IsTcpSelected = false;
+    public static List<ApiModels.Requests.C2Profile> C2profiles = new();
+
+    [Inject] private IDialogService DialogService { get; set; }
+
+    string state = "Message box hasn't been opened yet";
+
+    private string setStyle(bool IsDark)
+    {
+        if(IsDark)
+        {
+            return "background:white; color:black;";
+        }
+        return "background:#333333; color:white;"; 
+    }
+    private string setTabStyle(bool IsDark)
+    {
+        if (IsDark)
+        {
+            return "background:#32333d; color:white;";
+        }
+        return "background:white; color:black;";
+    }
+
+    public async Task handleValidSubmit()
+    {
+        if (formSubmitManager.Type == Manager.ManagerType.http)
+        {
+            await CreateHttpManager();
+
+        }
+        else if (formSubmitManager.Type == Manager.ManagerType.https)
+        {
+            await CreateHttpsManager();
+        }
+        else if(formSubmitManager.Type == Manager.ManagerType.smb)
+        {
+            await CreateSMBManager();
+        }
+        else if (formSubmitManager.Type == Manager.ManagerType.tcp)
+        {
+            await CreateTCPManager();
+        }
+    }
+
+    private async void ContextMenuItems(int options, Manager selectedManager)
+    {
+        switch(options)
+        {
+            case 0:
+                //Remove
+                bool? result = await DialogService.ShowMessageBox(
+            "Warning", 
+            "Deleting can not be undone!", 
+            yesText:"Delete!", cancelText:"Cancel");
+                state= result==null ? "Cancelled" : "Deleted!";
+                StateHasChanged();
+                //if result is yes then delete the maanager 
+                await DeleteManager(selectedManager);
+                break;
+            case 1:
+                //edit    
+                break;
+        }
+    }
+
+    private async Task OpenEditDialog(ApiModels.Requests.C2Profile profile)
+    {    
+        DialogOptions options = new DialogOptions() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var parameters = new DialogParameters { ["profile"]=profile };
+
+        DialogService.Show<EditC2Dialog>("View/Edit existing C2 Profile",parameters,options);
+    }
+
+    private async Task OpenCreateDialog()
+    {    
+        DialogOptions options = new DialogOptions() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+        var dialog = DialogService.Show<CreateC2Dialog>("Create New C2 Profile", options);
+        //if the result is true then add the new profile to the list
+        var result = await dialog.Result;
+
+        if (!result.Cancelled)
+        {
+            C2profiles.Add((C2Profile)result.Data);
+        }
+
+    }
+
+    public static async Task UpdateManagerList(Manager managerObject)
+    {
+        //if NamedPipe property is not null or empty, update the ConnectionAddress property to be the same value as the NamedPipe field
+        if (!string.IsNullOrEmpty(managerObject.NamedPipe))
+        {
+            managerObject.ConnectionAddress = managerObject.NamedPipe;
+        }
+        //if the manager is a tcp manager, update the ConnectionAddress property to be the same value as the BindAddress field
+        else if (managerObject.Type == Manager.ManagerType.tcp)
+        {
+            if (managerObject.connectionMode == Manager.ConnectionMode.bind)
+            {
+                managerObject.ConnectionPort = managerObject.ListenPort;
+            }
+            else if (managerObject.connectionMode == Manager.ConnectionMode.reverse)
+            {
+                managerObject.ConnectionPort = managerObject.BindPort;
+            }
+        }
+
+
+        managersList.Add(managerObject);
+        if (managerObject != null)
+        {
+            ShowSuccessToast($"Manager named {managerObject.Name} has been created");
+        }
+    }
+
+    public static async Task GetExistingManagerList(List<Manager> managers)
+    {
+        foreach (Manager manager in managers)
+        {
+            //if none of the managers already in the list have the same name as the one we just got from the server, add it to the list
+            if (!managersList.Any(x => x.Name == manager.Name))
+            {
+                //if NamedPipe property is not null or empty, update the ConnectionAddress property to be the same value as the NamedPipe field
+                if (!string.IsNullOrEmpty(manager.NamedPipe))
+                {
+                    manager.ConnectionAddress = manager.NamedPipe;
+                }
+                //if the manager is a tcp manager, update the ConnectionAddress property to be the same value as the BindAddress field
+                else if (manager.Type == Manager.ManagerType.tcp)
+                {
+                    if (manager.connectionMode == Manager.ConnectionMode.bind)
+                    {
+                        manager.ConnectionPort = manager.ListenPort;
+                    }
+                    else if (manager.connectionMode == Manager.ConnectionMode.reverse)
+                    {
+                        manager.ConnectionPort = manager.BindPort;
+                    }
+                }
+                managersList.Add(manager);
+            }
+        }
+    }
+
+    public static string displayConnectionMode(Manager manager)
+    {
+        if(manager.Type != Manager.ManagerType.tcp)
+        {
+            return "";
+        }
+        else
+        {
+            return manager.connectionMode.ToString();
+        }
+    }
+
+    public async Task CreateHttpManager()
+    {
+        var resource = "/managers";
+
+        //if formSubmitManager.Name already exist show an error toast and return
+        if (managersList.Any(x => x.Name == formSubmitManager.Name))
+        {
+            ShowErrorToast($"Manager named {formSubmitManager.Name} already exists");
+            return;
+        }
+        //if a manager with the Connection address and port already exist show an error toast and return
+        if (managersList.Any(x => x.ConnectionAddress == formSubmitManager.ConnectionAddress && x.ConnectionPort == formSubmitManager.ConnectionPort))
+        {
+            ShowErrorToast($"Manager with connection address {formSubmitManager.ConnectionAddress} and port {formSubmitManager.ConnectionPort} already exists");
+            return;
+        }
+        //if Address is not in the format of xxx.xxx.xxx.xxx where each character is a number between 0 and 9 show an error toast and return
+        if (!Regex.IsMatch(formSubmitManager.ConnectionAddress, @"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$"))
+        {
+            ShowErrorToast($"Manager connection address {formSubmitManager.ConnectionAddress} is not in the correct format");
+            return;
+        }
+        //if port is not between 1-65535 show an error toast and return
+        if (formSubmitManager.ConnectionPort < 1 || formSubmitManager.ConnectionPort > 65535)
+        {
+            ShowErrorToast($"Manager connection port {formSubmitManager.ConnectionPort} is not in the correct range");
+            return;
+        }
+
+        var createObject = new StartHttpmanagerRequest 
+        {
+            Name = formSubmitManager.Name,
+            ConnectionPort = formSubmitManager.ConnectionPort,
+            ConnectionAddress = formSubmitManager.ConnectionAddress,
+            IsSecure = false,
+            C2profile = formSubmitManager.C2profile,
+            managertype = StartHttpmanagerRequest.ManagerType.http
+        }; 
+        formSubmitManager = new Manager();
+        var request = new RestRequest(resource,Method.Post);
+        request.AddJsonBody(createObject);
+        _ = await _restClient.PostAsync<ManagerResponse>(request);
+    }
+
+    public async Task CreateHttpsManager()
+    {
+        //if formSubmitManager.Name already exist show an error toast and return
+        if (managersList.Any(x => x.Name == formSubmitManager.Name))
+        {
+            ShowErrorToast($"Manager named {formSubmitManager.Name} already exists");
+            return;
+        }
+        //if a manager with the Connection address and port already exist show an error toast and return
+        if (managersList.Any(x => x.ConnectionAddress == formSubmitManager.ConnectionAddress && x.ConnectionPort == formSubmitManager.ConnectionPort))
+        {
+            ShowErrorToast($"Manager with connection address {formSubmitManager.ConnectionAddress} and port {formSubmitManager.ConnectionPort} already exists");
+            return;
+        }
+        //if Address is not in the format of xxx.xxx.xxx.xxx where each character is a number between 0 and 9 show an error toast and return
+        if (!Regex.IsMatch(formSubmitManager.ConnectionAddress, @"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$"))
+        {
+            ShowErrorToast($"Manager connection address {formSubmitManager.ConnectionAddress} is not in the correct format");
+            return;
+        }
+        //if port is not between 1-65535 show an error toast and return
+        if (formSubmitManager.ConnectionPort < 1 || formSubmitManager.ConnectionPort > 65535)
+        {
+            ShowErrorToast($"Manager connection port {formSubmitManager.ConnectionPort} is not in the correct range");
+            return;
+        }
+
+        var resource = "/managers";
+        var createObject = new StartHttpmanagerRequest 
+        {
+            Name = formSubmitManager.Name,
+            ConnectionPort = formSubmitManager.ConnectionPort,
+            ConnectionAddress = formSubmitManager.ConnectionAddress,
+            IsSecure = true,
+            C2profile = formSubmitManager.C2profile
+        }; 
+        var request = new RestRequest(resource,Method.Post);
+        request.AddJsonBody(createObject);
+        _ = await _restClient.PostAsync<ManagerResponse>(request);
+    }
+
+    public async Task CreateSMBManager()
+    {
+        var resource = "/managers";
+
+        //if formSubmitManager.Name already exist show an error toast and return
+        if (managersList.Any(x => x.Name == formSubmitManager.Name))
+        {
+            ShowErrorToast($"Manager named {formSubmitManager.Name} already exists");
+            return;
+        }
+        if (managersList.Any(x => x.NamedPipe == formSubmitManager.NamedPipe))
+        {
+            ShowErrorToast($"Manager with pipe name {formSubmitManager.NamedPipe} already exists");
+            return;
+        }
+
+        var createObject = new StartSMBmanagerRequest 
+        {
+            Name = formSubmitManager.Name,
+            NamedPipe = formSubmitManager.NamedPipe,
+            managertype = StartSMBmanagerRequest.ManagerType.smb
+        }; 
+        if (formSubmitManager.connectionMode == Manager.ConnectionMode.bind)
+        {
+            createObject.Name = formSubmitManager.Name;
+            createObject.NamedPipe = formSubmitManager.NamedPipe;
+            createObject.managertype = StartSMBmanagerRequest.ManagerType.smb;
+            createObject.connectionMode = StartSMBmanagerRequest.ConnectionMode.bind;
+        }
+        else
+        {
+            createObject.Name = formSubmitManager.Name;
+            createObject.NamedPipe = formSubmitManager.NamedPipe;
+            createObject.ConnectionAddress = formSubmitManager.ConnectionAddress;
+            createObject.managertype = StartSMBmanagerRequest.ManagerType.smb;
+            createObject.connectionMode = StartSMBmanagerRequest.ConnectionMode.reverse;
+        }
+        formSubmitManager = new Manager();
+        var request = new RestRequest(resource,Method.Post);
+        request.AddJsonBody(createObject);
+        _ = await _restClient.PostAsync<ManagerResponse>(request);
+    }
+
+    public async Task CreateTCPManager()
+    {
+        var resource = "/managers";
+
+        //if formSubmitManager.Name already exist show an error toast and return
+        if (managersList.Any(x => x.Name == formSubmitManager.Name))
+        {
+            ShowErrorToast($"Manager named {formSubmitManager.Name} already exists");
+            return;
+        }
+
+        var createObject = new StartTCPManagerRequest();
+        createObject.Name = formSubmitManager.Name;
+        if(formSubmitManager.connectionMode == Manager.ConnectionMode.bind)
+        {
+            createObject.ListenPort = formSubmitManager.ListenPort;
+            createObject.IsLocalHost = formSubmitManager.IsLocalHost;
+            createObject.connectionMode = StartTCPManagerRequest.ConnectionMode.bind;
+            createObject.managertype = StartTCPManagerRequest.ManagerType.tcp;
+        }
+        else
+        {
+            createObject.ConnectionAddress = formSubmitManager.ConnectionAddress;
+            createObject.BindPort = formSubmitManager.BindPort;
+            createObject.connectionMode = StartTCPManagerRequest.ConnectionMode.reverse;
+            createObject.managertype = StartTCPManagerRequest.ManagerType.tcp;
+        }
+        formSubmitManager = new Manager();
+        var request = new RestRequest(resource, Method.Post);
+        request.AddJsonBody(createObject);
+        _ = await _restClient.PostAsync<ManagerResponse>(request);
+    }
+
+    public async Task DeleteManager(Manager manager)
+    {
+        var resource = "/managers";
+        var request = new RestRequest($"{resource}/{manager.Name}",Method.Delete);
+        request.AddHeader("Content-Type", "application/json");
+        await _restClient.DeleteAsync(request);
+        managersList.Remove(manager);
+    }
+
+    private static void ShowSuccessToast(string successMessage)
+    {
+        _toastService.ShowSuccess(successMessage, "SUCCESS");
+    }
+    private static void ShowErrorToast(string errorMessage)
+    {
+        _toastService.ShowError(errorMessage, "ERROR");
+    }
+
+    private static void ShowInfoToast()
+    {
+        _toastService.ShowInfo("This is Info message with title","INFO");
+    }
+    private static void ShowWarningToast()
+    {
+        _toastService.ShowWarning("This is Warning message with title","WARNING");
+    }
+
+    private static void PopulateC2ProfileList()
+    {
+        List<ApiModels.Requests.C2Profile> c2list = new()
+        {
+            //new Models.C2Profile {Name= "",Desc="", UserAgent="", Urls= new List<string> { }, Cookies= new List<string> { }, RequestHeaders= new List<string> { }, ResponseHeaders= new List<string> { }  }, empty example to add more.
+            new ApiModels.Requests.C2Profile {Name= "default",Desc="default http profile", UserAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246", Urls="/index.html,/", Cookies= "SESSIONID", RequestHeaders="AcceptVALUEJson/Application", ResponseHeaders="ServerVALUEMicrosoft IIS" },
+        };
+        //compare the name of the Modles.C2Profile objects in the C2profiles list to the ones in c2list if C2Profiles does not have one with that name then update it
+        foreach (var c2 in c2list)
+        {
+            if (!C2profiles.Any(x => x.Name == c2.Name))
+            {
+                C2profiles.Add(c2);
+            }
+        }
+    }
+
+    
+    //override the Onintalized function 
+    protected override void OnInitialized()
+    {
+        _toastService = (ToastService)toastService;
+        restClient = _restClient;
+        //mapper = (Mapper)_mapper;
+        PopulateC2ProfileList();
+        var timer = new Timer(new TimerCallback(_ => { InvokeAsync(StateHasChanged); }), null, 1000, 1000);
+    }
+   
+}

@@ -1,0 +1,129 @@
+﻿@page "/Downloads"
+@using HardHatC2Client.Models
+@using HardHatC2Client.Services
+@using System.Reflection
+@inject IJSRuntime JS
+<h3 class="text-center">Downloads</h3>
+<div class="container-fluid" style="height:500px; overflow-y:scroll">
+	<div class="row">
+		<div class="col-md-12">
+            <style>
+            .selected 
+            {
+                background-color: #1E88E5 !important;
+            }
+            .selected > td 
+            {
+                color: white !important;
+            }   
+            .selected > td .mud-input 
+            {
+                color: white !important;
+            }
+            </style>
+<MudTable Items="@DownloadedFiles" HorizontalScrollbar="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Outlined="true" Striped="true" RowClassFunc="@SelectedRowClassFunc" OnRowClick="RowClickEvent" @ref="mudTable" T="DownloadFile">
+	<HeaderContent>
+				<MudTh Style="@setStyle(Settings.IsCheckedBox)">Name </MudTh>
+				<MudTh Style="@setStyle(Settings.IsCheckedBox)">Original Path </MudTh>
+				<MudTh Style="@setStyle(Settings.IsCheckedBox)">Saved Location</MudTh>
+				<MudTh Style="@setStyle(Settings.IsCheckedBox)">Download Time</MudTh>
+	</HeaderContent>
+		<RowTemplate>
+			<MudTd>@context.Name</MudTd>
+			<MudTd>@context.OrginalPath</MudTd>
+			<MudTd>@context.SavedPath</MudTd>
+			<MudTd>@context.downloadedTime</MudTd>
+		</RowTemplate>
+</MudTable>
+</div>
+</div>
+</div>
+
+<MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Save" Color="Color.Info"  Size="Size.Small" @onclick="@HandleSubmit" >Save</MudButton>
+
+@if (showSuccessCallAlert)
+{
+    <MudAlert Class="mt-16" Severity="Severity.Success" Variant="Variant.Outlined" ContentAlignment="HorizontalAlignment.Center" ShowCloseIcon="true" CloseIconClicked="(() => CloseMe(true))">@mudTable.SelectedItem.Name downloaded, check downloads dir inside the client folder.</MudAlert>
+}
+@if (showWarningCallAlert)
+{
+    <MudAlert Class="mt-16" Severity="Severity.Warning" Variant="Variant.Outlined" ContentAlignment="HorizontalAlignment.Center" ShowCloseIcon="true" CloseIconClicked="(() => CloseMe(false))">Failed to download file or no file selected. Check terminal for errors.</MudAlert>
+}
+
+@code {
+    public static List<DownloadFile> DownloadedFiles = new List<DownloadFile>();
+    private MudTable<DownloadFile> mudTable;
+    private int selectedRowNumber = -1;
+    private bool showSuccessCallAlert = false;
+    private bool showWarningCallAlert = false;
+
+    private void CloseMe(bool value)
+    {
+        if (value)
+        {
+            showSuccessCallAlert = false;
+        }
+        else
+        {
+            showWarningCallAlert = false;
+        }
+    }
+
+    private string setStyle(bool IsDark)
+    {
+        if(IsDark)
+        {
+            return "background:white; color:black;";
+        }
+        return "background:#333333; color:white;"; 
+    }
+
+    private string SelectedRowClassFunc(DownloadFile file, int rowNumber)
+    {
+        if (mudTable.SelectedItem != null && mudTable.SelectedItem.Equals(file))
+        {
+            selectedRowNumber = rowNumber;
+            return "selected";
+        }
+        else
+        {
+            return string.Empty;
+        }
+    }
+
+    private void RowClickEvent(TableRowClickEventArgs<DownloadFile> tableRowClickEventArgs)
+    {
+    }
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            if (mudTable.SelectedItem != null)
+            {
+                var file = mudTable.SelectedItem;
+                var path = file.SavedPath;
+                var name = file.Name;
+                //cause a file browser popup to save the file
+                var fileContentString = await HardHatHubClient._hub.TriggerDownload(path);
+                var fileContent = Convert.FromBase64String(fileContentString);
+
+                char allPlatformPathSeperator = Path.DirectorySeparatorChar;
+                // find the Engineer cs file and load it to a string so we can update it and then run the compiler function on it
+                string dirpath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                //split path at bin keyword
+                string[] pathSplit = dirpath.Split("bin"); //[0] is the parent folder [1] is the bin folder
+                                                           //update each string in the array to replace \\ with the correct path seperator
+                pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
+
+                System.IO.File.WriteAllBytes(pathSplit[0] + "Downloads" + $"{allPlatformPathSeperator}{name}", fileContent);
+                showSuccessCallAlert = true;
+            }
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            showWarningCallAlert = true;
+        }
+    }
+}

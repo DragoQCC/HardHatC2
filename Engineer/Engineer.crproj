@@ -1,0 +1,29 @@
+<project outputDir="D:\My_Custom_Code\HardHatC2\Confused" baseDir="D:\My_Custom_Code\HardHatC2" xmlns="http://confuser.codeplex.com">
+  <rule pattern="true" inherit="false">
+    <protection id="anti debug" />
+    <protection id="anti dump" />
+    <protection id="anti ildasm" />
+    <protection id="anti tamper" />
+    <protection id="harden" />
+    <protection id="ctrl flow" />
+    <protection id="invalid metadata" />
+    <protection id="ref proxy" />
+    <protection id="resources" />
+    <protection id="watermark" action="remove" />
+  </rule>
+  <rule pattern="namespace('Engineer') and match-type-name('Main')">
+    <protection id= "typescramble" />
+    <protection id= "rename">
+      <argument name="mode" value="letters"/>
+      <argument name="renameArgs" value="true" /> 
+      <argument name="renEnum" value="true" /> 
+      <argument name="flatten" value="true" /> 
+      <argument name="forceRen" value="false" /> 
+      <argument name="renPublic" value="false" /> 
+      <argument name="renPdb" value="true" /> 
+      <argument name="renXaml" value="true" /> 
+    </protection>
+  </rule>
+  <packer id="compressor" />
+  <module path="Engineer_super.exe" />
+</project>

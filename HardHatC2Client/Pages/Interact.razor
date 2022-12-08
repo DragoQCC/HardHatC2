@@ -1,0 +1,552 @@
+﻿@page "/Interact"
+@using ApiModels.Requests
+@using ApiModels.Responses
+@using HardHatC2Client.Models
+@using HardHatC2Client.Utilities
+@using BlazorXTabs
+@using MudBlazor
+@using RestSharp
+@using AutoMapper
+@using System.Collections.Generic
+@using System.Collections.Concurrent
+@using System.Collections.ObjectModel
+@using System.Linq
+@using Blazored.Typeahead
+@inject RestClient restClient
+
+<h3 class="text-center">Interact</h3>
+<div class="container-fluid">
+</div>
+
+
+<MudContainer Fixed="true">
+    <XTabs Style="@setTabStyle(Settings.IsCheckedBox)" IsDraggable="true" NewTabSetActive="true" RenderMode="BlazorXTabs.Configuration.RenderMode.Full" CloseTabs="true">
+    @foreach (Engineer engineer in InteractEngineers)
+    {
+        string tabTitle = EngTabTitleDic[engineer.Id];
+        <XTab Title=@tabTitle>
+            <MudCard Class="" Style=" background:#111111; overflow-y:auto" Outlined="true"> <!--This is the parent card  -->
+                <MudCardContent Style="background:#111111; color:white; height:800px">
+                    @if (EngineerOutboundTaskIds.ContainsKey(engineer.Id))
+                    {
+                        @foreach (string currenttask in EngineerOutboundTaskIds[engineer.Id])
+                        {
+                            string command = TaskInputDic[currenttask]; // gets the input based on the current task index so its always unique 
+                            <MudExpansionPanels Style="background:#32333d; color:white;" MultiExpansion="true">
+                                <MudExpansionPanel  style="background:#32333d; color:white;">
+                                <TitleContent>
+                                    <div class="d-flex">
+                                        <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon>
+                                        <MudText>@command</MudText>
+                                    </div>
+                                </TitleContent>
+                                <ChildContent>
+                                <MudCard Class="" Style="background:var(--background); overflow-y:auto;" Outlined="true"> <!--This is the per input and output card -->
+                                <MudCardContent Style="background:#111111; color:white; white-space:pre-wrap;">                                                     
+                                    @if (TaskOutputDic.ContainsKey(currenttask))
+                                    {
+                                        List<string> output = TaskOutputDic[currenttask];
+                                        @if(output !=null)
+                                        {
+                                            @foreach (string outputtext in output)
+                                            {
+                                                <p class="text-break" style="font-family:Courier New, Courier, monospace">@outputtext</p>
+                                            }
+                                        }
+                                    }   
+                                    else if (!TaskOutputDic.ContainsKey(currenttask))
+                                    {
+                                        <MudText Typo="Typo.body2">No output yet</MudText>
+                                    }
+                                </MudCardContent>
+                            </MudCard>  
+                             </ChildContent>
+                            </MudExpansionPanel><!--This is the end of per input and output card -->   
+                            </MudExpansionPanels>
+                        }
+                    }
+                </MudCardContent>
+            </MudCard>
+            <EditForm Model="engineer" OnValidSubmit="@Send">
+            <div class="d-flex mb-xl-5">
+                
+                    <MudAutocomplete OnKeyUp="OnShowHistoryUp" @ref="mudauto" @bind-Value=@placeHolder T="string" ResetValueOnEmptyText="true" SearchFunc="@SearchCommand"
+                                   Dense="true" Margin="Margin.Dense" SelectValueOnTab="true"  SelectOnClick="false" CoerceText="false" CoerceValue="true"
+                                     InputMode="InputMode.text" Variant="Variant.Text" Adornment="Adornment.Start" AdornmentText="[ENGINEER]> " Immediate="true" Clearable="true" KeyDownPreventDefault="true" KeyUpPreventDefault="true" TextUpdateSuppression="@TextSuppersion">
+                </MudAutocomplete>
+                                 
+                <MudButton style="background:var(--font-color);color:var(--background)" OnClick=@Send> <MudText>Send</MudText></MudButton>
+                @if (IsEnterkey)
+                {
+                    Task.Run(async () => await SendTask(engineer, UserInput));
+                    IsEnterkey = false;
+                }
+            </div>
+            </EditForm>
+            <MudSimpleTable Dense=true>
+                <thead class ="table table-bordered border-dark" style="background:var(--font-color); color:var(--background);">
+                <tr>
+                    <th>Status</th>
+                    <th>External Address</th>
+                    <th>Manager</th>
+                    <th>Connection Type</th>
+                    <th>Address</th>
+                    <th>hostname</th>
+                    <th>username</th>
+                    <th>process</th>
+                    <th>pid</th>
+                    <th>Integrity</th>
+                    <th>arch</th>
+                    <th>Sleep</th>
+                    <th>lastseen</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr class="table" style="background:var(--background); color:var(--font-color);">
+                    <td>@engineer.Status</td>
+                    <td>@engineer.ExternalAddress</td>
+                    <td>@engineer.ManagerName</td>
+                    <td>@engineer.ConnectionType</td>
+                    <td>@engineer.Address</td>
+                    <td>@engineer.Hostname</td>
+                    <td>@engineer.Username</td>
+                    <td>@engineer.ProcessName</td>
+                    <td>@engineer.ProcessId</td>
+                    <td>@engineer.Integrity</td>
+                    <td>@engineer.Arch</td>
+                    <td>@engineer.Sleep</td>
+                    <td>@Engineers.LastSeenTimer(engineer)</td>
+                </tr>
+                </tbody>
+            </MudSimpleTable>
+        </XTab>
+    }
+</XTabs>
+</MudContainer>
+@code {
+    [Inject]
+    private static RestClient _restClient { get; set; }
+    private static Dictionary<string,List<string>> EngineerOutboundTaskIds = new(); // key is engineer id, value is list of task ids
+    private static Dictionary<string,string> TaskInputDic = new(); // first key is taskId and value is the userInput for commands
+
+
+    private static Dictionary<string,List<string>> EngineerReturnedTaskIds = new(); // key is engineer id, value is list of task ids
+    private static Dictionary<string,List<string>> TaskOutputDic = new(); // first key is taskID and value is the output from the task
+
+    private static Dictionary<string, string> TabPendingInputDic = new(); // first key is taskID and value is the input from the task, this is ued to clear tabs, keep tabs filed when switching between them
+    public static List<Engineer> InteractEngineers = new(); // list of the engineerrs the user has added for interaction 
+
+    public static Dictionary<string, string> EngTabTitleDic = new(); // key is engineer id, value is the tab title
+
+    private static string UserInput { get; set;}
+    private string placeHolder = null;
+    private bool IsEnterkey { get; set; } = false;
+    //private static Command userCommand = new Command();
+    private MudAutocomplete<string> mudauto { get; set; }
+    private Engineer currentEng = null;
+    private static List<string> PreviousCommands = new();
+    private string selectedHistoryCommand = null;
+    private static int HistoryIndex = 1;
+
+    private string icon = Icons.Material.Filled.CheckCircle;
+    private static bool TextSuppersion = true;
+
+    private string setTabStyle(bool IsDark)
+    {
+        if(IsDark)
+        {
+            return "background:#32333d; color:white;";
+        }
+        return "background:white; color:black;";  
+    }
+
+    //set the icon and color for commands 
+    private string setIcon(string currentTaskId)
+    {
+        //if the currentid is the TaskOutputDic but the task result contains an error then return the error icon
+        if (TaskOutputDic.ContainsKey(currentTaskId))
+        {
+            List<string> output = TaskOutputDic[currentTaskId];
+            foreach (string outputtext in output)
+            {
+                if (outputtext.Contains("Error",StringComparison.CurrentCultureIgnoreCase) || outputtext.Contains("Unhandled Exception",StringComparison.CurrentCultureIgnoreCase) || outputtext.Contains("Could not load file or assembly",StringComparison.CurrentCultureIgnoreCase))
+                {
+                    return Icons.Material.Filled.Warning;
+                }
+            }
+            return Icons.Material.Filled.CheckCircle;
+        }
+        //else the task response is pending and should be blue for inforation icon
+        else
+        {
+            return Icons.Material.Filled.Info;
+        }
+    }
+
+    private Color SetColor(string currentTaskId)
+    {
+        //if the currentid is the TaskOutputDic but the task result contains an error then return the error icon
+        if (TaskOutputDic.ContainsKey(currentTaskId))
+        {
+            List<string> output = TaskOutputDic[currentTaskId];
+            foreach (string outputtext in output)
+            {
+                if (outputtext.Contains("Error",StringComparison.CurrentCultureIgnoreCase) || outputtext.Contains("Unhandled Exception",StringComparison.CurrentCultureIgnoreCase) || outputtext.Contains("Could not load file or assembly",StringComparison.CurrentCultureIgnoreCase))
+                {
+                    return Color.Error;
+                }
+            }
+            return Color.Success;
+        }
+        //else the task response is pending and should be blue for inforation icon
+        else
+        {
+            return Color.Info;
+        }
+    }
+
+    private async Task<IEnumerable<string>> SearchCommand(string value)
+    {
+        //if input is blank or null give the whole list. 
+        if (string.IsNullOrEmpty(value))
+        {
+            var list = Help.menuItems.Select(x => x.Usage);
+            //alpabatize the list by the Name before returning it 
+            return list.OrderBy(x => x);
+        }
+        //return the name of the Help.MenuItem that matches the search term
+        var resultItem = await Task.FromResult(Help.menuItems.Where(x => x.Name.ToLower().Contains(value.ToLower())).ToList());
+        //alphabetize and return the list
+        var nameList = resultItem.Select(x => x.Usage);
+        return nameList.OrderBy(x => x);
+    }
+    
+
+    public async Task Send()
+    {
+        if (!String.IsNullOrWhiteSpace(placeHolder) )
+        {
+            UserInput = placeHolder;
+            TextSuppersion = false; //allows text box to be updated
+            placeHolder = "";      // sets text back to empty
+            IsEnterkey = true;
+            await Task.Delay(2);
+            TextSuppersion = true; // reset so textbox can be typed in without autoclearing until submission 
+                                   //if any of the strings in PreviousCommands matches UserInput then do not add it
+            if (!PreviousCommands.Contains(UserInput))
+            {
+                PreviousCommands.Add(UserInput);
+            }
+            HistoryIndex = 1;
+        }
+    }
+
+    public async Task<bool> OnEnterPress(KeyboardEventArgs e)
+    {
+        if (!String.IsNullOrWhiteSpace(UserInput))
+        {
+            if (e.Code == "Enter" || e.Code == "NumpadEnter")
+            {
+                IsEnterkey = true;
+                return true;
+            }
+            return false;
+        }
+        return false;
+    }
+
+    public static async Task UpdateTaskResponse(string engineerid, List<string> returnedTaskids)
+    {
+        // for each returnedtaskid add it to the TaskIdQueue for the engineerid and then set the GotTaskResponse to true and set the taskid to the first taskid in the queue and execute GetTaskResults
+        if (returnedTaskids != null)
+        {
+            // if the engineerid is not in the dictionary add it
+            if (!EngineerReturnedTaskIds.ContainsKey(engineerid))
+            {
+                EngineerReturnedTaskIds.Add(engineerid, new List<string>());
+            }
+            // if the engineerid is in the dictionary check it against the tasks I know have returned already and remove them from the returnedTaskids list
+            if (EngineerReturnedTaskIds.ContainsKey(engineerid))
+            {
+                foreach (string taskid in EngineerReturnedTaskIds[engineerid])
+                {
+                    if (returnedTaskids.Contains(taskid))
+                    {
+                        returnedTaskids.Remove(taskid);
+                    }
+                }
+            }
+
+            // using the returned id list call GetTaskResults for each taskid and add the results to the EngineerTaskOutputDic
+            foreach (string taskid in returnedTaskids)
+            {
+                await GetTaskResults(engineerid, taskid);
+            }
+
+        }
+    }
+
+    public static async Task UpdateOutGoingTaskDic(string engineerId,string taskId, string command, string args)
+    {
+
+        //if engineer.Id is not already a key in the EngineerUniqueInputDictionary make it a new list with the name InputList plus the engineer.Id at the end
+        if (!EngineerOutboundTaskIds.ContainsKey(engineerId))
+        {
+            EngineerOutboundTaskIds.Add(engineerId, new List<string>());
+        }
+        if(EngineerOutboundTaskIds.ContainsKey(engineerId))
+        {
+            //add the taskid to the list of taskids for the engineerid and pass the taskId to the sendTask function
+            EngineerOutboundTaskIds[engineerId].Add(taskId);
+
+            string commandHeaderText = $"({DateTime.UtcNow}) Engineer instructed to {command +" "+ args}\n";
+            TaskInputDic.Add(taskId, commandHeaderText); 
+        }
+    }
+
+    //new task to getExistingTaskInfo 
+    public static async Task GetExistingTaskInfo(Dictionary<string,List<EngineerTask>> PreviousTasks)
+    {
+        //pull out the tasks from the previous tasks dictionary and add them to the EngineerOutboundTaskIds dictionary and add the task.Command and Task.Args to the TaskInputDic with Task.Id as the key
+        foreach (KeyValuePair<string, List<EngineerTask>> kvp in PreviousTasks)
+        {
+            foreach (EngineerTask task in kvp.Value)
+            {
+                var args = task.Arguments is null ? "" : string.Join(" ", task.Arguments.Select(kvp => $"{kvp.Key} {kvp.Value}"));
+                await UpdateOutGoingTaskDic(kvp.Key, task.Id, task.Command, args);
+            }
+            UpdateTaskResponse(kvp.Key, kvp.Value.Select(x => x.Id).ToList());
+        }
+    }
+
+    public async Task SendTask(Engineer engineer, string command)
+    {
+        string currentTaskId = Guid.NewGuid().ToString();
+        var createObject = new TaskEngineerRequest();
+        createObject.Command = command.Split(' ')[0];
+        //if command is help then run help and return
+        if (createObject.Command == "help")
+        {
+            Dictionary<string, string> helpDiction = new Dictionary<string, string>();
+            string commandCheck = "";
+            if(command.Split(' ').Length >2)
+            {
+                commandCheck = command.Split(' ')[2];
+            }
+            if(!string.IsNullOrWhiteSpace(commandCheck))
+            {
+                helpDiction.Add("/command", commandCheck);
+            }
+            string helpMenu = Help.DisplayHelp(helpDiction);
+
+
+            if (!TaskOutputDic.ContainsKey(currentTaskId))
+            {
+                TaskOutputDic.Add(currentTaskId, new List<string>());
+            }
+            // split the helpmenu into lines and add each line to the list in TaskOutputDic for the currentTaskId
+            string[] helpMenuLines = helpMenu.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+            foreach (string line in helpMenuLines)
+            {
+                TaskOutputDic[currentTaskId].Add(line);
+            }
+            return; //return here because help command does not need to be sent to the engineers
+        }
+        // if command is not help keep going and parse out the arguments the user entered 
+        createObject.Arguments = new Dictionary<string, string>();
+        //checks if arg starts with a / and if so, it adds it to the dictionary.
+        List<string> inputList = command.Split(' ').Skip(1).ToList();
+        if (inputList.Count > 0)
+        {
+            //check if inputList ends in a space and if so, remove it
+            if (inputList.Last() == "")
+            {
+                inputList.RemoveAt(inputList.Count - 1);
+            }
+            var quoteCount = 0;
+            try
+            {
+                for (int i = 0; i < inputList.Count(); i++)
+                {
+                    // if the string ahead of a key holds a quote we are entering a value that should not stop collection until that quote ends.
+                    if (inputList[i + 1].Contains("\""))
+                    {
+                        quoteCount++;
+                    }
+                    var input = inputList[i];
+                    if (input.StartsWith("/"))
+                    {
+                        string result = "";
+                        List<string> results;
+                        // if quoteCount is even take until the next / 
+                        if (quoteCount % 2 == 0)
+                        {
+                            results = inputList.Skip(i + 1).TakeWhile(s => !s.Contains("/")).ToList();
+                            //update i based on the munber of things in results
+                            i += results.Count();
+                            foreach (string s in results)
+                            {
+                                result += " " + s;
+                            }
+                            result = result.TrimStart(' ');
+                            createObject.Arguments.Add(input, result);
+                        }
+                        //if its not even we are inside a " and should take until the next quoute
+                        else
+                        {
+                            result = inputList[i + 1];
+                            results = inputList.Skip(i + 2).TakeWhile(s => !s.Contains("\"")).ToList();
+                            i += results.Count() + 2;
+                            results.Add(inputList[i]);
+                            foreach (string s in results)
+                            {
+                                result += " " + s;
+                            }
+                            result = result.TrimStart(' ');
+                            createObject.Arguments.Add(input, result);
+                            quoteCount++;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                string errorMessage = "invalid input foramt, check Client console for help.";
+                Engineers.ShowErrorToast(errorMessage);
+                Console.WriteLine("values with a / need to be encloused in double quoutes. values with a \" in them should not be encloused in quotes. values with both a \" & / in them need to have no spaces.");
+            }  
+        }
+        //send the task to the server
+        string resource = $"/engineers/{engineer.Id}";
+        var request = new RestRequest(resource, Method.Post);
+        createObject.taskID = currentTaskId;
+
+
+        //if arguments contains /method as a key then if the value is sync set the IsBlocking parameter to true if its async set it to false, if the key is not present set it to false
+        if (createObject.Arguments.ContainsKey("/method"))
+        {
+            //createObject.Arguments["/method"] = createObject.Arguments["/method"];
+            if (createObject.Arguments["/method"].Equals("sync",StringComparison.CurrentCultureIgnoreCase))
+            {
+                createObject.IsBlocking = true;
+            }
+            else if (createObject.Arguments["/method"].Equals("async",StringComparison.CurrentCultureIgnoreCase))
+            {
+                createObject.IsBlocking = false;
+            }
+            else
+            {
+                createObject.IsBlocking = false;
+            }
+        }
+        else
+        {
+            createObject.IsBlocking = false;
+        }
+
+        request.AddJsonBody(createObject);
+        _ = await Task.Run(()=> restClient.PostAsync(request));
+    }
+    // end of send task function
+
+    
+    public static async Task GetTaskResults(string engineerId, string taskid) 
+    {
+        //gets the task results from the server
+        string resource = $"/engineers/{engineerId}/tasks/{taskid}";
+        var request = new RestRequest(resource, Method.Get);
+        var requestResponse = await _restClient.GetAsync<EngineerTaskResponse>(request);
+        if (requestResponse != null && requestResponse.Result != null)
+        {
+            if (EngineerReturnedTaskIds[engineerId].Count() < EngineerOutboundTaskIds[engineerId].Count())
+            {
+                EngineerReturnedTaskIds[engineerId].Add(taskid);
+                if (!TaskOutputDic.ContainsKey(taskid))
+                {
+                    TaskOutputDic.Add(taskid, new List<string>());
+                }
+                var results = requestResponse.Result;
+
+                string[] resultLines = results.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+                foreach (string result in resultLines)
+                {
+                    TaskOutputDic[taskid].Add(result);
+                }
+            }
+        }
+    }
+
+    private void OnShowHistoryUp(KeyboardEventArgs e)
+    {
+        if (PreviousCommands.Count > 0)
+        {
+            //check to make sure the key pressed was the up arrow
+            if (e.Code == "ArrowUp")
+            {
+                if (HistoryIndex > PreviousCommands.Count)
+                {
+                    HistoryIndex = PreviousCommands.Count;
+                }
+                //get the Historyindex, set placeholder text to the history item at that index, and increment the index
+                if (HistoryIndex <= PreviousCommands.Count)
+                {
+                    if (HistoryIndex == 0)
+                    {
+                        HistoryIndex = 1;
+                    }
+                    Task.Run(async () => await ForceHistoryUpdateUP());
+                }
+            }
+            else if (e.Code == "ArrowDown")
+            {
+                if (HistoryIndex == 0)
+                {
+                    HistoryIndex = 1;
+                }
+                //get the Historyindex, set placeholder text to the history item at that index, and decrement the index
+                if (HistoryIndex > 0)
+                {
+                    if (HistoryIndex == 0)
+                    {
+                        HistoryIndex = 1;
+                    }
+                    else
+                    {
+                        HistoryIndex--;
+                        Task.Run(async () => await ForceHistoryUpdateDOWN());
+                    }
+                }
+            }
+        }
+    }
+
+    private async Task ForceHistoryUpdateUP()
+    {
+        TextSuppersion = false; //allows text box to be updated
+        placeHolder = PreviousCommands[PreviousCommands.Count - HistoryIndex];
+        await Task.Delay(2);
+        TextSuppersion = true; // reset so textbox can be typed in without autoclearing until submission
+        HistoryIndex++;
+    }
+    private async Task ForceHistoryUpdateDOWN()
+    {
+        TextSuppersion = false; //allows text box to be updated
+        placeHolder = PreviousCommands[PreviousCommands.Count - HistoryIndex];
+        await Task.Delay(2);
+        TextSuppersion = true; // reset so textbox can be typed in without autoclearing until submission
+        
+    }
+
+    private void TimerUpdated()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _restClient = restClient;
+
+       var timer = new Timer(new TimerCallback(_ =>{InvokeAsync(StateHasChanged);}), null, 0, 150);
+    }
+}
+  

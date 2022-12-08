@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "defaultProvider": "cdnjs",
+  "libraries": [
+    {
+      "provider": "cdnjs",
+      "library": "font-awesome@6.1.1",
+      "destination": "wwwroot/css/font-awesome/"
+    }
+  ]
+}

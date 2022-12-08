@@ -1,0 +1,450 @@
+﻿@page "/Engineers"
+@using ApiModels.Requests
+@using ApiModels.Responses
+@using Models
+@using RestSharp
+@using AutoMapper
+@using MudBlazor
+@using System.Collections.Generic
+@using HardHatC2Client.Services
+@using System.Collections.ObjectModel
+@using System.Linq
+@inject RestClient restClientDefault
+@inject IToastService toastDefault
+@inject NavigationManager navigationManagerDefault
+
+<h3 class="text-center">Engineers</h3>
+<br>
+<div oncontextmenu="return false;" @onclick="HandleClick" @onmouseup="HandleMouseUp">
+<div class="container-fluid" style="height:500px; overflow-y:scroll">
+	<div class="row">
+		<div class="col-md-12">
+            <style>
+            .selected 
+            {
+                background-color: #1E88E5 !important;
+            }
+            .selected > td 
+            {
+                color: white !important;
+            }   
+            .selected > td .mud-input 
+            {
+                color: white !important;
+            }
+            </style>
+			<MudTable Items="@EngineerList" HorizontalScrollbar="true" Virtualize="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Elevation="10" Outlined="true" Striped="true" RowClassFunc="@SelectedRowClassFunc" OnRowClick="RowClickEvent" @ref="mudTable" T="Engineer">
+				<HeaderContent>
+                        <MudTh Style="@setStyle(Settings.IsCheckedBox)"></MudTh>
+                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">Status</MudTh>
+                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">External Address</MudTh>
+                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">Manager</MudTh>
+                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">Connection Type</MudTh>                        
+						<MudTh Style="@setStyle(Settings.IsCheckedBox)">Address</MudTh>
+						<MudTh Style="@setStyle(Settings.IsCheckedBox)">hostname</MudTh>
+						<MudTh Style="@setStyle(Settings.IsCheckedBox)">username</MudTh>
+						<MudTh Style="@setStyle(Settings.IsCheckedBox)">process</MudTh>
+						<MudTh Style="@setStyle(Settings.IsCheckedBox)">pid</MudTh>
+                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">Integrity</MudTh>
+                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">arch</MudTh>
+                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">Sleep Time</MudTh>
+                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">lastseen</MudTh>
+                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">Options</MudTh>
+				</HeaderContent>
+				<RowTemplate>
+                        <MudIcon Size="Size.Small" Class="mb-2 ms-2" Icon=@Icons.Material.Filled.DesktopWindows Color=@SetColor(context.Integrity)></MudIcon>
+                        <MudTd Style="@GetEngineerStatus(context)">@context.Status</MudTd>
+                        <MudTd Style="@opacitySetting">@context.ExternalAddress</MudTd>
+                            <MudTd Style="@opacitySetting">@context.ManagerName</MudTd>
+                        <MudTd Style="@opacitySetting">@context.ConnectionType @FindManager(context,context.ManagerName)</MudTd>
+                            <MudTd Style="@opacitySetting">@context.Address</MudTd>
+                            <MudTd Style="@opacitySetting">@context.Hostname</MudTd>
+                            <MudTd Style="@opacitySetting">@context.Username</MudTd>
+                            <MudTd Style="@opacitySetting">@context.ProcessName</MudTd>
+                            <MudTd Style="@opacitySetting">@context.ProcessId</MudTd>
+                            <MudTd Style="@opacitySetting">@context.Integrity</MudTd>
+                           <MudTd Style="@opacitySetting">@context.Arch</MudTd>
+                            <MudTd Style="@opacitySetting">@context.Sleep sec</MudTd>
+                        <MudTd Style="@opacitySetting">@LastSeenTimer(context)</MudTd>
+                            <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
+                                <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown">
+                                    <MudMenuItem OnClick="() =>ContextMenuItems(0,context)">Interact</MudMenuItem>
+                                    <MudMenuItem OnClick="() =>ContextMenuItems(1,context)">Note</MudMenuItem>
+                                    <MudMenuItem OnClick="() =>ContextMenuItems(2,context)">Color</MudMenuItem>
+                                    <MudMenuItem OnClick="() =>ContextMenuItems(3,context)">Exit</MudMenuItem>
+                                </MudMenu>
+                            </MudButtonGroup>
+                </RowTemplate>
+            </MudTable>
+        </div>
+    </div>
+</div>
+</div>
+
+
+
+<div class ="container-fluid">
+    <h3 class="text-center position-relative">Create New Engineer</h3>
+    <hr>
+
+<MudForm @bind-IsValid="@success" @bind-Errors="@errors">
+     <MudSelect Class="mb-4 mt-4"  T="string" Label="Manager Name" Variant="Variant.Filled" Required="true" @bind-value="formData.managerName" RequiredError="Type is required!">
+          @foreach (Manager manager in @Managers.managersList)
+            {
+                <MudSelectItem Value="@manager.Name"/>
+            }
+        </MudSelect>
+        <MudTextField Class="mb-4 mt-4"  T="int" Label="Connection Attempts" Variant="Variant.Filled" Required="true" @bind-value="formData.ConnectionAttempts" RequiredError="callback address is required!"/>
+        <MudTextField Class="mb-4 mt-4" T="int" Label="sleep timer" Variant="Variant.Filled"  Required="true" @bind-value="formData.Sleep" RequiredError="port is required!"/>
+        <MudTextField Class="mb-4 mt-4" T="string" Label="working hours format (01:00:00-23:00:00)" Variant="Variant.Filled"  @bind-value="formData.WorkingHours" RequiredError="port is required!" />
+        <MudSelect Class="mb-4 mt-4"  T="SpawnEngineerRequest.EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
+            <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.exe)" />
+            <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.shellcode)" />
+            <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.powershellcmd)" />
+        </MudSelect>
+        <MudButton StartIcon="@Icons.Filled.Bolt" Variant="Variant.Filled" Color="Color.Success"  Disabled="@(!success)" @onclick="@validSubmit"> Create</MudButton>
+    </MudForm>
+</div>
+<br>
+<br>
+<div>
+    <MudTextField @bind-Value="PsCmd" Label="Powershell Commmand" ReadOnly="true" Variant="Variant.Outlined"/>
+</div>
+
+
+
+
+@code {
+    [Inject]
+    private static RestClient _restClient { get; set; }
+    [Inject]
+    private static IMapper _mapper { get; set; }
+    [Inject]
+    private static IToastService toastService { get; set; }
+    [Inject]
+    private static NavigationManager Nav { get; set; }
+
+    protected internal static ObservableCollection<Engineer> EngineerList = new ObservableCollection<Engineer>();
+    private static SpawnEngineerRequest formData = new SpawnEngineerRequest();
+    private string EngineerTestID { get; set; }
+    public Double OpacityValue { get; set; }
+    private static bool firstRender = true;
+    private bool success;
+    private string[] errors = { };
+    private MudTable<Engineer> mudTable;
+    private int selectedRowNumber = -1;
+    public static string PsCmd { get; set; }
+    private static string opacitySetting {get; set;}
+
+    public static async Task SetPsCommand(string command)
+    {
+        PsCmd = command;
+    }
+
+    private string setStyle(bool IsDark)
+    {
+        if(IsDark)
+        {
+            return "background:white; color:black;";
+        }
+        return "background:#333333; color:white;"; 
+    }
+
+    private static Color SetColor(string integrity)
+    {
+        if (integrity.Equals("high",StringComparison.CurrentCultureIgnoreCase))
+        {
+            return Color.Warning;
+        }
+        if (integrity.Equals("system",StringComparison.CurrentCultureIgnoreCase))
+        {
+            return Color.Error;
+        }
+        else if (integrity.Equals("medium",StringComparison.CurrentCultureIgnoreCase))
+        {
+            return Color.Info;
+        }
+        else if (integrity.Equals("low",StringComparison.CurrentCultureIgnoreCase))
+        {
+            return Color.Tertiary;
+        }
+        return Color.Primary;
+    }
+
+    public async Task validSubmit()
+    {
+        if (formData.managerName != null)
+        {
+            await CreateHttpEngineer();
+        }
+    }
+
+    void HandleClick(MouseEventArgs args)
+    {
+        //can handle left click inside the table
+    }
+
+    void HandleMouseUp(MouseEventArgs args)
+    {
+        if (args.Button == 2)
+        {
+            //can handle right click inside the table
+            if (mudTable.SelectedItem != null)
+            {
+                mudTable.SelectedItem = null;
+            }
+        }
+    }
+
+    private void RowClickEvent(TableRowClickEventArgs<Engineer> tableRowClickEventArgs)
+    {
+    }
+
+    private string SelectedRowClassFunc(Engineer engineer, int rowNumber)
+    {
+        if (mudTable.SelectedItem != null && mudTable.SelectedItem.Equals(engineer))
+        {
+            selectedRowNumber = rowNumber;
+            return "selected";
+        }
+        else
+        {
+            return string.Empty;
+        }
+    }
+
+    private static void ContextMenuItems(int options, Engineer engineer)
+    {
+        switch(options)
+        {
+            case 0:
+                //Interact
+                Interact.InteractEngineers.Add(engineer);
+                //compare the eng.ProcessId@eng.Address to the values in the Interact.EngTabTitleDic dictionary, if it matches any of the values, then add it to the dictionary but its value is ng.ProcessId@eng.Address + a number that is equal to the number of values it matched in the dictionary
+
+                if (Interact.EngTabTitleDic.ContainsValue(engineer.ProcessId + "@" + engineer.Address) && Interact.EngTabTitleDic.ContainsKey(engineer.Id) == false)
+                {
+                    int count = 0;
+                    foreach (string key in Interact.EngTabTitleDic.Keys)
+                    {
+                        if (Interact.EngTabTitleDic[key] == engineer.ProcessId + "@" + engineer.Address)
+                        {
+                            count++;
+                        }
+                        else if (Interact.EngTabTitleDic[key] == engineer.ProcessId + "@" + engineer.Address + "(" + count + ")")
+                        {
+                            count++;
+                        }
+                    }
+                    Interact.EngTabTitleDic.Add(engineer.Id, engineer.ProcessId + "@" + engineer.Address + "(" + count + ")");
+                }
+                else if(!Interact.EngTabTitleDic.ContainsKey(engineer.Id))
+                {
+                    Interact.EngTabTitleDic.Add(engineer.Id, engineer.ProcessId + "@" + engineer.Address);
+                }
+
+                Nav.NavigateTo("/Interact");
+                break;
+            case 1:
+                //note    
+                break;
+            case 2:
+                //color     
+                break;
+            case 3:
+                //exit     
+                break;
+        }
+    }
+
+    private static string FindManager(Engineer currenteng,string managerName)
+    {
+        if(currenteng.ConnectionType.Equals("http",StringComparison.CurrentCultureIgnoreCase))
+        {
+            return "";
+        }
+        foreach(var man in Managers.managersList)
+        {
+            if(man.Name == managerName)
+            {
+                return man.connectionMode.ToString();
+            }
+        }
+        return "";
+    }
+
+    public static async Task CreateHttpEngineer()
+    {
+        string resource = "/engineers";
+        var createObject = new SpawnEngineerRequest
+		{
+			managerName = formData.managerName,
+            ConnectionAttempts = formData.ConnectionAttempts,
+            Sleep = formData.Sleep,
+            complieType = formData.complieType,
+            WorkingHours = formData.WorkingHours
+		};
+        var request = new RestRequest(resource,Method.Post);
+        request.AddJsonBody(createObject);
+        var requestResponse = await _restClient.PostAsync<String>(request);
+        if (requestResponse != null)
+        {
+            ShowSuccessToast(requestResponse);
+        }
+        //reset the form data object 
+        formData = new SpawnEngineerRequest();
+    }
+
+    public static async Task GetAllEngineers()
+    {
+        string resource = "/engineers";
+        var request = new RestRequest(resource, Method.Get);
+        try
+        {
+            var requestResponse = await _restClient.GetAsync<List<Engineer>>(request);
+            if (requestResponse != null)
+            {
+                foreach (Engineer engineerresponse in requestResponse)
+                {
+                    //var engineerObject = _mapper.Map<Root,Engineer>(engineerresponse);
+                    //engineerObject.Init();
+                    engineerresponse.Init();
+
+                    // if any of the engineers Id match then dont add them to the list
+
+                    //remove null objects from the EngineerList
+                    foreach(Engineer eng in EngineerList)
+                    {
+                        if (eng == null)
+                        {
+                            EngineerList.Remove(eng);
+                        }
+                    }
+                    if (!EngineerList.Any(x => x.Id == engineerresponse.Id))
+                    {
+                        EngineerList.Add(engineerresponse);
+                    }
+                    if (EngineerList.Any(x => x.Id == engineerresponse.Id))
+                    {
+                        // get the Engineer object fro mthe list with the matching id
+                        var engineer = EngineerList.First(x => x.Id == engineerresponse.Id);
+                        // update the object with the new values
+                        engineer.LastSeen = engineerresponse.LastSeen;
+                        engineer.Sleep = engineerresponse.Sleep;
+                    }
+                }
+            } 
+        }
+        catch
+        {  }
+    }
+
+    public async Task GetHttpEngineer(string engineerId)
+    {
+        var resource = $"/engineers/{engineerId}";
+        var request = new RestRequest(resource, Method.Get);
+        request.RootElement = "metadata";        
+        var requestResponse = await _restClient.GetAsync<EngineerResponse>(request);
+        var engineerObject = _mapper.Map<EngineerResponse,Engineer>(requestResponse);
+        if (engineerObject != null)
+        {
+            EngineerList.Add(engineerObject);
+        }
+    }
+
+
+    public static string GetEngineerStatus(Engineer engineer)
+    {   
+        // if engineer LastSeen is in the past then Status is offline
+        // add 5 seconds to the LastSeen to make sure the engineer is still online
+        if (engineer.LastSeen.AddSeconds(engineer.Sleep*2) < DateTime.Now)
+        {
+            engineer.Status = "Offline";
+        }
+        else
+        {
+            engineer.Status = "Active";
+        }
+        //ignorning case if engineer status is active return 1 else return 0.4
+        if (engineer.Status.ToLower() == "active")
+        {
+            opacitySetting = "opactity:1";
+            return "opactity:1";
+        }
+        else
+        {
+            opacitySetting = "opacity:.4";
+            return "opacity:.4";
+        }
+    }
+
+    public static string LastSeenTimer(Engineer engineer)
+    {
+        //based on lastSeen time use a timer and return the time since last seen in a string, print ms if less than 1 second print seconds if less than 1 minute print minutes if less than 1 hour print hours if less than 1 day print , only print the whole number
+        var timeSinceLastSeen = DateTime.Now - engineer.LastSeen;
+        //dont let the timeSinceLastSeen be negative
+        if (timeSinceLastSeen < TimeSpan.Zero)
+        {
+            timeSinceLastSeen = timeSinceLastSeen.Negate();
+        }
+
+        if (timeSinceLastSeen.TotalMilliseconds < 1000)
+        {
+            return  engineer.LastSeenTimer = $"{timeSinceLastSeen.Milliseconds} ms";
+        }
+        else if (timeSinceLastSeen.TotalSeconds < 60)
+        {
+            return engineer.LastSeenTimer = $"{timeSinceLastSeen.Seconds} sec";
+        }
+        else if (timeSinceLastSeen.TotalMinutes < 60)
+        {
+            return engineer.LastSeenTimer = $"{timeSinceLastSeen.Minutes} min";
+        }
+        else if (timeSinceLastSeen.TotalHours < 24)
+        {
+            return engineer.LastSeenTimer = $"{timeSinceLastSeen.Hours} hours";
+        }
+        else if (timeSinceLastSeen.TotalDays < 1)
+        {
+            return engineer.LastSeenTimer = $"{timeSinceLastSeen.Days} days";
+        }
+        else
+        {
+            return  engineer.LastSeenTimer = $"{timeSinceLastSeen.Days} days";
+        } 
+    }
+
+    public static void ShowSuccessToast(string successMessage)
+    {
+        toastService.ShowSuccess(successMessage, "SUCCESS");
+    }
+    public static void ShowErrorToast(string errorMessage)
+    {
+        toastService.ShowError(errorMessage, "ERROR");
+    }
+
+    private static void ShowInfoToast()
+    {
+        toastService.ShowInfo("This is Info message with title","INFO");
+    }
+    private static void ShowWarningToast()
+    {
+        toastService.ShowWarning("This is Warning message with title","WARNING");
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        _restClient = restClientDefault;
+        //_mapper = mapperDefault;
+        toastService = toastDefault;
+        Nav = navigationManagerDefault;
+        var timer = new Timer(new TimerCallback(_ => { InvokeAsync(StateHasChanged); }), null, 0, 200);
+        if (firstRender)
+        {
+            firstRender = false;
+            Nav.NavigateTo("/");
+        }
+    }
+    
+}

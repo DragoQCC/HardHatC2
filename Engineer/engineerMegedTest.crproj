@@ -1,0 +1,16 @@
+<project outputDir="D:\My_Custom_Code\HardHatC2\Confused" baseDir="D:\My_Custom_Code\HardHatC2" xmlns="http://confuser.codeplex.com">
+  <packer id="compressor" />
+  <module path="D:\My_Custom_Code\HardHatC2\Engineer_super_merged.exe">
+    <rule pattern="true" inherit="false">
+      <protection id="resources" />
+      <protection id="ref proxy" />
+      <protection id="typescramble" />
+      <protection id="rename" />
+      <protection id="anti debug" />
+      <protection id="anti dump" />
+      <protection id="anti ildasm" />
+      <protection id="anti tamper" />
+      <protection id="ctrl flow" />
+    </rule>
+  </module>
+</project>

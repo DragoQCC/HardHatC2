@@ -1,0 +1,94 @@
+﻿@page "/HostedFiles"
+@using HardHatC2Client.Services
+@using HardHatC2Client.Models
+<h3 class="text-center">HostedFiles</h3>
+
+<MudTable Items="@_hostedFiles" HorizontalScrollbar="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Outlined="true" Striped="true">
+	<HeaderContent>
+				<MudTh Style="@setStyle(Settings.IsCheckedBox)">Name</MudTh>
+				<MudTh Style="@setStyle(Settings.IsCheckedBox)">Upload Time</MudTh>
+                <MudTh Style="@setStyle(Settings.IsCheckedBox)">File Size</MudTh>
+	</HeaderContent>
+		<RowTemplate>
+			<MudTd>@context.Name</MudTd>
+			<MudTd>@context.LastWriteTime</MudTd>
+            <MudTd>@context.size</MudTd>
+		</RowTemplate>
+</MudTable>
+<br>
+<br>
+<InputFile id="fileInput112" OnChange="UploadFiles" hidden multiple />
+
+<MudButton HtmlTag="label"
+           Variant="Variant.Filled"
+           Color="Color.Primary"
+           StartIcon="@Icons.Filled.CloudUpload"
+           for="fileInput112">
+    Upload
+</MudButton>
+
+
+@code
+{
+	private static List<HostedFile> _hostedFiles = new List<HostedFile>();
+    
+	private string setStyle(bool IsDark)
+	{
+		if(IsDark)
+		{
+			return "background:white; color:black;";
+		}
+		return "background:#333333; color:white;"; 
+	}
+	
+	private void UploadFiles(InputFileChangeEventArgs e)
+    {
+        var entries = e.GetMultipleFiles();
+
+        //get the files from the entries as a byte array and convert it to a base64 string, also get the filename which is the info after the last / in the filepath
+        foreach (IBrowserFile file in entries)
+        {
+            string b64FileContent = "";
+            Stream filestream = file.OpenReadStream();
+            //read all of the filestream into a byte array
+            byte[] fileBytes = new byte[filestream.Length];
+            
+            //do an async read of the file and save it to the filebytes array
+	        filestream.ReadAsync(fileBytes, 0, (int)filestream.Length);
+	        
+            
+
+            //convert the byte array to a base64 string
+            b64FileContent = Convert.ToBase64String(fileBytes);
+            
+            //get the filename from the file.Name but only the filename, not the full path
+            string filename = file.Name.Split("/").Last();
+            
+	        //create a new hostedfile object and add it to the list
+	        HostedFile hostedFile = new HostedFile();
+	        hostedFile.Name = filename;
+            //set the hostedFile.Size in either bytes, kb, mb, gb
+            if (file.Size < 1024)
+            {
+                hostedFile.size = file.Size + " bytes";
+            }
+            else if (file.Size < 1048576)
+            {
+                hostedFile.size = (file.Size / 1024) + " kb";
+            }
+            else if (file.Size < 1073741824)
+            {
+                hostedFile.size = (file.Size / 1048576) + " mb";
+            }
+            else
+            {
+                hostedFile.size = (file.Size / 1073741824) + " gb";
+            }
+	        _hostedFiles.Add(hostedFile);
+
+	        HardHatHubClient._hub.HostFile(b64FileContent,filename);
+        }
+
+
+    }
+}

@@ -1,0 +1,79 @@
+﻿@page "/PivotProxy"
+@inject ISnackbar Snackbar
+@using HardHatC2Client.Models
+
+<h3 class="text-center">PivotProxy</h3>
+<MudTable Items="@_pivotProxyItems" HorizontalScrollbar="true" Virtualize="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Elevation="10" Outlined="true" Striped="true" T="PivotProxyItem">
+                <HeaderContent>
+                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">EngineerId</MudTh>
+                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">Bind Port</MudTh>
+                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">Fwd Host</MudTh>
+                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">Fwd Port</MudTh>
+                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">pivot Type</MudTh>
+                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">pivot Direction</MudTh>
+                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">Options</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                            <MudTd >@context.EngineerId</MudTd>
+                            <MudTd>@context.BindPort</MudTd>
+                            <MudTd>@context.FwdHost</MudTd>
+                            <MudTd>@context.FwdPort</MudTd>
+                            <MudTd>@context.pivotType</MudTd>
+                            <MudTd>@context.pivotDirection</MudTd>
+                            <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
+                                <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown">
+                                    <MudMenuItem OnClick="() =>ContextMenuItems(0,context)">Note</MudMenuItem>
+                                    <MudMenuItem OnClick="() =>ContextMenuItems(1,context)">Color</MudMenuItem>
+                                    <MudMenuItem OnClick="() =>ContextMenuItems(2,context)">Exit</MudMenuItem>
+                                </MudMenu>
+                            </MudButtonGroup>
+                </RowTemplate>
+            </MudTable>
+
+@code {
+
+    private static List<PivotProxyItem> _pivotProxyItems = new List<PivotProxyItem>();
+    [Inject] private IDialogService DialogService { get; set; }
+    string state = "Message box hasn't been opened yet";
+
+    public static async Task AddPivotProxy(PivotProxyItem item)
+    {
+        if (!_pivotProxyItems.Contains(item))
+        {
+            _pivotProxyItems.Add(item);
+        }
+    }
+
+    private string setStyle(bool IsDark)
+    {
+        if (IsDark)
+        {
+            return "background:white; color:black;";
+        }
+        return "background:#333333; color:white;";
+    }
+
+    private async void ContextMenuItems(int options, PivotProxyItem selectedPivotItem)
+    {
+        switch (options)
+        {
+            case 0:
+                //Note
+                break;
+            case 1:
+                //color
+                break;
+            case 2:
+                //Remove
+                bool? result = await DialogService.ShowMessageBox("Warning","Deleting can not be undone!", yesText: "Delete!", cancelText: "Cancel");
+                state = result == null ? "Cancelled" : "Deleted!";
+                StateHasChanged();
+                //if result is yes then delete the pivot for the moment just removing it from the list
+                if (result == true)
+                {
+                    _pivotProxyItems.Remove(selectedPivotItem);
+                }
+                break;
+        }
+    }
+}

@@ -1,0 +1,75 @@
+﻿<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">HardHatC2Client</a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link shadow" href="" Match="NavLinkMatch.All">
+                <span class="oi oi-home" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+         <div class="nav-item px-3">
+            <NavLink class="nav-link shadow" href="Managers">
+                <span class="oi oi-headphones" aria-hidden="true"></span> Managers
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link shadow" href="Engineers">
+                <span class="oi oi-plus" aria-hidden="true"></span> Engineers
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link shadow" href="Interact">
+                <span class="oi oi-list-rich" aria-hidden="true"></span> Interact
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link shadow" href="ToolBoxes">
+                <span class="oi oi-bolt" aria-hidden="true"></span> ToolBoxes
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link shadow" href="EventHistory">
+                <span class="oi oi-file" aria-hidden="true"></span> Event History
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link shadow" href="Credentials">
+                <span class="oi oi-credit-card" aria-hidden="true"></span> Credentials
+            </NavLink>
+        </div>		
+        <div class="nav-item px-3">
+            <NavLink class="nav-link shadow" href="Downloads">
+                <span class="oi oi-data-transfer-download" aria-hidden="true"></span> Downloads
+            </NavLink>
+        </div>	
+        <div class="nav-item px-3">
+            <NavLink class="nav-link shadow" href="HostedFiles">
+                <span class="oi oi-data-transfer-upload" aria-hidden="true"></span> Hosted Files
+            </NavLink>
+        </div>
+		<div class="nav-item px-3">
+            <NavLink class="nav-link shadow" href="Settings">
+                <span class="oi oi-person" aria-hidden="true"></span> Settings
+            </NavLink>
+        </div>
+        		
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

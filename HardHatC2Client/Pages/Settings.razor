@@ -1,0 +1,52 @@
+﻿@page "/Settings"
+@inject IJSRuntime js
+<h3 class="text-center">Settings</h3>
+<hr>
+<h4>Theme</h4> 
+<MudSwitch @bind-Checked="@IsCheckedBox" ThumbIcon="@Icons.Material.Filled.LightMode" Color="Color.Success" Class="ma-4" T="bool" Label="Toggle Light/Dark Mode"/>
+
+@if (IsCheckedBox == false)
+{
+	selectedTheme = "Light";
+}
+else
+{
+	selectedTheme = "Dark";
+}
+
+
+
+@code{
+	public static string selectedTheme = "Light";
+	private static List<string> themes = new List<string> { "Light", "Dark" };
+	public static bool IsCheckedBox = true;
+
+	public static string GetCssClass()
+	{
+		if(selectedTheme =="Light")
+		{
+			IsCheckedBox = false;
+			return String.Empty;
+		}
+		else
+		{
+			IsCheckedBox = true;
+			return "dark-mode";
+		}
+	}
+	private static bool IsSelectedTheme(string theme)
+	{
+		return theme == selectedTheme; 
+	}
+
+	private async Task ChangingTheme(ChangeEventArgs e)
+	{
+		selectedTheme = e.Value.ToString();
+		await js.InvokeVoidAsync("addToLocalStorage", "theme", selectedTheme);		
+	}
+	
+	private async Task ChangeCheckStatus()
+	{
+		await js.InvokeVoidAsync("addToLocalStorage", "checkbox", IsCheckedBox);
+	}
+}

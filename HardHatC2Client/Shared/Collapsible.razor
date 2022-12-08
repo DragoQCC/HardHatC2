@@ -1,0 +1,43 @@
+﻿<div class="my-1 accordion-flush">
+  <h3>@Title</h3>
+
+    @if (Collapsed)
+    {
+      <button @onclick="@Toggle" class=" accordion-button mr-2 text-dark shaodw" role="button" >
+        @LabelText
+      </button> 
+    }
+    else
+    { 
+      <button @onclick="@Toggle" class=" accordion-button mr-2 shadow" role="button" >
+        @LabelText
+      </button> 
+    } 
+</div>
+
+@if(!Collapsed)
+{
+  <div class="card alert alert-info mb-3" role="alert">
+    @ChildContent
+  </div>
+}
+
+@code {
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+    [Parameter]
+    public bool Collapsed { get; set; }
+
+    //input params coming from from page
+    [Parameter]
+    public string Title { get; set; }
+    [Parameter]
+    public string ButtonText { get; set; }
+    [Parameter]
+    public string LabelText { get; set; }
+
+    void Toggle()
+    {
+        Collapsed = !Collapsed;
+    }
+}
