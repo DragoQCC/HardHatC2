@@ -227,6 +227,13 @@ namespace TeamServer.Controllers
                 //use ilMerge to merge the assembly and the protobuf dlls
                 GC.Collect();
 				GC.WaitForPendingFinalizers();
+
+                //if pathSplit[0]+temp does not exist then create it
+                if (!Directory.Exists(pathSplit[0] + "temp"))
+                {
+                    Directory.CreateDirectory(pathSplit[0] + "temp");
+                }
+
                 System.IO.File.WriteAllBytes(pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.exe", assemblyBytes);
                 
                 var outputLocation = pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
