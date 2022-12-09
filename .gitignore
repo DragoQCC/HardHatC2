@@ -34,7 +34,7 @@ bld/
 [Ll]ogs/
 *.exe
 *.txt
-TeamServer/Temp/*.exe
+TeamServer/temp/*.exe
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
