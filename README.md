@@ -1,2 +1,2 @@
-# HardHatC2Client
+# Documentation
 

@@ -1,5 +1,5 @@
 # Table of contents
 
-* [HardHatC2Client](README.md)
-  * [wwwroot](hardhatc2client/wwwroot/README.md)
-    * [css](hardhatc2client/wwwroot/css.md)
+* [Documentation](README.md)
+  * [HardHat C2](hardhatc2client/hardhat-c2.md)
+  * [Getting Started](hardhatc2client/getting-started.md)
