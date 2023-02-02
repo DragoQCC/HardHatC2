@@ -321,7 +321,7 @@ namespace Engineer.Models
                                 IsBlocking = false
                             };
                             Program.InboundCommandsRec += 1;
-                            Task.Run(async () => await Program.DealWithTask(firstCheckTask));
+                            Task.Run(async () => await Tasking.DealWithTask(firstCheckTask));
                             FirstCheckIn.firstCheckInDone = true;
                             IsDataInTransit = false;
                             break;
@@ -384,7 +384,7 @@ namespace Engineer.Models
                         //if the ChildToParentData dictionary has values for the parent Id , send the data to the parent
                         if (ChildToParentData[Program.TcpParentCommModules.Keys.ElementAt(0)].TryDequeue(out byte[] ForwardedChildData))
                         {
-                            Console.WriteLine("calling send data to parent");
+                           // Console.WriteLine("calling send data to parent");
                             await client.SendData(ForwardedChildData, _tokenSource.Token);
                             IsDataInTransit = false;
                         }
@@ -440,7 +440,7 @@ namespace Engineer.Models
                                 IsBlocking = false
                             };
                             Program.InboundCommandsRec += 1;
-                            Task.Run(async () => await Program.DealWithTask(firstCheckTask));
+                            Task.Run(async () => await Tasking.DealWithTask(firstCheckTask));
                             byte[] Id = Encoding.ASCII.GetBytes(Program._metadata.Id);
                             client.SendData(Id, _tokenSource.Token);
                             IsDataInTransit = false;
@@ -564,7 +564,7 @@ namespace Engineer.Models
             {
                 var buf = new byte[65535];
                 read = await ns.ReadAsync(buf, 0, buf.Length, token);
-                Console.WriteLine($"receiving data length {read}");
+                //Console.WriteLine($"receiving data length {read}");
                 if (read == 0)
                     break;
 
@@ -580,7 +580,7 @@ namespace Engineer.Models
             if (client.Connected)
             {
                 var ns = client.GetStream();
-                Console.WriteLine($"sending data length {data.Length}");
+               // Console.WriteLine($"sending data length {data.Length}");
                 await ns.WriteAsync(data, 0, data.Length, token);
             }
         }

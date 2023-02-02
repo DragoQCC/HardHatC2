@@ -29,7 +29,10 @@ namespace Engineer.Models
 			while (Outbound.TryDequeue(out var task))
 			{
 				outbound.Add(task);
-                Program.OutboundResponsesSent += 1;
+				if (task.Status != EngTaskStatus.Running)
+				{
+					Program.OutboundResponsesSent += 1;
+				}
             }
 			return outbound;
 		}
@@ -63,8 +66,17 @@ namespace Engineer.Models
 
 		public void SentData(EngineerTaskResult result)
 		{
-			Outbound.Enqueue(result);
-
+            //if the result is already in the Outbound queue then append the result to the existing result and update the status
+            if (Outbound.Any(t => t.Id == result.Id))
+            {
+                var existingResult = Outbound.FirstOrDefault(t => t.Id == result.Id);
+                existingResult.Result += result.Result;
+                existingResult.Status = result.Status;
+            }
+            else
+            {
+                Outbound.Enqueue(result);
+            }
 		}
 
         public async Task P2PSent(byte[] tcpData)

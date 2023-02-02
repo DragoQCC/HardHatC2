@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Engineer.Models
@@ -18,7 +19,11 @@ namespace Engineer.Models
         public Dictionary<string, string> Arguments { get; set; }
        
         public byte[] File { get; set; }
-        
+
         public bool IsBlocking { get; set; }
+
+
+        [NonSerialized]
+        public CancellationToken cancelToken  = new CancellationToken();
     }
 }

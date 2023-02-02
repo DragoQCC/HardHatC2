@@ -1,7 +1,10 @@
-﻿namespace TeamServer.Models.Extras
+﻿using System.Collections.Generic;
+
+namespace TeamServer.Models.Extras
 {
     public class PivotProxy
     {
+        public static List<PivotProxy> PivotProxyList = new();
         public string EngineerId { get; set; }
         public string BindPort { get; set; }
         public string FwdHost { get; set; }

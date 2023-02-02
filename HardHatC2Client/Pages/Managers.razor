@@ -7,10 +7,15 @@
 @using System.Net
 @using System.Text.RegularExpressions
 @using BlazorXTabs
+@using System.Diagnostics;
+@using RestSharp.Authenticators;
 @inject RestClient _restClient
 @inject IToastService toastService
 
-
+<CascadingAuthenticationState>
+<AuthorizeView Roles="Operator">
+    <Authorized>
+        
 <!-- top half of page being a table of the current managers in the managersList with headers such as Name, type, ConnectionAddress, ConnectionPort, CreationTime, Active -->
 <h3 class="text-center">Managers</h3>
 <br>
@@ -25,21 +30,34 @@
 				<MudTh Style="@setStyle(Settings.IsCheckedBox)">Active</MudTh>
                 <MudTh Style="@setStyle(Settings.IsCheckedBox)">Options</MudTh>
 	</HeaderContent>
-		<RowTemplate>
-			<MudTd>@context.Name</MudTd>
-            <MudTd>@context.Type @displayConnectionMode(context)</MudTd>
-			<MudTd>@context.ConnectionAddress</MudTd>
-			<MudTd>@context.ConnectionPort</MudTd>
-			<MudTd>@context.CreationTime</MudTd>
-			<MudTd>@context.Active</MudTd>
-            <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
+		<RowTemplate Context="rowContext">
+			<MudTd>@rowContext.Name</MudTd>
+            <MudTd>@rowContext.Type @displayConnectionMode(rowContext)</MudTd>
+			<MudTd>@rowContext.ConnectionAddress</MudTd>
+			<MudTd>@rowContext.ConnectionPort</MudTd>
+			<MudTd>@rowContext.CreationTime</MudTd>
+			<MudTd>@rowContext.Active</MudTd>
+            <MudTd>
+                <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
                                 <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown">
-                                    <MudMenuItem OnClick="() =>ContextMenuItems(0,context)">Remove</MudMenuItem>
-                                    <MudMenuItem OnClick="() =>ContextMenuItems(1,context)">Edit</MudMenuItem>
+                                    <MudMenuItem OnClick="() =>ContextMenuItems(0,rowContext)">Remove</MudMenuItem>
+                                    <MudMenuItem OnClick="() =>ContextMenuItems(1,rowContext)">Edit</MudMenuItem>
                                 </MudMenu>
            </MudButtonGroup>
+        </MudTd>
 		</RowTemplate>
+    <PagerContent>
+        <MudTablePager HorizontalAlignment="HorizontalAlignment.End" />
+    </PagerContent>
 </MudTable>
+
+    </Authorized>
+    <NotAuthorized>
+        <h1 class="text-center">Not Authorized</h1>
+            <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+    </NotAuthorized>
+</AuthorizeView>
+</CascadingAuthenticationState>
 
 
 
@@ -164,6 +182,7 @@
     private bool IsHttpSelected = false;
     private bool IsSmbSelected = false;
     private bool IsTcpSelected = false;
+    private static bool firstRender = true;
     public static List<ApiModels.Requests.C2Profile> C2profiles = new();
 
     [Inject] private IDialogService DialogService { get; set; }
@@ -493,20 +512,20 @@
 
     private static void ShowSuccessToast(string successMessage)
     {
-        _toastService.ShowSuccess(successMessage, "SUCCESS");
+        _toastService.ShowSuccess(successMessage);
     }
     private static void ShowErrorToast(string errorMessage)
     {
-        _toastService.ShowError(errorMessage, "ERROR");
+        _toastService.ShowError(errorMessage);
     }
 
     private static void ShowInfoToast()
     {
-        _toastService.ShowInfo("This is Info message with title","INFO");
+        _toastService.ShowInfo("This is Info message with title");
     }
     private static void ShowWarningToast()
     {
-        _toastService.ShowWarning("This is Warning message with title","WARNING");
+        _toastService.ShowWarning("This is Warning message with title");
     }
 
     private static void PopulateC2ProfileList()
@@ -526,15 +545,20 @@
         }
     }
 
-    
+
     //override the Onintalized function 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         _toastService = (ToastService)toastService;
         restClient = _restClient;
+        //remove the default parameters from the restClient
+        //_restClient.Authenticator = new JwtAuthenticator(Login.jwtToken);
+        _restClient.UseAuthenticator(new JwtAuthenticator(Login.jwtToken));
+
         //mapper = (Mapper)_mapper;
         PopulateC2ProfileList();
-        var timer = new Timer(new TimerCallback(_ => { InvokeAsync(StateHasChanged); }), null, 1000, 1000);
+        var timer = new Timer(new TimerCallback(_ => { InvokeAsync(StateHasChanged); }), null, 100, 1000);
+        
     }
-   
+
 }

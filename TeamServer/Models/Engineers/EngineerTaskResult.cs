@@ -11,7 +11,9 @@ namespace TeamServer.Models
     public class EngineerTaskResult
     { 
         public string Id { get; set; } //Task ID
-      
+
+        public string Command { get; set; } //Command that was run
+
         public string Result { get; set; }
         
         public bool IsHidden { get; set; }
@@ -24,8 +26,9 @@ namespace TeamServer.Models
     {
         Running = 2,
         Complete = 3,
-        CompleteWithWarnings = 4,
+        FailedWithWarnings = 4,
         CompleteWithErrors = 5,
-        Failed = 6
+        Failed = 6,
+        Cancelled = 7
     }
 }

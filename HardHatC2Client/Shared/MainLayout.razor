@@ -22,8 +22,10 @@
 <MudThemeProvider Theme="MyCustomTheme" @bind-IsDarkMode="@Settings.IsCheckedBox"/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
-    
+   
 
+@if(Login.IsLoggedIn)
+{
 <MudLayout>
     <MudAppBar Color="MudBlazor.Color.Dark" Dense="true" Elevation="5">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
@@ -45,10 +47,11 @@
     </MudAppBar>
     <MudDrawer  ClipMode="DrawerClipMode.Docked" @bind-Open="@open" Elevation="10" Variant="@DrawerVariant.Mini" OpenMiniOnHover="false">
         <MudNavMenu Color="Color.Warning" Margin="Margin.Dense" Bordered="true">
-            <MudNavLink Class="py-2" href="" Icon="@Icons.Material.Outlined.Home" Match="NavLinkMatch.All">Home</MudNavLink>
+            <MudNavLink Class="py-2" href="Index" Icon="@Icons.Material.Outlined.Home" Match="NavLinkMatch.All">Home</MudNavLink>
             <MudNavLink Class="py-2" href="Managers" Icon="@Icons.Material.Outlined.Headphones" Match="NavLinkMatch.All">Managers</MudNavLink>
             <MudNavLink Class="py-2" href="Engineers" Icon="@Icons.Material.Outlined.Construction" Match="NavLinkMatch.All">Engineers</MudNavLink>
             <MudNavLink Class="py-2" href="Interact" Icon="@Icons.Material.Outlined.Engineering" Match="NavLinkMatch.All">Interact</MudNavLink>
+            <MudNavLink Class="py-2" href="ReconCenter" Icon="@Icons.Material.Outlined.Keyboard" Match="NavLinkMatch.All">Recon Center</MudNavLink>
             <MudNavLink Class="py-2" href="ToolBoxes" Icon="@Icons.Material.Outlined.BuildCircle" Match="NavLinkMatch.All">ToolBoxes</MudNavLink>
             <MudNavLink Class="py-2" href="PivotProxy" Icon="@Icons.Material.Outlined.CompareArrows" Match="NavLinkMatch.All">Pivot Proxy</MudNavLink>
             <MudNavLink Class="py-2" href="EventHistory" Icon="@Icons.Material.Outlined.History" Match="NavLinkMatch.All">Event History</MudNavLink>
@@ -62,8 +65,19 @@
         @Body
     </MudMainContent>
 </MudLayout>
+}
+
+else
+{
+    <MudMainContent Class="px-4">
+        @Body
+    </MudMainContent>
+}
+
 
 @code{
+        [Inject]
+    public NavigationManager Nav { get; set; }
     public static string TeamServerStatus { get; set; } = "Unknown";
     public static bool open { get; set; } = false;
     MudTheme MyCustomTheme = new MudTheme()

@@ -1,4 +1,5 @@
-﻿using Engineer.Models;
+﻿using Engineer.Functions;
+using Engineer.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,7 +13,7 @@ namespace Engineer.Commands
 	{
 		public override string Name => "cd" ;
 	
-	public override string Execute(EngineerTask task)
+	public override async Task Execute(EngineerTask task)
 		{
 			try
 			{
@@ -21,11 +22,11 @@ namespace Engineer.Commands
 					path = Directory.GetCurrentDirectory();
 				}
 				Directory.SetCurrentDirectory(path);
-				return Directory.GetCurrentDirectory(); // needs a return since string should print updated dir.
+                Tasking.FillTaskResults(Directory.GetCurrentDirectory(),task,EngTaskStatus.Complete); // needs a return since string should print updated dir.
 			}
 			catch (Exception ex)
 			{
-				return "error: " + ex.Message;
+               Tasking.FillTaskResults("error: " + ex.Message,task,EngTaskStatus.Failed);
 			}
 		}
 	}

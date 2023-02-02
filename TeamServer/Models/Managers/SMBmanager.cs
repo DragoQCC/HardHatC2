@@ -5,7 +5,7 @@ namespace TeamServer.Models
 {
     public class SMBmanager : manager
     {
-        public override string Name { get; }
+        public override string Name { get;  set; }
         public string NamedPipe { get; set; }
         public string ConnectionAddress { get; set; }
         public bool Active => _tokenSource is not null && !_tokenSource.IsCancellationRequested;
@@ -32,6 +32,8 @@ namespace TeamServer.Models
             ConnectionAddress = connectionAddress;
             connectionMode = ConnectionMode.reverse;
         }
+
+        public SMBmanager() { }
 
         public override Task Start()
         {

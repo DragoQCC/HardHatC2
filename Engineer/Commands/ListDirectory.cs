@@ -1,4 +1,5 @@
-﻿using Engineer.Models;
+﻿using Engineer.Functions;
+using Engineer.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,7 +13,7 @@ namespace Engineer.Commands
 	{
 		public override string Name => "ls" ;
 	
-		public override string Execute(EngineerTask task)
+		public override async Task Execute(EngineerTask task)
 		{
 			if (!task.Arguments.TryGetValue("/path", out string path)) // if it fails to get a value from this argument then it will use the current path
 			{
@@ -20,11 +21,12 @@ namespace Engineer.Commands
             }
             try
             {
-				return GetDirectoryListing(path).ToString();
-			}
+                string output = GetDirectoryListing(path).ToString();
+                Tasking.FillTaskResults(output, task,EngTaskStatus.Complete);
+            }
             catch (Exception ex)
             {
-                return "error: " + ex.Message;
+                Tasking.FillTaskResults("error: " + ex.Message,task,EngTaskStatus.Failed);
             }
         }
 		public static SharpSploitResultList<FileSystemEntryResult> GetDirectoryListing(string Path)

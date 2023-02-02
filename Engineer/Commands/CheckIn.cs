@@ -1,4 +1,5 @@
 ﻿using Engineer.Commands;
+using Engineer.Functions;
 using Engineer.Models;
 using System;
 using System.Collections.Generic;
@@ -12,10 +13,10 @@ namespace Engineer.Commands
     {
         public override string Name => "checkIn";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             Console.WriteLine(" doing check in");
-            return "checking in";
+            Tasking.FillTaskResults("checking in",task,EngTaskStatus.Complete);
         }
     }
 }

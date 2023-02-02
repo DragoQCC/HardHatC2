@@ -1,5 +1,6 @@
 ﻿using Engineer.Commands;
 using Engineer.Extra;
+using Engineer.Functions;
 using Engineer.Models;
 using System;
 using System.Collections.Generic;
@@ -15,29 +16,39 @@ namespace Engineer.Commands
     {
         public override string Name => "ps";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
-            var results = new SharpSploitResultList<ListProcessesResult>();
-            var processes = Process.GetProcesses();
-
-            foreach (var process in processes)
+            try
             {
-                var result = new ListProcessesResult
+
+                var results = new SharpSploitResultList<ListProcessesResult>();
+                var processes = Process.GetProcesses();
+
+                foreach (var process in processes)
                 {
-                    ProcessName = process.ProcessName,
-                    ProcessId = process.Id,
-                    SessionId = process.SessionId
-                };
+                    var result = new ListProcessesResult
+                    {
+                        ProcessName = process.ProcessName,
+                        ProcessId = process.Id,
+                        SessionId = process.SessionId
+                    };
 
-                result.ProcessPath = GetProcessPath(process);
-                result.Owner = GetProcessOwner(process);
-                result.Arch = GetProcessArch(process);
+                    result.ProcessPath = GetProcessPath(process);
+                    result.Owner = GetProcessOwner(process);
+                    result.ProcessParentId = GetProcessParent(process);
+                    result.Arch = GetProcessArch(process);
 
-                results.Add(result);
+                    results.Add(result);
+                }
+
+                Tasking.FillTaskResults(results.ToString(), task, EngTaskStatus.Complete);
             }
-
-            return results.ToString();
+            catch (Exception e)
+            {
+                Tasking.FillTaskResults(e.Message, task, EngTaskStatus.Failed);
+            }
         }
+        
         private string GetProcessPath(Process process)
         {
             try
@@ -49,6 +60,19 @@ namespace Engineer.Commands
                 return "-";
             }
         }
+        
+        private static int GetProcessParent(Process process)
+        {
+            try
+            {
+                var pbi = h_reprobate.NtQueryInformationProcessBasicInformation(process.Handle);
+                return pbi.InheritedFromUniqueProcessId;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
 
         private string GetProcessOwner(Process process)
         {
@@ -56,7 +80,7 @@ namespace Engineer.Commands
 
             try
             {
-                if (!WinAPIs.Advapi.OpenProcessToken(process.Handle, WinAPIs.Advapi.TOKEN_ALL_ACCESS, out hToken))
+                if (!WinAPIs.Advapi.OpenProcessToken(process.Handle, WinAPIs.Advapi.TOKEN_READ, out hToken))
                     return "-";
 
                 var identity = new WindowsIdentity(hToken);
@@ -102,6 +126,7 @@ namespace Engineer.Commands
         public string ProcessPath { get; set; }
         public string Owner { get; set; }
         public int ProcessId { get; set; }
+        public int ProcessParentId { get; set; }
         public int SessionId { get; set; }
         public string Arch { get; set; }
 
@@ -111,6 +136,7 @@ namespace Engineer.Commands
             new SharpSploitResultProperty{Name = nameof(ProcessPath), Value = ProcessPath},
             new SharpSploitResultProperty{Name = nameof(Owner), Value = Owner},
             new SharpSploitResultProperty{Name = "PID", Value = ProcessId},
+            new SharpSploitResultProperty{Name = "PPID", Value = ProcessParentId},
             new SharpSploitResultProperty{Name = nameof(SessionId), Value = SessionId},
             new SharpSploitResultProperty{Name = nameof(Arch), Value = Arch}
         };

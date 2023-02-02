@@ -1,4 +1,5 @@
 ﻿using Engineer.Commands;
+using Engineer.Functions;
 using Engineer.Models;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ namespace Engineer.Commands
     {
         public override string Name => "GetMachineAccountQuota";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             try
             {
@@ -53,13 +54,13 @@ namespace Engineer.Commands
                 var result = searcher.FindOne();
                 var machineAccountQuota = result.Properties["ms-DS-MachineAccountQuota"][0].ToString();
                 //return the machine account quota value
-                return "[+] Machine Account Quota: " + machineAccountQuota;
+                Tasking.FillTaskResults("[+] Machine Account Quota: " + machineAccountQuota,task,EngTaskStatus.Complete);
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
                 Console.WriteLine(e.StackTrace);
-                return "[-] Error Getting Machine Account Quota: " + e.Message;
+                Tasking.FillTaskResults("[-] Error Getting Machine Account Quota: " + e.Message,task,EngTaskStatus.Failed);
             }
 
 

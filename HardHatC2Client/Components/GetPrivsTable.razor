@@ -1,0 +1,93 @@
+﻿@using HardHatC2Client.Pages;
+
+<MudTable T="string[]" @ref=@_table Items="BodyContent.Values" HorizontalScrollbar="false" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Outlined="true" Striped="true" Filter="new Func<string[],bool>(FilterFunc1)" SortLabel="Sort By">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Process Privileges</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(0))">Privilege Name</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(1))">Enabled Value</MudTableSortLabel></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>@context[0]</MudTd>
+        <MudTd>@context[1]</MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager HorizontalAlignment="HorizontalAlignment.Left" HidePageNumber="true" HidePagination="true" />
+        <MudPagination SelectedChanged="PageChanged" Count="@((_table.GetFilteredItemsCount() + _table.RowsPerPage - 1) / _table.RowsPerPage)" Class="pb-3" />
+    </PagerContent>
+</MudTable>
+
+
+@code {
+
+    [Parameter]
+    public List<string> Outputs { get; set; }
+    public Dictionary<string, string[]> BodyContent = new Dictionary<string, string[]>();
+    private MudTable<string[]> _table;
+    private string searchString1 = "";
+
+    private string setStyle(bool IsDark)
+    {
+        if (IsDark)
+        {
+            return "background:white; color:black;";
+        }
+        return "background:#333333; color:white;";
+    }
+
+
+    public void FillContents()
+    {
+        // for each string in outputs if BodyContent Dictionary does not contain the string as a key then add it, and set the value to the key broken apart on anything larger then 1 space (this is to account for file names with spaces in them)
+        foreach (string output in Outputs)
+        {
+            if (string.IsNullOrEmpty(output))
+            {
+                continue;
+            }
+            if (!BodyContent.ContainsKey(output))
+            {
+                //add a check so when splitting the strings on double spaces that if the next element is a letter then add it to the current element
+                string[] split = output.Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries);
+
+                BodyContent.Add(output, split);
+                //clean up the Dictonary so its values do not have any leading or trailing spaces
+                for (int i = 0; i < BodyContent[output].Length; i++)
+                {
+                    BodyContent[output][i] = BodyContent[output][i].Trim();
+                }
+            }
+        }
+    }
+
+    private bool FilterFunc1(string[] search) => FilterFunc(search, searchString1);
+
+    private bool FilterFunc(string[] search, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        //for each element in the array if it contains searchString then return true
+        foreach (string s in search)
+        {
+            if (s.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
+    }
+
+    private void PageChanged(int i)
+    {
+        _table.NavigateTo(i - 1);
+    }
+
+
+    protected override void OnParametersSet()
+    {
+        FillContents();
+    }
+
+}

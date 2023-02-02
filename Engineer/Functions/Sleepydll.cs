@@ -19,7 +19,7 @@ namespace Engineer.Functions
 
             try
             {
-                string sleepy64 = Program.SleepCode;
+                //string sleepy64 = Program.SleepCode;
                 //add a check to make sure sleepy64 is not the default value 
                 //if (sleepy64 == "{{REPLACE_SLEEP_DLL}}")
                 //{
@@ -28,14 +28,14 @@ namespace Engineer.Functions
                 //}
 
                 //byte[] sleepyDllLoaded = Convert.FromBase64String(sleepy64);
-                byte[] sleepyDllLoaded = File.ReadAllBytes("D:\\My_Custom_Code\\HardHatC2\\TeamServer\\Programs\\Extensions\\run3.dll");
+                //byte[] sleepyDllLoaded = File.ReadAllBytes("D:\\My_Custom_Code\\HardHatC2\\TeamServer\\Programs\\Extensions\\run3.dll");
                 //Console.WriteLine($"dll is {sleepyDllLoaded.Length} bytes");
 
                 string export = "run";
                 //uses dinvoke to map and load sleep dll
 
                 // find a decoy
-               // var decoy = reprobate.FindDecoyModule(sleepyDllLoaded.Length, LegitSigned:false);
+               //var decoy = reprobate.FindDecoyModule(sleepyDllLoaded.Length, LegitSigned:false);
 
                 //if (string.IsNullOrWhiteSpace(decoy))
                 //{
@@ -88,7 +88,6 @@ namespace Engineer.Functions
                 IntPtr hThread32Next = SleepEncrypt.GetProcAddress(hKernel32, "Thread32Next");
                 //get intptr for HeapLock and HeapUnlock 
                 IntPtr hHeapLock = SleepEncrypt.GetProcAddress(hKernel32, "HeapLock");
-
                 IntPtr hHeapUnlock = SleepEncrypt.GetProcAddress(hKernel32, "HeapUnlock");
 
 
@@ -137,7 +136,7 @@ namespace Engineer.Functions
                 IntPtr functionAddress = reprobate.GetExportAddress(map.ModuleBase, export);
                 //SleepEncrypt.SleepEncryptDelegate Run = (SleepEncrypt.SleepEncryptDelegate)Marshal.GetDelegateForFunctionPointer(functionAddress, typeof(SleepEncrypt.SleepEncryptDelegate));
                 //int ReturnValue = Run(arrPtr);
-                //Console.WriteLine("result: " + result);
+                Console.WriteLine("result: " + result);
             }
             catch (Exception ex)
             {

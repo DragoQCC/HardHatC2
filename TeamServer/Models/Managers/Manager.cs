@@ -11,7 +11,7 @@ namespace TeamServer.Models
 {
     public abstract class manager
     {
-        public abstract string Name { get; }
+        public abstract string Name { get; set; }
 
         public abstract ManagerType Type { get; set; } // enum of values http,https,tcp,smb
 

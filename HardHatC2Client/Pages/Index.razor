@@ -1,9 +1,11 @@
-﻿@page "/"
+﻿@page "/Index"
+@inject IDialogService DialogService
 
 <PageTitle>Index</PageTitle>
 <!--Insert table with 2 rows -->
-
-
+<CascadingAuthenticationState>
+<AuthorizeView Roles="Operator">
+    <Authorized>
 <!--Top Images -->
 <div class = "row-cols-md-auto">
 		<img class="rounded mx-auto d-block" src="Images/MainIcon_Orange_shadows.png"/>
@@ -39,6 +41,13 @@
     <button class="btn btn-outline-primary btn-lg pt-xl-5 pb-xl-5 px-xl-5 mx-lg-4 shadow-lg" style="display:inline-block" onclick="window.location.href='/Interact'">Interact</button>
 </div>
 <br>
+    </Authorized>
+    <NotAuthorized>
+        <h1 class="text-center">Not Authorized</h1>
+            <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+    </NotAuthorized>
+</AuthorizeView>
+</CascadingAuthenticationState>
 
 @code{
     [Inject]
@@ -46,16 +55,15 @@
 
     private static bool firstRender = true;
 
+
     protected override async Task OnInitializedAsync()
     {
-        if (Services.HardHatHubClient._hub == null)
-        {
-            await Services.HardHatHubClient.CreateHubClient();
-        }
-        if (firstRender)
+        //if user is logged in we need to initalize the other pages
+        if (firstRender && Login.IsLoggedIn)
         {
             firstRender = false;
             Nav.NavigateTo("Engineers");
+
         }
         await base.OnInitializedAsync();
     }

@@ -1,7 +1,9 @@
 ﻿@page "/Interact"
 @using ApiModels.Requests
 @using ApiModels.Responses
+@using HardHatC2Client.Components;
 @using HardHatC2Client.Models
+@using HardHatC2Client.Services
 @using HardHatC2Client.Utilities
 @using BlazorXTabs
 @using MudBlazor
@@ -12,13 +14,21 @@
 @using System.Collections.ObjectModel
 @using System.Linq
 @using Blazored.Typeahead
+@using System.Diagnostics;
 @inject RestClient restClient
+@inject NavigationManager navigationManagerDefault
+@inject ISnackbar Snackbar
+@inject IToastService toastService
 
+<CascadingAuthenticationState>
+<AuthorizeView Roles="Operator">
+    <Authorized>
+        
 <h3 class="text-center">Interact</h3>
 <div class="container-fluid">
 </div>
 
-
+ 
 <MudContainer Fixed="true">
     <XTabs Style="@setTabStyle(Settings.IsCheckedBox)" IsDraggable="true" NewTabSetActive="true" RenderMode="BlazorXTabs.Configuration.RenderMode.Full" CloseTabs="true">
     @foreach (Engineer engineer in InteractEngineers)
@@ -31,34 +41,107 @@
                     {
                         @foreach (string currenttask in EngineerOutboundTaskIds[engineer.Id])
                         {
-                            string command = TaskInputDic[currenttask]; // gets the input based on the current task index so its always unique 
-                            <MudExpansionPanels Style="background:#32333d; color:white;" MultiExpansion="true">
-                                <MudExpansionPanel  style="background:#32333d; color:white;">
+                                string commandHeaderText = TaskOutputHeaderInfo[currenttask]; // gets the input based on the current task index so its always unique
+                                <MudExpansionPanels Style="background:#32333d; color:white;" MultiExpansion="true">
+                                <MudExpansionPanel IsExpandedChanged="(e)=>ExpandedChanged(e,engineer.Id,currenttask)"  style="background:#32333d; color:white;">
                                 <TitleContent>
+                                @if (PickedUpTasks.Contains(currenttask) && !(EngineerReturnedTaskIds.Values.Any(x => x.Contains(currenttask))))
+                                {
+                                    <div class="d-flex">
+                                        <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3" />
+                                        <MudIconButton Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() =>CancelTask(currenttask,engineer.Id)"></MudIconButton>
+                                        <MudText>@commandHeaderText</MudText>                                                   
+                                    </div>
+                                }
+                                else if (EngineerReturnedTaskIds.Values.Any(x => x.Contains(currenttask) && TaskStatusDic.ContainsKey(currenttask)))
+                                {
+                                    if (TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Running)
+                                    {
+                                        <div class="d-flex">
+                                            <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() =>CancelTask(currenttask,engineer.Id)"></MudIconButton>
+                                            <MudText>@commandHeaderText</MudText>
+
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="d-flex">
+                                            <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon>
+                                            <MudText>@commandHeaderText</MudText>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
                                     <div class="d-flex">
                                         <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon>
-                                        <MudText>@command</MudText>
+                                        <MudText>@commandHeaderText</MudText>
                                     </div>
+                                }
+                                
                                 </TitleContent>
                                 <ChildContent>
-                                <MudCard Class="" Style="background:var(--background); overflow-y:auto;" Outlined="true"> <!--This is the per input and output card -->
-                                <MudCardContent Style="background:#111111; color:white; white-space:pre-wrap;">                                                     
+                                <MudCard Class="" Style="background:var(--background);" Outlined="true"> <!--This is the per input and output card-->
+                                <MudCardContent Style="background:#111111; color:white; white-space:pre-wrap;">
+                                
                                     @if (TaskOutputDic.ContainsKey(currenttask))
                                     {
-                                        List<string> output = TaskOutputDic[currenttask];
+                                        <!-- <MudText>output for components go here atm thats ls command, ps command, ipconfig, anything that can use a table</MudText> -->
+                                        // List<string> output = TaskOutputDic[currenttask];
+                                        string output = TaskOutputDic[currenttask];
                                         @if(output !=null)
                                         {
-                                            @foreach (string outputtext in output)
+                                            @if (TaskInputDic[currenttask].Command =="ls")
                                             {
-                                                <p class="text-break" style="font-family:Courier New, Courier, monospace">@outputtext</p>
+                                                <HardHatC2Client.Components.DirectoryListingTable Outputs="@output.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList()" />
+                                            }
+                                            else if (TaskInputDic[currenttask].Command == "ps")
+                                            {
+                                                <HardHatC2Client.Components.ProcessListingTable Outputs="@output.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList()" />
+                                            }
+                                            else if (TaskInputDic[currenttask].Command == "getprivs")
+                                            {
+                                                <HardHatC2Client.Components.GetPrivsTable Outputs="@output.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList()" />
+                                            }
+                                            else if (TaskInputDic[currenttask].Command == "print-env")
+                                            {
+                                                <HardHatC2Client.Components.PrintEnvTable Outputs="@output.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList()" />
+                                            }
+                                            else if (ParsedCommandOutputDic.ContainsKey(currenttask))
+                                            {
+                                                                <MudSwitch @bind-Checked="@IsTableView" Label="Toggle Table View" Color="Color.Success" />
+                                                if(IsTableView == true)
+                                                {
+                                                    <HardHatC2Client.Components.AutpParsedCommandTable Outputs="ParsedCommandOutputDic[currenttask]"></HardHatC2Client.Components.AutpParsedCommandTable>
+                                                }
+                                                else
+                                                {
+                                                                    <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@output</MudText>
+                                                    @*@foreach (string outputtext in output)
+                                                    {
+                                                        <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@outputtext</MudText>
+                                                    }*@
+                                                }
+                                            }
+                                            else
+                                            {
+                                                                <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@output</MudText>
+                                                @*@foreach (string outputtext in output)
+                                                {
+                                                    <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@outputtext</MudText>
+                                                }*@
                                             }
                                         }
-                                    }   
+                                    }
+                                                   
                                     else if (!TaskOutputDic.ContainsKey(currenttask))
                                     {
                                         <MudText Typo="Typo.body2">No output yet</MudText>
                                     }
-                                </MudCardContent>
+                                 
+                                    
+                               </MudCardContent>
                             </MudCard>  
                              </ChildContent>
                             </MudExpansionPanel><!--This is the end of per input and output card -->   
@@ -67,7 +150,7 @@
                     }
                 </MudCardContent>
             </MudCard>
-            <EditForm Model="engineer" OnValidSubmit="@Send">
+            <EditForm Context="EditFormContext" Model="engineer" OnValidSubmit="@Send">
             <div class="d-flex mb-xl-5">
                 
                     <MudAutocomplete OnKeyUp="OnShowHistoryUp" @ref="mudauto" @bind-Value=@placeHolder T="string" ResetValueOnEmptyText="true" SearchFunc="@SearchCommand"
@@ -123,20 +206,39 @@
     }
 </XTabs>
 </MudContainer>
+
+    </Authorized>
+    <NotAuthorized>
+        <h1 class="text-center">Not Authorized</h1>
+            <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+    </NotAuthorized>
+</AuthorizeView>
+</CascadingAuthenticationState>
+
 @code {
+    [Inject] 
+    private IDialogService DialogService { get; set; }
     [Inject]
     private static RestClient _restClient { get; set; }
+    [Inject]
+    private static NavigationManager Nav { get; set; }
     private static Dictionary<string,List<string>> EngineerOutboundTaskIds = new(); // key is engineer id, value is list of task ids
-    private static Dictionary<string,string> TaskInputDic = new(); // first key is taskId and value is the userInput for commands
+    private static Dictionary<string,EngineerTask> TaskInputDic = new(); // first key is taskId and value is the userInput for commands
 
 
     private static Dictionary<string,List<string>> EngineerReturnedTaskIds = new(); // key is engineer id, value is list of task ids
-    private static Dictionary<string,List<string>> TaskOutputDic = new(); // first key is taskID and value is the output from the task
+    private static Dictionary<string,string> TaskOutputDic = new(); // first key is taskID and value is the output from the task
+    private static Dictionary<string, EngineerTaskResponse.EngTaskStatus> TaskStatusDic = new(); // first key is taskID and value is the status of the task
 
-    private static Dictionary<string, string> TabPendingInputDic = new(); // first key is taskID and value is the input from the task, this is ued to clear tabs, keep tabs filed when switching between them
+    private static Dictionary<string, string> TaskOutputHeaderInfo = new(); // first key is taskID and value is the task output header 
     public static List<Engineer> InteractEngineers = new(); // list of the engineerrs the user has added for interaction 
 
     public static Dictionary<string, string> EngTabTitleDic = new(); // key is engineer id, value is the tab title
+
+    public static Dictionary<string, List<string>> ParsedCommandOutputDic = new(); // key is task id, value is a dictionary of properties containing the property name and value
+    public static Dictionary<string, int> LinesParsedCommandsDic = new();
+
+    public static List<string> PickedUpTasks = new();
 
     private static string UserInput { get; set;}
     private string placeHolder = null;
@@ -150,6 +252,15 @@
 
     private string icon = Icons.Material.Filled.CheckCircle;
     private static bool TextSuppersion = true;
+    private static bool IsTableView = true;
+    private static bool firstRender = true;
+    private static bool Initialized = false;
+
+    private static Stopwatch stopwatch = new Stopwatch();
+    private static Stopwatch stopwatch2 = new Stopwatch();
+
+    private static string OutputOneStringTest = "";
+    //private static event  OnStateChangeRequested;
 
     private string setTabStyle(bool IsDark)
     {
@@ -163,45 +274,71 @@
     //set the icon and color for commands 
     private string setIcon(string currentTaskId)
     {
-        //if the currentid is the TaskOutputDic but the task result contains an error then return the error icon
-        if (TaskOutputDic.ContainsKey(currentTaskId))
+        if (TaskStatusDic.ContainsKey(currentTaskId))
         {
-            List<string> output = TaskOutputDic[currentTaskId];
-            foreach (string outputtext in output)
+            if (TaskStatusDic[currentTaskId] == EngineerTaskResponse.EngTaskStatus.Complete)
             {
-                if (outputtext.Contains("Error",StringComparison.CurrentCultureIgnoreCase) || outputtext.Contains("Unhandled Exception",StringComparison.CurrentCultureIgnoreCase) || outputtext.Contains("Could not load file or assembly",StringComparison.CurrentCultureIgnoreCase))
-                {
-                    return Icons.Material.Filled.Warning;
-                }
+                return Icons.Filled.CheckCircle;
             }
-            return Icons.Material.Filled.CheckCircle;
+            else if (TaskStatusDic[currentTaskId] == EngineerTaskResponse.EngTaskStatus.Cancelled)
+            {
+                return Icons.Filled.StopCircle;
+            }
+            else if (TaskStatusDic[currentTaskId] == EngineerTaskResponse.EngTaskStatus.Failed)
+            {
+                return Icons.Filled.SmsFailed;
+            }
+            else if (TaskStatusDic[currentTaskId] == EngineerTaskResponse.EngTaskStatus.FailedWithWarnings)
+            {
+                return Icons.Filled.Warning;
+            }
+            else
+            {
+                return Icons.Filled.Info;
+            }
         }
-        //else the task response is pending and should be blue for inforation icon
         else
         {
-            return Icons.Material.Filled.Info;
+            return Icons.Filled.Info;
         }
     }
 
     private Color SetColor(string currentTaskId)
     {
-        //if the currentid is the TaskOutputDic but the task result contains an error then return the error icon
-        if (TaskOutputDic.ContainsKey(currentTaskId))
+        if (TaskStatusDic.ContainsKey(currentTaskId))
         {
-            List<string> output = TaskOutputDic[currentTaskId];
-            foreach (string outputtext in output)
+            if (TaskStatusDic[currentTaskId] == EngineerTaskResponse.EngTaskStatus.Complete)
             {
-                if (outputtext.Contains("Error",StringComparison.CurrentCultureIgnoreCase) || outputtext.Contains("Unhandled Exception",StringComparison.CurrentCultureIgnoreCase) || outputtext.Contains("Could not load file or assembly",StringComparison.CurrentCultureIgnoreCase))
-                {
-                    return Color.Error;
-                }
+                return Color.Success;
             }
-            return Color.Success;
+            else if (TaskStatusDic[currentTaskId] == EngineerTaskResponse.EngTaskStatus.Cancelled)
+            {
+                return Color.Secondary;
+            }
+            else if (TaskStatusDic[currentTaskId] == EngineerTaskResponse.EngTaskStatus.Failed)
+            {
+                return Color.Error;
+            }
+            else if (TaskStatusDic[currentTaskId] == EngineerTaskResponse.EngTaskStatus.FailedWithWarnings)
+            {
+                return Color.Warning;
+            }
+            else
+            {
+                return Color.Info;
+            }
         }
-        //else the task response is pending and should be blue for inforation icon
         else
         {
             return Color.Info;
+        }
+    }
+
+    public static async Task AddTaskToPickedUpList(string taskid)
+    {
+        if (!PickedUpTasks.Contains(taskid))
+        {
+            PickedUpTasks.Add(taskid);
         }
     }
 
@@ -220,7 +357,7 @@
         var nameList = resultItem.Select(x => x.Usage);
         return nameList.OrderBy(x => x);
     }
-    
+
 
     public async Task Send()
     {
@@ -255,38 +392,9 @@
         return false;
     }
 
-    public static async Task UpdateTaskResponse(string engineerid, List<string> returnedTaskids)
-    {
-        // for each returnedtaskid add it to the TaskIdQueue for the engineerid and then set the GotTaskResponse to true and set the taskid to the first taskid in the queue and execute GetTaskResults
-        if (returnedTaskids != null)
-        {
-            // if the engineerid is not in the dictionary add it
-            if (!EngineerReturnedTaskIds.ContainsKey(engineerid))
-            {
-                EngineerReturnedTaskIds.Add(engineerid, new List<string>());
-            }
-            // if the engineerid is in the dictionary check it against the tasks I know have returned already and remove them from the returnedTaskids list
-            if (EngineerReturnedTaskIds.ContainsKey(engineerid))
-            {
-                foreach (string taskid in EngineerReturnedTaskIds[engineerid])
-                {
-                    if (returnedTaskids.Contains(taskid))
-                    {
-                        returnedTaskids.Remove(taskid);
-                    }
-                }
-            }
 
-            // using the returned id list call GetTaskResults for each taskid and add the results to the EngineerTaskOutputDic
-            foreach (string taskid in returnedTaskids)
-            {
-                await GetTaskResults(engineerid, taskid);
-            }
 
-        }
-    }
-
-    public static async Task UpdateOutGoingTaskDic(string engineerId,string taskId, string command, string args)
+    public static async Task UpdateOutGoingTaskDic(string engineerId,string taskId, string commandHeader)
     {
 
         //if engineer.Id is not already a key in the EngineerUniqueInputDictionary make it a new list with the name InputList plus the engineer.Id at the end
@@ -297,25 +405,37 @@
         if(EngineerOutboundTaskIds.ContainsKey(engineerId))
         {
             //add the taskid to the list of taskids for the engineerid and pass the taskId to the sendTask function
-            EngineerOutboundTaskIds[engineerId].Add(taskId);
-
-            string commandHeaderText = $"({DateTime.UtcNow}) Engineer instructed to {command +" "+ args}\n";
-            TaskInputDic.Add(taskId, commandHeaderText); 
+            if (!EngineerOutboundTaskIds[engineerId].Contains(taskId))
+            {
+                EngineerOutboundTaskIds[engineerId].Add(taskId);
+                //if taskId is not in the TaskOutputHeaderInfo then add it with commandHeaderText as the value
+                if (!TaskOutputHeaderInfo.ContainsKey(taskId))
+                {
+                    TaskOutputHeaderInfo.Add(taskId, commandHeader);
+                }
+            }
         }
     }
+
 
     //new task to getExistingTaskInfo 
     public static async Task GetExistingTaskInfo(Dictionary<string,List<EngineerTask>> PreviousTasks)
     {
+        //pervoius tasks just holds the task id and the header text 
         //pull out the tasks from the previous tasks dictionary and add them to the EngineerOutboundTaskIds dictionary and add the task.Command and Task.Args to the TaskInputDic with Task.Id as the key
         foreach (KeyValuePair<string, List<EngineerTask>> kvp in PreviousTasks)
         {
             foreach (EngineerTask task in kvp.Value)
             {
-                var args = task.Arguments is null ? "" : string.Join(" ", task.Arguments.Select(kvp => $"{kvp.Key} {kvp.Value}"));
-                await UpdateOutGoingTaskDic(kvp.Key, task.Id, task.Command, args);
+                //var args = task.Arguments is null ? "" : string.Join(" ", task.Arguments.Select(kvp => $"{kvp.Key} {kvp.Value}"));
+                if(!TaskInputDic.ContainsKey(task.Id))
+                {
+                    //the split should pull out the command only so engineer instructed to ls /path c:\users\ would be come ls /path c:\users\ , then split on the first non leading space so becomes ls
+                    EngineerTask temp = new EngineerTask() {Id = task.Id, Command= task.Command.Split("to")[1].TrimStart().Split(' ')[0]};
+                    TaskInputDic.Add(temp.Id, temp);
+                }
+                await UpdateOutGoingTaskDic(kvp.Key, task.Id, task.Command);
             }
-            UpdateTaskResponse(kvp.Key, kvp.Value.Select(x => x.Id).ToList());
         }
     }
 
@@ -342,16 +462,66 @@
 
             if (!TaskOutputDic.ContainsKey(currentTaskId))
             {
-                TaskOutputDic.Add(currentTaskId, new List<string>());
+                TaskOutputDic.Add(currentTaskId, helpMenu);
             }
             // split the helpmenu into lines and add each line to the list in TaskOutputDic for the currentTaskId
-            string[] helpMenuLines = helpMenu.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-            foreach (string line in helpMenuLines)
-            {
-                TaskOutputDic[currentTaskId].Add(line);
-            }
+            //string[] helpMenuLines = helpMenu.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+            //foreach (string line in helpMenuLines)
+            //{
+            //    TaskOutputDic[currentTaskId].Add(line);
+            //}
             return; //return here because help command does not need to be sent to the engineers
         }
+        if (createObject.Command.Equals("terminal", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("Terminal command started");
+            //split command on the first space and then everything after that is the command to run
+            string argument = command.Split(' ').Skip(1).Aggregate((a, b) => a + " " + b);
+            argument = argument.Trim();
+            //if the command is terminal then add the terminal command to the TaskInputDic and return
+            if (!TaskInputDic.ContainsKey(currentTaskId))
+            {
+                TaskInputDic.Add(currentTaskId, new EngineerTask { Id = currentTaskId, Command = command, Arguments = null , File = null });
+            }
+            //if taskId is not in the TaskOutputHeaderInfo then add it with commandHeaderText as the value
+            if (!TaskOutputHeaderInfo.ContainsKey(currentTaskId))
+            {
+                TaskOutputHeaderInfo.Add(currentTaskId, $"({DateTime.UtcNow}) Engineer instructed to {command}\n");
+            }
+            //if argument is not null or empty then add the argument to the TaskInputDic
+            if (!string.IsNullOrWhiteSpace(argument))
+            {
+                TaskInputDic[currentTaskId].Arguments = new Dictionary<string, string>();
+                TaskInputDic[currentTaskId].Arguments.Add("/command", argument);
+            }
+            //add into the EngineerOutboundTaskIds dictionary the currentTaskId for the engineer.Id
+            if (!EngineerOutboundTaskIds.ContainsKey(engineer.Id))
+            {
+                EngineerOutboundTaskIds.Add(engineer.Id, new List<string>());
+            }
+            if (EngineerOutboundTaskIds.ContainsKey(engineer.Id))
+            {
+                //add the taskid to the list of taskids for the engineerid and pass the taskId to the sendTask function
+                if (!EngineerOutboundTaskIds[engineer.Id].Contains(currentTaskId))
+                {
+                    EngineerOutboundTaskIds[engineer.Id].Add(currentTaskId);
+                }
+            }
+
+            string output = Utilities.terminalCommandRecording.TerminalCommandExecute(argument);
+            if (!TaskOutputDic.ContainsKey(currentTaskId))
+            {
+                TaskOutputDic.Add(currentTaskId, output);
+            }
+            //split the output into lines at the newline and add it to the TaskOutputDic
+            //string[] outputLines = output.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+            //foreach (string line in outputLines)
+            //{
+            //    TaskOutputDic[currentTaskId].Add(line);
+            //}
+            return;
+        }
+
         // if command is not help keep going and parse out the arguments the user entered 
         createObject.Arguments = new Dictionary<string, string>();
         //checks if arg starts with a / and if so, it adds it to the dictionary.
@@ -446,11 +616,74 @@
 
         request.AddJsonBody(createObject);
         _ = await Task.Run(()=> restClient.PostAsync(request));
+        if (TaskInputDic.ContainsKey(createObject.taskID))
+        {
+            TaskInputDic[createObject.taskID] = new EngineerTask { Id = createObject.taskID, Command = createObject.Command, Arguments = createObject.Arguments, File = null };
+        }
+        else if(!TaskInputDic.ContainsKey(createObject.taskID))
+        {
+            TaskInputDic.Add(createObject.taskID, new EngineerTask { Id = createObject.taskID, Command = createObject.Command, Arguments = createObject.Arguments, File = null });
+        }
     }
     // end of send task function
 
-    
-    public static async Task GetTaskResults(string engineerId, string taskid) 
+
+    private async Task ExpandedChanged(bool IsChanged,string enhgineerId, string taskId)
+    {
+        if(IsChanged)
+        {
+            if (!TaskOutputDic.ContainsKey(taskId))
+            {
+                TaskOutputDic.Add(taskId, null);
+            }
+            TaskOutputDic[taskId] =  await GetTaskResults(enhgineerId, taskId);
+        }
+        else
+        {
+            TaskOutputDic.Remove(taskId);
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+    }
+
+
+    //called by signalR when a new task response comes in 
+    public static async Task UpdateTaskResponse(string engineerid, List<string> returnedTaskids)
+    {
+        // for each returnedtaskid add it to the TaskIdQueue for the engineerid and then set the GotTaskResponse to true and set the taskid to the first taskid in the queue and execute GetTaskResults
+        if (returnedTaskids != null)
+        {
+            // if the engineerid is not in the dictionary add it
+            if (!EngineerReturnedTaskIds.ContainsKey(engineerid))
+            {
+                EngineerReturnedTaskIds.Add(engineerid, new List<string>());
+            }
+            // if the engineerid is in the dictionary check it against the tasks I know have returned already and remove them from the returnedTaskids list
+            if (EngineerReturnedTaskIds.ContainsKey(engineerid))
+            {
+                foreach (string taskid in EngineerReturnedTaskIds[engineerid])
+                {
+                    if (returnedTaskids.Contains(taskid)) //&& TaskStatusDic[taskid] != EngineerTaskResponse.EngTaskStatus.Running)
+                    {
+                        returnedTaskids.Remove(taskid);
+                    }
+                }
+            }
+
+            // using the returned id list call GetTaskResults for each taskid and add the results to the EngineerTaskOutputDic
+            foreach (string taskid in returnedTaskids)
+            {
+                if (!TaskOutputDic.ContainsKey(taskid))
+                {
+                    TaskOutputDic.Add(taskid, null);
+                }
+                TaskOutputDic[taskid] = await GetTaskResults(engineerid, taskid);
+            }
+
+        }
+    }
+
+    public static async Task<string> GetTaskResults(string engineerId, string taskid) 
     {
         //gets the task results from the server
         string resource = $"/engineers/{engineerId}/tasks/{taskid}";
@@ -458,21 +691,95 @@
         var requestResponse = await _restClient.GetAsync<EngineerTaskResponse>(request);
         if (requestResponse != null && requestResponse.Result != null)
         {
-            if (EngineerReturnedTaskIds[engineerId].Count() < EngineerOutboundTaskIds[engineerId].Count())
+            //if (EngineerReturnedTaskIds[engineerId].Count() <= EngineerOutboundTaskIds[engineerId].Count())
+            //{
+            if (!EngineerReturnedTaskIds[engineerId].Contains(taskid))
             {
                 EngineerReturnedTaskIds[engineerId].Add(taskid);
-                if (!TaskOutputDic.ContainsKey(taskid))
-                {
-                    TaskOutputDic.Add(taskid, new List<string>());
-                }
-                var results = requestResponse.Result;
-
-                string[] resultLines = results.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-                foreach (string result in resultLines)
-                {
-                    TaskOutputDic[taskid].Add(result);
-                }
             }
+            //if (!TaskOutputDic.ContainsKey(taskid))
+            //{
+            //    TaskOutputDic.Add(taskid, new List<string>());
+            //}
+            var results = requestResponse.Result;
+
+            //add the task to the TaskStatusDic and update its status
+            if (!TaskStatusDic.ContainsKey(taskid))
+            {
+                TaskStatusDic.Add(taskid, requestResponse.status);
+            }
+            else
+            {
+                TaskStatusDic[taskid] = requestResponse.status;
+            }
+            return results;
+
+            //string[] resultLines = results.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+
+            ////check to see if TaskInputDic contains the string seatbelt in any of its values
+            ////if(!LinesParsedCommandsDic.ContainsKey(requestResponse.Id))
+            ////{
+            ////    LinesParsedCommandsDic.Add(requestResponse.Id, 0);
+            ////}
+            ////we clear because each time this is called we have a bigger result to display and appending is not displaying right
+            //TaskOutputDic[taskid].Clear();
+            //foreach (string result in resultLines)
+            //{
+            //    TaskOutputDic[taskid].Add(result);
+            //}
+            //if (TaskInputDic[taskid].Arguments.Any(s => s.Value.Contains("seatbelt")) && requestResponse.status == EngineerTaskResponse.EngTaskStatus.Complete)
+            //{
+            //    await ParseAndStoreCommandOutput(TaskOutputDic[taskid].ToArray(), "seatbelt", taskid, engineerId);
+            //}
+            //}
+        }
+        return "No Output";
+    }
+
+    public  async Task CancelTask(string taskid, string engineerid)
+    {
+        DialogOptions options = new DialogOptions() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+        var dialog = DialogService.Show<YesNoSimpleMudDialog>("Are you sure you want to cancel running task", options);
+        //if the result is true then add the new profile to the list
+        var result = await dialog.Result;
+
+        if (!result.Cancelled)
+        {
+            await HardHatHubClient._hub.CancelRunningTask(taskid, engineerid);
+            Engineers.ShowInfoToast($"Request to cancel task {taskid} sent");
+        }
+    }
+
+    public static async Task ParseAndStoreCommandOutput(string[] output, string CommandName,string taskid,string engineerID)
+    {
+        Dictionary<string, string> commandOutput = new Dictionary<string, string>();
+        List<string> outputParse = new List<string>();
+        foreach (string line in output)
+        {
+            outputParse.Add(line);
+        }
+        if (CommandName == "seatbelt")
+        {
+            commandOutput = HardHatC2Client.Utilities.CommandOutputParsing.ParseSeatbelt(outputParse);
+        }
+        if(commandOutput.Count > 0)
+        {
+            List<string> ParsedCommandOutput = new(); 
+            //List<string> commandKeys = new();
+            //take each key and value from the commandOutput and join them into a string seperatted by || then add that string to the ParsedCommandOutput list
+            //get the engineer object with the matching id and return its hostname
+            var engineer = InteractEngineers.Where(s => s.Id == engineerID).FirstOrDefault();
+            string hostname = engineer.Hostname;
+            string username = engineer.Username;
+            foreach(KeyValuePair<string,string> kvp in commandOutput)
+            {
+                ParsedCommandOutput.Add($"{kvp.Key}||{kvp.Value}");
+                //commandKeys.Add(kvp.Key);
+                string entityName = ReconCenter.DetermineEntity(new Dictionary<string,string>{ { "Hostname", hostname },{ "Username", username } }, CommandName, kvp.Key);
+                await ReconCenter.AddAutoParsedCommandEntry(entityName, kvp.Key,kvp.Value,CommandName,hostname);
+            }
+            ParsedCommandOutputDic.Add(taskid, ParsedCommandOutput);
         }
     }
 
@@ -534,19 +841,46 @@
         placeHolder = PreviousCommands[PreviousCommands.Count - HistoryIndex];
         await Task.Delay(2);
         TextSuppersion = true; // reset so textbox can be typed in without autoclearing until submission
-        
+
     }
 
-    private void TimerUpdated()
-    {
-        InvokeAsync(StateHasChanged);
-    }
 
     protected override async Task OnInitializedAsync()
     {
         _restClient = restClient;
+        Nav = navigationManagerDefault;
+        // var timer = new Timer(new TimerCallback(_ =>{InvokeAsync(StateHasChanged);}), null, 100, 1000);
 
-       var timer = new Timer(new TimerCallback(_ =>{InvokeAsync(StateHasChanged);}), null, 0, 150);
+        stopwatch.Start();
+        stopwatch2.Start();
+        Task.Run(() =>
+        {
+            while (true)
+            {
+                if (stopwatch.ElapsedMilliseconds > 500)
+                {
+                    InvokeAsync(StateHasChanged);
+                    stopwatch.Restart();
+                }
+                if(stopwatch2.ElapsedMilliseconds > 30000)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    stopwatch2.Restart();
+                }
+                Thread.Sleep(1);
+            }
+        });
+        if (firstRender)
+        {
+            foreach(KeyValuePair<string,List<string>> kvp in EngineerOutboundTaskIds)
+            {
+                UpdateTaskResponse(kvp.Key, kvp.Value);
+            }
+            firstRender = false;
+            Nav.NavigateTo("/Index");
+            
+        }
     }
 }
   

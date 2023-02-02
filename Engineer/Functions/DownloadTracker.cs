@@ -21,9 +21,9 @@ namespace Engineer.Functions
             {
                 partCount++;
             }
-            for (int i = 0; i < partCount; i++)
+            for (int i = 1; i <= partCount; i++)
             {
-                int startIndex = i * partSize;
+                int startIndex = 0;
                 int length = partSize;
                 if (startIndex + length > b64file.Length)
                 {
@@ -37,7 +37,7 @@ namespace Engineer.Functions
                 if (_downloadedFileParts.ContainsKey(filename))
                 {
                     //append the string Section{startindex}//{partCount} to the end of the part
-                    part = part + $"PART{i.ToString()}/{partCount.ToString()}";
+                    part += $"PART{i}/{partCount}PARTS";
                     _downloadedFileParts[filename].Add(part);
                 }
             }

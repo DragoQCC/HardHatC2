@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Engineer.Models
@@ -11,6 +12,6 @@ namespace Engineer.Models
 		public abstract string Name { get; }
 
 
-		public abstract string Execute(EngineerTask task);
+		public abstract Task Execute(EngineerTask task);
 	}
 }

@@ -3,6 +3,8 @@
     public class DownloadFile
     {
         public string Name { get; set; }
+
+        public string Host { get; set; }
         public  string OrginalPath { get; set; }
 
         public string SavedPath { get; set; }

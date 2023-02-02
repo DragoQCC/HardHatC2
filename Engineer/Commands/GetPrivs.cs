@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using static Engineer.Extra.h_reprobate.Win32.WinNT;
 using System.Security.AccessControl;
+using Engineer.Functions;
 
 namespace Engineer.Commands
 {
@@ -18,7 +19,7 @@ namespace Engineer.Commands
     {
         public override string Name => "getPrivs";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             string output ="";
             try
@@ -44,16 +45,20 @@ namespace Engineer.Commands
                             var strPrivilege = StrBuilder.ToString();
                             var strAttributes = String.Format("{0}", (WinAPIs.Advapi.LuidAttributes)laa.Attributes);
                             Marshal.FreeHGlobal(luidPointer);
-                            output += $"{strPrivilege} {strAttributes}\n";
+                            //check that strPrivilege is not null or empty
+                            if (!string.IsNullOrEmpty(strPrivilege))
+                            {
+                                output += strPrivilege + "|" + strAttributes + Environment.NewLine;
+                            }
                         }
                     }
                 }
 
-                return output;
+                Tasking.FillTaskResults(output,task,EngTaskStatus.Complete);
             }
             catch(Exception ex)
             {
-                return "error: " + ex.Message + "\n"+ ex.StackTrace;
+                Tasking.FillTaskResults("error: " + ex.Message + "\n"+ ex.StackTrace,task,EngTaskStatus.Failed);
             }
 
         }

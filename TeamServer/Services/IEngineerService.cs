@@ -16,7 +16,7 @@ namespace TeamServer.Services
 
 	public class EngineerService : IEngineerService
 	{
-		public readonly List<Engineer> _engineers = new(); //readonly works here because a list is ref type, works even if the data type i nthe list if value type like a list of ints.
+		public static readonly List<Engineer> _engineers = new(); //readonly works here because a list is ref type, works even if the data type i nthe list if value type like a list of ints.
 															// so I also cant make a new list and try and assin it to this one I can only mess with this list instance not replace it.
 
 		public void AddEngineer(Engineer Engineer)

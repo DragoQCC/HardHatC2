@@ -88,13 +88,14 @@ namespace Engineer
                 }
                 for (int i = 0; i < this.Results[0].ResultProperties.Count; i++)
                 {
-                    labels.Append(this.Results[0].ResultProperties[i].Name);
-                    underlines.Append(new string('-', this.Results[0].ResultProperties[i].Name.Length));
+                    labels.Append(this.Results[0].ResultProperties[i].Name +"|");
+                    underlines.Append(new string('-', this.Results[0].ResultProperties[i].Name.Length) + "|");
                     int maxproplen = 0;
                     for (int j = 0; j < rows.Count; j++)
                     {
                         SharpSploitResultProperty property = this.Results[j].ResultProperties[i];
                         string ValueString = property.Value.ToString();
+                        ValueString = ValueString + "|";
                         rows[j].Append(ValueString);
                         if (maxproplen < ValueString.Length)
                         {
@@ -109,6 +110,7 @@ namespace Engineer
                         {
                             SharpSploitResultProperty property = this.Results[j].ResultProperties[i];
                             string ValueString = property.Value.ToString();
+                            ValueString = ValueString + "|";
                             rows[j].Append(new string(' ', Math.Max(this.Results[0].ResultProperties[i].Name.Length - ValueString.Length + 2, maxproplen - ValueString.Length + 2)));
                         }
                     }

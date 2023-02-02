@@ -55,54 +55,80 @@ namespace TeamServer.Utilities
             //if CredsList is not empty then call HardHardHub.AddCreds
             if (CredsList.Count > 0)
             {
-                await HardHatHub.AddCreds(CredsList);
+                //set to true cause these creds should be fresh and need to be placed in the db for backup
+                await HardHatHub.AddCreds(CredsList,true);
             }
         }
      
-        public static async Task PostProcess_DownloadTask(EngineerTaskResult result)
+        public static async Task PostProcess_DownloadTask(EngineerTaskResult result,string hostname)
         {
-            var finalb64 = "";
-            var base64 = result.Result;
-            //extract the section from the end of the base64 string it will be in the format of "PARTint/total" take the number between the string PART and the / 
-            var sectionString = base64.Substring(base64.IndexOf("PART"), base64.LastIndexOf("/") - base64.IndexOf("PART"));
-            sectionString = sectionString.Remove(0, 4);
-            var section = int.Parse(sectionString);
-            //extract the total from the end of the base64 string it will be in the format of "Section 1/2" take the number to the right of the / until the end of the string
-            var totalString = base64.Substring(base64.LastIndexOf("/"));
-            totalString = totalString.Remove(0, 1);
-            var total = int.Parse(totalString);
-            HttpmanagerController.CommandIds[result.Id].Arguments.TryGetValue("/file", out string filename);
-            // get the last word in the filename string and update filename to that
-            var fileNameSplit = filename.Split("\\").Last();
+            //result could contain multiple parts of the file, so we need to check if the result is a part of the file or the whole file
+            List<string> parts = new List<string>();
 
-
-            //take the base64 string and remove the last 2 characters which are the section and total, put all the base64 strings together and the when section == total then write the file to disk
-            var Cleanedbase64 = base64.Substring(0, base64.IndexOf("PART"));
-            finalb64 += Cleanedbase64;
-
-            if (section + 1 != total)
+            //take result.Results, find each occureance of PARTS and everything before that until the next occurance of PARTS and add it to the parts list
+            var partTest = result.Result;
+            while (partTest.Contains("PARTS"))
             {
-                //remove result from results 
-                HttpmanagerController.results = HttpmanagerController.results.Where(val => val != result);
+                var partIndex = partTest.IndexOf("PARTS");
+                var partString = partTest.Substring(0, partIndex);
+                parts.Add(partString);
+                partTest = partTest.Remove(0, partIndex+5);
             }
-            if (section + 1 == total)
-            {
-                char allPlatformPathSeperator = Path.DirectorySeparatorChar;
-                // find the Engineer cs file and load it to a string so we can update it and then run the compiler function on it
-                string path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                //split path at bin keyword
-                string[] pathSplit = path.Split("bin"); //[0] is the parent folder [1] is the bin folder
-                                                        //update each string in the array to replace \\ with the correct path seperator
-                pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
 
-                System.IO.File.WriteAllBytes(pathSplit[0] + "Downloads" + $"{allPlatformPathSeperator}{fileNameSplit}", Convert.FromBase64String(finalb64));
-                HttpmanagerController.CommandIds.Remove(result.Id);
-                result.Result = "Successfully downloaded file check the downloads folder on the ts or the downloads tab on the client to sync up.";
-                DownloadFile file = new DownloadFile();
-                file.Name = fileNameSplit;
-                file.OrginalPath = filename;
-                file.SavedPath = pathSplit[0] + "Downloads" + $"{allPlatformPathSeperator}{fileNameSplit}";
-                await HardHatHub.AlertDownload(file);
+            foreach (string part in parts)
+            { 
+                var finalb64 = "";
+                var base64 = part;
+                //extract the section from the end of the base64 string it will be in the format of "PARTint/total" take the number between the string PART and the / 
+                var sectionString = base64.Substring(base64.IndexOf("PART"), base64.LastIndexOf("/") - base64.IndexOf("PART"));
+                sectionString = sectionString.Remove(0, 4);
+                var section = int.Parse(sectionString);
+                //extract the total from the end of the base64 string it will be in the format of "Section 1/2" take the number to the right of the / until the end of the string
+                var totalString = base64.Substring(base64.LastIndexOf("/"));
+                totalString = totalString.Remove(0, 1);
+                var total = int.Parse(totalString);
+                HttpmanagerController.CommandIds[result.Id].Arguments.TryGetValue("/file", out string filename);
+                // get the last word in the filename string and update filename to that
+                var fileNameSplit = filename.Split("\\").Last();
+
+
+                //take the base64 string and remove the last 2 characters which are the section and total, put all the base64 strings together and the when section == total then write the file to disk
+                var Cleanedbase64 = base64.Substring(0, base64.IndexOf("PART"));
+                finalb64 += Cleanedbase64;
+
+                if (section != total)
+                {
+                    //remove result from results 
+                    HttpmanagerController.results = HttpmanagerController.results.Where(val => val != result);
+                }
+                if (section == total)
+                {
+                    char allPlatformPathSeperator = Path.DirectorySeparatorChar;
+                    // find the Engineer cs file and load it to a string so we can update it and then run the compiler function on it
+                    string path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                    //split path at bin keyword
+                    string[] pathSplit = path.Split("bin"); //[0] is the parent folder [1] is the bin folder
+                                                            //update each string in the array to replace \\ with the correct path seperator
+                    pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
+
+                    System.IO.File.WriteAllBytes(pathSplit[0] + "Downloads" + $"{allPlatformPathSeperator}{fileNameSplit}", Convert.FromBase64String(finalb64));
+                    HttpmanagerController.CommandIds.Remove(result.Id);
+                    result.Result = "Successfully downloaded file check the downloads folder on the ts or the downloads tab on the client to sync up.";
+                    DownloadFile file = new DownloadFile();
+                    file.Name = fileNameSplit;
+                    file.OrginalPath = filename;
+                    if (file.OrginalPath.StartsWith("\\\\"))
+                    {
+                        string hostpath = file.OrginalPath.Split("\\")[2];
+                        file.Host = hostpath;
+                    }
+                    else
+                    {
+                        file.Host = hostname;
+                    }
+                    file.SavedPath = pathSplit[0] + "Downloads" + $"{allPlatformPathSeperator}{fileNameSplit}";
+                    await HardHatHub.AlertDownload(file);
+                }
             }
         }
          
@@ -111,7 +137,7 @@ namespace TeamServer.Utilities
             try
             {
                 //if result.Id is socksConnected then split the incoming result string into an array and element 1 is the client unique string and we need to update the Proxy.SocksDestinationConnected
-                if (result.Id.Equals("ConnectSocksCommand", StringComparison.CurrentCultureIgnoreCase))
+                if (result.Command.Equals("SocksConnect", StringComparison.CurrentCultureIgnoreCase))
                 {
                     var socksConnected = result.Result.Split(new[] { "\n" }, StringSplitOptions.None);
                     //element 1 in the array matches a key in the SocksDestinationConnected dictionary update the value to true 
@@ -119,7 +145,7 @@ namespace TeamServer.Utilities
                 }
 
                 //if result.Id is socksReceiveData then set the GotData in Socks4Proxy to true and convert the result.Result from base64 string to byte[] and assign it to the socks4Proxy resp
-                else if (result.Id.Equals("socksReceiveData", StringComparison.CurrentCultureIgnoreCase))
+                else if (result.Command.Equals("socksReceive", StringComparison.CurrentCultureIgnoreCase))
                 {
                     //split result.Result at the new line 
                     var split = result.Result.Split(new[] { "\n" }, StringSplitOptions.None);

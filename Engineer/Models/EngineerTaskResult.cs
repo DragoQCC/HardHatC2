@@ -11,6 +11,8 @@ namespace Engineer.Models
     public class EngineerTaskResult
     {
         public string Id { get; set; }
+
+        public string Command { get; set;}
        
         public string Result { get; set; }
      
@@ -24,8 +26,9 @@ namespace Engineer.Models
     {
         Running = 2,
         Complete = 3,
-        CompleteWithWarnings = 4,
+        FailedWithWarnings = 4,
         CompleteWithErrors = 5,
-        Failed = 6
+        Failed = 6,
+        Cancelled =7
     }
 }

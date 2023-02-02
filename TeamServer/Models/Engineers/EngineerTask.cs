@@ -9,6 +9,7 @@ namespace TeamServer.Models
     [Serializable]
     public class EngineerTask
     {
+        
       
         public string Id { get; set; }
      
@@ -20,17 +21,17 @@ namespace TeamServer.Models
       
         public bool IsBlocking { get; set; }
 
-        //public EngineerTask() { }
+        public EngineerTask() { }
 
-    public EngineerTask(string Id, string Command, Dictionary<string, string> Arguments, byte[] File, bool IsBlocking)
-    {
-        this.Id = Id;
-        this.Command = Command;
-        this.Arguments = Arguments;
-        this.File = File;
-        this.IsBlocking = IsBlocking;
+        public EngineerTask(string Id, string Command, Dictionary<string, string> Arguments, byte[] File, bool IsBlocking)
+        {
+            this.Id = Id;
+            this.Command = Command;
+            this.Arguments = Arguments;
+            this.File = File;
+            this.IsBlocking = IsBlocking;
+        }
+
+
     }
-
-
-}
 }

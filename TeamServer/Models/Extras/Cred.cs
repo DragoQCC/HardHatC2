@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace TeamServer.Models.Extras
 {
     public class Cred
     {
+        public static List<Cred> CredList = new();
+        
         public string Name { get; set; }
         public string Domain { get; set; }
         public string CredentialValue { get; set; }

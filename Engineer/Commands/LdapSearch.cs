@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.DirectoryServices;
 using System.Security.Principal;
+using Engineer.Functions;
 
 namespace Engineer.Commands
 {
@@ -14,7 +15,7 @@ namespace Engineer.Commands
     {
         public override string Name => "ldapsearch";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             try
             {
@@ -23,7 +24,8 @@ namespace Engineer.Commands
                 //if searchFilter is null return telling the user to supply an ldap search flter
                 if (searchFilter == null)
                 {
-                    return "Please supply an ldap search filter with /search argument";
+                    Tasking.FillTaskResults("Please supply an ldap search filter with /search argument",task,EngTaskStatus.FailedWithWarnings);
+                    return;
                 }
                 //check for arguments for /domain /username and /password
                 string targetDomain = task.Arguments.TryGetValue("/domain", out string domainName) ? domainName : null;
@@ -81,14 +83,14 @@ namespace Engineer.Commands
 
                 }
                 //return the string builder
-                return sb.ToString();
+                Tasking.FillTaskResults(sb.ToString(),task,EngTaskStatus.Complete);
 
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(ex.StackTrace);
-                return ex.Message;
+                Tasking.FillTaskResults(ex.Message,task,EngTaskStatus.Failed);
             }
            
         }

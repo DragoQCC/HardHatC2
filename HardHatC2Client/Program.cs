@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Components.Web;
 using RestSharp;
 using MudBlazor.Services;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.AspNetCore.Components.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +38,12 @@ builder.Services.AddSingleton(new RestClient(new HttpClient( new HttpClientHandl
 builder.Services.AddBlazoredToast();
 builder.Services.AddSignalR();
 builder.Services.AddMudServices();
+
+// add jwt authentication
+builder.Services.AddAuthenticationCore();
+
+builder.Services.AddScoped<AuthenticationStateProvider, MyAuthenticationStateProviderService>();
+
 
 var app = builder.Build();
 

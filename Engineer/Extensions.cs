@@ -18,14 +18,14 @@ namespace Engineer
             return new List<Type>()
             {
                 typeof(EngineerTask),
+                typeof(List<EngineerTask>),
                 typeof(EngineerTaskResult),
                 typeof(List<EngineerTaskResult>),
-                typeof(IEnumerable<EngineerTaskResult>),
+                typeof(EngineerMetadata),
+                typeof(List<EngineerMetadata>),
                 typeof(C2TaskMessage),
                 typeof(List<C2TaskMessage>),
-                typeof(List<EngineerTask>),
-                typeof(EngineerMetadata)
-            };
+        };
         }
 
         public static byte[] Serialise<T>(this T data)

@@ -1,6 +1,11 @@
 ﻿@page "/HostedFiles"
 @using HardHatC2Client.Services
 @using HardHatC2Client.Models
+
+<CascadingAuthenticationState>
+<AuthorizeView Roles="Operator">
+    <Authorized>
+        
 <h3 class="text-center">HostedFiles</h3>
 
 <MudTable Items="@_hostedFiles" HorizontalScrollbar="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Outlined="true" Striped="true">
@@ -9,10 +14,10 @@
 				<MudTh Style="@setStyle(Settings.IsCheckedBox)">Upload Time</MudTh>
                 <MudTh Style="@setStyle(Settings.IsCheckedBox)">File Size</MudTh>
 	</HeaderContent>
-		<RowTemplate>
-			<MudTd>@context.Name</MudTd>
-			<MudTd>@context.LastWriteTime</MudTd>
-            <MudTd>@context.size</MudTd>
+		<RowTemplate Context="Rowcontext">
+			<MudTd>@Rowcontext.Name</MudTd>
+			<MudTd>@Rowcontext.LastWriteTime</MudTd>
+            <MudTd>@Rowcontext.size</MudTd>
 		</RowTemplate>
 </MudTable>
 <br>
@@ -27,6 +32,13 @@
     Upload
 </MudButton>
 
+    </Authorized>
+    <NotAuthorized>
+        <h1 class="text-center">Not Authorized</h1>
+            <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+    </NotAuthorized>
+</AuthorizeView>
+</CascadingAuthenticationState>
 
 @code
 {

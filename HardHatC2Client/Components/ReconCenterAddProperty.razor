@@ -1,0 +1,29 @@
+﻿@using ApiModels.Requests
+@using HardHatC2Client.Pages
+@using HardHatC2Client.Models
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField T="string"  @bind-value="@property.Name" Label=Property Name></MudTextField>
+        <MudTextField T="string" Lines="2"  @bind-value="@property.Value" Label=Value></MudTextField>
+        <MudTextField T="string" Lines="2"  @bind-value="@property.Note" Label=Notes></MudTextField>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="CreateProporty">Ok</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [Parameter] public ReconCenterEntity.ReconCenterEntityProperty property { get; set; } = new();
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    
+    void Cancel() => MudDialog.Cancel();
+
+    public void CreateProporty()
+    {
+        MudDialog.Close(DialogResult.Ok<ReconCenterEntity.ReconCenterEntityProperty>(property));
+    }
+}

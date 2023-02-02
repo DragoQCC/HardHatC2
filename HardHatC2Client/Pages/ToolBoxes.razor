@@ -1,8 +1,23 @@
 ﻿@page "/Toolboxes"
+<CascadingAuthenticationState>
+<AuthorizeView Roles="Teamlead">
+    <Authorized>
 <h3 class="text-center">ToolBoxes</h3>
 <h6 class="text-center">Modules that can be loaded to the Engineer to give it extra capabilities.</h6>
-
-
+    </Authorized>
+</AuthorizeView>
+<AuthorizeView Roles="Operator">
+    <Authorized>
+        <h3 class="text-center">ToolBoxes</h3>
+<h6 class="text-center">This is text operators see vs the message teamleads get</h6>
+    </Authorized>
+    <NotAuthorized>
+        <h1 class="text-center">Not Authorized</h1>
+            <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+    </NotAuthorized>
+    </AuthorizeView>
+    
+</CascadingAuthenticationState>
 
 @code {
 

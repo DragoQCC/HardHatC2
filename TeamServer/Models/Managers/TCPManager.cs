@@ -5,7 +5,7 @@ namespace TeamServer.Models.Managers
 {
     public class TCPManager : manager
     {
-        public override string Name { get;}
+        public override string Name { get; set; }
         public string ConnectionAddress { get; set; }
         public int BindPort { get; set; } //port a tcp client connects to 
         public int ListenPort { get; set; } //port a tcp server listens on
@@ -37,6 +37,8 @@ namespace TeamServer.Models.Managers
             connectionMode = ConnectionMode.reverse;
         }
 
+        public TCPManager()
+        { }
 
         public override Task Start()
         {

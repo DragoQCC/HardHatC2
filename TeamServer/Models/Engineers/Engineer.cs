@@ -10,7 +10,7 @@ namespace TeamServer.Models
     public class Engineer
     {
 		//class memeber properties and varables 
-		public EngineerMetadata engineerMetadata { get; }  //added metadata from class loads all properties from there , having no setter makes this read only so it can only be set in this line nad the constructor and not changed anywhere else.
+		public EngineerMetadata engineerMetadata { get; set; }  //added metadata from class loads all properties from there , having no setter makes this read only so it can only be set in this line nad the constructor and not changed anywhere else.
 
         public string ConnectionType { get; set;}
 		public string ManagerName { get; set;}
@@ -22,11 +22,14 @@ namespace TeamServer.Models
         public readonly ConcurrentQueue<EngineerTask> _pendingTasks = new();
         private readonly List<EngineerTaskResult> _taskResults = new();
 		public static Dictionary<string, List<EngineerTask>> previousTasks = new();
-		
-		public Engineer(EngineerMetadata metadata) // makes constructor and includes metadata on creation
+        public static Dictionary<string, ConcurrentQueue<EngineerTaskResult>> taskQueueDic = new();
+
+        public Engineer(EngineerMetadata metadata) // makes constructor and includes metadata on creation
 		{
 			engineerMetadata = metadata;
 		}
+
+		public Engineer() { }
 
 		public void CheckIn()
 		{
@@ -59,12 +62,32 @@ namespace TeamServer.Models
 
 		public IEnumerable<EngineerTaskResult> GetTaskResults()
 		{
-			return _taskResults;
+			IEnumerable<EngineerTaskResult> taskresults = _taskResults;
+			return taskresults;
 		}
+
+		public EngineerTaskResult DeQueueTaskResults(string taskid)
+		{
+            taskQueueDic[taskid].TryDequeue(out var taskResult);
+            return taskResult;
+        }
 
 		public void AddTaskResults(IEnumerable<EngineerTaskResult> results)
 		{
-			_taskResults.AddRange(results);
+			//if _taskResults contains an item with the same id as the result, then append the result field and update the status 
+			foreach (var result in results)
+			{
+                var existing = _taskResults.FirstOrDefault(r => r.Id.Equals(result.Id));
+				if (existing != null)
+				{
+					existing.Status = result.Status;
+					existing.Result += result.Result;
+				}
+				else
+				{
+					_taskResults.Add(result);
+				}
+			}
 		}
 	}
 }

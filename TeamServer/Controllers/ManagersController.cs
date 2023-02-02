@@ -5,6 +5,10 @@ using ApiModels.Requests;
 using System.Threading.Tasks;
 using TeamServer.Models.Extras;
 using TeamServer.Models.Managers;
+using System.Data;
+using Microsoft.AspNetCore.Authorization;
+using TeamServer.Models.Dbstorage;
+using System.Collections.Generic;
 
 /*
  A controller is responsible for controlling the way that a user interacts with an MVC application.
@@ -13,12 +17,13 @@ It then uses Models & services as needed to run those checks, grab data, store n
  */
 namespace TeamServer.Controllers
 {
-	[ApiController]         
+    [Authorize(Roles ="Operator")]
+    [ApiController]         
 	[Route("[Controller]")]									// Route used for the url we go too interact with API like "curl http:localhost:5000/managers/managersname" it auto drops controller keyword and just uses stuff before suffix
 	public class managersController : ControllerBase
 	{
 		public readonly ImanagerService _managers;
-		private readonly IEngineerService _EngineerService;
+		public readonly  IEngineerService _EngineerService;
 
         public managersController(ImanagerService managers, IEngineerService EngineerService)  //constructor for class
         {
@@ -55,12 +60,18 @@ namespace TeamServer.Controllers
 				manager.Init(_EngineerService);
 				manager.Start();
 				_managers.Addmanager(manager);
+				if(DatabaseService.Connection == null)
+				{
+                    DatabaseService.ConnectDb();
+                }
+				DatabaseService.Connection.Insert((HttpManager_DAO)manager);
 
 				var root = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}{HttpContext.Request.Path}";
 				var path = $"{root}/{manager.Name}";
 				HardHatHub.UpdateManagerList(manager);
 				HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"HTTP/HTTPS manager {manager.Name} created on {manager.ConnectionAddress}:{manager.ConnectionPort}", Status = "success" });
-				return Created(path, manager);
+                LoggingService.EventLogger.Information("HTTP/HTTPS manager created.{@manager}", manager);
+                return Created(path, manager);
 			}
 			else if(request.managertype == StartManagerRequest.ManagerType.tcp)
 			{
@@ -76,10 +87,16 @@ namespace TeamServer.Controllers
                 manager.Init(_EngineerService);
                 manager.Start();
                 _managers.Addmanager(manager);
+                if (DatabaseService.Connection == null)
+                {
+                    DatabaseService.ConnectDb();
+                }
+                DatabaseService.Connection.Insert(manager);
                 var root = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}{HttpContext.Request.Path}";
                 var path = $"{root}/{manager.Name}";
-                HardHatHub.UpdateManagerList(manager);
+                HardHatHub.UpdateManagerList((TCPManager_DAO)manager);
                 HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"{manager.connectionMode} TCP manager {manager.Name}, created", Status = "success" });
+                LoggingService.EventLogger.Information("TCP manager created.{@manager}", manager);
                 return Created(path, manager);
 
             }
@@ -97,14 +114,34 @@ namespace TeamServer.Controllers
                 manager.Init(_EngineerService);
                 manager.Start();
                 _managers.Addmanager(manager);
+                if (DatabaseService.Connection == null)
+                {
+                    DatabaseService.ConnectDb();
+                }
+                DatabaseService.Connection.Insert(manager);
                 var root = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}{HttpContext.Request.Path}";
                 var path = $"{root}/{manager.Name}";
-                HardHatHub.UpdateManagerList(manager);
+                HardHatHub.UpdateManagerList((SMBManager_DAO)manager);
 				HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"SMB manager {manager.Name}, with pipe name {manager.NamedPipe}", Status = "success" });
-				return Created(path, manager);
+                LoggingService.EventLogger.Information("SMB manager created.{@manager}", manager);
+                return Created(path, manager);
             }
         }
 
+
+        [AllowAnonymous]
+        [HttpPost("addDB",Name="AddManagersFromDB")]
+		public IActionResult AddManagersFromDB([FromBody] List<Httpmanager> _managers)
+		{
+            foreach (Httpmanager _manager in _managers)
+            {
+				_manager.Init(_EngineerService);
+				_manager.Start();
+				return Ok();
+            }
+            return BadRequest();
+        }
+		
 		//http put to allow users to update a maangers values 
 		//[HttpPut("{name}", Name = "UpdateManager")]
 		//public IActionResult UpdateManager(string name, [FromBody] StartManagerRequest request)
@@ -131,7 +168,8 @@ namespace TeamServer.Controllers
 			manager.Stop();
 			_managers.Removemanager(manager);
 			HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"Manager {manager.Name} removed", Status = "warning" });
-			return NoContent();
+            LoggingService.EventLogger.Warning("Manager {manager.Name} removed", manager.Name);
+            return NoContent();
 		}
 
         

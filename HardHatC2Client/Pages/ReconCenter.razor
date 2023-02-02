@@ -1,0 +1,409 @@
+﻿@page "/ReconCenter"
+@inject ISnackbar Snackbar
+@inject IToastService toastService
+@using HardHatC2Client.Models
+@using HardHatC2Client.Components
+@using System.Text;
+@using HardHatC2Client.Services;
+
+<CascadingAuthenticationState>
+<AuthorizeView Roles="Operator">
+    <Authorized>
+        
+<h3 class="text-center">Recon Center</h3>
+
+<MudSelect Class="mb-4 mt-4"  T="ReconCenterEntity" Label="Entity Name" Variant="Variant.Filled" SelectedValuesChanged="@SelectedEntityChanged" Required="true" @bind-value="selectedEntity" RequiredError="Type is required!">
+          @foreach (ReconCenterEntity entity in dropDownEntities)
+            {
+                <MudSelectItem Value="@entity">@entity.Name</MudSelectItem>
+            }
+</MudSelect>
+<br>
+
+<MudDataGrid T="ReconCenterEntity.ReconCenterEntityProperty" Items="@BodyContent" ReadOnly="false" Dense="true" Hover="true" CanCancelEdit="true"  Height="500px" Elevation="10" Outlined="true" Striped="true"
+            @bind-SelectedItem="selectedItem1"  EditMode="DataGridEditMode.Form" StartedEditingItem="@StartedEditingItem" CanceledEditingItem="@CanceledEditingItem" CommittedItemChanges="@CommittedItemChanges" 
+            EditTrigger="DataGridEditTrigger.OnRowClick" QuickFilter="@_quickFilter">
+    <ToolBarContent>
+        @if (selectedEntity != null)
+        {
+            <MudText Typo="Typo.h6">Properties for @selectedEntity.Name</MudText>
+        }
+        else
+        {
+                  <MudText Typo="Typo.h6">Properties</MudText>      
+        }
+        <MudSpacer />
+        <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        @if(selectedEntity != null)
+        {
+            <MudButton StartIcon="@Icons.Filled.Add" Variant="Variant.Filled" Color="Color.Success" @onclick="@OpenPropertyCreateDialog">Add Property</MudButton>
+        }
+    </ToolBarContent>
+    <Columns>
+        <Column HeaderStyle="@setStyle(Settings.IsCheckedBox)"  T="ReconCenterEntity.ReconCenterEntityProperty"  Field="Name" Title="Property Name" IsEditable="true" />
+        <Column HeaderStyle="@setStyle(Settings.IsCheckedBox)"  T="ReconCenterEntity.ReconCenterEntityProperty"  Field="Value" CellStyleFunc="@_styleFunc" IsEditable="true" />
+        <Column HeaderStyle="@setStyle(Settings.IsCheckedBox)"  T="ReconCenterEntity.ReconCenterEntityProperty"  Field="Note" CellStyleFunc="@_styleFunc" IsEditable="true" />
+    </Columns>
+</MudDataGrid>
+
+
+
+<br>
+<div class="container-fluid">
+    <h3 class="text-center position-relative">Submit Entity</h3>
+    <hr>
+    <MudForm @bind-IsValid="@EntitySuccess" @bind-Errors="@EntityErrors">
+        <MudTextField Class="mb-4 mt-4" T="string" Label="Entity" Variant="Variant.Filled" Required="true" @bind-value="NewEntityformData.Name" RequiredError="entity name is required." />
+        <MudTextField Lines="2" Class="mb-4 mt-4" T="string" Label="Value" Variant="Variant.Filled" Required="false" @bind-value="NewEntityformData.Description"/>
+        <MudButton StartIcon="@Icons.Filled.Bolt" Variant="Variant.Filled" Color="Color.Success" Disabled="@(!EntitySuccess)" @onclick="@NewEntityValidSubmit">Create Entity</MudButton>
+    </MudForm>
+</div>
+
+<br>
+
+    </Authorized>
+    <NotAuthorized>
+        <h1 class="text-center">Not Authorized</h1>
+            <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+    </NotAuthorized>
+</AuthorizeView>
+</CascadingAuthenticationState>
+
+
+@code {
+    private List<string> editEvents = new();
+    private ReconCenterEntity.ReconCenterEntityProperty selectedItem1 = null;
+    private ReconCenterEntity.ReconCenterEntityProperty PropertyBeforeEdit = new();
+    private ReconCenterEntity.ReconCenterEntityProperty NewPropertyformData = new ReconCenterEntity.ReconCenterEntityProperty();
+    private static ReconCenterEntity NewEntityformData = new ReconCenterEntity();
+    private HashSet<ReconCenterEntity.ReconCenterEntityProperty> selectedItems1 = new HashSet<ReconCenterEntity.ReconCenterEntityProperty>();
+    private string searchString1 = "";
+
+    private static List<ReconCenterEntity> dropDownEntities = new List<ReconCenterEntity>();
+    private static ReconCenterEntity selectedEntity = null;
+
+    private List<ReconCenterEntity> MasterEntiityList = new List<ReconCenterEntity>();
+    private static List<ReconCenterEntity.ReconCenterEntityProperty> BodyContent = new List<ReconCenterEntity.ReconCenterEntityProperty>();
+
+    private bool EntitySuccess;
+    private string[] EntityErrors = { };
+    private bool PropertySuccess;
+    private string[] PropertyErrors = { };
+
+    [Inject] private IDialogService DialogService { get; set; }
+    private static ToastService _toastService = new ToastService();
+
+    //functions
+    private string setStyle(bool IsDark)
+    {
+        if (IsDark)
+        {
+            return "background:white; color:black;";
+        }
+        return "background:#333333; color:white;";
+    }
+
+    public static async Task NewPropertyvalidSubmit(ReconCenterEntity.ReconCenterEntityProperty newProperty)
+    {
+        try
+        {
+            //take the NewPropertyformData item and the selectedEntity item and find the selectedEntity by name in the MasterEntityList and add the NewProprtyFormData to the selectedEntity.Properties list
+
+            //remove any spaces at the start or end of the NewPropertyformData values
+            newProperty.Name = newProperty.Name.Trim();
+            newProperty.Value = newProperty.Value.Trim();
+            if (newProperty.Note != null)
+            {
+                newProperty.Note = newProperty.Note.Trim();
+            }
+
+            //if the Property Values are null then set it an empty string
+            if (newProperty.Name == null)
+            {
+                newProperty.Name = "";
+            }
+            if (newProperty.Value == null)
+            {
+                newProperty.Value = "";
+            }
+            if (newProperty.Note == null)
+            {
+                newProperty.Note = "";
+            }
+            if (!selectedEntity.Properties.Any(x => x.Name == newProperty.Name && x.Value == newProperty.Value && x.Note == newProperty.Note))
+            {
+                selectedEntity.Properties.Add(newProperty);
+                await HardHatHubClient._hub.CreateReconCenterProperty(selectedEntity.Name, newProperty);
+                ShowSuccessToast($"{newProperty.Name} Property Added");
+            }
+            else
+            {
+                ShowErrorToast($"{newProperty.Name} Property Already Exists please click to edit");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Console.WriteLine(ex.StackTrace);
+        }
+    }
+
+    public static async Task NewEntityValidSubmit()
+    {
+        try
+        {
+            //if NewEntityformData Name or Description are null then set it to an empty string
+            if (NewEntityformData.Name == null)
+            {
+                NewEntityformData.Name = "";
+            }
+            if (NewEntityformData.Description == null)
+            {
+                NewEntityformData.Description = "";
+            }
+            //take the NewEntityformData item and add it to the MasterEntityList
+            if (!dropDownEntities.Any(x => x.Name == NewEntityformData.Name))
+            {
+                dropDownEntities.Add(NewEntityformData);
+                ShowSuccessToast($"Entity {NewEntityformData.Name} Created");
+                await HardHatHubClient._hub.CreateReconCenterEntity(NewEntityformData);
+                NewEntityformData = new();
+            }
+            else
+            {
+                ShowErrorToast($"Entity {NewEntityformData.Name} Already Exists");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Console.WriteLine(ex.StackTrace);
+            ShowErrorToast($"Error Creating Entity {NewEntityformData.Name}");
+        }
+
+    }
+
+    public static async Task AddReconCenterEntity(ReconCenterEntity reconEntity)
+    {
+        //if the namr of reconEntity does not match any of the names in the dropDownEntities list then add it to the list
+        if (!dropDownEntities.Any(x => x.Name == reconEntity.Name))
+        {
+            dropDownEntities.Add(reconEntity);
+            ShowSuccessToast($"Entity {reconEntity.Name} Created");
+        }
+    }
+
+    public static async Task AddReconCenterProperty(string entityName, ReconCenterEntity.ReconCenterEntityProperty reconCenterProperty)
+    {
+        //find the entity in the dropDownEntities by name and add the reconCenterProperty to the entity.Properties list
+        foreach (ReconCenterEntity entity in dropDownEntities)
+        {
+            if (entity.Name == entityName)
+            {
+                if (!entity.Properties.Any(x => x.Name == reconCenterProperty.Name && x.Value == reconCenterProperty.Value && x.Note == reconCenterProperty.Note))
+                {
+                    entity.Properties.Add(reconCenterProperty);
+                    ShowSuccessToast($"Property {reconCenterProperty.Name} Created");
+                }
+            }
+        }         
+    }
+
+    public static async Task UpdateReconCenterProperty(ReconCenterEntity.ReconCenterEntityProperty oldProperty, ReconCenterEntity.ReconCenterEntityProperty newProperty)
+    {
+        Console.WriteLine("UpdateReconCenterProperty function invoked");
+        Console.WriteLine($"oldProperty: {oldProperty.Name} {oldProperty.Value} {oldProperty.Note}");
+        Console.WriteLine($"newProperty: {newProperty.Name} {newProperty.Value} {newProperty.Note}");
+
+        //find the entity in the dropDownEntities by name and find the oldProperty in the entity.Properties list and replace it with the newProperty
+        foreach (ReconCenterEntity entity in dropDownEntities)
+        {
+            if (entity.Properties.Any(x => x.Name == oldProperty.Name && x.Value == oldProperty.Value && x.Note == oldProperty.Note))
+            {
+                //find the property in the entity.Properties list and replace its values with the newProperty values
+                ReconCenterEntity.ReconCenterEntityProperty targetProperty =  entity.Properties[entity.Properties.FindIndex(x => x.Name == oldProperty.Name && x.Value == oldProperty.Value && x.Note == oldProperty.Note)];
+                targetProperty.Name = newProperty.Name;
+                targetProperty.Value = newProperty.Value;
+                targetProperty.Note = newProperty.Note;
+
+                ShowSuccessToast($"Property {newProperty.Name} Updated");
+            }
+        }
+    }
+
+    public static async Task AddAutoParsedCommandEntry(string entityName, string PropertyName, string PropertyValue,string commandName, string hostName)
+    {
+        Console.WriteLine("adding auto parsed data to recon center");
+        try
+        {
+            //find the entity in the dropDownEntities by name and add the reconCenterProperty to the entity.Properties list
+            foreach (ReconCenterEntity entity in dropDownEntities)
+            {
+                if (entity.Name == entityName)
+                {
+                    selectedEntity = entity;
+
+                    ReconCenterEntity.ReconCenterEntityProperty reconCenterProperty = new ReconCenterEntity.ReconCenterEntityProperty();
+                    if (!entity.Properties.Any(x => x.Name == PropertyName && x.Value == PropertyValue))
+                    {
+                        reconCenterProperty.Name = PropertyName;
+                        reconCenterProperty.Value = PropertyValue;
+                        reconCenterProperty.Note = $"Auto-parsed from {commandName} on {hostName}";
+                        await NewPropertyvalidSubmit(reconCenterProperty);
+                    }
+                }
+                //if none of the names match then create a new entity and add the properties to it
+                else
+                {
+                    ReconCenterEntity reconEntity = new ReconCenterEntity();
+                    reconEntity.Name = entityName;
+                    reconEntity.Description = $"auto-parsed from {hostName}";
+                    NewEntityformData = reconEntity;
+                    await NewEntityValidSubmit();
+                    selectedEntity = reconEntity;
+                    ReconCenterEntity.ReconCenterEntityProperty reconCenterProperty = new ReconCenterEntity.ReconCenterEntityProperty();
+                    reconCenterProperty.Name = PropertyName;
+                    reconCenterProperty.Value = PropertyValue;
+                    reconCenterProperty.Note = $"Auto-parsed from {commandName} on {hostName}";
+                    await NewPropertyvalidSubmit(reconCenterProperty);
+                }
+            }
+            if(dropDownEntities.Count == 0)
+            {
+                ReconCenterEntity reconEntity = new ReconCenterEntity();
+                reconEntity.Name = entityName;
+                reconEntity.Description = $"auto-parsed from {hostName}";
+                NewEntityformData = reconEntity;
+                await NewEntityValidSubmit();
+                selectedEntity = reconEntity;
+                ReconCenterEntity.ReconCenterEntityProperty reconCenterProperty = new ReconCenterEntity.ReconCenterEntityProperty();
+                reconCenterProperty.Name = PropertyName;
+                reconCenterProperty.Value = PropertyValue;
+                reconCenterProperty.Note = $"Auto-parsed from {commandName} on {hostName}";
+                await NewPropertyvalidSubmit(reconCenterProperty);
+            }
+            await  SelectedEntityChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Console.WriteLine(ex.StackTrace);
+        }    
+    }
+
+    public static string DetermineEntity(Dictionary<string,string> possibleEntities, string commandName, string commandKey)
+    {
+        if(commandName == "seatbelt")
+        {
+            List<string> SystemCommandKeys = new List<string> {"AMSIProviders", "AntiVirus", "AppLocker", "ARPTable", "AuditPolicies", "AuditPolicyRegistry", "AutoRuns", "Certificates", "CertificateThumbprints", "CredGuard", "DNSCache", "DotNet", "EnvironmentPath,EnvironmentVariables", "Hotfixes", "InterestingProcesses", "InternetSettings,LAPS", "LastShutdown", "LocalGPOs", "LocalGroups,LocalUsers", "LogonSessions", "LSASettings", "McAfeeConfigs,NamedPipes", "NetworkProfiles", "NetworkShares", "NTLMSettings,OptionalFeatures", "OSInfo", "PoweredOnEvents", "PowerShell,Processes", "PSSessionSettings", "RDPSessions", "RDPsettings,SCCM", "Services", "Sysmon", "TcpConnections,TokenPrivileges", "UAC", "UdpConnections", "UserRightAssignments,WifiProfile", "WindowsAutoLogon", "WindowsDefender", "WindowsEventForwarding,WindowsFirewall", "WMI", "WMIEventConsumer", "WMIEventFilter,WMIFilterBinding", "WSUS"};
+            List<string> UserCommandKeys = new List<string> {"Certificates", "CertificateThumbprints", "ChromiumPresence", "CloudCredentials", "CloudSyncProviders","CredEnum", "dir", "DpapiMasterKeys", "Dsregcmd", "ExplorerMRUs", "ExplorerRunCommands", "FileZilla", "FirefoxPresence","IdleTime", "IEFavorites", "IETabs", "IEUrls", "KeePass", "MappedDrives", "OfficeMRUs", "OneNote","OracleSQLDeveloper", "PowerShellHistory", "PuttyHostKeys", "PuttySessions","RDCManFiles", "RDPSavedConnections", "SecPackageCreds", "SlackDownloads","SlackPresence", "SlackWorkspaces", "SuperPutty", "TokenGroups", "WindowsCredentialFiles", "WindowsVault"  };
+
+            if (SystemCommandKeys.Contains(commandKey))
+            {
+                return possibleEntities["Hostname"];
+            }
+            else if (UserCommandKeys.Contains(commandKey))
+            {
+                return possibleEntities["Username"];
+            }
+            else
+            {
+                return "Unknown";
+            }
+        }
+        return "Unknown";
+
+    }
+
+    
+    private async Task OpenPropertyCreateDialog()
+    {    
+        DialogOptions options = new DialogOptions() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+        var dialog = DialogService.Show<ReconCenterAddProperty>("Add Property to Entity", options);
+        //if the result is true then add the new profile to the list
+        var result = await dialog.Result;
+
+        if (!result.Cancelled)
+        {
+            //selectedEntity.Properties.Add((ReconCenterEntity.ReconCenterEntityProperty)result.Data);
+            NewPropertyvalidSubmit((ReconCenterEntity.ReconCenterEntityProperty)result.Data);
+        }
+        StateHasChanged();
+    }
+
+    //fire an event when the selected entity changes to update the BodyContent with the selectedEntity.Properties
+    private static async Task SelectedEntityChanged()
+    {
+        BodyContent = selectedEntity.Properties;
+    }
+
+    private void AddEditionEvent(string message)
+    {
+        editEvents.Add(message);
+        StateHasChanged();
+    }
+
+    // quick filter - filter gobally across multiple columns with the same input
+    private Func<ReconCenterEntity.ReconCenterEntityProperty, bool> _quickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(searchString1))
+            return true;
+
+        if (x.Name.Contains(searchString1, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (x.Value.Contains(searchString1, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (x.Note.Contains(searchString1, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
+    };
+
+    //create func that takes in a ReconCenterEntity.ReconCenterEntityProperty and returns string for the style where it allows multi line text 
+    private Func<ReconCenterEntity.ReconCenterEntityProperty, string> _styleFunc => x =>
+    {
+        return "white-space: pre-line;";
+    };
+
+
+    // events
+    void StartedEditingItem(ReconCenterEntity.ReconCenterEntityProperty item)
+    {
+        PropertyBeforeEdit.Name = item.Name;
+        PropertyBeforeEdit.Value = item.Value;
+        PropertyBeforeEdit.Note = item.Note;
+        AddEditionEvent($"Event = StartedEditingItem, Data = {System.Text.Json.JsonSerializer.Serialize(item)}");
+
+    }
+
+    void CanceledEditingItem(ReconCenterEntity.ReconCenterEntityProperty item)
+    {
+        AddEditionEvent($"Event = CanceledEditingItem, Data = {System.Text.Json.JsonSerializer.Serialize(item)}");
+    }
+
+    void CommittedItemChanges(ReconCenterEntity.ReconCenterEntityProperty item)
+    {
+        HardHatHubClient._hub.UpdateReconCenterProperty(PropertyBeforeEdit, item);
+        AddEditionEvent($"Event = CommittedItemChanges, Data = {System.Text.Json.JsonSerializer.Serialize(item)}");
+    }
+
+    private static void ShowSuccessToast(string successMessage)
+    {
+        _toastService.ShowSuccess(successMessage);
+    }
+    private static void ShowErrorToast(string errorMessage)
+    {
+        _toastService.ShowError(errorMessage);
+    }
+
+    //override the onInitializedAsync method 
+    protected override async Task OnInitializedAsync()
+    {
+        _toastService = (ToastService)toastService;
+        //var timer = new Timer(new TimerCallback(_ => { InvokeAsync(StateHasChanged); }), null, 1000, 1000);
+    }
+}
+

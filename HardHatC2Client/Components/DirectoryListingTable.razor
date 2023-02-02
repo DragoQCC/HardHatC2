@@ -1,0 +1,320 @@
+﻿@using HardHatC2Client.Pages;
+
+<MudTable T="string[]" @ref=@_table Items="BodyContent.Values" HorizontalScrollbar="false" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Outlined="true" Striped="true" Filter="new Func<string[],bool>(FilterFunc1)" SortLabel="Sort By">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Directory Content</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(0))">Name</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(1))">Length</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(2))">CreationTimeUtc</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(3))">LastAccessTimeUtc</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(4))">LastWriteTimeUtc</MudTableSortLabel></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd><MudIcon Size="Size.Small" Class="m-2" Color=@GetColor(context[0]) Icon=@getIcon(context[0])></MudIcon> @context[0]</MudTd>
+        <MudTd>@context[1]</MudTd>
+        <MudTd>@context[2]</MudTd>
+        <MudTd>@context[3]</MudTd>
+        <MudTd>@context[4]</MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager HorizontalAlignment="HorizontalAlignment.Left" HidePageNumber="true" HidePagination="true"/>
+        <MudPagination SelectedChanged="PageChanged" Count="@((_table.GetFilteredItemsCount() + _table.RowsPerPage - 1) / _table.RowsPerPage)" Class="pb-3"/>
+    </PagerContent>
+</MudTable>
+
+
+@code {
+
+    [Parameter]
+    public List<string> Outputs {get; set;}
+    public Dictionary<string, string[]> BodyContent = new Dictionary<string, string[]>();
+    private MudTable<string[]> _table;
+    private string searchString1 = "";
+
+    private string setStyle(bool IsDark)
+    {
+        if (IsDark)
+        {
+            return "background:white; color:black;";
+        }
+        return "background:#333333; color:white;";
+    }
+
+    //returns an icon depending on the name of the item 
+    private string getIcon(string name)
+    {
+        //if name contains . followed by any character, it is a file if so return a file icon otherwise return a folder icon
+        if (name.Contains("."))
+        {
+
+            // return icons for file extensions ending in .exe, .txt, .doc, .docx, .pdf, .png, .jpg, .jpeg, .gif, .bmp, .zip, .rar, .7z, .tar, .gz, .py, .ini, .pem, .ps1, .xlsx, .pptx, .cs
+            if (name.EndsWith(".exe"))
+            {
+                return Icons.Material.Filled.Apps;
+            }
+            else if (name.EndsWith(".dll"))
+            {
+                return "fa fa-gears";
+            }
+            else if (name.EndsWith(".bin"))
+            {
+                return "fa fa-egg"; 
+            }
+            else if (name.EndsWith(".msi"))
+            {
+                return Icons.Custom.FileFormats.FileCode; 
+            }
+            else if (name.EndsWith(".txt"))
+            {
+                return Icons.Material.Filled.TextFields;
+            }
+            else if (name.EndsWith(".doc") || name.EndsWith(".docx"))
+            {
+                return Icons.Custom.FileFormats.FileWord;
+            }
+            else if (name.EndsWith(".pdf"))
+            {
+                return Icons.Custom.FileFormats.FilePdf;
+            }
+            else if (name.EndsWith(".png") || name.EndsWith(".jpg") || name.EndsWith(".jpeg") || name.EndsWith(".gif") || name.EndsWith(".bmp"))
+            {
+                return Icons.Material.Filled.Image;
+            }
+            else if (name.EndsWith(".zip") || name.EndsWith(".rar") || name.EndsWith(".7z") || name.EndsWith(".tar") || name.EndsWith(".gz"))
+            {
+                return Icons.Material.Filled.Archive;
+            }
+            else if (name.EndsWith(".ini"))
+            {
+                return Icons.Material.Filled.Settings;
+            }
+            else if (name.EndsWith(".pem"))
+            {
+                return Icons.Material.Filled.VpnKey;
+            }
+            else if (name.EndsWith(".ovpn"))
+            {
+                return Icons.Material.Filled.VpnKey;
+            }
+
+            else if (name.EndsWith(".xlsx") || name.EndsWith("xlsm"))
+            {
+                return Icons.Custom.FileFormats.FileExcel;
+            }
+            else if (name.EndsWith(".pptx"))
+            {
+                return "fa fa-file-powerpoint";
+            }
+            else if (name.EndsWith(".py"))
+            {
+                return "fa-brands fa-python";
+            }
+            else if (name.EndsWith(".ps1") || name.EndsWith(".psm1") || name.EndsWith(".psd1"))
+            {
+                return "fa fa-terminal";
+            }
+            //for all code endings return a File.Code icon 
+            else if (name.EndsWith(".js") || name.EndsWith(".html") || name.EndsWith(".css") || name.EndsWith(".php") || name.EndsWith(".java") || name.EndsWith(".cpp") || name.EndsWith(".cs") || name.EndsWith(".c") || name.EndsWith(".h") || name.EndsWith(".bat") || name.EndsWith(".sh") || name.EndsWith(".cmd") || name.EndsWith(".vbs") || name.EndsWith(".vb") || name.EndsWith(".rb") || name.EndsWith(".go") || name.EndsWith(".swift") || name.EndsWith(".pl"))
+            {
+                return Icons.Custom.FileFormats.FileCode;
+            }
+            //for video files return videoLibrary icon
+            else if (name.EndsWith(".mp4") || name.EndsWith(".mkv") || name.EndsWith(".avi") || name.EndsWith(".mov") || name.EndsWith(".wmv") || name.EndsWith(".flv") || name.EndsWith(".mpg") || name.EndsWith(".mpeg") || name.EndsWith(".m4v") || name.EndsWith(".webm"))
+            {
+                return Icons.Material.Outlined.VideoLibrary;
+            }
+            else
+            {
+                return Icons.Material.Filled.InsertDriveFile;
+            }
+        }
+        return @Icons.Material.Filled.Folder;
+
+    }
+
+    //function to return the icon color based on the type or extesnion
+    private Color GetColor(string name)
+    {
+        if (name.Contains("."))
+        {
+            if (name.EndsWith(".exe"))
+            {
+                return Color.Primary; 
+            }
+            else if (name.EndsWith(".dll"))
+            {
+                return Color.Default; 
+            }
+            else if (name.EndsWith(".bin"))
+            {
+                return Color.Secondary; 
+            }
+            else if (name.EndsWith(".msi"))
+            {
+                return Color.Error; 
+            }
+            else if (name.EndsWith(".txt"))
+            {
+                return Color.Default; 
+            }
+            else if (name.EndsWith(".doc") || name.EndsWith(".docx"))
+            {
+                return Color.Info;
+            }
+            else if (name.EndsWith(".pdf"))
+            {
+                return Color.Error;
+            }
+            else if (name.EndsWith(".png") || name.EndsWith(".jpg") || name.EndsWith(".jpeg") || name.EndsWith(".gif") || name.EndsWith(".bmp"))
+            {
+                return Color.Warning;
+            }
+            else if (name.EndsWith(".zip") || name.EndsWith(".rar") || name.EndsWith(".7z") || name.EndsWith(".tar") || name.EndsWith(".gz"))
+            {
+                return Color.Tertiary;
+            }
+            else if (name.EndsWith(".py"))
+            {
+                return Color.Success;
+            }
+            else if (name.EndsWith(".ini"))
+            {
+                return Color.Default;
+            }
+            else if (name.EndsWith(".pem"))
+            {
+                return Color.Dark;
+            }
+            else if (name.EndsWith(".ps1"))
+            {
+                return Color.Info;
+            }
+            else if (name.EndsWith(".xlsx") || name.EndsWith(".xlsm") )
+            {
+                return Color.Success;
+            }
+            else if (name.EndsWith(".pptx"))
+            {
+                return Color.Warning;
+            }
+            else if (name.EndsWith(".js") || name.EndsWith(".html") || name.EndsWith(".css") || name.EndsWith(".php") || name.EndsWith(".java") || name.EndsWith(".cpp") || name.EndsWith(".cs") || name.EndsWith(".c") || name.EndsWith(".h") || name.EndsWith(".bat") || name.EndsWith(".sh") || name.EndsWith(".cmd") || name.EndsWith(".vbs") || name.EndsWith(".vb") || name.EndsWith(".rb") || name.EndsWith(".go") || name.EndsWith(".swift") || name.EndsWith(".pl"))
+            {
+                return Color.Tertiary;
+            }
+            else if (name.EndsWith(".mp4") || name.EndsWith(".mkv") || name.EndsWith(".avi") || name.EndsWith(".mov") || name.EndsWith(".wmv") || name.EndsWith(".flv") || name.EndsWith(".mpg") || name.EndsWith(".mpeg") || name.EndsWith(".m4v") || name.EndsWith(".webm"))
+            {
+                return Color.Error;
+            }
+            else
+            {
+                return Color.Default;
+            }
+        }
+        return Color.Default;
+    }
+
+
+    public void FillContents()
+    {
+        // for each string in outputs if BodyContent Dictionary does not contain the string as a key then add it, and set the value to the key broken apart on anything larger then 1 space (this is to account for file names with spaces in them)
+        foreach (string output in Outputs)
+        {
+            if (!BodyContent.ContainsKey(output))
+            {
+                //add a check so when splitting the strings on double spaces that if the next element is a letter then add it to the current element 
+                string[] split = output.Split(new string[] {"|"}, StringSplitOptions.RemoveEmptyEntries);
+
+                //element 1 should be the length in bytes, try to parse into an int, if this works then if the number is higher then 1000 then divide by 1000 and add a KB to the end, if the number is higher then 1000000 then divide by 1000000 and add a MB to the end, if the number is higher then 1000000000 then divide by 1000000000 and add a GB to the end
+                double size = 0;
+                if (split.Count() > 1)
+                {
+                    if (double.TryParse(split[1], out size))
+                    {
+                        if (size < 1000)
+                        {
+                            split[1] = size.ToString() + " B";
+                        }
+                        if (size > 1000 && size < 1000000)
+                        {
+                            split[1] = (size / 1000).ToString();
+                            //if split[1] contains a decimal then only include the first 2 numbers after the decimal
+                            if (split[1].Contains("."))
+                            {
+                                split[1] = split[1].Substring(0, split[1].IndexOf(".") + 2);
+                            }
+                            split[1] = split[1] + " KB";
+                        }
+                        if (size > 1000000 && size < 1000000000)
+                        {
+                            split[1] = (size / 1000000).ToString();
+                            //if split[1] contains a decimal then only include the first 2 numbers after the decimal
+                            if (split[1].Contains("."))
+                            {
+                                split[1] = split[1].Substring(0, split[1].IndexOf(".") + 2);
+                            }
+                            split[1] = split[1] + " MB";
+                        }
+                        if (size > 1000000000)
+                        {
+                            size = size / 1000000000;
+                            split[1] = size.ToString();
+                            //if split[1] contains a decimal then only include the first 2 numbers after the decimal
+                            if (split[1].Contains("."))
+                            {
+                                split[1] = split[1].Substring(0, split[1].IndexOf(".") + 2);
+                            }
+                            split[1] = split[1] + " GB";
+                        }
+                    }
+                }
+
+
+
+                BodyContent.Add(output, split);
+                //clean up the Dictonary so its values do not have any leading or trailing spaces 
+                for (int i = 0; i < BodyContent[output].Length; i++)
+                {
+                    BodyContent[output][i] = BodyContent[output][i].Trim();
+                }
+            }
+        }
+        //remove the first 2 entries from BodyContent , this is the pre made header and lines that we dont need anymore
+        if (BodyContent.Count > 0)
+        {
+            BodyContent.Remove(BodyContent.Keys.First());
+            BodyContent.Remove(BodyContent.Keys.First());
+        }
+    }
+
+    private bool FilterFunc1(string[] search) => FilterFunc(search, searchString1);
+
+    private bool FilterFunc(string[] search, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        //for each element in the array if it contains searchString then return true
+        foreach (string s in search)
+        {
+            if (s.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
+    }
+
+    private void PageChanged(int i)
+    {
+        _table.NavigateTo(i - 1);
+    }
+
+   
+    protected override void OnParametersSet()
+    {
+        FillContents();
+    }
+
+}

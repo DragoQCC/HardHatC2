@@ -1,0 +1,155 @@
+﻿@page "/"
+@using HardHatC2Client.Models;
+@using HardHatC2Client.Services;
+@using HardHatC2Client.Utilities;
+@using RestSharp;
+@inject IToastService toastService
+@inject RestClient _restClient
+
+<div class="row-cols-md-auto">
+    <img class="rounded mx-auto d-block" src="Images/MainIcon_Orange_shadows.png" />
+    <hr>
+</div>
+<br>
+<br>
+ <MudContainer MaxWidth="MaxWidth.Medium">
+     @if(FormSubmitted)
+     {
+     <MudOverlay Visible="isVisible" DarkBackground="true" Absolute="true">
+            <MudProgressCircular Color="Color.Secondary" Indeterminate="true" />
+        </MudOverlay>
+     }
+<MudPaper Height="400px" Width="100%" Square="true" Class="pa-4">
+        <MudTabs @ref="tabs" Elevation="5" Rounded="true" PanelClass="pa-6" Centered="true" Color="@Color.Primary">
+    <MudTabPanel Text="Login">
+        <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+            <MudTextField T="string" @bind-Value="UserName" Label="Username" Required="true" RequiredError="User name is required!" />
+            <MudTextField T="string" @bind-Value="Password" Label="Password" HelperText="Choose a strong password" @ref="pwField1" InputType="InputType.Password" Required="true" RequiredError="Password is required!" />
+            <div class="d-flex align-center justify-space-between">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" Class="ml-auto" @onclick="@handleValidLogin">Login</MudButton>
+            </div>
+        </MudForm>
+    </MudTabPanel>
+    <MudTabPanel Text="Create User">
+        <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+            <MudTextField T="string" @bind-Value="UserName" Label="Username" Required="true" RequiredError="User name is required!" />
+            <MudTextField T="string" @bind-Value="Password" Label="Password" HelperText="Choose a strong password" @ref="pwField1" InputType="InputType.Password" Required="true"RequiredError="Password is required!" />
+            <MudTextField T="string" Label="Confirm Password" HelperText="Repeat the password" InputType="InputType.Password" Validation="@(new Func<string, string>(PasswordMatch))" />
+            <div class="d-flex align-center justify-space-between">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" Class="ml-auto" @onclick="@handleValidCreateUser">Create</MudButton>
+            </div>
+        </MudForm>
+    </MudTabPanel>
+</MudTabs>
+</MudPaper>
+</MudContainer>
+
+@code {
+    [Inject]
+    public NavigationManager Nav { get; set; }
+    private static RestClient restClient;
+    private static ToastService _toastService;
+    private MudForm form;
+    private string UserName { get; set; }
+    private string Password { get; set; }
+    private bool success;
+    private string[] errors;
+    private MudTextField<string> pwField1;
+    private MudTextField<string> pwField2;
+    private MudTabs tabs;
+    public static string jwtToken { get; set; }
+    public static bool IsLoggedIn { get; set; } = false;
+    private bool isVisible;
+    private bool FormSubmitted;
+
+    private string PasswordMatch(string value)
+    {
+        if (value != pwField1.Value)
+            return "Passwords do not match!";
+        return null;
+    }
+
+    private async Task handleValidLogin()
+    {
+        try
+        {
+            isVisible = true;
+            FormSubmitted = true;
+            StateHasChanged();
+            Console.WriteLine("login request started");
+            byte[] passwordSalt = await HardHatHubClient._hub.GetUserPasswordSalt(UserName);
+            string passwordHash = Hash.HashPassword(Password, passwordSalt);
+            LoginRequest loginRequest = new LoginRequest();
+            loginRequest.Username = UserName;
+            loginRequest.PasswordHash = passwordHash;
+            var request = new RestRequest("/login", Method.Post);
+            request.AddJsonBody(loginRequest);
+            string token = await _restClient.PostAsync<string>(request);
+            if(token != null)
+            {
+                jwtToken = token;
+                IsLoggedIn = true;
+                FormSubmitted = false;
+                isVisible = false;
+                StateHasChanged();
+                ShowSuccessToast("Logging in!");
+                Nav.NavigateTo("/Index");
+            }
+            else
+            {
+                FormSubmitted = false;
+                isVisible = false;
+                StateHasChanged();
+                ShowErrorToast("Login Failed!");
+            }
+        }
+        catch (Exception ex)
+        {
+                UserName = "";
+                Password = "";
+                FormSubmitted = false;
+                isVisible = false;
+                StateHasChanged();
+                ShowErrorToast("Login Failed!");
+        }
+        
+    }
+
+    private async Task handleValidCreateUser()
+    {
+        bool CreateResult = await HardHatHubClient._hub.CreateUser(UserName, Password);
+        if(CreateResult)
+        {
+            ShowSuccessToast("User Created! Please Login");
+            UserName = "";
+            Password = "";
+            tabs.ActivatePanel(0);
+            InvokeAsync(StateHasChanged);
+        }
+        else
+        {
+            ShowErrorToast("User Creation Failed, user may already exist try logging in!");
+        }
+
+    }
+
+
+    private static void ShowSuccessToast(string successMessage)
+    {
+        _toastService.ShowSuccess(successMessage);
+    }
+    private static void ShowErrorToast(string errorMessage)
+    {
+        _toastService.ShowError(errorMessage);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Services.HardHatHubClient._hub == null)
+        {
+            await Services.HardHatHubClient.CreateHubClient();
+        }
+        _toastService = (ToastService)toastService;
+        restClient = _restClient;
+    }
+}

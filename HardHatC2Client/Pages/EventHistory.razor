@@ -1,5 +1,10 @@
 ﻿@page "/EventHistory"
 @using HardHatC2Client.Models
+
+<CascadingAuthenticationState>
+<AuthorizeView Roles="Operator">
+    <Authorized>
+        
 <h3 class="text-center">EventHistory</h3>
 
 <MudGrid>
@@ -44,6 +49,13 @@
    }
 </MudTimeline>
 
+    </Authorized>
+    <NotAuthorized>
+        <h1 class="text-center">Not Authorized</h1>
+            <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+    </NotAuthorized>
+</AuthorizeView>
+</CascadingAuthenticationState>
 
 @code {
 

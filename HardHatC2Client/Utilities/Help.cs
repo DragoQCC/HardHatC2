@@ -67,85 +67,35 @@
 
             public static List<HelpMenuItem> itemList = new List<HelpMenuItem>
             {
+                //new HelpMenuItem()
+                //{
+                //    Name = "template",
+                //    Description = "what does it do",
+                //    Usage = "name /argumentName value",
+                //    NeedsAdmin = false,
+                //    Opsec = OpsecStatus.NotSet,
+                //    Details = "more details about what it does",
+                //    Keys = "/argument - what does the key/argument do"
+                //},
                 new HelpMenuItem()
                 {
-                    Name = "help",
-                    Description = "Displays this help menu",
-                    Usage = "help /command value",
+                    Name = "Add-MachineAccount",
+                    Description = "adds a machine account to the domain, can provide optional username and password to authenticate to the domain / other domains",
+                    Usage = "Add-MachineAccount /name value /machinePassword value /domain value /username value /password value",
                     NeedsAdmin = false,
                     Opsec = OpsecStatus.NotSet,
-                    Details = "Displays the help menu it contains all of the commands, the usage, mitre map, and description with the required and optional parameters.",
-                    Keys = "/command - the specific command you want help for, if one is not given whole menu is printed.(Optional)"
+                    Details = "more details about what it does",
+                    Keys = "/name - the name of the machine account to create \n/machinePassword - the password to assign the new account \n/domain - the domain to add the machine account to \n/username - the user account to auth with to the target domain \n/password - password for the user account you are authing with"
                 },
                 new HelpMenuItem()
                 {
-                    Name = "exit",
-                    Description = "Exits the program",
-                    Usage = "exit",
+                    Name = "arp",
+                    Description = "executes the built in arp tool to return arp table",
+                    Usage = "arp",
                     NeedsAdmin = false,
                     Opsec = OpsecStatus.NotSet,
-                    Details = "Exits the program",
+                    Details = "executes the arp -a command and returns the output",
                     Keys = null
-                },
-                new HelpMenuItem()
-                {
-                    Name = "sleep",
-                    Description = "sets the sleep time for the engineer",
-                    Usage = "sleep /time value",
-                    NeedsAdmin = false,
-                    Opsec = OpsecStatus.NotSet,
-                    Details = "updates the engineers sleep value to the input value.",
-                    Keys = "/time - the time in seconds to sleep"
-                },
-               new HelpMenuItem()
-                {
-                    Name = "ls",
-                    Description = "lists the contents of a directory",
-                    Usage = "ls /path value",
-                    NeedsAdmin = false,
-                    Opsec = OpsecStatus.NotSet,
-                    Details = "lists the content in the current directory unless a /path flag is given",
-                    Keys = "/path - directory to list (optional)"
-                },
-                new HelpMenuItem()
-                {
-                    Name = "pwd",
-                    Description = "prints the current working directory",
-                    Usage = "pwd",
-                    NeedsAdmin = false,
-                    Opsec = OpsecStatus.NotSet,
-                    Details = "prints the current working directory",
-                    Keys = null
-                },
-                new HelpMenuItem()
-                {
-                    Name = "cd",
-                    Description = "changes the current working directory",
-                    Usage = "cd /path value",
-                    NeedsAdmin = false,
-                    Opsec = OpsecStatus.NotSet,
-                    Details = "changes the current working directory to the input path",
-                    Keys = "/path - the path to change to"
-                },
-                new HelpMenuItem()
-                {
-                    Name = "make_token",
-                    Description = "creates a new token with the provided creds good for remote access",
-                    Usage = "make_token /username value /password value /domain value",
-                    NeedsAdmin = false,
-                    Opsec = OpsecStatus.NotSet,
-                    Details = "creates a token with the given name and password",
-                    Keys = "/username - user to make token for \n /password - users password or garbage if using as sacrifical \n /domain - domain the user belongs to"
-                },
-                new HelpMenuItem()
-                {
-                    Name = "steal_token",
-                    Description = "steal a token for a user on the system",
-                    Usage = "steal_token /pid value",
-                    NeedsAdmin = true,
-                    Opsec = OpsecStatus.NotSet,
-                    Details = "impersonates a token of a user on the system running the given pid, needs admin to impersonate another logged on users token",
-                    Keys = "/pid - the process id of the process to impersonate"
                 },
                 new HelpMenuItem()
                 {
@@ -159,6 +109,16 @@
                 },
                 new HelpMenuItem()
                 {
+                    Name = "cd",
+                    Description = "changes the current working directory",
+                    Usage = "cd /path value",
+                    NeedsAdmin = false,
+                    Opsec = OpsecStatus.NotSet,
+                    Details = "changes the current working directory to the input path",
+                    Keys = "/path - the path to change to"
+                },
+                new HelpMenuItem()
+                {
                     Name = "copy",
                     Description = "copy a file from one location to another",
                     Usage = "copy /file value /dest value",
@@ -169,6 +129,16 @@
                 },
                 new HelpMenuItem()
                 {
+                    Name = "connect",
+                    Description = "starts a tcp server on the current Engineer, or connects into a existing TCP Engineer",
+                    Usage = "connect /ip value /port value /localhost value",
+                    NeedsAdmin = false,
+                    Opsec = OpsecStatus.NotSet,
+                    Details = "can start a tcp server for enginers to connect into or connect into an existing tcp server, to start a server you use the localhost key and the port key, to connect to an existing tcp server you use the ip and port keys",
+                    Keys = "/ip - the ip address to connect into for TCP p2p implants \n/port - the port to connect to or listen on for TCP p2p Engineers \n/localhost - true or false, starts the tcp server on the current Engineer if true it will listen only on localhost, if false it will listen on all interfaces"
+                },
+                new HelpMenuItem()
+                {
                     Name = "delete",
                     Description = "removes a file",
                     Usage = "delete /file value",
@@ -176,16 +146,6 @@
                     Opsec = OpsecStatus.NotSet,
                     Details = "delete file from system",
                     Keys = "/file - the location of the file to delete"
-                },
-                new HelpMenuItem()
-                {
-                    Name = "mkdir",
-                    Description = "creates a new directory",
-                    Usage = "mkdir /path value",
-                    NeedsAdmin = false,
-                    Opsec = OpsecStatus.NotSet,
-                    Details = "create a new directory",
-                    Keys = "/path - the location of the directory to create"
                 },
                 new HelpMenuItem()
                 { 
@@ -209,6 +169,16 @@
                 },
                 new HelpMenuItem()
                 {
+                    Name = "exit",
+                    Description = "Exits the program",
+                    Usage = "exit",
+                    NeedsAdmin = false,
+                    Opsec = OpsecStatus.NotSet,
+                    Details = "Exits the program",
+                    Keys = null
+                },
+                new HelpMenuItem()
+                {
                     Name = "getLuid",
                     Description = "returns the current luid for the user",
                     Usage = "get_luid",
@@ -226,6 +196,26 @@
                     Opsec = OpsecStatus.NotSet,
                     Details = "not implement yet",
                     Keys = null
+                },
+                 new HelpMenuItem()
+                {
+                    Name = "GetMachineAccountQuota",
+                    Description = "gets the machine account quota for the domain / other domains",
+                    Usage = "GetMachineAccountQuota /domain value /username value /password value",
+                    NeedsAdmin = false,
+                    Opsec = OpsecStatus.NotSet,
+                    Details = "gets the machine account quota for the domain / other domains, this is the number of machine accounts that can be created in the domain, operator can provide an optional domain name, username, and password to other domains",
+                    Keys = "/domain - optional domain name to get the machine account quota from \n/username - username to authenticate to the target domain with  \n/password - password for the username to authenticate to the target domain with"
+                },
+                new HelpMenuItem()
+                {
+                    Name = "help",
+                    Description = "Displays this help menu",
+                    Usage = "help /command value",
+                    NeedsAdmin = false,
+                    Opsec = OpsecStatus.NotSet,
+                    Details = "Displays the help menu it contains all of the commands, the usage, mitre map, and description with the required and optional parameters.",
+                    Keys = "/command - the specific command you want help for, if one is not given whole menu is printed.(Optional)"
                 },
                 new HelpMenuItem()
                 {
@@ -256,6 +246,36 @@
                     Opsec = OpsecStatus.NotSet,
                     Details = "uses various methods to execute an engineer matching a manager onto the target machine, methods are 1.psexec, 2.winrm, 3.wmi, 4.wmi-ps, 5.dcom",
                     Keys = "/method - the method to use, /target - the target machine to jump to, /manager - the manager to find a matching engineer for"
+                },
+                 new HelpMenuItem()
+                {
+                    Name = "ls",
+                    Description = "lists the contents of a directory",
+                    Usage = "ls /path value",
+                    NeedsAdmin = false,
+                    Opsec = OpsecStatus.NotSet,
+                    Details = "lists the content in the current directory unless a /path flag is given",
+                    Keys = "/path - directory to list (optional)"
+                },
+                new HelpMenuItem()
+                {
+                    Name = "make_token",
+                    Description = "creates a new token with the provided creds good for remote access",
+                    Usage = "make_token /username value /password value /domain value",
+                    NeedsAdmin = false,
+                    Opsec = OpsecStatus.NotSet,
+                    Details = "creates a token with the given name and password",
+                    Keys = "/username - user to make token for \n /password - users password or garbage if using as sacrifical \n /domain - domain the user belongs to"
+                },
+                new HelpMenuItem()
+                {
+                    Name = "mkdir",
+                    Description = "creates a new directory",
+                    Usage = "mkdir /path value",
+                    NeedsAdmin = false,
+                    Opsec = OpsecStatus.NotSet,
+                    Details = "create a new directory",
+                    Keys = "/path - the location of the directory to create"
                 },
                 new HelpMenuItem()
                 {
@@ -307,6 +327,16 @@
                     Details = "lists al the running processes, the arch, session and owner if possible",
                     Keys = null
                 },
+                 new HelpMenuItem()
+                {
+                    Name = "pwd",
+                    Description = "prints the current working directory",
+                    Usage = "pwd",
+                    NeedsAdmin = false,
+                    Opsec = OpsecStatus.NotSet,
+                    Details = "prints the current working directory",
+                    Keys = null
+                },
                 new HelpMenuItem()
                 {
                     Name = "rev2sef",
@@ -347,6 +377,16 @@
                     Details = "currently broken does not return output to the C2",
                     Keys = "/program - the program to run, /args - the arguments to pass to the program"
                 },
+                 new HelpMenuItem()
+                {
+                    Name = "sleep",
+                    Description = "sets the sleep time for the engineer",
+                    Usage = "sleep /time value",
+                    NeedsAdmin = false,
+                    Opsec = OpsecStatus.NotSet,
+                    Details = "updates the engineers sleep value to the input value.",
+                    Keys = "/time - the time in seconds to sleep"
+                },
                 new HelpMenuItem()
                 {
                     Name = "socks",
@@ -376,6 +416,16 @@
                     Opsec = OpsecStatus.NotSet,
                     Details = "the target process for spawn",
                     Keys = "/path - the path to the spawnto program"
+                },
+                 new HelpMenuItem()
+                {
+                    Name = "steal_token",
+                    Description = "steal a token for a user on the system",
+                    Usage = "steal_token /pid value",
+                    NeedsAdmin = true,
+                    Opsec = OpsecStatus.NotSet,
+                    Details = "impersonates a token of a user on the system running the given pid, needs admin to impersonate another logged on users token",
+                    Keys = "/pid - the process id of the process to impersonate"
                 },
                 new HelpMenuItem()
                 {

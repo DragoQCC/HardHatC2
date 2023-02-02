@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Engineer.Models;
+using Engineer.Functions;
 
 namespace Engineer.Commands
 {
@@ -14,7 +15,7 @@ namespace Engineer.Commands
     {
         public override string Name => "patch_Etw";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             try
             {
@@ -31,12 +32,12 @@ namespace Engineer.Commands
 
 
 
-                return "ETW Patched with D/Invoke";
+                Tasking.FillTaskResults("ETW Patched with D/Invoke",task,EngTaskStatus.Complete);
             }
             catch (Exception e)
             {
                 var error = "error: " + "[!] {patch failed}" + e.Message;
-                return error;
+                Tasking.FillTaskResults(error, task, EngTaskStatus.Failed);
             }
         }
 

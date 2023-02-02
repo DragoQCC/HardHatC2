@@ -32,7 +32,8 @@ namespace ApiModels.Requests
         }
 
     }
-    
+
+    [Serializable]
     public class C2Profile
     {
         public string Name { get; set; }

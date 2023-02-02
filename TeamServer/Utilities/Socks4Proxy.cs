@@ -51,8 +51,8 @@ namespace TeamServer.Utilities
             }
             catch (Exception e)
             {
-                //Console.WriteLine(e.Message);
-               // Console.WriteLine(e.StackTrace);
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
             }
         }
 
@@ -69,9 +69,7 @@ namespace TeamServer.Utilities
             //add or update the client in the dictionary
             SocksClients.TryAdd(client, Guid.NewGuid().ToString());
             SocksClientsData.TryAdd(SocksClients[client], new ConcurrentQueue<byte[]>());
-            //SocksClientsGotData.TryAdd(SocksClients[client], false);
             SocksDestinationConnected.TryAdd(SocksClients[client], false);
-            //SocksClientWaitingSentData.TryAdd(SocksClients[client], false);
             Dictionary<string, string> args = new Dictionary<string, string>
             {
                 { "/Address", request.DestinationAddress.ToString() },
@@ -79,7 +77,7 @@ namespace TeamServer.Utilities
                 { "/Client", SocksClients[client] }
             };
             //make an engineer task to connect to the client send task name of ConnectSocks with arguments /address and /port which are the request.DestinationAddress, request.DestinationPort
-            var task = new EngineerTask("ConnectSocksCommand","SocksConnect",args,null,false);
+            var task = new EngineerTask(Guid.NewGuid().ToString(),"SocksConnect",args,null,false);
             
             // add the task to the engineers task queue
             engineer.QueueTask(task);
@@ -111,7 +109,7 @@ namespace TeamServer.Utilities
                         var req = await client.ReceiveData(_tokenSource.Token);
 
                         // make an engineer task send it the req as a base64 string in its arguments with the key of /req
-                        var task2 = new EngineerTask("SendSocksCommand","SocksSend",new Dictionary<string, string>
+                        var task2 = new EngineerTask(Guid.NewGuid().ToString(),"SocksSend",new Dictionary<string, string>
                         {
                             {"/client", SocksClients[client] }
                         },req, false);

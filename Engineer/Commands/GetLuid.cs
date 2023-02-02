@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Engineer.Extra;
 using static Engineer.Extra.WinAPIs.WinNT;
 using System.IO;
+using Engineer.Functions;
 
 namespace Engineer.Commands
 {
@@ -17,32 +18,32 @@ namespace Engineer.Commands
     {
         public override string Name => "Get_luid";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
-            var stdOut = Console.Out;
-            var stdErr = Console.Error;
-            var ms = new MemoryStream();
-            StreamWriter writer = new StreamWriter(ms) { AutoFlush = true };
-            Console.SetOut(writer);
-            Console.SetError(writer);
+            //var stdOut = Console.Out;
+            //var stdErr = Console.Error;
+            //var ms = new MemoryStream();
+            //StreamWriter writer = new StreamWriter(ms) { AutoFlush = true };
+            //Console.SetOut(writer);
+            //Console.SetError(writer);
             try
             {
-                return ("[*] Current LogonID (LUID) : " + GetCurrentLUID() + " " + "(" + (UInt64)GetCurrentLUID() + ")" + "\n");
+                Tasking.FillTaskResults(("[*] Current LogonID (LUID) : " + GetCurrentLUID(task) + " " + "(" + (UInt64)GetCurrentLUID(task) + ")" + "\n"),task,EngTaskStatus.Complete);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("error: " + ex.Message);
+                Tasking.FillTaskResults("error: " + ex.Message,task,EngTaskStatus.Failed);
             }
             finally
             {
-                //reset the console out and error
-                Console.SetOut(stdOut);
-                Console.SetError(stdErr);
+                ////reset the console out and error
+                //Console.SetOut(stdOut);
+                //Console.SetError(stdErr);
             }
-            string Output = Encoding.UTF8.GetString(ms.ToArray());
-            return Output;
+            //string Output = Encoding.UTF8.GetString(ms.ToArray());
+            //return Output;
         }
-        public static _LUID GetCurrentLUID()
+        public static _LUID GetCurrentLUID(EngineerTask task)
         {
                 // helper that returns the current logon session ID by using GetTokenInformation w/ TOKEN_INFORMATION_CLASS
                 var TokenInfLength = 0;
@@ -64,7 +65,7 @@ namespace Engineer.Commands
                 else
                 {
                     var lastError = WinAPIs.Kernel32.GetLastError();
-                    Console.WriteLine("[X] GetTokenInformation error: {0}", lastError);
+                    Tasking.FillTaskResults($"[-] GetTokenInformation error: {lastError}",task,EngTaskStatus.Failed);
                     Marshal.FreeHGlobal(TokenInformation);
                 }
                 return luid;

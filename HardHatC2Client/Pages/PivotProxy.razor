@@ -2,6 +2,10 @@
 @inject ISnackbar Snackbar
 @using HardHatC2Client.Models
 
+<CascadingAuthenticationState>
+<AuthorizeView Roles="Operator">
+    <Authorized>
+        
 <h3 class="text-center">PivotProxy</h3>
 <MudTable Items="@_pivotProxyItems" HorizontalScrollbar="true" Virtualize="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Elevation="10" Outlined="true" Striped="true" T="PivotProxyItem">
                 <HeaderContent>
@@ -13,26 +17,34 @@
                         <MudTh Style="@setStyle(Settings.IsCheckedBox)">pivot Direction</MudTh>
                         <MudTh Style="@setStyle(Settings.IsCheckedBox)">Options</MudTh>
                 </HeaderContent>
-                <RowTemplate>
-                            <MudTd >@context.EngineerId</MudTd>
-                            <MudTd>@context.BindPort</MudTd>
-                            <MudTd>@context.FwdHost</MudTd>
-                            <MudTd>@context.FwdPort</MudTd>
-                            <MudTd>@context.pivotType</MudTd>
-                            <MudTd>@context.pivotDirection</MudTd>
+                <RowTemplate Context="Rowcontext">
+                            <MudTd >@Rowcontext.EngineerId</MudTd>
+                            <MudTd>@Rowcontext.BindPort</MudTd>
+                            <MudTd>@Rowcontext.FwdHost</MudTd>
+                            <MudTd>@Rowcontext.FwdPort</MudTd>
+                            <MudTd>@Rowcontext.pivotType</MudTd>
+                            <MudTd>@Rowcontext.pivotDirection</MudTd>
                             <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
                                 <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown">
-                                    <MudMenuItem OnClick="() =>ContextMenuItems(0,context)">Note</MudMenuItem>
-                                    <MudMenuItem OnClick="() =>ContextMenuItems(1,context)">Color</MudMenuItem>
-                                    <MudMenuItem OnClick="() =>ContextMenuItems(2,context)">Exit</MudMenuItem>
+                                    <MudMenuItem OnClick="() =>ContextMenuItems(0,Rowcontext)">Note</MudMenuItem>
+                                    <MudMenuItem OnClick="() =>ContextMenuItems(1,Rowcontext)">Color</MudMenuItem>
+                                    <MudMenuItem OnClick="() =>ContextMenuItems(2,Rowcontext)">Exit</MudMenuItem>
                                 </MudMenu>
                             </MudButtonGroup>
                 </RowTemplate>
             </MudTable>
+            
+    </Authorized>
+    <NotAuthorized>
+        <h1 class="text-center">Not Authorized</h1>
+            <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+    </NotAuthorized>
+</AuthorizeView>
+</CascadingAuthenticationState>
 
 @code {
 
-    private static List<PivotProxyItem> _pivotProxyItems = new List<PivotProxyItem>();
+    public static List<PivotProxyItem> _pivotProxyItems = new List<PivotProxyItem>();
     [Inject] private IDialogService DialogService { get; set; }
     string state = "Message box hasn't been opened yet";
 

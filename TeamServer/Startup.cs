@@ -13,6 +13,12 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using TeamServer.Services;
 using TeamServer.Utilities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using SQLite;
+using TeamServer.Services.Extra;
+using TeamServer.Models.Database;
 
 namespace TeamServer
 {
@@ -36,8 +42,44 @@ namespace TeamServer
             });
             services.AddSingleton<ImanagerService, managerService>();
             services.AddSingleton<IEngineerService, EngineerService>();
+
+            string sqliteConnectionString = DatabaseService.ConnectionString;
+
+
+            services.AddTransient<IUserStore<UserInfo>, UserStore>();
+            services.AddTransient<IRoleStore<RoleInfo>, RoleStore>();
+            services.AddTransient<UserManager<UserInfo>, MyUserManager>();
             
-            
+
+            services.AddIdentity<UserInfo, RoleInfo>().AddDefaultTokenProviders();
+
+
+
+            //add role-based authorization services
+            services.AddAuthentication(o =>
+            {
+                o.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                o.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(j =>
+            {
+                j.SaveToken = true;
+                j.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(Configuration["Jwt:Key"])),
+                    ValidIssuer = Configuration["Jwt:Issuer"],
+                    ValidAudience = Configuration["Jwt:Issuer"]
+                };
+            });
+
+            Authentication.SignInManager = services.BuildServiceProvider().GetService<SignInManager<UserInfo>>();
+            Authentication.UserManager = services.BuildServiceProvider().GetService<UserManager<UserInfo>>();
+            Authentication.Configuration = Configuration;
+
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -53,6 +95,7 @@ namespace TeamServer
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
@@ -60,9 +103,15 @@ namespace TeamServer
                 endpoints.MapControllers();
                 endpoints.MapHub<HardHatHub>("/HardHatHub");
             });
+            LoggingService.Init();
             Console.WriteLine("Generating unique encryption keys for pathing and metadata id");
             Encryption.GenerateUniversialKeys();
-            
+            Console.WriteLine("Initiating SQLite server");
+            DatabaseService.Init();
+            DatabaseService.ConnectDb();
+            DatabaseService.CreateTables();
+            UsersRolesDatabaseService.CreateDefaultRoles();
+            DatabaseService.FillTeamserverFromDatabase();
         }
     }
 }

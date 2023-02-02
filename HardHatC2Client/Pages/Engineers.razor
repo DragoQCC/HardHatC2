@@ -9,9 +9,15 @@
 @using HardHatC2Client.Services
 @using System.Collections.ObjectModel
 @using System.Linq
+@using System.Diagnostics;
+@using RestSharp.Authenticators;
 @inject RestClient restClientDefault
 @inject IToastService toastDefault
 @inject NavigationManager navigationManagerDefault
+
+<CascadingAuthenticationState>
+<AuthorizeView Roles="Operator">
+    <Authorized>
 
 <h3 class="text-center">Engineers</h3>
 <br>
@@ -51,36 +57,37 @@
                         <MudTh Style="@setStyle(Settings.IsCheckedBox)">lastseen</MudTh>
                         <MudTh Style="@setStyle(Settings.IsCheckedBox)">Options</MudTh>
 				</HeaderContent>
-				<RowTemplate>
-                        <MudIcon Size="Size.Small" Class="mb-2 ms-2" Icon=@Icons.Material.Filled.DesktopWindows Color=@SetColor(context.Integrity)></MudIcon>
-                        <MudTd Style="@GetEngineerStatus(context)">@context.Status</MudTd>
-                        <MudTd Style="@opacitySetting">@context.ExternalAddress</MudTd>
-                            <MudTd Style="@opacitySetting">@context.ManagerName</MudTd>
-                        <MudTd Style="@opacitySetting">@context.ConnectionType @FindManager(context,context.ManagerName)</MudTd>
-                            <MudTd Style="@opacitySetting">@context.Address</MudTd>
-                            <MudTd Style="@opacitySetting">@context.Hostname</MudTd>
-                            <MudTd Style="@opacitySetting">@context.Username</MudTd>
-                            <MudTd Style="@opacitySetting">@context.ProcessName</MudTd>
-                            <MudTd Style="@opacitySetting">@context.ProcessId</MudTd>
-                            <MudTd Style="@opacitySetting">@context.Integrity</MudTd>
-                           <MudTd Style="@opacitySetting">@context.Arch</MudTd>
-                            <MudTd Style="@opacitySetting">@context.Sleep sec</MudTd>
-                        <MudTd Style="@opacitySetting">@LastSeenTimer(context)</MudTd>
-                            <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
+				<RowTemplate Context="Rowcontext">
+                        <MudTd><MudIcon Size="Size.Small" Class="mb-2 ms-2" Icon=@Icons.Material.Outlined.DesktopWindows Color=@SetColor(Rowcontext.Integrity)></MudIcon></MudTd>
+                        <MudTd Style="@GetEngineerStatus(Rowcontext)">@Rowcontext.Status</MudTd>
+                        <MudTd Style="@opacitySetting">@Rowcontext.ExternalAddress</MudTd>
+                            <MudTd Style="@opacitySetting">@Rowcontext.ManagerName</MudTd>
+                        <MudTd Style="@opacitySetting">@Rowcontext.ConnectionType @FindManager(Rowcontext,Rowcontext.ManagerName)</MudTd>
+                            <MudTd Style="@opacitySetting">@Rowcontext.Address</MudTd>
+                            <MudTd Style="@opacitySetting">@Rowcontext.Hostname</MudTd>
+                            <MudTd Style="@opacitySetting">@Rowcontext.Username</MudTd>
+                            <MudTd Style="@opacitySetting">@Rowcontext.ProcessName</MudTd>
+                            <MudTd Style="@opacitySetting">@Rowcontext.ProcessId</MudTd>
+                            <MudTd Style="@opacitySetting">@Rowcontext.Integrity</MudTd>
+                           <MudTd Style="@opacitySetting">@Rowcontext.Arch</MudTd>
+                            <MudTd Style="@opacitySetting">@Rowcontext.Sleep sec</MudTd>
+                        <MudTd Style="@opacitySetting">@LastSeenTimer(Rowcontext)</MudTd>
+                           <MudTd> 
+                               <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
                                 <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown">
-                                    <MudMenuItem OnClick="() =>ContextMenuItems(0,context)">Interact</MudMenuItem>
-                                    <MudMenuItem OnClick="() =>ContextMenuItems(1,context)">Note</MudMenuItem>
-                                    <MudMenuItem OnClick="() =>ContextMenuItems(2,context)">Color</MudMenuItem>
-                                    <MudMenuItem OnClick="() =>ContextMenuItems(3,context)">Exit</MudMenuItem>
+                                    <MudMenuItem OnClick="() =>ContextMenuItems(0,Rowcontext)">Interact</MudMenuItem>
+                                    <MudMenuItem OnClick="() =>ContextMenuItems(1,Rowcontext)">Note</MudMenuItem>
+                                    <MudMenuItem OnClick="() =>ContextMenuItems(2,Rowcontext)">Color</MudMenuItem>
+                                    <MudMenuItem OnClick="() =>ContextMenuItems(3,Rowcontext)">Exit</MudMenuItem>
                                 </MudMenu>
                             </MudButtonGroup>
+                            </MudTd>
                 </RowTemplate>
             </MudTable>
         </div>
     </div>
 </div>
 </div>
-
 
 
 <div class ="container-fluid">
@@ -112,7 +119,13 @@
 </div>
 
 
-
+    </Authorized>
+    <NotAuthorized>
+        <h1 class="text-center">Not Authorized</h1>
+            <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+    </NotAuthorized>
+</AuthorizeView>
+</CascadingAuthenticationState>
 
 @code {
     [Inject]
@@ -128,13 +141,16 @@
     private static SpawnEngineerRequest formData = new SpawnEngineerRequest();
     private string EngineerTestID { get; set; }
     public Double OpacityValue { get; set; }
-    private static bool firstRender = true;
+    public static bool firstRender = true;
+    private static bool Initialized = false;
     private bool success;
     private string[] errors = { };
     private MudTable<Engineer> mudTable;
     private int selectedRowNumber = -1;
     public static string PsCmd { get; set; }
     private static string opacitySetting {get; set;}
+    private static Stopwatch stopwatch = new Stopwatch();
+    private static bool IsCurrentLocation { get; set; }
 
     public static async Task SetPsCommand(string command)
     {
@@ -339,6 +355,33 @@
         {  }
     }
 
+    public static async Task CheckInEngineer(Engineer engineer)
+    {
+        engineer.Init();
+        //remove null objects from the EngineerList
+        foreach (Engineer eng in EngineerList)
+        {
+            if (eng == null)
+            {
+                EngineerList.Remove(eng);
+            }
+        }
+        // if any of the engineers Id match then dont add them to the list
+        if (!EngineerList.Any(x => x.Id == engineer.Id))
+        {
+            EngineerList.Add(engineer);
+        }
+        if (EngineerList.Any(x => x.Id == engineer.Id))
+        {
+            // get the Engineer object fro mthe list with the matching id
+            var Currentengineer = EngineerList.First(x => x.Id == engineer.Id);
+            // update the object with the new values
+            Currentengineer.LastSeen = engineer.LastSeen;
+            Currentengineer.Sleep = engineer.Sleep;
+        }
+        
+    }
+
     public async Task GetHttpEngineer(string engineerId)
     {
         var resource = $"/engineers/{engineerId}";
@@ -380,6 +423,7 @@
 
     public static string LastSeenTimer(Engineer engineer)
     {
+        string output = "";
         //based on lastSeen time use a timer and return the time since last seen in a string, print ms if less than 1 second print seconds if less than 1 minute print minutes if less than 1 hour print hours if less than 1 day print , only print the whole number
         var timeSinceLastSeen = DateTime.Now - engineer.LastSeen;
         //dont let the timeSinceLastSeen be negative
@@ -390,61 +434,84 @@
 
         if (timeSinceLastSeen.TotalMilliseconds < 1000)
         {
-            return  engineer.LastSeenTimer = $"{timeSinceLastSeen.Milliseconds} ms";
+            output = engineer.LastSeenTimer = $"{timeSinceLastSeen.Milliseconds} ms";
         }
         else if (timeSinceLastSeen.TotalSeconds < 60)
         {
-            return engineer.LastSeenTimer = $"{timeSinceLastSeen.Seconds} sec";
+            output = engineer.LastSeenTimer = $"{timeSinceLastSeen.Seconds} sec";
         }
         else if (timeSinceLastSeen.TotalMinutes < 60)
         {
-            return engineer.LastSeenTimer = $"{timeSinceLastSeen.Minutes} min";
+            output = engineer.LastSeenTimer = $"{timeSinceLastSeen.Minutes} min";
         }
         else if (timeSinceLastSeen.TotalHours < 24)
         {
-            return engineer.LastSeenTimer = $"{timeSinceLastSeen.Hours} hours";
+            output = engineer.LastSeenTimer = $"{timeSinceLastSeen.Hours} hours";
         }
         else if (timeSinceLastSeen.TotalDays < 1)
         {
-            return engineer.LastSeenTimer = $"{timeSinceLastSeen.Days} days";
+            output = engineer.LastSeenTimer = $"{timeSinceLastSeen.Days} days";
         }
         else
         {
-            return  engineer.LastSeenTimer = $"{timeSinceLastSeen.Days} days";
-        } 
+            output = engineer.LastSeenTimer = $"{timeSinceLastSeen.Days} days";
+        }
+        //StateHasChanged();
+        return output;
     }
 
     public static void ShowSuccessToast(string successMessage)
     {
-        toastService.ShowSuccess(successMessage, "SUCCESS");
+        toastService.ShowSuccess(successMessage);
     }
     public static void ShowErrorToast(string errorMessage)
     {
-        toastService.ShowError(errorMessage, "ERROR");
+        toastService.ShowError(errorMessage);
     }
 
-    private static void ShowInfoToast()
+    public static void ShowInfoToast(string infoMessage)
     {
-        toastService.ShowInfo("This is Info message with title","INFO");
+        toastService.ShowInfo(infoMessage);
     }
-    private static void ShowWarningToast()
+
+    public static void ShowWarningToast(string warningmessage)
     {
-        toastService.ShowWarning("This is Warning message with title","WARNING");
+        toastService.ShowWarning(warningmessage);
     }
+
 
 
     protected override async Task OnInitializedAsync()
     {
+
         _restClient = restClientDefault;
+        _restClient.UseAuthenticator(new JwtAuthenticator(Login.jwtToken));
         //_mapper = mapperDefault;
         toastService = toastDefault;
         Nav = navigationManagerDefault;
-        var timer = new Timer(new TimerCallback(_ => { InvokeAsync(StateHasChanged); }), null, 0, 200);
+        //var timer = new Timer(new TimerCallback(_ => { InvokeAsync(StateHasChanged); }), null, 100, 1000);
+        
+        
+        stopwatch.Start();
+        Task.Run(() =>
+        {
+            while (Nav.Uri.Split('/')[3].Equals("engineers",StringComparison.CurrentCultureIgnoreCase))
+            {
+                if (stopwatch.ElapsedMilliseconds > 750)
+                {
+                    InvokeAsync(StateHasChanged);
+                    stopwatch.Restart();
+                }
+                Thread.Sleep(1);
+            }
+        });
         if (firstRender)
         {
+            await Engineers.GetAllEngineers();
             firstRender = false;
-            Nav.NavigateTo("/");
+            Nav.NavigateTo("Interact");
         }
+        
     }
-    
+
 }

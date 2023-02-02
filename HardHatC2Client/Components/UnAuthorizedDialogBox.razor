@@ -1,0 +1,43 @@
+﻿@using HardHatC2Client.Pages;
+
+<MudMessageBox @ref="MessageBox" Title="Not Authorized">
+    <MessageContent>
+        You are currently not logged in please login to continue.
+    </MessageContent>
+    <NoButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="RedirectOnInvalidLogin" StartIcon="@Icons.Material.Filled.ExitToApp">Exit</MudButton>
+    </NoButton>
+    <YesButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="RedirectOnInvalidLogin" StartIcon="@Icons.Material.Filled.Login">Login</MudButton>
+    </YesButton>
+</MudMessageBox>
+
+@code {
+
+    [Inject]
+    public NavigationManager Nav { get; set; }
+     private MudMessageBox MessageBox { get; set; }
+     
+    private async Task RedirectOnInvalidLogin()
+    {
+        Nav.NavigateTo(Nav.BaseUri);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (Login.IsLoggedIn == false)
+            {
+                DialogOptions options = new DialogOptions()
+                    {
+                        DisableBackdropClick = true,
+                        CloseOnEscapeKey = false,
+                        MaxWidth = MaxWidth.Large
+                    };
+                await MessageBox.Show(options);
+            }
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+}

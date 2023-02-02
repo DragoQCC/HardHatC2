@@ -1,4 +1,5 @@
-﻿using Engineer.Models;
+﻿using Engineer.Functions;
+using Engineer.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,9 +13,9 @@ namespace Engineer.Commands
 	{
 		public override string Name => "pwd" ;
 	
-	public override string Execute(EngineerTask task)
+	public override async Task Execute(EngineerTask task)
 		{
-			return Directory.GetCurrentDirectory();  // from System.IO
+            Tasking.FillTaskResults(Directory.GetCurrentDirectory(),task,EngTaskStatus.Complete); 
 		}
 	}
 }

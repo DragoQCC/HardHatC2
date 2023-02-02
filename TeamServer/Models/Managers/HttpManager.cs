@@ -19,13 +19,12 @@ namespace TeamServer.Models
 {
     public class Httpmanager : manager
     {
-        public override string Name { get; } // properties allows us to get Name when manager is created later so set will go with creation functions later
-        public int ConnectionPort { get; }         // bind port for http manager again set on creation 
-        public string ConnectionAddress { get; }   // bind address for http manager again set on creation
+        public override string Name { get; set; } // properties allows us to get Name when manager is created later so set will go with creation functions later
+        public int ConnectionPort { get; set; }         // bind port for http manager again set on creation 
+        public string ConnectionAddress { get; set; }   // bind address for http manager again set on creation
         public bool Active => _tokenSource is not null && !_tokenSource.IsCancellationRequested;     // active is true when manager is running which is whenever the token source is not null and not cancelled
-        public bool IsSecure { get; }
+        public bool IsSecure { get; set; }
         public string CertificatePath { get; set; }
-        public string Certificate { get; set; }
         public string CertificatePassword { get; set; } = "p@ssw0rd";
         private X509Certificate2 cert { get; set; }
 
@@ -46,6 +45,8 @@ namespace TeamServer.Models
             IsSecure = isSecure;
             c2Profile = profile;
         }
+
+        public Httpmanager() { }
 
         public override async Task Start()
         {

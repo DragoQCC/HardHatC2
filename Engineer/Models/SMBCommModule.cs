@@ -186,7 +186,7 @@ namespace Engineer.Models
                     IsBlocking = false
                 };
                 Program.InboundCommandsRec += 1;
-                Task.Run(async () => await Program.DealWithTask(firstCheckTask));
+                Task.Run(async () => await Tasking.DealWithTask(firstCheckTask));
                 byte[] Id = Encoding.ASCII.GetBytes(Program._metadata.Id);
                 await pipeServer.WriteAsync(Id, 0, Id.Length);
                 var readPipeTask = Task.Run(async () => await ReadFromPipe(pipeServer));
@@ -235,7 +235,7 @@ namespace Engineer.Models
                     IsBlocking = false
                 };
                 Program.InboundCommandsRec += 1;
-                Task.Run(async () => await Program.DealWithTask(firstCheckTask));
+                Task.Run(async () => await Tasking.DealWithTask(firstCheckTask));
                 byte[] Id = Encoding.ASCII.GetBytes(Program._metadata.Id);
                 await pipeClient.WriteAsync(Id, 0, Id.Length);
                 var readPipeTask = Task.Run(async () => await ReadFromPipe(pipeClient));

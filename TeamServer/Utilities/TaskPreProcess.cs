@@ -32,12 +32,14 @@ namespace TeamServer.Utilities
                 Task.Run(() => HttpmanagerController.Proxy.Start(engineer));
                 //Console.WriteLine("Socks proxy started on port " + port);
                 await HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"socks server started on {port}", Status = "success" });
+                LoggingService.EventLogger.Information("socks server started on teamserver port {port}", port);
                 await HardHatHub.AddPivotProxy(new PivotProxy { EngineerId = engineer.engineerMetadata.Id, BindPort = port, FwdHost = engineer.engineerMetadata.Address, FwdPort ="*", pivotType = PivotProxy.PivotProxyType.SOCKS4a, pivotDirection = PivotProxy.ProxyDirection.Bind});
                 //if /stop is in the arguments, stop the proxy
                 if (currentTask.Arguments.ContainsKey("/stop"))
                 {
                     HttpmanagerController.Proxy.Stop();
                     await HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"socks server on {port} stopped", Status = "info" });
+                    LoggingService.EventLogger.Warning("socks server stopped on teamserver port {port}", port);
                 }
             }
 
@@ -53,6 +55,7 @@ namespace TeamServer.Utilities
                 bindPort = bindPort.TrimStart(' ');
                 currentTask.Arguments.TryAdd("/client", clientid);
                 await HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"rport forward tasked to start targeting {fwdaddress}:{fwdport}", Status = "success" });
+                LoggingService.EventLogger.Information("reverse port forward set to target {fwdaddress}:{fwdport}", fwdaddress, fwdport);
                 Task.Run(async() => (RPortForward.rPortStart(fwdaddress, int.Parse(fwdport), clientid, engineer)));
                 await HardHatHub.AddPivotProxy(new PivotProxy { EngineerId = engineer.engineerMetadata.Id, FwdHost = fwdaddress, FwdPort = fwdport, BindPort = bindPort, pivotType = PivotProxy.PivotProxyType.R_PORT_FWD, pivotDirection = PivotProxy.ProxyDirection.Reverse });
             }
