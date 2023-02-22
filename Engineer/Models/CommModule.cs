@@ -37,10 +37,14 @@ namespace Engineer.Models
 			return outbound;
 		}
 
-        internal byte[] GetP2POutbound()
+        internal List<byte[]> GetP2POutbound()
         {
-			P2POutbound.TryDequeue(out var tcpTaskData);
-			return tcpTaskData;
+	        var P2POutboundList = new List<byte[]>();
+	        while(P2POutbound.TryDequeue(out var tcpTaskData))
+	        {
+		        P2POutboundList.Add(tcpTaskData);
+	        }
+	        return P2POutboundList;
         }
 
         public bool RecvData(out IEnumerable<EngineerTask> tasks)
@@ -82,7 +86,7 @@ namespace Engineer.Models
         public async Task P2PSent(byte[] tcpData)
 		{
             P2POutbound.Enqueue(tcpData);
-			Console.WriteLine($"{DateTime.Now} task response in queue size {tcpData.Length}");
+			//Console.WriteLine($"{DateTime.Now} task response in queue size {tcpData.Length}");
         }
 
 		public virtual void Init(EngineerMetadata engineermetadata)

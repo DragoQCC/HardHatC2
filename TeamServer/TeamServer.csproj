@@ -41,4 +41,20 @@
     <Folder Include="temp\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="Models\Engineers\EngineerCommands\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="Models\Engineers\EngineerCommands\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Models\Engineers\EngineerCommands\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="Models\Engineers\EngineerCommands\**" />
+  </ItemGroup>
+
 </Project>

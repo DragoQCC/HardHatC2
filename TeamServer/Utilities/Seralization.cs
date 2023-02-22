@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using TeamServer.Models;
 using TeamServer.Models.Extras;
 using ApiModels.Requests;
+using TeamServer.Models.Engineers;
 
 namespace TeamServer.Utilities
 {
@@ -20,6 +21,7 @@ namespace TeamServer.Utilities
         {
             return new List<Type>()
             {
+                typeof(EngineerCommand),
                 typeof(EngineerTask),
                 typeof(List<EngineerTask>),
                 typeof(EngineerTaskResult),

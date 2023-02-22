@@ -178,16 +178,10 @@ namespace TeamServer.Utilities
         public static async Task<string> PostProcess_P2PFirstCheckIn(EngineerTaskResult result, Engineer HttpEng)
         {
             string[] resultArray = result.Result.Split('\n');
+            //this is the metadata stored in the result string from the p2p implant
             string Base64Metadata = resultArray[0];
             string parentId = resultArray[1];
-            //if(HttpmanagerController.EngineerChildIds.ContainsKey(parentId))
-            //{
-            //    HttpmanagerController.EngineerChildIds[parentId].Add(result.EngineerId);
-            //}
-            //else
-            //{
-            //    HttpmanagerController.EngineerChildIds.Add(parentId, new List<string> { result.EngineerId });
-            //}
+
             if(!HttpmanagerController.PathStorage.ContainsKey(result.EngineerId))
             {
                 // new engineer, key is its id, value is its path, if its parent id is equal to the http engineer then just the http engineer id is its path, otherwise check if its parent is in the HttpmanagerController.PathStorage 

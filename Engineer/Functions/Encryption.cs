@@ -18,7 +18,7 @@ namespace Engineer.Functions
 
                 // make passwordBytes array out of string H@rdH@tC2P@$$w0rd!
                 byte[] passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes("H@rdH@tC2P@$$w0rd!"));
-                //byte[] passwordBytes = Convert.FromBase64String(EncodedPassword);
+                //byte[] passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(EncodedPassword));
 
                 byte[] encryptedBytes = null;
                 byte[] saltBytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
@@ -56,11 +56,11 @@ namespace Engineer.Functions
         {
             try
             {
+                
                 //Console.WriteLine($"decrypting {bytesToBeDecrypted.Length} bytes");
                 // make passwordBytes array out of string H@rdH@tC2P@$$w0rd!
                 byte[] passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes("H@rdH@tC2P@$$w0rd!"));
-
-                // byte[] passwordBytes = Convert.FromBase64String(EncodedPassword);
+                //byte[] passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(EncodedPassword));
 
                 byte[] decryptedBytes = null;
                 byte[] saltBytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };

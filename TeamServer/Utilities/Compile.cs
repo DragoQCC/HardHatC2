@@ -7,6 +7,9 @@ using System.Reflection;
 using System;
 using System.Linq;
 using System.Diagnostics;
+using System.CodeDom.Compiler;
+using ApiModels.Requests;
+using Microsoft.CSharp;
 
 namespace TeamServer.Utilities
 {
@@ -15,7 +18,7 @@ namespace TeamServer.Utilities
 
         public bool Confuse { get; set;}
         
-        public static byte[] GenerateCode(string source)
+        public static byte[] GenerateCode(string source,SpawnEngineerRequest.EngCompileType compileType)
         {
             string assemblyName = Path.GetRandomFileName();
 
@@ -35,6 +38,12 @@ namespace TeamServer.Utilities
             string[] otherCsFileList = Directory.GetFiles(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}", "*.cs",enumOptions);
             //remove the program.cs file from the list
             string[] csFileList = otherCsFileList.Where(x => x != pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Program.cs").ToArray();
+            
+            //if compileType is not serviceexe then remove the ServiceExeMode.cs file from the list
+            if(compileType != SpawnEngineerRequest.EngCompileType.serviceexe)
+            {
+                csFileList = csFileList.Where(x => x != pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Extra{allPlatformPathSeperator}ServiceExeMode.cs").ToArray();
+            }
 
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source);            
             List<SyntaxTree> trees = new List<SyntaxTree>(); //gets the other needed .cs files besides the main program.cs from Engineers folder.
@@ -52,11 +61,27 @@ namespace TeamServer.Utilities
                 references.Add(assemblyRefrence);
             }
             
+            OutputKind outputKind = OutputKind.ConsoleApplication;
+            if(compileType == SpawnEngineerRequest.EngCompileType.exe)
+            {
+                outputKind = OutputKind.ConsoleApplication;
+            }
+            else if(compileType == SpawnEngineerRequest.EngCompileType.dll)
+            {
+                outputKind = OutputKind.DynamicallyLinkedLibrary;
+            }
+            else if(compileType == SpawnEngineerRequest.EngCompileType.serviceexe)
+            {
+                outputKind = OutputKind.WindowsApplication;
+            }
+            else
+            {
+                outputKind = OutputKind.ConsoleApplication;
+            }
 
             CSharpCompilation compilation = CSharpCompilation.Create(assemblyName, syntaxTrees: trees,
                 references: references,
-                options: new CSharpCompilationOptions(outputKind: OutputKind.ConsoleApplication,
-                    optimizationLevel: OptimizationLevel.Release, platform: Platform.X64, allowUnsafe: true));
+                options: new CSharpCompilationOptions(outputKind: outputKind, optimizationLevel: OptimizationLevel.Release, platform: Platform.X64, allowUnsafe: true));
             
             using (var ms = new MemoryStream())
             {
@@ -80,6 +105,59 @@ namespace TeamServer.Utilities
                     byte[] assemblyBytes = ms.ToArray();
                     return assemblyBytes;
                 }
+            }
+        }
+
+        public static byte[] CompileCommands(string source)
+        {
+            string assemblyName = Path.GetRandomFileName();
+            SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source);
+            
+            char allPlatformPathSeperator = Path.DirectorySeparatorChar;
+            string assemblyBasePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string[] pathSplit = assemblyBasePath.Split("bin"); // [0] is the main path D:\my_Custom_code\HardHatC2\Teamserver\ 
+            pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
+            pathSplit[1] = pathSplit[1].Replace("\\", allPlatformPathSeperator.ToString());
+            string dataFolderPath = pathSplit[0] + "Data";
+
+            //return the filenames from the dataFolderPath directory
+            string[] assemblyRefList = Directory.GetFiles(dataFolderPath);
+            
+            //get Refrences from the assembly
+            List<MetadataReference> references = new List<MetadataReference> { };
+            foreach (string assembly in assemblyRefList)
+            {
+                MetadataReference assemblyRefrence = MetadataReference.CreateFromFile(assembly);
+                references.Add(assemblyRefrence);
+            }
+            
+            
+            //use the roslyn compiler to read the source code
+            CSharpCompilation compilation = CSharpCompilation.Create(assemblyName, syntaxTrees: new[] { syntaxTree }, references:references,
+                options: new CSharpCompilationOptions(outputKind: OutputKind.NetModule, optimizationLevel: OptimizationLevel.Release, platform: Platform.X64, allowUnsafe: true));
+            
+            using (var ms = new MemoryStream())
+            {
+                EmitResult result = compilation.Emit(ms);
+            
+                // if (!result.Success)
+                // {
+                //     IEnumerable<Diagnostic> failures = result.Diagnostics.Where(diagnostic =>
+                //         diagnostic.IsWarningAsError ||
+                //         diagnostic.Severity == DiagnosticSeverity.Error);
+                //     Console.WriteLine(" Roslyn Compilation failed");
+                //     foreach (Diagnostic diagnostic in failures)
+                //     {
+                //         Console.Error.WriteLine("{0}: {1}", diagnostic.Id, diagnostic.GetMessage());
+                //     }
+                //     return null;
+                // }
+                // else
+                // {
+                    ms.Seek(0, SeekOrigin.Begin);
+                    byte[] assemblyBytes = ms.ToArray();
+                    return assemblyBytes;
+                //}
             }
         }
 

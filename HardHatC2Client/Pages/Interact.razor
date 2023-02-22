@@ -30,7 +30,9 @@
 
  
 <MudContainer Fixed="true">
-    <XTabs Style="@setTabStyle(Settings.IsCheckedBox)" IsDraggable="true" NewTabSetActive="true" RenderMode="BlazorXTabs.Configuration.RenderMode.Full" CloseTabs="true">
+<MudTabs Outlined="true">
+    <MudTabPanel Text="Engineers" Icon="@Icons.Material.Filled.Build" >
+        <XTabs Style="@setTabStyle(Settings.IsCheckedBox)" IsDraggable="true" NewTabSetActive="true" RenderMode="BlazorXTabs.Configuration.RenderMode.Full" CloseTabs="true">
     @foreach (Engineer engineer in InteractEngineers)
     {
         string tabTitle = EngTabTitleDic[engineer.Id];
@@ -205,6 +207,14 @@
         </XTab>
     }
 </XTabs>
+    </MudTabPanel>
+    <MudTabPanel Text="Browsers" Icon="@Icons.Material.Filled.FolderOpen">
+                        <FileBrowser></FileBrowser>
+    </MudTabPanel>
+    <MudTabPanel Text="Terminal" Icon="@Icons.Material.Filled.Terminal" >
+        <InteractiveTerminal></InteractiveTerminal>            
+    </MudTabPanel>
+</MudTabs>
 </MudContainer>
 
     </Authorized>
@@ -378,19 +388,19 @@
         }
     }
 
-    public async Task<bool> OnEnterPress(KeyboardEventArgs e)
-    {
-        if (!String.IsNullOrWhiteSpace(UserInput))
-        {
-            if (e.Code == "Enter" || e.Code == "NumpadEnter")
-            {
-                IsEnterkey = true;
-                return true;
-            }
-            return false;
-        }
-        return false;
-    }
+    //public async Task<bool> OnEnterPress(KeyboardEventArgs e)
+    //{
+    //    if (!String.IsNullOrWhiteSpace(UserInput))
+    //    {
+    //        if (e.Code == "Enter" || e.Code == "NumpadEnter")
+    //        {
+    //            IsEnterkey = true;
+    //            return true;
+    //        }
+    //        return false;
+    //    }
+    //    return false;
+    //}
 
 
 
@@ -472,55 +482,6 @@
             //}
             return; //return here because help command does not need to be sent to the engineers
         }
-        if (createObject.Command.Equals("terminal", StringComparison.OrdinalIgnoreCase))
-        {
-            Console.WriteLine("Terminal command started");
-            //split command on the first space and then everything after that is the command to run
-            string argument = command.Split(' ').Skip(1).Aggregate((a, b) => a + " " + b);
-            argument = argument.Trim();
-            //if the command is terminal then add the terminal command to the TaskInputDic and return
-            if (!TaskInputDic.ContainsKey(currentTaskId))
-            {
-                TaskInputDic.Add(currentTaskId, new EngineerTask { Id = currentTaskId, Command = command, Arguments = null , File = null });
-            }
-            //if taskId is not in the TaskOutputHeaderInfo then add it with commandHeaderText as the value
-            if (!TaskOutputHeaderInfo.ContainsKey(currentTaskId))
-            {
-                TaskOutputHeaderInfo.Add(currentTaskId, $"({DateTime.UtcNow}) Engineer instructed to {command}\n");
-            }
-            //if argument is not null or empty then add the argument to the TaskInputDic
-            if (!string.IsNullOrWhiteSpace(argument))
-            {
-                TaskInputDic[currentTaskId].Arguments = new Dictionary<string, string>();
-                TaskInputDic[currentTaskId].Arguments.Add("/command", argument);
-            }
-            //add into the EngineerOutboundTaskIds dictionary the currentTaskId for the engineer.Id
-            if (!EngineerOutboundTaskIds.ContainsKey(engineer.Id))
-            {
-                EngineerOutboundTaskIds.Add(engineer.Id, new List<string>());
-            }
-            if (EngineerOutboundTaskIds.ContainsKey(engineer.Id))
-            {
-                //add the taskid to the list of taskids for the engineerid and pass the taskId to the sendTask function
-                if (!EngineerOutboundTaskIds[engineer.Id].Contains(currentTaskId))
-                {
-                    EngineerOutboundTaskIds[engineer.Id].Add(currentTaskId);
-                }
-            }
-
-            string output = Utilities.terminalCommandRecording.TerminalCommandExecute(argument);
-            if (!TaskOutputDic.ContainsKey(currentTaskId))
-            {
-                TaskOutputDic.Add(currentTaskId, output);
-            }
-            //split the output into lines at the newline and add it to the TaskOutputDic
-            //string[] outputLines = output.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-            //foreach (string line in outputLines)
-            //{
-            //    TaskOutputDic[currentTaskId].Add(line);
-            //}
-            return;
-        }
 
         // if command is not help keep going and parse out the arguments the user entered 
         createObject.Arguments = new Dictionary<string, string>();
@@ -539,7 +500,7 @@
                 for (int i = 0; i < inputList.Count(); i++)
                 {
                     // if the string ahead of a key holds a quote we are entering a value that should not stop collection until that quote ends.
-                    if (inputList[i + 1].Contains("\""))
+                    if (inputList[i + 1].Contains("\\\"\""))
                     {
                         quoteCount++;
                     }
@@ -561,11 +522,11 @@
                             result = result.TrimStart(' ');
                             createObject.Arguments.Add(input, result);
                         }
-                        //if its not even we are inside a " and should take until the next quoute
+                        //if its not even we are inside a "" and should take until the next quoute
                         else
                         {
                             result = inputList[i + 1];
-                            results = inputList.Skip(i + 2).TakeWhile(s => !s.Contains("\"")).ToList();
+                            results = inputList.Skip(i + 2).TakeWhile(s => !s.Contains("\\\"\"")).ToList();
                             i += results.Count() + 2;
                             results.Add(inputList[i]);
                             foreach (string s in results)
@@ -573,14 +534,20 @@
                                 result += " " + s;
                             }
                             result = result.TrimStart(' ');
+                            //remove the \"" from the start and end of the result string 
+                            result = result.TrimStart('\\', '\"','\"');
+                            result = result.TrimEnd('\\', '\"', '\"');
+
                             createObject.Arguments.Add(input, result);
                             quoteCount++;
                         }
                     }
                 }
             }
-            catch
+            catch(Exception ex)
             {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
                 string errorMessage = "invalid input foramt, check Client console for help.";
                 Engineers.ShowErrorToast(errorMessage);
                 Console.WriteLine("values with a / need to be encloused in double quoutes. values with a \" in them should not be encloused in quotes. values with both a \" & / in them need to have no spaces.");

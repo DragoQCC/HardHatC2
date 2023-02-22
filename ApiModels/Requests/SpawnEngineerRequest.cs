@@ -17,7 +17,7 @@ namespace ApiModels.Requests
 
         public enum EngCompileType
         {
-         exe, shellcode, powershellcmd
+         exe, shellcode, powershellcmd, dll, serviceexe, 
         }
     }
 }

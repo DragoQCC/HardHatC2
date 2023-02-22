@@ -13,35 +13,35 @@
 <br>
 <br>
  <MudContainer MaxWidth="MaxWidth.Medium">
-     @if(FormSubmitted)
-     {
-     <MudOverlay Visible="isVisible" DarkBackground="true" Absolute="true">
+    @if (FormSubmitted)
+    {
+        <MudOverlay Visible="isVisible" DarkBackground="true" Absolute="true">
             <MudProgressCircular Color="Color.Secondary" Indeterminate="true" />
         </MudOverlay>
-     }
-<MudPaper Height="400px" Width="100%" Square="true" Class="pa-4">
+    }
+    <MudPaper Height="400px" Width="100%" Square="true" Class="pa-4">
         <MudTabs @ref="tabs" Elevation="5" Rounded="true" PanelClass="pa-6" Centered="true" Color="@Color.Primary">
-    <MudTabPanel Text="Login">
-        <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
-            <MudTextField T="string" @bind-Value="UserName" Label="Username" Required="true" RequiredError="User name is required!" />
-            <MudTextField T="string" @bind-Value="Password" Label="Password" HelperText="Choose a strong password" @ref="pwField1" InputType="InputType.Password" Required="true" RequiredError="Password is required!" />
-            <div class="d-flex align-center justify-space-between">
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" Class="ml-auto" @onclick="@handleValidLogin">Login</MudButton>
-            </div>
-        </MudForm>
-    </MudTabPanel>
-    <MudTabPanel Text="Create User">
-        <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
-            <MudTextField T="string" @bind-Value="UserName" Label="Username" Required="true" RequiredError="User name is required!" />
-            <MudTextField T="string" @bind-Value="Password" Label="Password" HelperText="Choose a strong password" @ref="pwField1" InputType="InputType.Password" Required="true"RequiredError="Password is required!" />
-            <MudTextField T="string" Label="Confirm Password" HelperText="Repeat the password" InputType="InputType.Password" Validation="@(new Func<string, string>(PasswordMatch))" />
-            <div class="d-flex align-center justify-space-between">
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" Class="ml-auto" @onclick="@handleValidCreateUser">Create</MudButton>
-            </div>
-        </MudForm>
-    </MudTabPanel>
-</MudTabs>
-</MudPaper>
+            <MudTabPanel Text="Login">
+                <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+                    <MudTextField T="string" @bind-Value="UserName" Label="Username" Required="true" RequiredError="User name is required!" />
+                    <MudTextField T="string" @bind-Value="Password" Label="Password" HelperText="Choose a strong password" @ref="pwField1" InputType="InputType.Password" Required="true" RequiredError="Password is required!" />
+                    <div class="d-flex align-center justify-space-between">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" Class="ml-auto" @onclick="@handleValidLogin">Login</MudButton>
+                    </div>
+                </MudForm>
+            </MudTabPanel>
+            <MudTabPanel Text="Create User">
+                <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+                    <MudTextField T="string" @bind-Value="UserName" Label="Username" Required="true" RequiredError="User name is required!" />
+                    <MudTextField T="string" @bind-Value="Password" Label="Password" HelperText="Choose a strong password" @ref="pwField1" InputType="InputType.Password" Required="true"RequiredError="Password is required!" />
+                    <MudTextField T="string" Label="Confirm Password" HelperText="Repeat the password" InputType="InputType.Password" Validation="@(new Func<string, string>(PasswordMatch))" />
+                    <div class="d-flex align-center justify-space-between">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" Class="ml-auto" @onclick="@handleValidCreateUser">Create</MudButton>
+                    </div>
+                </MudForm>
+            </MudTabPanel>
+        </MudTabs>
+    </MudPaper>
 </MudContainer>
 
 @code {
@@ -58,6 +58,7 @@
     private MudTextField<string> pwField2;
     private MudTabs tabs;
     public static string jwtToken { get; set; }
+    public static string SignedInUser { get; private set; }
     public static bool IsLoggedIn { get; set; } = false;
     private bool isVisible;
     private bool FormSubmitted;
@@ -88,6 +89,7 @@
             if(token != null)
             {
                 jwtToken = token;
+                SignedInUser = UserName;
                 IsLoggedIn = true;
                 FormSubmitted = false;
                 isVisible = false;

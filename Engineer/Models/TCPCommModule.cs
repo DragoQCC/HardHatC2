@@ -14,6 +14,7 @@ using System.Threading;
 using Engineer.Commands;
 using System.Timers;
 using System.Collections.Concurrent;
+using System.Runtime.Remoting.Channels;
 using Engineer.Functions;
 
 namespace Engineer.Models
@@ -215,7 +216,7 @@ namespace Engineer.Models
                     if (client.DataAvailable())
                     {
                         IsDataInTransit = true;
-                        Console.WriteLine("Tcp Is Data in Transit is True");
+                        Console.WriteLine("Tcp Data in Transit is True");
                         if (!Program.IsEncrypted)
                         {
                             byte[] ChildId = await client.ReceiveData(_tokenSource.Token);
@@ -229,37 +230,54 @@ namespace Engineer.Models
                     }
                 }
                 //once the child id is received, start a while loop to send and recive data from the child
+                Console.WriteLine($"{DateTime.UtcNow} starting parent to child loop");
                 while (true)
                 {
                     if (client.DataAvailable())
                     {
+                        Console.WriteLine($"{DateTime.UtcNow} data available from child");
                         IsDataInTransit = true;
+                        while (Program.IsEncrypted)
+                        {
+                            Thread.Sleep(10);
+                        }
                         if (!Program.IsEncrypted)
                         {
-                            byte[] ChildData = await client.ReceiveData(_tokenSource.Token); // should always be a TaskResponse[] , but the data is seralized & encrypted 
-                            Console.WriteLine($"{DateTime.Now} reading task response from child");
-                            if (Program.TcpParentCommModules.Count() > 0) //if not this is the http Eng and this data can be queued to go to its parent 
+                            // should always be a TaskResponse[] , but the data is seralized & encrypted 
+                            byte[] ChildData = await client.ReceiveData(_tokenSource.Token); 
+                            Console.WriteLine($"{DateTime.UtcNow} reading task response from child");
+                            //if this is not the http eng we are pushing data up the chain
+                            if (Program.TcpParentCommModules.Count() > 0) 
                             {
                                 //Console.WriteLine("queueing task response for parent to push up chain");
-                                ChildToParentData[Program.TcpParentCommModules.Keys.ElementAt(0)].Enqueue(ChildData); // this should be the current engineers only parent, if this value exists we are pushing data up the chain, .
+                                // this should be the current engineers only parent, if this value exists we are pushing data up the chain
+                                ChildToParentData[Program.TcpParentCommModules.Keys.ElementAt(0)].Enqueue(ChildData); 
                             }
                             else
                             {
-                                //else queue this data to be send back
-                                //Console.WriteLine("this is a http eng we are queuing task to go back to ts");
-                                //Program.OutboundResponsesSent += 1;
+                                //else queue this data to be send back from http to ts
                                 await Program._commModule.P2PSent(ChildData);
                                 IsDataInTransit = false;
                             }
                         }
+                        IsDataInTransit = false;
                     }
+                    //sends tasking to child
                     if (ParentToChildData.ContainsKey(ChildIdString))
                     {
-                        if (ParentToChildData[ChildIdString].TryDequeue(out byte[] ParentData))
+                        while (!ParentToChildData[ChildIdString].IsEmpty)
                         {
-                            await client.SendData(ParentData, _tokenSource.Token);
-                            IsDataInTransit = false;
+                            if (ParentToChildData[ChildIdString].TryDequeue(out byte[] ParentData))
+                            {
+                                IsDataInTransit = true;
+                                while (Program.IsEncrypted)
+                                {
+                                    Thread.Sleep(10);
+                                }
+                                await client.SendData(ParentData, _tokenSource.Token);
+                            }
                         }
+                        IsDataInTransit = false;
                     }
                     await Task.Delay(10);
                 }
@@ -293,7 +311,12 @@ namespace Engineer.Models
                 {
                     if (client.DataAvailable())
                     {
+                        Console.WriteLine($"{DateTime.UtcNow} tcp data available from parent");
                         IsDataInTransit = true;
+                        while (Program.IsEncrypted)
+                        {
+                            Thread.Sleep(10);
+                        }
                         if (!Program.IsEncrypted)
                         {
                             byte[] ParentIdSleep = await client.ReceiveData(_tokenSource.Token);
@@ -302,7 +325,6 @@ namespace Engineer.Models
                             string ParentIdString = Encoding.ASCII.GetString(ParentId);
                             //Console.WriteLine($"got back parent id byte size of {ParentId.Length}");
                             Console.WriteLine($"got back parent id {ParentIdString}");
-                            //byte[] Sleep = await client.ReceiveData(_tokenSource.Token);
                             //update EngBaseComm Sleep value
                             EngCommBase.Sleep = BitConverter.ToInt32(Sleep, 0);
                             Console.WriteLine($"got back parent sleep value {EngCommBase.Sleep}");
@@ -313,15 +335,15 @@ namespace Engineer.Models
                             await client.SendData(Id, _tokenSource.Token);
                             var firstCheckTask = new EngineerTask
                             {
-                                Id = "P2PFirstTimeCheckIn",
-                                Command = "firstcheckIn",
+                                Id = Guid.NewGuid().ToString(),
+                                Command = "P2PFirstTimeCheckIn",
                                 Arguments = new Dictionary<string, string> {
                             { "/parentid", ParentIdString }
                             },
-                                IsBlocking = false
+                                IsBlocking = true
                             };
                             Program.InboundCommandsRec += 1;
-                            Task.Run(async () => await Tasking.DealWithTask(firstCheckTask));
+                            await Task.Run(async () => await Tasking.DealWithTask(firstCheckTask));
                             FirstCheckIn.firstCheckInDone = true;
                             IsDataInTransit = false;
                             break;
@@ -329,6 +351,7 @@ namespace Engineer.Models
                     }
                 }
                 //once the parent id is received, start a while loop to send and recive data from the parent
+                Console.WriteLine($"{DateTime.UtcNow} starting child to parent loop");
                 while (true)
                 {
                     if (client.Connected)
@@ -370,24 +393,25 @@ namespace Engineer.Models
                         }
                         
                     }
-                    if (ChildToParentData.ContainsKey(Program._metadata.Id))
-                    {
-                        if (ChildToParentData[Program._metadata.Id].TryDequeue(out byte[] ChildData))
-                        {
-                            //Console.WriteLine("calling sendData for self");
-                            await client.SendData(ChildData, _tokenSource.Token);
-                            IsDataInTransit = false;
-                        }
-                    }
+                    
                     if (ChildToParentData.ContainsKey(Program.TcpParentCommModules.Keys.ElementAt(0)))
                     {
                         //if the ChildToParentData dictionary has values for the parent Id , send the data to the parent
-                        if (ChildToParentData[Program.TcpParentCommModules.Keys.ElementAt(0)].TryDequeue(out byte[] ForwardedChildData))
+                        while (!ChildToParentData[Program.TcpParentCommModules.Keys.ElementAt(0)].IsEmpty)
                         {
-                           // Console.WriteLine("calling send data to parent");
-                            await client.SendData(ForwardedChildData, _tokenSource.Token);
-                            IsDataInTransit = false;
+                            if (ChildToParentData[Program.TcpParentCommModules.Keys.ElementAt(0)]
+                                .TryDequeue(out byte[] ForwardedChildData))
+                            {
+                                IsDataInTransit = true;
+                                while (Program.IsEncrypted)
+                                {
+                                    Thread.Sleep(10);
+                                }
+                                Console.WriteLine($"{DateTime.UtcNow} calling send data to parent");
+                                await client.SendData(ForwardedChildData, _tokenSource.Token);
+                            }
                         }
+                        IsDataInTransit = false;
                     }
                     await Task.Delay(10);
                 }
@@ -432,12 +456,12 @@ namespace Engineer.Models
                             ChildToParentData.TryAdd(ParentIdString, new ConcurrentQueue<byte[]>());
                             var firstCheckTask = new EngineerTask
                             {
-                                Id = "P2PFirstTimeCheckIn",
-                                Command = "firstcheckIn",
+                                Id = Guid.NewGuid().ToString(),
+                                Command = "P2PFirstTimeCheckIn",
                                 Arguments = new Dictionary<string, string> {
                             { "/parentid", ParentIdString }
                             },
-                                IsBlocking = false
+                                IsBlocking = true
                             };
                             Program.InboundCommandsRec += 1;
                             Task.Run(async () => await Tasking.DealWithTask(firstCheckTask));
@@ -533,21 +557,28 @@ namespace Engineer.Models
         
         private bool HandleResponse(byte[] response) //if not null we have stuff to do 
         {
-            var tasks = response.ProDeserialize<List<EngineerTask>>();
-
-            if (tasks != null && tasks.Any())
+            try
             {
-                foreach (var task in tasks)
+                var tasks = response.ProDeserialize<List<EngineerTask>>();
+
+                if (tasks != null && tasks.Any())
                 {
-                    Inbound.Enqueue(task);
+                    foreach (var task in tasks)
+                    {
+                        Inbound.Enqueue(task);
+                    }
+                    return true;
                 }
-                return true;
+                return false;
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
             }
             return false;
         }
-
-
-        
     }
 
 
@@ -555,33 +586,51 @@ namespace Engineer.Models
     {
         public static async Task<byte[]> ReceiveData(this TcpClient client, CancellationToken token)
         {
-            using var ms = new MemoryStream();
-            var ns = client.GetStream();
-
-            int read;
-
-            do
+            try
             {
-                var buf = new byte[65535];
-                read = await ns.ReadAsync(buf, 0, buf.Length, token);
-                //Console.WriteLine($"receiving data length {read}");
-                if (read == 0)
-                    break;
+                using var ms = new MemoryStream();
+                var ns = client.GetStream();
 
-                await ms.WriteAsync(buf, 0, read, token);
+                int read;
 
-            } while (read >= 65535);
+                do
+                {
+                    var buf = new byte[65535];
+                    read = await ns.ReadAsync(buf, 0, buf.Length, token);
+                    //Console.WriteLine($"receiving data length {read}");
+                    if (read == 0)
+                        break;
 
-            return ms.ToArray();
+                    await ms.WriteAsync(buf, 0, read, token);
+
+                } while (read >= 65535);
+
+                return ms.ToArray();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+            }
+            return null;
         }
 
         public static async Task SendData(this TcpClient client, byte[] data, CancellationToken token)
         {
-            if (client.Connected)
+            try
             {
-                var ns = client.GetStream();
-               // Console.WriteLine($"sending data length {data.Length}");
-                await ns.WriteAsync(data, 0, data.Length, token);
+                if (client.Connected)
+                {
+                    var ns = client.GetStream();
+                    Console.WriteLine($"{DateTime.UtcNow} sending data length {data.Length}");
+                    await ns.WriteAsync(data, 0, data.Length, token);
+                }
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
             }
         }
 

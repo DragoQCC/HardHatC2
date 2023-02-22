@@ -91,10 +91,10 @@ namespace TeamServer.Controllers
                 {
                     DatabaseService.ConnectDb();
                 }
-                DatabaseService.Connection.Insert(manager);
+                DatabaseService.Connection.Insert((TCPManager_DAO)manager);
                 var root = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}{HttpContext.Request.Path}";
                 var path = $"{root}/{manager.Name}";
-                HardHatHub.UpdateManagerList((TCPManager_DAO)manager);
+                HardHatHub.UpdateManagerList(manager);
                 HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"{manager.connectionMode} TCP manager {manager.Name}, created", Status = "success" });
                 LoggingService.EventLogger.Information("TCP manager created.{@manager}", manager);
                 return Created(path, manager);
@@ -118,10 +118,10 @@ namespace TeamServer.Controllers
                 {
                     DatabaseService.ConnectDb();
                 }
-                DatabaseService.Connection.Insert(manager);
+                DatabaseService.Connection.Insert((SMBManager_DAO)manager);
                 var root = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}{HttpContext.Request.Path}";
                 var path = $"{root}/{manager.Name}";
-                HardHatHub.UpdateManagerList((SMBManager_DAO)manager);
+                HardHatHub.UpdateManagerList(manager);
 				HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"SMB manager {manager.Name}, with pipe name {manager.NamedPipe}", Status = "success" });
                 LoggingService.EventLogger.Information("SMB manager created.{@manager}", manager);
                 return Created(path, manager);

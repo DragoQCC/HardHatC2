@@ -16,6 +16,7 @@ using TeamServer.Utilities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using RestSharp;
 using SQLite;
 using TeamServer.Services.Extra;
 using TeamServer.Models.Database;
@@ -24,6 +25,9 @@ namespace TeamServer
 {
     public class Startup
     {
+        public static string TeamserverIP { get; private set;}
+        public static RestClient client { get; private set; }
+        
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -39,6 +43,7 @@ namespace TeamServer
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "TeamServer", Version = "v1" });
+                c.CustomSchemaIds(type => type.ToString());
             });
             services.AddSingleton<ImanagerService, managerService>();
             services.AddSingleton<IEngineerService, EngineerService>();
@@ -53,6 +58,7 @@ namespace TeamServer
 
             services.AddIdentity<UserInfo, RoleInfo>().AddDefaultTokenProviders();
 
+            services.Configure<IPWhitelistOptions>(Configuration.GetSection("IPWhitelistOptions"));
 
 
             //add role-based authorization services
@@ -97,21 +103,33 @@ namespace TeamServer
 
             app.UseAuthentication();
             app.UseAuthorization();
+            app.UseIPWhitelist();
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
                 endpoints.MapHub<HardHatHub>("/HardHatHub");
             });
+            TeamserverIP = app.ServerFeatures.Get<Microsoft.AspNetCore.Hosting.Server.Features.IServerAddressesFeature>().Addresses.First();
+            Console.WriteLine("TeamServer is running on " + TeamserverIP);
             LoggingService.Init();
-            Console.WriteLine("Generating unique encryption keys for pathing and metadata id");
-            Encryption.GenerateUniversialKeys();
             Console.WriteLine("Initiating SQLite server");
             DatabaseService.Init();
+            RestClientOptions options = new RestClientOptions($"{TeamserverIP}");
+            options.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+            client = new RestClient(options);
             DatabaseService.ConnectDb();
             DatabaseService.CreateTables();
             UsersRolesDatabaseService.CreateDefaultRoles();
-            DatabaseService.FillTeamserverFromDatabase();
+            DatabaseService.FillTeamserverFromDatabase().ContinueWith((task) =>
+            {
+                if (String.IsNullOrEmpty(Encryption.UniversialMetadataKey))
+                {
+                    Console.WriteLine("Generating unique encryption keys for pathing and metadata id");
+                    Encryption.GenerateUniversialKeys();
+                }
+            });
+           
         }
     }
 }

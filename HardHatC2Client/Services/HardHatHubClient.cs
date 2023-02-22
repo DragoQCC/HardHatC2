@@ -1,4 +1,5 @@
 ﻿using ApiModels.Responses;
+using HardHatC2Client.Components;
 using HardHatC2Client.Models;
 using HardHatC2Client.Pages;
 using HardHatC2Client.Utilities;
@@ -159,6 +160,11 @@ namespace HardHatC2Client.Services
                     await Credentials.AddCreds(creds);
                 });
 
+                _hubConnection.On<InteractiveTerminalCommand>("UpdateTabContent", async (interactiveTerminalCommand) =>
+                {
+                    await InteractiveTerminal.UpdateTabContent(interactiveTerminalCommand);
+                });
+
                 await _hubConnection.StartAsync();
             }
 
@@ -252,7 +258,24 @@ namespace HardHatC2Client.Services
             {
                 await _hubConnection.InvokeAsync("PrettyLogs");
             }
-            
+
+            public async Task CreateTerminalObject(InteractiveTerminalCommand terminalCommand)
+            {
+                await _hubConnection.InvokeAsync<InteractiveTerminalCommand>("CreateTerminalObject", arg1: terminalCommand);
+                return;
+            }
+
+            public async Task CreateTabViewObject(InteractiveTerminal.TabView tabView)
+            {
+                await _hubConnection.InvokeAsync<InteractiveTerminal.TabView>("CreateTabViewObject", arg1: tabView);
+                return;
+            }
+
+            public async Task<string> GetTerminalOutput(string commandId)
+            {
+                var result = await _hubConnection.InvokeAsync<string>("GetTerminalOutput", arg1: commandId);
+                return result;
+            }
         }        
     }
 }

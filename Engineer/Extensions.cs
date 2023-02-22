@@ -17,6 +17,7 @@ namespace Engineer
         {
             return new List<Type>()
             {
+	            typeof(EngineerCommand),
                 typeof(EngineerTask),
                 typeof(List<EngineerTask>),
                 typeof(EngineerTaskResult),
@@ -42,13 +43,25 @@ namespace Engineer
 
         public static byte[] ProSerialise<T>(this T data)
         {
-            using (var ms = new MemoryStream())
-            {
-                var types = GetseralTypes();
-                Serializer ser = new Serializer(types);
-                ser.Serialize(ms, data);
-                return ms.ToArray();
-            }
+	        try
+	        {
+		        using (var ms = new MemoryStream())
+		        {
+			        var types = GetseralTypes();
+			        Serializer ser = new Serializer(types);
+			        ser.Serialize(ms, data);
+			        return ms.ToArray();
+		        }
+
+	        }
+	        catch (Exception e)
+	        {
+		        Console.WriteLine(e.Message);
+		        Console.WriteLine(e.StackTrace);
+	        }
+
+	        return null;
+
         }
 
         public static T Deserialize<T>(this byte[] data)
@@ -63,12 +76,21 @@ namespace Engineer
 
         public static T ProDeserialize<T>(this byte[] data)
         {
-            using (var ms = new MemoryStream(data))
-            {
-                var types = GetseralTypes();
-                Serializer ser = new Serializer(types);
-                return (T)ser.Deserialize(ms);
-            }
+	        try
+	        {
+		        using (var ms = new MemoryStream(data))
+		        {
+			        var types = GetseralTypes();
+			        Serializer ser = new Serializer(types);
+			        return (T)ser.Deserialize(ms);
+		        }
+	        }
+	        catch (Exception e)
+	        {
+		        Console.WriteLine(e.Message);
+		        Console.WriteLine(e.StackTrace);
+	        }
+	        return default;
         }
     }
 }

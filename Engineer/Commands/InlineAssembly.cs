@@ -20,6 +20,11 @@ namespace Engineer.Commands
 
         public override async Task Execute(EngineerTask task)
         {
+            if(task.File == null)
+            {
+                Tasking.FillTaskResults("error: " + "no assembly suppiled use the /file argument, file location should be on team server.", task, EngTaskStatus.FailedWithWarnings);
+                return;
+            }
             if (task.File.Length < 1)
             {
                 Tasking.FillTaskResults("error: " + "no assembly suppiled use the /file argument, file location should be on team server.",task,EngTaskStatus.FailedWithWarnings);

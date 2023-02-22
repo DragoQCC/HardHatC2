@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace Engineer.Models
 {
+	[Serializable]
 	public abstract class EngineerCommand
 	{
 		public abstract string Name { get; }

@@ -77,6 +77,10 @@ namespace Engineer.Extra
             //dll import for WaitNamedPipe
             [DllImport("kernel32.dll", SetLastError = true)]
             public static extern bool WaitNamedPipe(string name, uint timeout);
+            
+            //dll import for waitForSingleObject
+            [DllImport("kernel32.dll", SetLastError = true)]
+            public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
 
             [Flags]
             public enum HANDLE_FLAGS : uint
@@ -392,6 +396,7 @@ namespace Engineer.Extra
                 OpenNoRecall = 0x00100000,
                 FirstPipeInstance = 0x00080000
             }
+            
 
             public const int PROC_THREAD_ATTRIBUTE_PARENT_PROCESS = 0x00020000;
             public const int PROC_THREAD_ATTRIBUTE_MITIGATION_POLICY = 0x00020007;
@@ -473,7 +478,7 @@ namespace Engineer.Extra
             public static extern bool OpenProcessToken(IntPtr ProcessHandle, int DesiredAccess, ref IntPtr TokenHandle);
 
             //create service
-            [DllImport("advapi32.dll", EntryPoint = "CreateServiceA")]
+            [DllImport("advapi32.dll", EntryPoint = "CreateServiceA", SetLastError = true)]
             public static extern IntPtr CreateService(IntPtr SC_HANDLE, string lpSvcName, string lpDisplayName, uint dwDesiredAccess, uint dwServiceType, uint dwStartType, uint dwErrorControl, string lpPathName, string lpLoadOrderGroup, string lpdwTagId, string lpDependencies, string lpServiceStartName, string lpPassword);
 
             //copy file

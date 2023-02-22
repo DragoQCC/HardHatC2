@@ -1,23 +1,26 @@
-﻿using System;
+﻿  using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+  using TeamServer.Models.Dbstorage;
+  using TeamServer.Services;
 
-namespace TeamServer.Utilities
+  namespace TeamServer.Utilities
 {
     public class Encryption
     {
-        public static string UniversialMetadataIdKey = ""; // used to encrypt the metadata id used in a header, which then can let you find the key for that implants metadata
+        public static string UniversialMetadataKey = ""; // used to encrypt the metadata used in a header, which then can let you find the key for that implants metadata
         public static string UniversialMessagePathKey = ""; // used to encrypt / decrypt path message info for C2 tasks
-        public static string UniqueTeamServerVerificationKey = ""; // value is the key used on the verification message for the teamserver
-        public static string UniqueTeamServerVerificationMessage = ""; // value is the decrypted verfication message for the teamserver
+        public static string UniversalTaskEncryptionKey = ""; // used to encrypt / decrypt the task encryption key for C2 tasks, only for the first task/ check-in
+        //public static string UniqueTeamServerVerificationKey = ""; // value is the key used on the verification message for the teamserver
+        //public static string UniqueTeamServerVerificationMessage = ""; // value is the decrypted verfication message for the teamserver
 
 
-        public static Dictionary<string, string> UniqueMetadataKey = new Dictionary<string, string>(); // key is implant id, value is the key used to read the emtadata
-        public static Dictionary<string, string> UniqueImplantVerificationKeys = new Dictionary<string, string>(); // key is the implant id, value is the key used on the verification message
-        public static Dictionary<string, string> UniqueImplantVerificationMessage = new Dictionary<string, string>(); // key is the implant id, value is the decrypted verfication message
+       // public static Dictionary<string, string> UniqueMetadataKey = new Dictionary<string, string>(); // key is implant id, value is the key used to read the metadata
+       // public static Dictionary<string, string> UniqueImplantVerificationKeys = new Dictionary<string, string>(); // key is the implant id, value is the key used on the verification message
+        //public static Dictionary<string, string> UniqueImplantVerificationMessage = new Dictionary<string, string>(); // key is the implant id, value is the decrypted verfication message
         public static Dictionary<string, string> UniqueTaskEncryptionKey = new Dictionary<string, string>(); // key is the implant id, value is the encrypted task encryption key
 
         public static List<string> FirstTimeEncryptionKeys = new List<string>(); // list of keys that have been used to encrypt the first time message
@@ -30,8 +33,8 @@ namespace TeamServer.Utilities
             {
                 //Console.WriteLine($"encrypting {bytesToBeEncrypted.Length} bytes");
                 // make passwordBytes array out of string H@rdH@tC2P@$$w0rd!
+                //byte[] passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(EncodedPassword));
                 byte[] passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes("H@rdH@tC2P@$$w0rd!"));
-                //byte[] passwordBytes = Convert.FromBase64String(EncodedPassword);
 
                 byte[] encryptedBytes = null;
                 byte[] saltBytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
@@ -72,7 +75,7 @@ namespace TeamServer.Utilities
             {
                 // make passwordBytes array out of string H@rdH@tC2P@$$w0rd!
                 byte[] passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes("H@rdH@tC2P@$$w0rd!"));
-                //byte[] passwordBytes = Convert.FromBase64String(EncodedPassword);
+                //byte[] passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(EncodedPassword));
 
                 byte[] decryptedBytes = null;
                 byte[] saltBytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
@@ -114,49 +117,50 @@ namespace TeamServer.Utilities
         {
             //create a random string with a character length to match the v variable 
             Random random = new Random();
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*-+=?";
             return new string(Enumerable.Repeat(chars, v).Select(s => s[random.Next(s.Length)]).ToArray());
         }
 
         public static void GenerateUniversialKeys()
         {
             // generate a random key for the metadata id
-            UniversialMetadataIdKey = GenerateRandomString(32);
-            UniversialMetadataIdKey = Convert.ToBase64String(GeneratePasswordBytes(UniversialMetadataIdKey));
+            UniversialMetadataKey = GenerateRandomString(32);
             // generate a random key for the path message
             UniversialMessagePathKey = GenerateRandomString(32);
-            UniversialMessagePathKey = Convert.ToBase64String(GeneratePasswordBytes(UniversialMessagePathKey));
+            //task encryption key used during first check in 
+            UniversalTaskEncryptionKey = GenerateRandomString(32);
+            
+            if(DatabaseService.Connection == null)
+            {
+                DatabaseService.ConnectDb();
+            }
+            DatabaseService.Connection.Insert(new EncryptionKeys_DAO(){ItemID = "UniversialMetadataKey", Key = UniversialMetadataKey});
+            DatabaseService.Connection.Insert(new EncryptionKeys_DAO(){ItemID = "UniversialMessagePathKey", Key = UniversialMessagePathKey});
+            DatabaseService.Connection.Insert(new EncryptionKeys_DAO(){ItemID = "UniversalTaskEncryptionKey", Key = UniversalTaskEncryptionKey});
+            
         }
 
         //generate all Unique Keys for the Implants 
         public static void GenerateUniqueKeys(string implantId)
         {
 
-            // generate a random key for the metadata
-            string metadataKey = GenerateRandomString(32);
-            metadataKey = Convert.ToBase64String(GeneratePasswordBytes(metadataKey));
-            UniqueMetadataKey.Add(implantId, metadataKey);
-
-            // generate a random key for the verification message
-            string verificationKey = GenerateRandomString(32);
-            verificationKey = Convert.ToBase64String(GeneratePasswordBytes(verificationKey));
-            UniqueImplantVerificationKeys.Add(implantId, verificationKey);
-
-            //generate the random Implant Verification Message 
-            string verificationMessage = GenerateRandomString(32);
-            UniqueImplantVerificationMessage.Add(implantId, verificationMessage);
-
-            // generate a random key for the verification message
-            string teamServerVerificationKey = GenerateRandomString(32);
-            UniqueTeamServerVerificationKey = Convert.ToBase64String(GeneratePasswordBytes(teamServerVerificationKey));
-
-            //generare the random teamserver verification message
-            UniqueTeamServerVerificationMessage = GenerateRandomString(32);
-
             // generate a random key for the task encryption key
             string taskEncryptionKey = GenerateRandomString(32);
-            taskEncryptionKey = Convert.ToBase64String(GeneratePasswordBytes(taskEncryptionKey));
-            UniqueTaskEncryptionKey.Add(implantId, taskEncryptionKey);
+            //taskEncryptionKey = Convert.ToBase64String(GeneratePasswordBytes(taskEncryptionKey));
+            if (UniqueTaskEncryptionKey.ContainsKey(implantId) == false)
+            {
+                UniqueTaskEncryptionKey.Add(implantId, taskEncryptionKey);
+            }
+            else
+            {
+                UniqueTaskEncryptionKey[implantId] = taskEncryptionKey;
+            }
+            if(DatabaseService.Connection == null)
+            {
+                DatabaseService.ConnectDb();
+            }
+            DatabaseService.Connection.Insert(new EncryptionKeys_DAO(){ItemID = implantId, Key = taskEncryptionKey});
+            
         }
     }
 }

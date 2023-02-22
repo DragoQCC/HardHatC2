@@ -18,7 +18,7 @@ public class MergeAssembly
                 SearchDirectories = new List<string> { searchdir },
                 XmlDocumentation = false,
                 DebugInfo = false,
-
+                TargetKind = ILRepacking.ILRepack.Kind.SameAsPrimaryAssembly,
             });
             repack.Repack();
         }

@@ -8,12 +8,16 @@ namespace TeamServer.Models.Dbstorage
     {
         [PrimaryKey,AutoIncrement]
         public int Id { get; set; }
+        
         [Column("Name")]
         public  string Name { get; set; }
-        [Column("Pipe")]
+        
+        [Column("NamedPipe")]
         public string NamedPipe { get; set; }
+       
         [Column("ConnectionAddress")]
         public string ConnectionAddress { get; set; }
+        
         [Column("ConnectionMode")]
         public ConnectionMode connectionMode { get; set; } // always means direction of parent -> child
 

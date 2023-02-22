@@ -18,6 +18,8 @@ using TeamServer.Controllers;
 using RestSharp;
 using ApiModels.Responses;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading;
+using TeamServer.Utilities;
 
 namespace TeamServer.Services
 {
@@ -26,7 +28,7 @@ namespace TeamServer.Services
         public static string ConnectionString = null;
         public static SQLiteAsyncConnection AsyncConnection = null;
         public static SQLiteConnection Connection = null;
-        private static List<Type> dbItemTypes = new List<Type> { typeof(Cred_DAO), typeof(DownloadFile_DAO), /*typeof(EncryptionKeys_DAO),*/ typeof(Engineer_DAO), typeof(EngineerTaskResult_DAO), typeof(HistoryEvent_DAO),
+        private static List<Type> dbItemTypes = new List<Type> { typeof(Cred_DAO), typeof(DownloadFile_DAO), typeof(EncryptionKeys_DAO), typeof(Engineer_DAO), typeof(EngineerTaskResult_DAO), typeof(HistoryEvent_DAO),
                                                         typeof(HttpManager_DAO), typeof(PivotProxy_DAO),typeof(ReconCenterEntity_DAO), typeof(SMBManager_DAO), typeof(TCPManager_DAO), typeof(UploadedFile_DAO),typeof(EngineerTask_DAO) };
 
 
@@ -50,11 +52,13 @@ namespace TeamServer.Services
             //make a db file named HardHarC2.db inside the databaseDirectory 
             if (!File.Exists(databaseDirectory + allPlatformPathSeperator + "HardHatC2.db"))
             {
-                File.Create(databaseDirectory + allPlatformPathSeperator + "HardHatC2.db");
+                File.Create(databaseDirectory + allPlatformPathSeperator + "HardHatC2.db").Close();
             }
             //create a connection string to the database file
             ConnectionString = databaseDirectory + allPlatformPathSeperator + "HardHatC2.db";
-
+            Thread.Sleep(1000);
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
 
         }
 
@@ -85,7 +89,6 @@ namespace TeamServer.Services
         {
             if (Connection == null)
             {
-
                 Connection = new SQLiteConnection(ConnectionString);
                 AsyncConnection = new SQLiteAsyncConnection(ConnectionString);
             }
@@ -109,10 +112,9 @@ namespace TeamServer.Services
                 managerService._managers.AddRange(httpManagers);
 
                 //make an http post to the managers controller calling the AddManagersFromDB and pass in the httpManagers list
-                var client = new RestClient("https://localhost:5000");
                 var request = new RestRequest("/managers/addDB", Method.Post);
                 request.AddBody(httpManagers);
-                _ = await client.PostAsync<IActionResult>(request);
+                _ = await Startup.client.PostAsync<IActionResult>(request);
 
 
                 managerService._managers.AddRange(await GetTCPManagers());
@@ -152,6 +154,32 @@ namespace TeamServer.Services
                             }
                         }
                     }
+                }
+                
+                List<EncryptionKeys_DAO> encryptionKeys = await GetEncryptionKeys();
+                foreach (EncryptionKeys_DAO key in encryptionKeys)
+                {
+                    if (key.ItemID == "UniversialMetadataKey")
+                    {
+                        Encryption.UniversialMetadataKey = key.Key;
+                    }
+                    else if (key.ItemID == "UniversialMessagePathKey")
+                    {
+                        Encryption.UniversialMessagePathKey = key.Key;
+                    }
+                    else if (key.ItemID == "UniversalTaskEncryptionKey")
+                    {
+                        Encryption.UniversalTaskEncryptionKey = key.Key;
+                    }
+                    else
+                    {
+                        bool keyAdded = Encryption.UniqueTaskEncryptionKey.TryAdd(key.ItemID, key.Key);
+                        if(keyAdded == false)
+                        {
+                            Encryption.UniqueTaskEncryptionKey[key.ItemID] = key.Key;
+                        }
+                    }
+                    
                 }
 
                 PivotProxy.PivotProxyList = await GetPivotProxies();
@@ -316,26 +344,25 @@ namespace TeamServer.Services
             }
         }
 
-        ////a function to retrun all the EncryptionKeys from the database
-        //public static async Task<List<EncryptionKeys>> GetEncryptionKeys()
-        //{
-        //    try
-        //    {
-        //        if (Connection == null)
-        //        {
-        //            ConnectDb();
-        //        }
-        //        var storedEncryptionKeys = Connection.Table<EncryptionKeys_DAO>().ToList().Select(x => (EncryptionKeys)x);
-        //        List<EncryptionKeys> encryptionKeyList = new List<EncryptionKeys>(storedEncryptionKeys);
-        //        return encryptionKeyList;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine(ex.Message);
-        //        Console.WriteLine(ex.StackTrace);
-        //        return null;
-        //    }
-        //}
+        //a function to retrun all the EncryptionKeys from the database
+        public static async Task<List<EncryptionKeys_DAO>> GetEncryptionKeys()
+        {
+            try
+            {
+                if (Connection == null)
+                {
+                    ConnectDb();
+                }
+                var storedEncryptionKeys = Connection.Table<EncryptionKeys_DAO>().ToList();
+                return storedEncryptionKeys;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
+                return null;
+            }
+        }
 
         //a function to return all the EngineerTaskResults from the database
 
