@@ -366,3 +366,6 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /TeamServer/database/HardHatC2.db
+/TeamServer/Models/Engineers/EngineerCommands
+/TeamServer/temp
+*.bin
