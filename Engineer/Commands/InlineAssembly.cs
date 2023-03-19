@@ -22,12 +22,12 @@ namespace Engineer.Commands
         {
             if(task.File == null)
             {
-                Tasking.FillTaskResults("error: " + "no assembly suppiled use the /file argument, file location should be on team server.", task, EngTaskStatus.FailedWithWarnings);
+                Tasking.FillTaskResults("error: " + "no assembly suppiled use the /file argument, file location should be on team server.", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 return;
             }
             if (task.File.Length < 1)
             {
-                Tasking.FillTaskResults("error: " + "no assembly suppiled use the /file argument, file location should be on team server.",task,EngTaskStatus.FailedWithWarnings);
+                Tasking.FillTaskResults("error: " + "no assembly suppiled use the /file argument, file location should be on team server.",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 return;
             }
             task.Arguments.TryGetValue("/args", out string assemblyArgument);
@@ -90,13 +90,13 @@ namespace Engineer.Commands
                     {
                         //clear the memory stream
                         ms.Clear();
-                        Tasking.FillTaskResults(output, task,EngTaskStatus.Running);
+                        Tasking.FillTaskResults(output, task,EngTaskStatus.Running,TaskResponseType.String);
                         output = "";
                     }
                     if (task.cancelToken.IsCancellationRequested)
                     {
                         thread.Abort();
-                        Tasking.FillTaskResults("[-]Task Cancelled", task, EngTaskStatus.Cancelled);
+                        Tasking.FillTaskResults("[-]Task Cancelled", task, EngTaskStatus.Cancelled,TaskResponseType.String);
                         return;
                     }
                     Thread.Sleep(100);
@@ -104,12 +104,12 @@ namespace Engineer.Commands
                 //finish reading and set status to complete 
                 output = Encoding.UTF8.GetString(ms.ToArray());
                 ms.Clear();
-                Tasking.FillTaskResults(output, task,EngTaskStatus.Complete);
+                Tasking.FillTaskResults(output, task,EngTaskStatus.Complete,TaskResponseType.String);
 
             }
             catch (Exception e)
             {
-                Tasking.FillTaskResults("error: " + e.Message, task, EngTaskStatus.Failed);
+                Tasking.FillTaskResults("error: " + e.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
             }
             finally
             {

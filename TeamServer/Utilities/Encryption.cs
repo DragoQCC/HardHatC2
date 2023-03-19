@@ -38,26 +38,26 @@ using System.Text;
 
                 byte[] encryptedBytes = null;
                 byte[] saltBytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
-                using (MemoryStream ms = new MemoryStream())
+                using MemoryStream ms = new MemoryStream();
+                using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
                 {
-                    using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
+                    aes.KeySize = 256;
+                    aes.BlockSize = 128;
+                    var key = new Rfc2898DeriveBytes(passwordBytes, saltBytes, 1000);
+                    aes.Key = key.GetBytes(aes.KeySize / 8);
+                    aes.IV = key.GetBytes(aes.BlockSize / 8);
+                    aes.Mode = CipherMode.CBC;
+                    aes.Padding = PaddingMode.ANSIX923;
+                    using (var cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
                     {
-                        aes.KeySize = 256;
-                        aes.BlockSize = 128;
-                        var key = new Rfc2898DeriveBytes(passwordBytes, saltBytes, 1000);
-                        aes.Key = key.GetBytes(aes.KeySize / 8);
-                        aes.IV = key.GetBytes(aes.BlockSize / 8);
-                        aes.Mode = CipherMode.CBC;
-                        aes.Padding = PaddingMode.ANSIX923;
-                        using (var cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
-                        {
-                            cs.Write(bytesToBeEncrypted, 0, bytesToBeEncrypted.Length);
-                            cs.Close();
-                        }
-                        aes.Clear();
+                        cs.Write(bytesToBeEncrypted, 0, bytesToBeEncrypted.Length);
+                        cs.Close();
                     }
-                    encryptedBytes = ms.ToArray();
+
+                    aes.Clear();
                 }
+
+                encryptedBytes = ms.ToArray();
                 return encryptedBytes;
 
             }
@@ -66,7 +66,7 @@ using System.Text;
                 Console.WriteLine(ex.Message);
                 return null;
             }
-           
+
         }
         // Aes decryption is used to decrypt the data after it has been received from the implant
         public static byte[] AES_Decrypt(byte[] bytesToBeDecrypted, string EncodedPassword)
@@ -74,31 +74,29 @@ using System.Text;
             try
             {
                 // make passwordBytes array out of string H@rdH@tC2P@$$w0rd!
-                byte[] passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes("H@rdH@tC2P@$$w0rd!"));
+                byte[] passwordBytes = SHA256.HashData(Encoding.UTF8.GetBytes("H@rdH@tC2P@$$w0rd!"));
                 //byte[] passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(EncodedPassword));
 
                 byte[] decryptedBytes = null;
                 byte[] saltBytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
-                using (MemoryStream ms = new MemoryStream())
+                using MemoryStream ms = new MemoryStream();
+                using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
                 {
-                    using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
+                    aes.KeySize = 256;
+                    aes.BlockSize = 128;
+                    var key = new Rfc2898DeriveBytes(passwordBytes, saltBytes, 1000);
+                    aes.Key = key.GetBytes(aes.KeySize / 8);
+                    aes.IV = key.GetBytes(aes.BlockSize / 8);
+                    aes.Mode = CipherMode.CBC;
+                    aes.Padding = PaddingMode.ANSIX923;
+                    using (var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Write))
                     {
-                        aes.KeySize = 256;
-                        aes.BlockSize = 128;
-                        var key = new Rfc2898DeriveBytes(passwordBytes, saltBytes, 1000);
-                        aes.Key = key.GetBytes(aes.KeySize / 8);
-                        aes.IV = key.GetBytes(aes.BlockSize / 8);
-                        aes.Mode = CipherMode.CBC;
-                        aes.Padding = PaddingMode.ANSIX923;
-                        using (var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Write))
-                        {
-                            cs.Write(bytesToBeDecrypted, 0, bytesToBeDecrypted.Length);
-                            cs.Close();
-                        }
-                        aes.Clear();
+                        cs.Write(bytesToBeDecrypted, 0, bytesToBeDecrypted.Length);
+                        cs.Close();
                     }
-                    decryptedBytes = ms.ToArray();
+                    aes.Clear();
                 }
+                decryptedBytes = ms.ToArray();
                 return decryptedBytes;
             }
             catch (System.Exception ex)
@@ -110,10 +108,10 @@ using System.Text;
 
         public static byte[] GeneratePasswordBytes(string password)
         {
-            return SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(password));
+            return SHA256.HashData(Encoding.UTF8.GetBytes(password));
         }
 
-        private static string GenerateRandomString(int v)
+        public static string GenerateRandomString(int v)
         {
             //create a random string with a character length to match the v variable 
             Random random = new Random();

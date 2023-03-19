@@ -142,6 +142,7 @@
     <Compile Include="Commands\NetDcList.cs" />
     <Compile Include="Commands\Patch-AMSI.cs" />
     <Compile Include="Commands\Patch-ETW.cs" />
+    <Compile Include="Commands\Ping.cs" />
     <Compile Include="Commands\PowerList.cs" />
     <Compile Include="Commands\Powershell-Import.cs" />
     <Compile Include="Commands\print-env.cs" />
@@ -167,9 +168,6 @@
     <Compile Include="Extra\EngineerCommandTemplate.cs" />
     <Compile Include="Extra\h_reprobate.cs" />
     <Compile Include="Extra\reprobate.cs" />
-    <Compile Include="Extra\ServiceExeMode.cs">
-      <SubType>Component</SubType>
-    </Compile>
     <Compile Include="Extra\WinApiDynamicDelegate.cs" />
     <Compile Include="Extra\WinAPIs.cs" />
     <Compile Include="Functions\DownloadTracker.cs" />

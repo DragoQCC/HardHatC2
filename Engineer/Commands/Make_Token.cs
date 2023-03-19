@@ -40,37 +40,24 @@ namespace Engineer.Commands
                     try
                     {
                         identity.Impersonate();
-                        //perform an ls task against the //dc-02.corp.local/c$ to test token
-                        //var ls = new EngineerTask
-                        //{
-                        //    Id = Guid.NewGuid().ToString(),
-                        //    Command = "ls",
-                        //    Arguments = new Dictionary<string, string>
-                        //    {
-                        //        {"/path","//dc-02.corp.local/c$" }
-                        //    },
-                        //    File = null,
-                        //    IsBlocking = false,
-                        //};
-                        //Program.DealWithTask(ls);
                         Program.ImpersonatedUser = identity;
                         Program.ImpersonatedUserChanged = true;
-                        Tasking.FillTaskResults($"Successfully impersonated {domain}\\{username} for remote access, still {identity.Name} locally",task,EngTaskStatus.Complete);
+                        Tasking.FillTaskResults($"Successfully impersonated {domain}\\{username} for remote access, still {identity.Name} locally",task,EngTaskStatus.Complete,TaskResponseType.String);
                         return;
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine(ex.Message);
                         Console.WriteLine(ex.StackTrace);
-                        Tasking.FillTaskResults(ex.Message,task,EngTaskStatus.Failed);
+                        Tasking.FillTaskResults(ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
                         return;
                     }
 
                 }
-                Tasking.FillTaskResults("error: " + "created token but Failed to imersonate user",task,EngTaskStatus.FailedWithWarnings);
+                Tasking.FillTaskResults("error: " + "created token but Failed to imersonate user",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 return;
             }
-            Tasking.FillTaskResults("error: " + "Failed to make token",task,EngTaskStatus.FailedWithWarnings);
+            Tasking.FillTaskResults("error: " + "Failed to make token",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
         }
     }
 }

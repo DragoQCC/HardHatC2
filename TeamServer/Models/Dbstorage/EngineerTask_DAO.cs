@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
-using SQLite; 
-
+using SQLite;
+using TeamServer.Utilities;
 
 namespace TeamServer.Models.Dbstorage
 {
@@ -13,13 +13,17 @@ namespace TeamServer.Models.Dbstorage
         [Column("Command")]
         public string CommandHeader { get; set; }
 
+        [Column("Arguments")]
+        public byte[] Arguments { get; set; }
+
         //create an implicit operator to convert from the model to the doa
         public static implicit operator EngineerTask_DAO(EngineerTask model)
         {
             return new EngineerTask_DAO
             {
                 Id = model.Id,
-                CommandHeader = model.Command
+                CommandHeader = model.Command,
+                Arguments = model.Arguments.ProSerialise()
             };
         }
 
@@ -30,7 +34,8 @@ namespace TeamServer.Models.Dbstorage
             return new EngineerTask
             {
                 Id = dao.Id,
-                Command = dao.CommandHeader
+                Command = dao.CommandHeader,
+                Arguments = dao.Arguments.ProDeserialize<Dictionary<string, string>>()
             };
         }
     }

@@ -75,7 +75,7 @@ namespace TeamServer.Controllers
                 var result = engineer.GetTaskResult(taskId);
                 if (result is null)
                 {
-                    return NotFound("Task not found");
+                    return NotFound(result);
                 }
                 return Ok(result);
             }
@@ -109,6 +109,7 @@ namespace TeamServer.Controllers
                 {
                     Id = task.Id,
                     Command = $"({DateTime.UtcNow}) Engineer instructed to {task.Command + " " + args}\n",
+                    Arguments = task.Arguments,
                 };
                 HardHatHub.StoreTaskHeader(taskHeader);
                // add the engineerId as the key with a new list of EngineerTask to the Engineer.Previous task Dictionary and add the task to the list of tasks for the engineer
@@ -152,6 +153,8 @@ namespace TeamServer.Controllers
             int sleep = request.Sleep;
             string managerBindAddress = "";
             string managerBindPort = "";
+            string managerConnectionAddress = "";
+            string managerConnectionPort = "";
 			string managerType = "";
 
 
@@ -163,8 +166,8 @@ namespace TeamServer.Controllers
                     if (manager.Name == managerName)
                     {
                         managerType = manager.Type.ToString();
-                        managerBindAddress = manager.ConnectionAddress;
-                        managerBindPort = manager.ConnectionPort.ToString();
+                        managerConnectionAddress = manager.ConnectionAddress;
+                        managerConnectionPort = manager.ConnectionPort.ToString();
                         file = file.Replace("{{REPLACE_MANAGER_NAME}}", managerName);
                         file = file.Replace("{{REPLACE_MANAGER_TYPE}}", managerType);
                         //update some C2 Profile stuff 
@@ -172,6 +175,9 @@ namespace TeamServer.Controllers
                         file = file.Replace("{{REPLACE_COOKIES}}", manager.c2Profile.Cookies);
                         file = file.Replace("{{REPLACE_REQUEST_HEADERS}}", manager.c2Profile.RequestHeaders);
                         file = file.Replace("{{REPLACE_USERAGENT}}", manager.c2Profile.UserAgent);
+                        //update file with ConnectionIP and ConnectionPort from request
+                        file = file.Replace("{{REPLACE_CONNECTION_IP}}", managerConnectionAddress);
+                        file = file.Replace("{{REPLACE_CONNECTION_PORT}}", managerConnectionPort);
                     }
                     if (manager.IsSecure)
                     {
@@ -189,6 +195,9 @@ namespace TeamServer.Controllers
 						file = file.Replace("{{REPLACE_BIND_PORT}}", manager.BindPort.ToString());
 						file = file.Replace("{{REPLACE_LISTEN_PORT}}", manager.ListenPort.ToString());
 						file = file.Replace("{{REPLACE_ISLOCALHOSTONLY}}", manager.IsLocalHost.ToString());
+						//update file with ConnectionIP and ConnectionPort from request
+						file = file.Replace("{{REPLACE_CONNECTION_IP}}", managerBindAddress);
+						file = file.Replace("{{REPLACE_CONNECTION_PORT}}", managerBindPort);
 						if (manager.connectionMode == TCPManager.ConnectionMode.bind)
 						{
 							file = file.Replace("{{REPLACE_CHILD_IS_SERVER}}", "true");
@@ -211,6 +220,8 @@ namespace TeamServer.Controllers
                         file = file.Replace("{{REPLACE_MANAGER_NAME}}", managerName);
                         file = file.Replace("{{REPLACE_MANAGER_TYPE}}", manager.Type.ToString());
 						file = file.Replace("{{REPLACE_NAMED_PIPE}}", manager.NamedPipe);
+						file = file.Replace("{{REPLACE_CONNECTION_IP}}", managerBindAddress);
+						file = file.Replace("{{REPLACE_CONNECTION_PORT}}", managerBindAddress);
                         if (manager.connectionMode == SMBmanager.ConnectionMode.bind)
                         {
                             file = file.Replace("{{REPLACE_CHILD_IS_SERVER}}", "true");
@@ -228,9 +239,7 @@ namespace TeamServer.Controllers
             //update file with sleep time
             file = file.Replace("{{REPLACE_SLEEP_TIME}}", sleep.ToString());
 
-            //update file with ConnectionIP and ConnectionPort from request
-            file = file.Replace("{{REPLACE_CONNECTION_IP}}", managerBindAddress);
-            file = file.Replace("{{REPLACE_CONNECTION_PORT}}", managerBindPort);
+
 			if (request.WorkingHours != null)
 			{
 				file = file.Replace("{{REPLACE_WORK_HOURS_START}}", request.WorkingHours.Split('-')[0]);
@@ -276,36 +285,26 @@ namespace TeamServer.Controllers
 	            if (request.complieType == SpawnEngineerRequest.EngCompileType.exe)
 	            {
 		            outputLocation = pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
-		            sourceAssemblyLocation =
-			            pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
-		            System.IO.File.WriteAllBytes(
-			            pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.exe", assemblyBytes);
+		            sourceAssemblyLocation = pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
+		            System.IO.File.WriteAllBytes(sourceAssemblyLocation, assemblyBytes);
 	            }
 	            else if (request.complieType == SpawnEngineerRequest.EngCompileType.dll)
 	            {
 		            outputLocation = pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.dll";
-		            sourceAssemblyLocation =
-			            pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.dll";
-		            System.IO.File.WriteAllBytes(
-			            pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.dll", assemblyBytes);
+		            sourceAssemblyLocation =  pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.dll";
+		            System.IO.File.WriteAllBytes(sourceAssemblyLocation, assemblyBytes);
 	            }
 	            else if (request.complieType == SpawnEngineerRequest.EngCompileType.serviceexe)
 	            {
-		            outputLocation = pathSplit[0] + ".." +
-		                             $"{allPlatformPathSeperator}Engineer_{managerName}_service.exe";
-		            sourceAssemblyLocation = pathSplit[0] + "temp" +
-		                                     $"{allPlatformPathSeperator}Engineer_{managerName}_service.exe";
-		            System.IO.File.WriteAllBytes(
-			            pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}_service.exe",
-			            assemblyBytes);
+		            outputLocation = pathSplit[0] + ".." +$"{allPlatformPathSeperator}Engineer_{managerName}_service.exe";
+		            sourceAssemblyLocation = pathSplit[0] + "temp" +$"{allPlatformPathSeperator}Engineer_{managerName}_service.exe";
+		            System.IO.File.WriteAllBytes(sourceAssemblyLocation, assemblyBytes);
 	            }
 	            else
 	            {
 		            outputLocation = pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
-		            sourceAssemblyLocation =
-			            pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
-		            System.IO.File.WriteAllBytes(
-			            pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.exe", assemblyBytes);
+		            sourceAssemblyLocation = pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
+		            System.IO.File.WriteAllBytes(sourceAssemblyLocation, assemblyBytes);
 	            }
 
 

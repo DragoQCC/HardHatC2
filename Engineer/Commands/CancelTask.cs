@@ -23,7 +23,7 @@ namespace Engineer.Commands
             taskToCancel.cancelToken = cts.Token;
             cts.Cancel();
             //call FillTaskResult saying we cancelled the task
-            Tasking.FillTaskResults($"Cancelled task {canceltaskId}", task, EngTaskStatus.Complete);
+            Tasking.FillTaskResults($"Cancelled task {canceltaskId}", task, EngTaskStatus.Complete,TaskResponseType.String);
         }
     }
 }

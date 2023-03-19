@@ -1,129 +1,577 @@
-﻿@using AutoMapper.Internal
-<h3>FileBrowser</h3>
+﻿@using System.Runtime.InteropServices.Marshalling
+@using HardHatC2Client.Models
+@using HardHatC2Client.Pages
+@using System.Collections.Concurrent
+@using System.Collections.ObjectModel
+@using HardHatC2Client.Models.TaskResultTypes
+@using HardHatC2Client.Utilities
+@inject IToastService toastDefault
+ <MudDynamicTabs @ref="@DynamicTabs" Elevation="4" PanelClass="px-4 py-6" Rounded="true" ApplyEffectsToContainer="true" CloseTab="@((panel) => CloseTabCallback(panel))" @bind-ActivePanelIndex="UserIndex">
+     @foreach(var tab in Tabs)
+     {
+         <MudTabPanel Tag="@tab.TabId" Text="@tab.Name" Icon="@Icons.Material.Outlined.DesktopWindows">
+             <!-- a dropdown menu of all the engineers on the host who can list content  -->
+             <MudSwitch @bind-Checked="@HideOfflineEngineers" Label="Hide Offline Engineers" Color="Color.Primary" />
+             <MudSwitch @bind-Checked="@HostOnlyEngineers" Label="Host Only Engineers" Color="Color.Primary" />
+             <div class="d-flex mb-xl-2">
+                 <MudSelect Class="mb-4 mt-4" T="Engineer" Label="Engineer To Browse With" Variant="Variant.Filled" Required="true" @bind-value="selectedEngineer" RequiredError="Engineer is required!">
+                     @if (HostOnlyEngineers)
+                     {
+                         if (HideOfflineEngineers)
+                         {
+                             foreach (Engineer eng in Engineers.EngineerList)
+                             {
+                                 if (eng.Status == null)
+                                 {
+                                     Engineers.GetEngineerStatus(eng);
+                                 }
+                             }
+                             foreach (Engineer eng in Engineers.EngineerList.Where(x => x.Hostname.Equals(tab.Name, StringComparison.CurrentCultureIgnoreCase) && x.Status.Equals("Active",StringComparison.CurrentCultureIgnoreCase)))
+                             {
+                                 <MudSelectItem Value="@(eng)">
+                                     <MudText>@eng.Username - @eng.ProcessId@@@eng.Address, Int: @eng.Integrity, Sleep: @eng.Sleep </MudText>
+                                 </MudSelectItem>
+                             }
+                         }
+                         else
+                         {
+                             foreach (Engineer eng in Engineers.EngineerList.Where(x => x.Hostname.Equals(tab.Name, StringComparison.CurrentCultureIgnoreCase)))
+                             {
+                                 <MudSelectItem Value="@(eng)">
+                                     <MudText>@eng.Username - @eng.ProcessId@@@eng.Address, Int: @eng.Integrity, Sleep: @eng.Sleep </MudText>
+                                 </MudSelectItem>
+                             }
+                         }
+                     }
+                     else
+                     {
+                         if (HideOfflineEngineers)
+                         {
+                             foreach (Engineer eng in Engineers.EngineerList.Where(x => x.Status.Equals("Active", StringComparison.CurrentCultureIgnoreCase)))
+                             {
+                                 <MudSelectItem Value="@(eng)">
+                                     <MudText>@eng.Username - @eng.ProcessId@@@eng.Address, Int: @eng.Integrity, Sleep: @eng.Sleep </MudText>
+                                 </MudSelectItem>
+                             }
+                         }
+                         else
+                         {
+                             foreach (Engineer eng in Engineers.EngineerList)
+                             {
+                                 <MudSelectItem Value="@(eng)">
+                                     <MudText>@eng.Username - @eng.ProcessId@@@eng.Address, Int: @eng.Integrity, Sleep: @eng.Sleep </MudText>
+                                 </MudSelectItem>
+                             }
+                         }
 
-<MudPaper Width="350px" MaxHeight="500px" Class="overflow-y-auto" Elevation="0">
-    <MudTreeView T="TreeItemData"  Items="@TreeItems.Values">
-        <ItemTemplate>
-            <MudTreeViewItem @bind-Expanded="@context.IsExpanded" Items="@context.ChildTreeItems">
-                <Content>
-                    <MudTreeViewItemToggleButton @bind-Expanded="@context.IsExpanded" Visible="@context.HasChild" />
-                    <MudIcon Icon="@context.Icon" Class="ml-0 mr-2" Color="@Color.Default" />
-                    <MudText>@context.Text</MudText>
-                </Content>
-            </MudTreeViewItem>
-        </ItemTemplate>
-    </MudTreeView>
-</MudPaper>
+                     }
+                 </MudSelect>
+                 <MudTextField Class="mb-4 mt-4" @ref=pathTextFiled TextChanged="OnPathChanged" @bind-Value="targetPath" Label="Path To Browse" Variant="Variant.Filled" />
+                 <MudCheckBox @bind-Checked="@GetACLs" Label="Get ACLs?" Color="Color.Primary"></MudCheckBox>
+                 <MudCheckBox @bind-Checked="@GetItemCount" Label="Get Item Count?" Color="Color.Primary"></MudCheckBox>
+            </div>
+             <div class="d-flex mb-xl-2">
+                 <MudCard Class="" Style="overflow-y:auto" Outlined="true">
+                     <MudCardContent Style="height:900px; width:450px">
+                         <MudTreeView @bind-SelectedValue="SelectedValue" Hover="true" Dense="true" Color="Color.Primary" T="TreeItemData" Items="@tab.Content">
+                             <ItemTemplate>
+                                 <MudTreeViewItem Value="@context" @bind-Expanded="@context.IsExpanded" Items="@context.ChildTreeItems">
+                                     <Content>
+                                         <MudTreeViewItemToggleButton @bind-Expanded="@context.IsExpanded" Visible="@context.HasChild"/>
+                                         @if (context.ItemCount > 0)
+                                         {
+                                             <MudBadge Color="Color.Success" Overlap="true" Bordered="true" Class="mx-6 my-4" Content="context.ItemCount">
+                                                 <MudIcon Icon=@context.Icon Class="ml-0 mr-2" Color=@context.IconColor />
+                                             </MudBadge>
+                                         }
+                                         else if (context.ItemCount == -1)
+                                         {
+                                             <MudBadge Icon="@Icons.Material.Filled.Lock" Color="Color.Error" Overlap="true" Bordered="true" Class="mx-6 my-4">
+                                                 <MudIcon Icon=@context.Icon Class="ml-0 mr-2" Color=@context.IconColor />
+                                             </MudBadge>
+                                         }
+                                         else if (context.ItemCount == 0)
+                                         {
+                                             <MudBadge Color="Color.Error" Overlap="true" Bordered="true" Class="mx-6 my-4" Content="context.ItemCount">
+                                                 <MudIcon Icon=@context.Icon Class="ml-0 mr-2" Color=@context.IconColor />
+                                             </MudBadge>
+                                         }
+                                         else
+                                         {
+                                             <MudIcon Icon=@context.Icon Class="ml-0 mr-2" Color=@context.IconColor/>
+                                         }
 
+                                         <MudText>@context.Text</MudText>
+                                     </Content>
+                                 </MudTreeViewItem>
+                             </ItemTemplate>
+                         </MudTreeView>
+                     </MudCardContent>
+                 </MudCard>
+                 <MudCard Class="" Style="overflow-y:auto" Outlined="true">
+                     <MudCardContent Style="height:900px; Width:100%">
+
+                         @if (SelectedValue != null)
+                         {
+                             string path = "";
+                             List<FileSystemItem> outputs = new List<FileSystemItem>();
+                            <!-- check the DirectroyContent for keys matching the SelectedValue.fullPath ignoring trailing \, spaces, or captalization -->
+                            foreach (string key in tab.DirectoryContent.Keys)
+                            {
+                                //remove leading and trailing spaces from SelectedValue.FullPath and from the key
+                                SelectedValue.FullPath = SelectedValue.FullPath.Trim();
+                                string keyTrimmed = key.Trim();
+                                //remove trailing \ from SelectedValue.FullPath and from the key
+                                SelectedValue.FullPath = SelectedValue.FullPath.TrimEnd('\\');
+                                keyTrimmed = keyTrimmed.TrimEnd('\\');
+                                //if the key matches the SelectedValue.FullPath then add the value to the outputs list
+                                if (keyTrimmed.Equals(SelectedValue.FullPath, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    outputs.AddRange(tab.DirectoryContent[key]);
+                                    path = key;
+                                    SelectedValue.Icon = Icons.Material.Filled.FolderOpen;
+                                    SelectedValue.IconColor = Color.Primary;
+                                    break;
+                                }
+                            }
+                            if (!String.IsNullOrWhiteSpace(path))
+                            {
+                                if (LocationsToBrowse.Contains(SelectedValue.FullPath.Trim()))
+                                {
+                                    LocationsToBrowse.Remove(SelectedValue.FullPath.Trim());
+                                    ShowSuccessToast($"Got back content for {SelectedValue.FullPath}");
+                                    OnStateChange();
+                                }
+                                 <DirectoryListingTable Outputs="@outputs.Serialise()" Path="@SelectedValue.FullPath"></DirectoryListingTable>
+                             }
+                             else
+                             {
+                                 <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+                                 if (!LocationsToBrowse.Contains(SelectedValue.FullPath.Trim()) && selectedEngineer != null)
+                                 {
+                                     LocationsToBrowse.Add(SelectedValue.FullPath.Trim());
+                                     GetFiles(selectedEngineer, SelectedValue.FullPath.Trim());
+                                 }
+                             }
+                         }
+                         else
+                         {
+                             <MudAlert Severity="Severity.Error">No Directory Selected</MudAlert>
+                         }
+                     </MudCardContent>
+                 </MudCard>
+             </div>
+
+         </MudTabPanel>
+     }
+ </MudDynamicTabs>
 
 @code {
+    [Inject]
+    private static IToastService toastService { get; set; }
 
-    
     //public static List<string> InputsToParse = new List<string>();
     //the first string is the hostname that the file listing hashset is associated with
-    public static Dictionary<string,HashSet<TreeItemData>> TreeItems = new Dictionary<string, HashSet<TreeItemData>>();
+    public static List<TabView> Tabs = new List<TabView>();
+    public static List<TabView> backupTabs = new List<TabView>();
+    public MudDynamicTabs? DynamicTabs;
+    public static int UserIndex = 0;
+    private bool _updateIndex = false;
+    private static TreeItemData SelectedValue { get; set; }
+    public Engineer selectedEngineer = null;
+    private static ObservableCollection<string> LocationsToBrowse = new ObservableCollection<string>();
+    public string? targetPath = null;
+    public bool GetItemCount = false;
+    public bool GetACLs = false;
+    public bool HostOnlyEngineers = true;
+    public bool HideOfflineEngineers = false;
+    public delegate void OnStateChangeDelegate();
+    public static OnStateChangeDelegate OnStateChange;
+    private MudTextField<string> pathTextFiled; 
+
+    public class TabView
+    {
+        public string Name { get; set; }
+        public HashSet<TreeItemData> Content { get; set; }
+        public string TabId { get; set; }
+        public Dictionary<string, List<FileSystemItem>> DirectoryContent = new();
+    }    
+
 
     public class TreeItemData
     {
         public string Text { get; set; }
 
-        public string Icon { get; set; }
+        public string FullPath { get; set; }
+
+        public string? Icon { get; set; } = Icons.Material.Filled.Folder;
+
+        public Color IconColor { get; set; } = Color.Default;
 
         public bool IsExpanded { get; set; } = false;
 
         public bool HasChild => ChildTreeItems != null && ChildTreeItems.Count > 0;
 
+        public int ItemCount { get; set; }
+
         public HashSet<TreeItemData> ChildTreeItems { get; set; } = new HashSet<TreeItemData>();
 
-        public TreeItemData(string text, string icon)
+        public TreeItemData(string text,string fullPath)
         {
             Text = text;
-            Icon = icon;
+            FullPath = fullPath;
         }
     }
-    
-    
-    public static void GetDirectoryContent(string hostname,List<string> inputsToParse)
+
+
+    public static void AddSideBarContent(string hostname,List<FileSystemItem> inputs)
     {
-        //check if the hostname is already in the dictionary & if not then add it 
-        if (!TreeItems.ContainsKey(hostname))
+        //remove any items from inputsToParse that contain a . in the path
+        List<FileSystemItem> inputsToParse = inputs.Where(x => !x.Name.Contains('.')).ToList();
+
+        //if the hostname is already the name of a tab if it is pull out its hashset and add the new files to it
+        //if it is not then create a new tab with the hostname as the name and the hashset as the content
+        HashSet<TreeItemData> treeItems = new HashSet<TreeItemData>();
+        if (Tabs.Any(x => x.Name == hostname))
         {
-            TreeItems.Add(hostname, new HashSet<TreeItemData>());
+            //get the tab that has the hostname
+            TabView tab = Tabs.First(x => x.Name == hostname);
+            //get the hashset of the hostname
+            treeItems = tab.Content;
         }
-        //get the hashset of the hostname
-        HashSet<TreeItemData> treeItems = TreeItems[hostname];
-        
-        
-        //split the elements in InputsToParse at the first | then take that first element which is a path and if it ends in a .* then it is a file otherwise it is a folder , after that build a hierarchy of folders and files where each \ is a higher tier
-        foreach(string input in inputsToParse)
+        else
         {
-            //the file path is the first element in the string
-            string[] splitInput = input.Split('|');
+            //create a new tab with the hostname as the name and the hashset as the content
+            Tabs.Add(new TabView { Name = hostname, Content = new HashSet<TreeItemData>(), DirectoryContent = new Dictionary<string, List<FileSystemItem>>(), TabId = Guid.NewGuid().ToString() });
+            //get the tab that has the hostname
+            TabView tab = Tabs.First(x => x.Name == hostname);
+            backupTabs.Add(tab);
+            //get the hashset of the hostname
+            treeItems = Tabs.First(x => x.Name == hostname).Content;
+            //add the hostname as the first item to the hashset
+            TreeItemData host = new TreeItemData(hostname,hostname);
+            host.Icon = Icons.Material.Outlined.DesktopWindows;
+            host.IconColor = Color.Info;
+            treeItems.Add(host);
+        }
+
+
+
+        //split the elements in InputsToParse at the first | then take that first element which is a path and if it ends in a .* then it is a file otherwise it is a folder , after that build a hierarchy of folders and files where each \ is a higher tier
+        foreach(FileSystemItem input in inputsToParse)
+        {
+            if (String.IsNullOrWhiteSpace(input.Name))
+            {
+                continue;
+            }
             //this is the parts of the path split by \
-            string[] splitPath = splitInput[0].Split('\\');
+            string[] splitPath = input.Name.Split('\\');
             //foreach element in the split path if it already exists in the hashset then skip it and add the next element to its child tree items
             //if it does not exist then add it to the hashset and add the next element to its child tree items
             for(int i=0; i<splitPath.Length; i++)
             {
                 string path = splitPath[i];
-                //if the hashset does not contain the path then add it
-                if (!treeItems.Any(x => x.Text == path))
+
+                //if i is larger then 0 then add this element to the child tree items of the previous element
+                if (i > 0)
                 {
-                    //if the path ends in .* then it is a file otherwise it is a folder
+                    //full path should be the previous element's full path + \ + this element
+                    string fullPath = "";
+
+                    //get the previous element
+                    string previousPath = splitPath[i - 1];
+                    //get the tree item that has the previous path
+                    TreeItemData? treeItem = treeItems.FirstOrDefault(x => x.Text == previousPath);
+                    //if the treeItem is null then go up a level and serach for the previous path in that childTreeItems
+                    if (treeItem == null)
+                    {
+                        //foreach element in the hashset check if it has the previous path in its child tree items if it does then set the tree item to that 
+                        HashSet<TreeItemData> TempItems = new HashSet<TreeItemData>();
+                        foreach (TreeItemData item in treeItems)
+                        {
+                            TempItems.Add(item);
+                        }
+                        //while treeItem is null call ParseNestedDirectoryData passing in the hashset and the previous path
+                        while (treeItem == null)
+                        {
+                            //if the hashset is empty then break out of the loop
+                            if (TempItems.Count == 0)
+                            {
+                                break;
+                            }
+                            treeItem = ParseNestedDirectoryData(TempItems, previousPath);
+                            //set the hashset to the child tree items of each element in the hashset
+                            HashSet<TreeItemData> TempItems2 = new HashSet<TreeItemData>();
+                            foreach (TreeItemData item in TempItems)
+                            {
+                                foreach (TreeItemData childItem in item.ChildTreeItems)
+                                {
+                                    TempItems2.Add(childItem);
+                                }
+                            }
+                            TempItems = TempItems2;
+                        }
+                    }
+
+                    //if treeItem is still null then skip this element
+                    if (treeItem == null)
+                    {
+                        continue;
+                    }
+
+                    //if treeItem already contains the path then skip it
+                    if (treeItem.ChildTreeItems.Any(x => x.Text.Equals(path,StringComparison.CurrentCultureIgnoreCase)))
+                    {
+                        continue;
+                    }
+
+                    //add the path to the child tree items of the previous element
                     if (path.Contains("."))
                     {
-                        treeItems.Add(new TreeItemData(path, "insert file icon here"));
+                        continue;
                     }
                     else
                     {
-                        treeItems.Add(new TreeItemData(path, "insert folder icon here"));
+                        fullPath = treeItem.FullPath + "\\" + path;
+                        TreeItemData childTreeItem = new TreeItemData(path, fullPath);
+                        if (fullPath.Equals(input.Name.TrimEnd('\\'), StringComparison.CurrentCultureIgnoreCase))
+                        {
+                            childTreeItem.ItemCount = (int)input.ChildItemCount;
+                        }
+                        treeItem.ChildTreeItems.Add(childTreeItem);
                     }
+                    continue;
                 }
-                //if the hashset already contains the path then add the next element to its child tree items
-                else
+
+                //if the hashset does not contain the path then add it
+                if (!treeItems.Any(x => x.Text.Equals(path,StringComparison.CurrentCultureIgnoreCase)))
                 {
-                    //get the tree item that has the path
-                    TreeItemData treeItem = treeItems.First(x => x.Text == path);
                     //if the path ends in .* then it is a file otherwise it is a folder
                     if (path.Contains("."))
                     {
-                        treeItem.ChildTreeItems.Add(new TreeItemData(path, "insert file icon here"));
+                        continue;
                     }
                     else
                     {
-                        treeItem.ChildTreeItems.Add(new TreeItemData(path, "insert folder icon here"));
+                        //get the tree Item that holds the hostname and add the path to its child tree items
+                        TreeItemData treeItemData = treeItems.FirstOrDefault(x => x.Text == hostname);
+                        //check if the path is already in the child tree items of the hostname
+                        if (treeItemData.ChildTreeItems.Any(x => x.Text == path))
+                        {
+                            continue;
+                        }
+                        TreeItemData childItem = new TreeItemData(path, path);
+                        childItem.ItemCount = (int)input.ChildItemCount;
+                        treeItemData.ChildTreeItems.Add(childItem);
                     }
                 }
             }
         }
     }
-    
-    
+
+    //add a function that takes in a engineer object and a path string and issues a command to the engineer to get the files in that path
+    private async Task GetFiles(Engineer engineer, string path)
+    {
+        if(engineer == null)
+        {
+            return;
+        }
+        string command = $"ls /path {path}";
+        if (GetACLs)
+        {
+            command += " /getacls true";
+        }
+        if (GetItemCount)
+        {
+            command += " /getcount true";
+        }
+        ShowInfoToast($"getting content of {path}");
+        await Interact.SendTask(engineer, command);
+    }
+
+
+    //make a function to handle the MudTextField ValueChanged event
+    private async Task OnPathChanged()
+    {
+        if(selectedEngineer == null)
+        {
+            return;
+        }
+        if(targetPath == null)
+        {
+            return;
+        }
+        string path = targetPath;
+        path = path.Trim();
+        string command = "ls /path " + path;
+        await GetFiles(selectedEngineer, path);
+    }
+
+    public static void ShowSuccessToast(string successMessage)
+    {
+        toastService.ShowSuccess(successMessage);
+    }
+    public static void ShowErrorToast(string errorMessage)
+    {
+        toastService.ShowError(errorMessage);
+    }
+
+    public static void ShowInfoToast(string infoMessage)
+    {
+        toastService.ShowInfo(infoMessage);
+    }
+
+    public static void ShowWarningToast(string warningmessage)
+    {
+        toastService.ShowWarning(warningmessage);
+    }
+
+    //returns the tree item that has the previous path in its child tree items
+    private static TreeItemData ParseNestedDirectoryData(HashSet<TreeItemData> TempItems,string previousPath)
+    {
+        TreeItemData? treeItem = null;
+        foreach (TreeItemData item in TempItems)
+        {
+            if (item.ChildTreeItems.Any(x => x.Text.Equals(previousPath,StringComparison.CurrentCultureIgnoreCase)))
+            {
+                treeItem = item.ChildTreeItems.FirstOrDefault(x => x.Text.Equals(previousPath,StringComparison.CurrentCultureIgnoreCase));
+                break;
+            }
+        }
+        if(treeItem == null)
+        {
+            return null;
+        }
+        return treeItem;
+    }
+
+    private void CloseTabCallback(MudTabPanel panel)
+    {
+        var tabView = Tabs.FirstOrDefault(x => x.TabId == (string)panel.Tag);
+        if (tabView != null)
+        {
+            Tabs.Remove(tabView);
+            _updateIndex = true;
+        }
+    }
+
+
+    public static void AddContent(string hostname,string path, List<FileSystemItem> inputs)
+    {
+        try
+        {
+            //remove the first two entries from inputs if the first line contains the headers "Name" and "Last modified"
+            AddSideBarContent(hostname, inputs);
+
+
+
+            TabView tabView = Tabs.FirstOrDefault(x => x.Name.Equals(hostname, StringComparison.CurrentCultureIgnoreCase));
+
+
+
+            //if DirectoryContent does not already contain the path then add it and the inputs, otherwise update the list with missing entries
+            if (!tabView.DirectoryContent.ContainsKey(path))
+            {
+                tabView.DirectoryContent.Add(path, inputs);
+                //get the TreeItemData with the name of the path and set its icon color to primary if inputs.Count >0 
+                TreeItemData? targetItem = null;
+                HashSet<TreeItemData> TempItems = new HashSet<TreeItemData>();
+                TempItems = tabView.Content;
+                path = path.TrimEnd('\\');
+                path = path.Trim();
+                while (targetItem == null)
+                {
+                    if (TempItems.Count == 0)
+                    {
+                        break;
+                    }
+                    foreach (TreeItemData item in TempItems)
+                    {
+                        if (item.ChildTreeItems.Any(x => x.FullPath.Equals(path, StringComparison.CurrentCultureIgnoreCase)))
+                        {
+                            targetItem = item.ChildTreeItems.FirstOrDefault(x => x.FullPath.Equals(path,StringComparison.CurrentCultureIgnoreCase));
+                            break;
+                        }
+                    }
+                    if (targetItem != null)
+                    {
+                        break;
+                    }
+                    HashSet<TreeItemData> TempItems2 = new HashSet<TreeItemData>();
+                    foreach (TreeItemData item in TempItems)
+                    {
+                        foreach (TreeItemData childItem in item.ChildTreeItems)
+                        {
+                            TempItems2.Add(childItem);
+                        }
+                    }
+                    TempItems = TempItems2;
+                }
+                if (targetItem != null)
+                {
+                    if (inputs.Count > 0)
+                    {
+                        targetItem.IconColor = Color.Primary;
+                    }
+                }
+            }
+            else
+            {
+                //get the list of inputs for the path
+                List<FileSystemItem> existingInputs = tabView.DirectoryContent[path];
+                //foreach input in the list of inputs check if it already exists in the existing inputs list if it does not then add it
+                foreach (FileSystemItem input in inputs)
+                {
+                    if (!existingInputs.Contains(input))
+                    {
+                        existingInputs.Add(input);
+                    }
+                }
+            }
+            OnStateChange?.Invoke();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+            Console.WriteLine(e.StackTrace);
+        }
+    }
+
+
+    public void ImplementOnStateChangeEvent()
+    {
+        InvokeAsync(StateHasChanged);
+    }
 
     protected override async Task OnInitializedAsync()
     {
 
-        List<string> exampleListingDesktop = new List<string>();
-        List<string> exampleListingSub1 = new List<string>();
-        List<string> exampleListingSub2 = new List<string>();
-        List<string> exampleListingSub3 = new List<string>();
-        exampleListingDesktop.TryAdd("C:\\Users\\user\\Desktop\\test.txt|2021-05-05 12:00:00");
-        exampleListingDesktop.TryAdd("C:\\Users\\user\\Desktop\\test2.txt|2021-05-05 12:00:00");
-        exampleListingDesktop.TryAdd("C:\\Users\\user\\Desktop\\test3.txt|2021-05-05 12:00:00");
-        exampleListingDesktop.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1|2021-05-05 12:00:00");
-        exampleListingSub1.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\test4.txt|2021-05-05 12:00:00");
-        exampleListingSub1.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\test5.txt|2021-05-05 12:00:00");
-        exampleListingSub1.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2|2021-05-05 12:00:00");
-        exampleListingSub2.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2\\test6.txt|2021-05-05 12:00:00");
-        exampleListingSub2.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2\\test7.txt|2021-05-05 12:00:00");
-        exampleListingSub2.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2\\SubFolder3|2021-05-05 12:00:00");
-        exampleListingSub3.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2\\SubFolder3\\test8.txt|2021-05-05 12:00:00");
-        exampleListingSub3.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2\\SubFolder3\\test9.txt|2021-05-05 12:00:00");
-
-        GetDirectoryContent("computer1", exampleListingDesktop);
-        GetDirectoryContent("computer1", exampleListingSub1);
-        GetDirectoryContent("computer1", exampleListingSub2);
-        GetDirectoryContent("computer1", exampleListingSub3);
+        OnStateChange = ImplementOnStateChangeEvent;
+        toastService = toastDefault;
+        // List<string> exampleListingDesktop = new List<string>();
+        // List<string> exampleListingSub1 = new List<string>();
+        // List<string> exampleListingSub2 = new List<string>();
+        // List<string> exampleListingSub3 = new List<string>();
+        // exampleListingDesktop.TryAdd("C:\\Users\\user\\Desktop\\test.txt |100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
+        // exampleListingDesktop.TryAdd("C:\\Users\\user\\Desktop\\test2.txt|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
+        // exampleListingDesktop.TryAdd("C:\\Users\\user\\Desktop\\mock.pdf|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
+        // exampleListingDesktop.TryAdd("C:\\Users\\user\\Desktop\\fake.docx|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
+        // exampleListingDesktop.TryAdd("C:\\Users\\user\\Desktop\\test.ps1|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
+        // exampleListingDesktop.TryAdd("C:\\Users\\user\\Desktop\\snake.py|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
+        // exampleListingDesktop.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1|0|3|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
+        // exampleListingSub1.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\test4.txt|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
+        // exampleListingSub1.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\test5.txt|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
+        // exampleListingSub1.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2|0|3|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
+        // exampleListingSub2.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2\\test6.txt|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
+        // exampleListingSub2.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2\\test7.txt|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
+        // exampleListingSub2.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2\\SubFolder3|0|2|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
+        // exampleListingSub3.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2\\SubFolder3\\test8.txt|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
+        // exampleListingSub3.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2\\SubFolder3\\test9.txt|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
+        //
+        // AddContent("computer1", "C:\\Users\\user\\Desktop", exampleListingDesktop);
+        // AddContent("computer1", "C:\\Users\\user\\Desktop\\SubFolder1", exampleListingSub1);
+        // AddContent("computer1", "C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2", exampleListingSub2);
+        // AddContent("computer1", "C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2\\SubFolder3", exampleListingSub3);
         
     }
 

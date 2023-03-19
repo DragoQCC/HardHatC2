@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using TeamServer.Models;
 /* allows for instructions to be called, holds no objects, or properties/ values
  * linked to controllers with dependencies injection so things can be called in other areas of the code easily. 
@@ -40,6 +41,18 @@ namespace TeamServer.Services
 		public void Removemanager(manager manager)
 		{
 			_managers.Remove(manager);
+		}
+		
+		public static async Task StartManagersFromDB(List<Httpmanager> _httpmanagers)
+		{
+			var _EngineerService = new EngineerService();
+			foreach (Httpmanager _manager in _httpmanagers)
+			{
+				Console.WriteLine($"Calling Init on {_manager.Name}");
+				_manager.Init(_EngineerService);
+				_manager.Start();
+				Console.WriteLine($"{_manager.Name} started should be listening on {_manager.BindAddress}:{_manager.BindPort}");
+			}
 		}
 	}
 }

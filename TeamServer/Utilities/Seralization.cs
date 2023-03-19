@@ -5,21 +5,24 @@ using System.Text.Json;
 using NetSerializer;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.Serialization.Json;
 using TeamServer.Models;
 using TeamServer.Models.Extras;
 using ApiModels.Requests;
 using TeamServer.Models.Engineers;
+using TeamServer.Models.Engineers.TaskResultTypes;
 
 namespace TeamServer.Utilities
 {
     public static class Seralization
     {
 
+       private static Serializer GeneralSer { get; set; }
+       private static Serializer DatabaseSer { get; set; }
+    
 
         //made seperated lists here becasue the engineer needs an exact copy of this list and I did not want to give it copies of items that are just going in the database
-        public static IEnumerable<Type> GetseralTypesForEngineers()
-        {
-            return new List<Type>()
+        private static IEnumerable<Type> GenericTypes = new List<Type>()
             {
                 typeof(EngineerCommand),
                 typeof(EngineerTask),
@@ -31,29 +34,40 @@ namespace TeamServer.Utilities
                 typeof(C2TaskMessage),
                 typeof(List<C2TaskMessage>),
             };
-        }
+        
 
-        public static IEnumerable<Type> GetSeralTypesForDatabase()
-        {
-            return new List<Type>()
+        private static IEnumerable<Type> TypesForDatabase = new List<Type>()
             {
                 typeof(C2Profile),
                 typeof(List<C2Profile>),
                 typeof(ReconCenterEntity.ReconCenterEntityProperty),
                 typeof(List<ReconCenterEntity.ReconCenterEntityProperty>),
+                typeof(Dictionary<string,string>),
             };
+        
+
+        public static byte[] Serialise<T>(this T data)
+        {
+            var options = new DataContractJsonSerializerSettings();
+            options.KnownTypes = new List<Type>()
+            {
+                typeof(FileSystemItem),
+                typeof(List<FileSystemItem>)
+            };
+        	var serializer = new DataContractJsonSerializer(typeof(T),options);
+
+        	using (var ms = new MemoryStream())
+        	{
+        		serializer.WriteObject(ms, data);
+        		return ms.ToArray();
+        	}
         }
-
-        //public static byte[] Serialise<T>(this T data)
-        //{
-        //	var serialiser = new DataContractJsonSerializer(typeof(T));
-
-        //	using (var ms = new MemoryStream())
-        //	{
-        //		serialiser.WriteObject(ms, data);
-        //		return ms.ToArray();
-        //	}
-        //}
+        
+        public static void Init()
+        {
+            GeneralSer = new Serializer(GenericTypes);
+            DatabaseSer = new Serializer(TypesForDatabase);
+        }
 
         public static byte[] ProSerialise<T>(this T data)
 		{
@@ -61,12 +75,9 @@ namespace TeamServer.Utilities
             {
                 using (var ms = new MemoryStream())
                 {
-                    var types = GetseralTypesForEngineers();
-                    Serializer ser = new Serializer(types);
-                    ser.Serialize(ms, data);
+                    GeneralSer.Serialize(ms, data);
                     return ms.ToArray();
                 }
-
             }
             catch (Exception ex)
             {
@@ -74,20 +85,17 @@ namespace TeamServer.Utilities
                 Console.WriteLine(ex.StackTrace);
                 return null;
             }
-            
         }
+        
         public static byte[] ProSerialiseForDatabase<T>(this T data)
         {
             try
             {
                 using (var ms = new MemoryStream())
                 {
-                    var types = GetSeralTypesForDatabase();
-                    Serializer ser = new Serializer(types);
-                    ser.Serialize(ms, data);
+                    DatabaseSer.Serialize(ms, data);
                     return ms.ToArray();
                 }
-
             }
             catch (Exception ex)
             {
@@ -95,19 +103,24 @@ namespace TeamServer.Utilities
                 Console.WriteLine(ex.StackTrace);
                 return null;
             }
-
         }
 
 
-        //public static T Deserialize<T>(this byte[] data)
-        //{
-        //	var serialiser = new DataContractJsonSerializer(typeof(T));
+        public static T Deserialize<T>(this byte[] data)
+        {
+            var options = new DataContractJsonSerializerSettings();
+            options.KnownTypes = new List<Type>()
+            {
+                typeof(FileSystemItem),
+                typeof(List<FileSystemItem>)
+            };
+            var serializer = new DataContractJsonSerializer(typeof(T),options);
 
-        //	using (var ms = new MemoryStream(data))
-        //	{
-        //		return (T)serialiser.ReadObject(ms);
-        //	}
-        //}
+        	using (var ms = new MemoryStream(data))
+        	{
+        		return (T)serializer.ReadObject(ms);
+        	}
+        }
 
         public static T ProDeserialize<T>(this byte[] data)
 		{
@@ -115,10 +128,7 @@ namespace TeamServer.Utilities
             {
                 using (var ms = new MemoryStream(data))
                 {
-                    var types = GetseralTypesForEngineers();
-                    Serializer ser = new Serializer(types);
-                    return (T)ser.Deserialize(ms);
-                    
+                    return (T)GeneralSer.Deserialize(ms);
                 }
 
             }
@@ -137,12 +147,8 @@ namespace TeamServer.Utilities
             {
                 using (var ms = new MemoryStream(data))
                 {
-                    var types = GetSeralTypesForDatabase();
-                    Serializer ser = new Serializer(types);
-                    return (T)ser.Deserialize(ms);
-
+                    return (T)DatabaseSer.Deserialize(ms);
                 }
-
             }
             catch (Exception ex)
             {
@@ -150,7 +156,6 @@ namespace TeamServer.Utilities
                 Console.WriteLine(ex.StackTrace);
                 return default;
             }
-
         }
     }
 }

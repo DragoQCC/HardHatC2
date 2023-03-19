@@ -24,10 +24,10 @@ namespace Engineer.Commands
                 {
                     var groups = identity.Groups;
                     var groupNames = groups.Select(g => g.Value);
-                    Tasking.FillTaskResults($"{Username} is a member of the following groups: {string.Join(", ", groupNames)}", task, EngTaskStatus.Complete);
+                    Tasking.FillTaskResults($"{Username} is a member of the following groups: {string.Join(", ", groupNames)}", task, EngTaskStatus.Complete,TaskResponseType.String);
                 }
             }
-            Tasking.FillTaskResults($"{Username}", task, EngTaskStatus.Complete);
+            Tasking.FillTaskResults($"{Username}", task, EngTaskStatus.Complete,TaskResponseType.String);
         }
     }
 }

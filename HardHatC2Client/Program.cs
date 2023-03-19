@@ -1,7 +1,5 @@
-//using HardHatC2Client.Data;
-using AutoMapper;
+using Blazored.LocalStorage;
 using Blazored.Toast;
-using HardHatC2Client.Mapping;
 using HardHatC2Client.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
@@ -28,14 +26,8 @@ if (args.Count() > 0)
 
 options.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
 builder.Services.AddSingleton(new RestClient(new HttpClient( new HttpClientHandler { ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true }), options));
-
-//var mapperConfiguration = new MapperConfiguration(configuration =>
-//{
-//    configuration.AddProfile(new MyProfile());
-//});
-//var mapper = mapperConfiguration.CreateMapper();
-//builder.Services.AddSingleton(mapper);
 builder.Services.AddBlazoredToast();
+builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddSignalR();
 builder.Services.AddMudServices();
 

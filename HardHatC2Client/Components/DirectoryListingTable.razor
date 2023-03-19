@@ -1,25 +1,70 @@
 ﻿@using HardHatC2Client.Pages;
+@using System.Collections.Concurrent
+@using HardHatC2Client.Models.TaskResultTypes
+@using HardHatC2Client.Utilities
 
-<MudTable T="string[]" @ref=@_table Items="BodyContent.Values" HorizontalScrollbar="false" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Outlined="true" Striped="true" Filter="new Func<string[],bool>(FilterFunc1)" SortLabel="Sort By">
+<MudTable T="FileSystemItem" @ref=@_table Items="BodyContent.Values" HorizontalScrollbar="false" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Outlined="true" Striped="true" Filter="new Func<FileSystemItem,bool>(FilterFunc1)" SortLabel="Sort By">
     <ToolBarContent>
-        <MudText Typo="Typo.h6">Directory Content</MudText>
-        <MudSpacer />
+        @if (Path != null)
+        {
+            <MudText Typo="Typo.h6">Directory Content of @Path</MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.h6">Directory Content</MudText>
+        }
+        <MudSpacer/>
         <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
-        
+
     </ToolBarContent>
     <HeaderContent>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(0))">Name</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(1))">Length</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(2))">CreationTimeUtc</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(3))">LastAccessTimeUtc</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(4))">LastWriteTimeUtc</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(0))">Name</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(1))">Length</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(2))">Owner</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(3))">Item Count</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(4))">CreationTimeUtc</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(5))">LastAccessTimeUtc</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(6))">LastWriteTimeUtc</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(7))">ACLs</MudTableSortLabel></MudTh>
     </HeaderContent>
     <RowTemplate>
-        <MudTd><MudIcon Size="Size.Small" Class="m-2" Color=@GetColor(context[0]) Icon=@getIcon(context[0])></MudIcon> @context[0]</MudTd>
-        <MudTd>@context[1]</MudTd>
-        <MudTd>@context[2]</MudTd>
-        <MudTd>@context[3]</MudTd>
-        <MudTd>@context[4]</MudTd>
+        <MudTd><MudIcon Size="Size.Small" Class="m-2" Color=@GetColor(context.Name) Icon=@getIcon(context.Name)></MudIcon> @context.Name</MudTd>
+        <MudTd>@GetSize(context.Length)</MudTd>
+        <MudTd>@context.Owner</MudTd>
+        <MudTd>@context.ChildItemCount</MudTd>
+        <MudTd>@context.CreationTimeUtc</MudTd>
+        <MudTd>@context.LastAccessTimeUtc</MudTd>
+        <MudTd>@context.LastWriteTimeUtc</MudTd>
+        <MudTd>
+            <MudTooltip Placement="Placement.Left" Arrow="true">
+                <ChildContent>
+                    <MudIconButton OnClick="@ToggleACLOpen" Size="Size.Small" Icon="@Icons.Material.Filled.People"/>
+                </ChildContent>
+                    <TooltipContent>
+                    @if (context.ACLs != null)
+                    {
+                        <MudTable T="ACL" @ref=@_child_table Items="context.ACLs" HorizontalScrollbar="false" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Outlined="true" Striped="true" SortLabel="Sort By">
+                            <HeaderContent>
+                                <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x => x.ElementAt(0))">Name</MudTableSortLabel></MudTh>
+                                <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x => x.ElementAt(1))">Type</MudTableSortLabel></MudTh>
+                                <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x => x.ElementAt(2))">Rights</MudTableSortLabel></MudTh>
+                                <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x => x.ElementAt(3))">Is Inherited</MudTableSortLabel></MudTh>
+                            </HeaderContent>
+                            <RowTemplate Context="childcontext">
+                                <MudTd>@childcontext.IdentityRef</MudTd>
+                                <MudTd>@childcontext.AccessControlType</MudTd>
+                                <MudTd>@childcontext.FileSystemRights</MudTd>
+                                <MudTd>@childcontext.IsInherited</MudTd>
+                            </RowTemplate>
+                            <PagerContent>
+                                <MudTablePager HorizontalAlignment="HorizontalAlignment.Left" HidePageNumber="true" HidePagination="true"/>
+                                <MudPagination SelectedChanged="PageChanged" Count="@((_child_table.GetFilteredItemsCount() + _child_table.RowsPerPage - 1) / _child_table.RowsPerPage)" Class="pb-3"/>
+                            </PagerContent>
+                        </MudTable>
+                    }
+                 </TooltipContent>
+            </MudTooltip>
+        </MudTd>
     </RowTemplate>
     <PagerContent>
         <MudTablePager HorizontalAlignment="HorizontalAlignment.Left" HidePageNumber="true" HidePagination="true"/>
@@ -31,11 +76,24 @@
 @code {
 
     [Parameter]
-    public List<string> Outputs {get; set;}
-    public Dictionary<string, string[]> BodyContent = new Dictionary<string, string[]>();
-    private MudTable<string[]> _table;
+    public byte[] Outputs {get; set;}
+    [Parameter]
+    public string Path {get; set;}
+    public Dictionary<string, FileSystemItem> BodyContent = new Dictionary<string, FileSystemItem>();
+    private MudTable<FileSystemItem>? _table;
+    private MudTable<ACL>? _child_table;
     private string searchString1 = "";
+    public bool _isOpen;
 
+    
+    public void ToggleACLOpen()
+    {
+        if (_isOpen)
+            _isOpen = false;
+        else
+            _isOpen = true;
+    }
+    
     private string setStyle(bool IsDark)
     {
         if (IsDark)
@@ -219,88 +277,77 @@
     }
 
 
+    //function that can handle an event callback returning a bool for IsVisibleChanged
+    //private void IsVisibleChangedCallback(bool isVisible)
+    //{
+    //    IsAclVisible = isVisible;
+    //}
+
     public void FillContents()
     {
-        // for each string in outputs if BodyContent Dictionary does not contain the string as a key then add it, and set the value to the key broken apart on anything larger then 1 space (this is to account for file names with spaces in them)
-        foreach (string output in Outputs)
+        foreach (FileSystemItem output in Outputs.Deserialize<List<FileSystemItem>>())
         {
-            if (!BodyContent.ContainsKey(output))
+            if (!BodyContent.ContainsKey(output.Name))
             {
-                //add a check so when splitting the strings on double spaces that if the next element is a letter then add it to the current element 
-                string[] split = output.Split(new string[] {"|"}, StringSplitOptions.RemoveEmptyEntries);
-
-                //element 1 should be the length in bytes, try to parse into an int, if this works then if the number is higher then 1000 then divide by 1000 and add a KB to the end, if the number is higher then 1000000 then divide by 1000000 and add a MB to the end, if the number is higher then 1000000000 then divide by 1000000000 and add a GB to the end
-                double size = 0;
-                if (split.Count() > 1)
-                {
-                    if (double.TryParse(split[1], out size))
-                    {
-                        if (size < 1000)
-                        {
-                            split[1] = size.ToString() + " B";
-                        }
-                        if (size > 1000 && size < 1000000)
-                        {
-                            split[1] = (size / 1000).ToString();
-                            //if split[1] contains a decimal then only include the first 2 numbers after the decimal
-                            if (split[1].Contains("."))
-                            {
-                                split[1] = split[1].Substring(0, split[1].IndexOf(".") + 2);
-                            }
-                            split[1] = split[1] + " KB";
-                        }
-                        if (size > 1000000 && size < 1000000000)
-                        {
-                            split[1] = (size / 1000000).ToString();
-                            //if split[1] contains a decimal then only include the first 2 numbers after the decimal
-                            if (split[1].Contains("."))
-                            {
-                                split[1] = split[1].Substring(0, split[1].IndexOf(".") + 2);
-                            }
-                            split[1] = split[1] + " MB";
-                        }
-                        if (size > 1000000000)
-                        {
-                            size = size / 1000000000;
-                            split[1] = size.ToString();
-                            //if split[1] contains a decimal then only include the first 2 numbers after the decimal
-                            if (split[1].Contains("."))
-                            {
-                                split[1] = split[1].Substring(0, split[1].IndexOf(".") + 2);
-                            }
-                            split[1] = split[1] + " GB";
-                        }
-                    }
-                }
-
-
-
-                BodyContent.Add(output, split);
-                //clean up the Dictonary so its values do not have any leading or trailing spaces 
-                for (int i = 0; i < BodyContent[output].Length; i++)
-                {
-                    BodyContent[output][i] = BodyContent[output][i].Trim();
-                }
+                BodyContent.Add(output.Name, output);
             }
-        }
-        //remove the first 2 entries from BodyContent , this is the pre made header and lines that we dont need anymore
-        if (BodyContent.Count > 0)
-        {
-            BodyContent.Remove(BodyContent.Keys.First());
-            BodyContent.Remove(BodyContent.Keys.First());
         }
     }
 
-    private bool FilterFunc1(string[] search) => FilterFunc(search, searchString1);
 
-    private bool FilterFunc(string[] search, string searchString)
+    private string GetSize(long size)
+    {
+        string result = "";
+        if (size < 1000)
+        {
+            result = size.ToString() + " B";
+        }
+        if (size > 1000 && size < 1000000)
+        {
+            result = (size / 1000).ToString();
+            //if split[1] contains a decimal then only include the first 2 numbers after the decimal
+            if (result.Contains("."))
+            {
+                result = result.Substring(0, result.IndexOf(".") + 2);
+            }
+            result = result + " KB";
+        }
+        if (size > 1000000 && size < 1000000000)
+        {
+            result = (size / 1000000).ToString();
+             //if split[1] contains a decimal then only include the first 2 numbers after the decimal
+            if (result.Contains("."))
+            {
+                result = result.Substring(0, result.IndexOf(".") + 2);
+            }
+            result = result + " MB";
+        }
+        if (size > 1000000000)
+        {
+            size = size / 1000000000;
+            result = size.ToString();
+            //if split[1] contains a decimal then only include the first 2 numbers after the decimal
+            if (result.Contains("."))
+            {
+                result = result.Substring(0, result.IndexOf(".") + 2);
+            }
+            result = result + " GB";
+        }
+        return result;
+    }
+
+    private bool FilterFunc1(FileSystemItem search) => FilterFunc(search, searchString1);
+
+    private bool FilterFunc(FileSystemItem search, string searchString)
     {
         if (string.IsNullOrWhiteSpace(searchString))
-            return true;
-        //for each element in the array if it contains searchString then return true
-        foreach (string s in search)
         {
-            if (s.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        }
+    //for each element in the array if it contains searchString then return true
+        foreach(object item in search.GetType().GetProperties())
+        {
+            if (item.ToString().Contains(searchString, StringComparison.OrdinalIgnoreCase))
                 return true;
         }
         return false;
@@ -316,5 +363,5 @@
     {
         FillContents();
     }
-
+    
 }

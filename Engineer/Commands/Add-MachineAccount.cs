@@ -37,13 +37,13 @@ namespace Engineer.Commands
             //if name is null return an error
             if (name == null)
             {
-                Tasking.FillTaskResults("[-] Name is required",task,EngTaskStatus.FailedWithWarnings);
+                Tasking.FillTaskResults("[-] Name is required",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 return;
             }
             //if password is null return an error
             if (Machinepassword == null)
             {
-                Tasking.FillTaskResults("[-] Machine Account Password is required",task,EngTaskStatus.FailedWithWarnings);
+                Tasking.FillTaskResults("[-] Machine Account Password is required",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 return;
             }
             //create the machine account
@@ -98,13 +98,13 @@ namespace Engineer.Commands
 
                 // Send request
                 oConObject.SendRequest(oLDAPReq);
-                Tasking.FillTaskResults("[+] Machine Account Created: " + name,task,EngTaskStatus.Complete);
+                Tasking.FillTaskResults("[+] Machine Account Created: " + name,task,EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
                 Console.WriteLine(e.StackTrace);
-                Tasking.FillTaskResults("[-] Error Creating Machine Account: " + e.Message,task,EngTaskStatus.Failed);
+                Tasking.FillTaskResults("[-] Error Creating Machine Account: " + e.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
     }

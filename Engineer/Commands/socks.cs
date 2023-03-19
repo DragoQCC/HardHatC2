@@ -30,12 +30,12 @@ namespace Engineer.Commands
             //if task.arguments holds key /stop return saying the socks proxy won /port was stopped
             if (task.Arguments.ContainsKey("/stop"))
             {
-                Tasking.FillTaskResults($"Socks proxy on port {port} stopped", task, EngTaskStatus.Complete);
+                Tasking.FillTaskResults($"Socks proxy on port {port} stopped", task, EngTaskStatus.Complete,TaskResponseType.String);
                 _tokenSource.Cancel();
                 return;
             }
 
-            Tasking.FillTaskResults($"socks started on team server at port {port}", task, EngTaskStatus.Running);
+            Tasking.FillTaskResults($"socks started on team server at port {port}", task, EngTaskStatus.Running,TaskResponseType.String);
 
         }
     }
@@ -56,14 +56,14 @@ namespace Engineer.Commands
                 Console.WriteLine($"Connecting to {address}:{port}");
 
                 Task.Run(async () => await ConnectSocks(address, port, client));
-                Tasking.FillTaskResults($"Connecting to {address}:{port}" + $"\n{client}", task, EngTaskStatus.Complete);
+                Tasking.FillTaskResults($"Connecting to {address}:{port}" + $"\n{client}", task, EngTaskStatus.Complete,TaskResponseType.String);
             }
             
             catch(Exception e)
             {
                 Console.WriteLine(e.Message);
                 Console.WriteLine(e.StackTrace);
-                Tasking.FillTaskResults("error with socks connect", task, EngTaskStatus.Failed);
+                Tasking.FillTaskResults("error with socks connect", task, EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
         
@@ -139,7 +139,7 @@ namespace Engineer.Commands
             //while the socks client is waiting for data to be sent do not send the data 
             var req = task.File;
             socks.SocksClientsData[client].Enqueue(req);
-            Tasking.FillTaskResults($"Sending data",task,EngTaskStatus.Complete);
+            Tasking.FillTaskResults($"Sending data",task,EngTaskStatus.Complete,TaskResponseType.String);
         }
     }
     
@@ -151,7 +151,7 @@ namespace Engineer.Commands
         {
             // trygetvalue of task.arguments /data and return that value
             task.Arguments.TryGetValue("/client", out var client);
-            Tasking.FillTaskResults(Convert.ToBase64String(task.File) + "\n" + client, task, EngTaskStatus.Complete);
+            Tasking.FillTaskResults(Convert.ToBase64String(task.File) + "\n" + client, task, EngTaskStatus.Complete,TaskResponseType.String);
         }
     }
 

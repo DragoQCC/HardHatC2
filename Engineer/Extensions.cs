@@ -6,6 +6,7 @@ using System.Runtime.ConstrainedExecution;
 using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Threading.Tasks;
+using Engineer.Commands;
 using Engineer.Models;
 using NetSerializer;
 
@@ -31,14 +32,28 @@ namespace Engineer
 
         public static byte[] Serialise<T>(this T data)
 		{
-			var serialiser = new DataContractJsonSerializer(typeof(T));
-
-			using (var ms = new MemoryStream())
+			try
 			{
-				serialiser.WriteObject(ms, data);
-				return ms.ToArray();
-			}
+				var options = new DataContractJsonSerializerSettings();
+				options.KnownTypes = new List<Type>()
+				{
+					typeof(FileSystemItem),
+					typeof(List<FileSystemItem>)
+				};
+				var serializer = new DataContractJsonSerializer(typeof(T));
 
+				using (var ms = new MemoryStream())
+				{
+					serializer.WriteObject(ms, data);
+					return ms.ToArray();
+				}
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine(e.Message);
+				Console.WriteLine(e.StackTrace);
+				return null;
+			}
 		}
 
         public static byte[] ProSerialise<T>(this T data)
@@ -66,13 +81,29 @@ namespace Engineer
 
         public static T Deserialize<T>(this byte[] data)
 		{
-			var serialiser = new DataContractJsonSerializer(typeof(T));
-
-			using (var ms = new MemoryStream(data))
+			try
 			{
-				return (T)serialiser.ReadObject(ms);
+				var options = new DataContractJsonSerializerSettings();
+				options.KnownTypes = new List<Type>()
+				{
+					typeof(FileSystemItem),
+					typeof(List<FileSystemItem>)
+				};
+				var serializer = new DataContractJsonSerializer(typeof(T));
+
+				using (var ms = new MemoryStream(data))
+				{
+					return (T)serializer.ReadObject(ms);
+				}
+
 			}
-        }
+			catch (Exception e)
+			{
+				Console.WriteLine(e.Message);
+				Console.WriteLine(e.StackTrace);
+				return default;
+			}
+		}
 
         public static T ProDeserialize<T>(this byte[] data)
         {

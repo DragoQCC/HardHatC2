@@ -1,0 +1,188 @@
+﻿@using HardHatC2Client.Pages;
+@using System.Collections.Concurrent
+@using HardHatC2Client.Models.TaskResultTypes
+@using HardHatC2Client.Utilities
+
+<MudTable T="Help.HelpMenuItem" @ref=@_table Items="BodyContent.Values" HorizontalScrollbar="false" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Outlined="true" Striped="true" Filter="new Func<Help.HelpMenuItem,bool>(FilterFunc1)" RowStyleFunc=SetOpacity SortLabel="Sort By">
+    <ToolBarContent>
+            <MudText Typo="Typo.h6">Help Menu</MudText>
+        <MudSpacer/>
+        <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(0))">Name</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(1))">Description</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(2))">Usage</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(3))">NeedsAdmin</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(4))">Opsec</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(5))">Details</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(6))">Keys</MudTableSortLabel></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>@context.Name</MudTd>
+        <MudTd>@context.Description</MudTd>
+        <MudTd>@context.Usage</MudTd>
+        <MudTd>@context.NeedsAdmin</MudTd>
+        <MudTd> <MudIcon Size="Size.Small" Class="m-2" Color=@GetColor(context) Icon=@getIcon(context)></MudIcon> @context.Opsec</MudTd>
+        <MudTd>@context.Details</MudTd>
+        <MudTd>@context.Keys</MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager HorizontalAlignment="HorizontalAlignment.Left" HidePageNumber="true" HidePagination="true"/>
+        <MudPagination SelectedChanged="PageChanged" Count="@((_table.GetFilteredItemsCount() + _table.RowsPerPage - 1) / _table.RowsPerPage)" Class="pb-3"/>
+    </PagerContent>
+</MudTable>
+
+
+@code {
+
+    [Parameter]
+    public byte[]? Outputs {get; set;}
+    public Dictionary<string, Help.HelpMenuItem> BodyContent = new Dictionary<string, Help.HelpMenuItem>();
+    private MudTable<Help.HelpMenuItem>? _table;
+    private string searchString1 = "";
+    private bool ContentParsed = false;
+
+
+    private string setStyle(bool IsDark)
+    {
+        if (IsDark)
+        {
+            return "background:white; color:black;";
+        }
+        return "background:#333333; color:white;";
+    }
+
+    private string SetOpacity(Help.HelpMenuItem item, int index)
+    {
+        if(item.Opsec == Help.HelpMenuItem.OpsecStatus.Blocked)
+        {
+            return "Opacity:.25;";
+        }
+        return "";
+    }
+
+    //returns an icon depending on the name of the item
+    private string getIcon(Help.HelpMenuItem item)
+    {
+        if (item.Opsec == Help.HelpMenuItem.OpsecStatus.Blocked)
+        {
+            return Icons.Outlined.Info;
+        }
+        else if (item.Opsec == Help.HelpMenuItem.OpsecStatus.RequiresLeadAuthorization)
+        {
+            return Icons.Outlined.Info;
+        }
+        else if (item.Opsec == Help.HelpMenuItem.OpsecStatus.High)
+        {
+            return Icons.Outlined.Info;
+        }
+        else if (item.Opsec == Help.HelpMenuItem.OpsecStatus.Moderate)
+        {
+            return Icons.Outlined.Info;
+        }
+        else if (item.Opsec == Help.HelpMenuItem.OpsecStatus.Low)
+        {
+            return Icons.Outlined.Info;
+        }
+        return Icons.Outlined.Info;
+    }
+
+    //function to return the icon color based on the type or extesnion
+    private Color GetColor(Help.HelpMenuItem item)
+    {
+        if (item.Opsec == Help.HelpMenuItem.OpsecStatus.Blocked)
+        {
+            return Color.Dark;
+        }
+        else if (item.Opsec == Help.HelpMenuItem.OpsecStatus.RequiresLeadAuthorization)
+        {
+            return Color.Info;
+        }
+        else if (item.Opsec == Help.HelpMenuItem.OpsecStatus.High)
+        {
+            return Color.Error;
+        }
+        else if (item.Opsec == Help.HelpMenuItem.OpsecStatus.Moderate)
+        {
+            return Color.Warning;
+        }
+        else if (item.Opsec == Help.HelpMenuItem.OpsecStatus.Low)
+        {
+            return Color.Success;
+        }
+        return Color.Default;
+    }
+
+
+    public void FillContents()
+    {
+        foreach (Help.HelpMenuItem output in Outputs.Deserialize<List<Help.HelpMenuItem>>())
+        {
+            if (!BodyContent.ContainsKey(output.Name))
+            {
+                BodyContent.Add(output.Name, output);
+            }
+        }
+    }
+
+
+
+
+    private bool FilterFunc1(Help.HelpMenuItem search) => FilterFunc(search, searchString1);
+
+    private bool FilterFunc(Help.HelpMenuItem search, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+        {
+            return true;
+        }
+        //for each element in the array if it contains searchString then return true
+        if (search.Name.ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.Description.ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.Usage.ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.NeedsAdmin.ToString().ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.Opsec.ToString().ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.Details.ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.Keys.ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private void PageChanged(int i)
+    {
+        _table.NavigateTo(i - 1);
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (ContentParsed == false)
+        {
+            FillContents();
+            ContentParsed = true;
+        }
+        base.OnParametersSet();
+    }
+}
+

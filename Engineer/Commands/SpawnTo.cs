@@ -19,10 +19,10 @@ namespace Engineer.Commands
              if (task.Arguments.TryGetValue("/path", out string path))
                 {
                 spawnToPath = path.TrimStart(' ');
-                Tasking.FillTaskResults("SpawnTo Path Set as " + spawnToPath, task, EngTaskStatus.Complete);
+                Tasking.FillTaskResults("SpawnTo Path Set as " + spawnToPath, task, EngTaskStatus.Complete,TaskResponseType.String);
                 return;
                 }
-            Tasking.FillTaskResults("error: " + "SpawnTo Path Not Set using default", task, EngTaskStatus.FailedWithWarnings);
+            Tasking.FillTaskResults("error: " + "SpawnTo Path Not Set using default", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
         }
     }
 }

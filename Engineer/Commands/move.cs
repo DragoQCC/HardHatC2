@@ -25,14 +25,14 @@ namespace Engineer.Commands
                 if (File.Exists(file))
                 {
                     File.Move(file, destination);
-                    Tasking.FillTaskResults("File moved", task, EngTaskStatus.Complete);
+                    Tasking.FillTaskResults("File moved", task, EngTaskStatus.Complete,TaskResponseType.String);
                     return;
                 }
-                Tasking.FillTaskResults("error: " + "file not found", task, EngTaskStatus.FailedWithWarnings);
+                Tasking.FillTaskResults("error: " + "file not found", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
             }
             catch (Exception e)
             {
-                Tasking.FillTaskResults("error: " + e.Message, task, EngTaskStatus.Failed);
+                Tasking.FillTaskResults("error: " + e.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
             }
 
         }

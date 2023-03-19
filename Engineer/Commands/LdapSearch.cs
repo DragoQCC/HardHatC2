@@ -24,7 +24,7 @@ namespace Engineer.Commands
                 //if searchFilter is null return telling the user to supply an ldap search flter
                 if (searchFilter == null)
                 {
-                    Tasking.FillTaskResults("Please supply an ldap search filter with /search argument",task,EngTaskStatus.FailedWithWarnings);
+                    Tasking.FillTaskResults("Please supply an ldap search filter with /search argument",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
                 //check for arguments for /domain /username and /password
@@ -83,14 +83,14 @@ namespace Engineer.Commands
 
                 }
                 //return the string builder
-                Tasking.FillTaskResults(sb.ToString(),task,EngTaskStatus.Complete);
+                Tasking.FillTaskResults(sb.ToString(),task,EngTaskStatus.Complete,TaskResponseType.String);
 
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(ex.StackTrace);
-                Tasking.FillTaskResults(ex.Message,task,EngTaskStatus.Failed);
+                Tasking.FillTaskResults(ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
            
         }

@@ -5,14 +5,14 @@
 @inject IJSRuntime JS
 
 <CascadingAuthenticationState>
-<AuthorizeView Roles="Operator">
-    <Authorized>
+    <AuthorizeView Roles="Operator,TeamLead">
+        <Authorized>
         
-<h3 class="text-center">Downloads</h3>
-<div class="container-fluid" style="height:500px; overflow-y:scroll">
-	<div class="row">
-		<div class="col-md-12">
-            <style>
+            <h3 class="text-center">Downloads</h3>
+            <div class="container-fluid" style="height:500px; overflow-y:scroll">
+                <div class="row">
+                    <div class="col-md-12">
+                        <style>
             .selected 
             {
                 background-color: #1E88E5 !important;
@@ -26,43 +26,86 @@
                 color: white !important;
             }
             </style>
-<MudTable Items="@DownloadedFiles" HorizontalScrollbar="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Outlined="true" Striped="true" RowClassFunc="@SelectedRowClassFunc" OnRowClick="RowClickEvent" @ref="mudTable" T="DownloadFile">
-	<HeaderContent>
-				<MudTh Style="@setStyle(Settings.IsCheckedBox)">Name </MudTh>
-                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Host</MudTh>
-				<MudTh Style="@setStyle(Settings.IsCheckedBox)">Original Path </MudTh>
-				<MudTh Style="@setStyle(Settings.IsCheckedBox)">Saved Location</MudTh>
-				<MudTh Style="@setStyle(Settings.IsCheckedBox)">Download Time</MudTh>
-	</HeaderContent>
-		<RowTemplate Context="Rowcontext">
-			<MudTd>@Rowcontext.Name</MudTd>
-            <MudTd>@Rowcontext.Host</MudTd>
-			<MudTd>@Rowcontext.OrginalPath</MudTd>
-			<MudTd>@Rowcontext.SavedPath</MudTd>
-			<MudTd>@Rowcontext.downloadedTime</MudTd>
-		</RowTemplate>
-</MudTable>
-</div>
-</div>
-</div>
+                        <MudTable Items="@DownloadedFiles" HorizontalScrollbar="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Outlined="true" Striped="true" RowClassFunc="@SelectedRowClassFunc" OnRowClick="RowClickEvent" @ref="mudTable" T="DownloadFile">
+                            <HeaderContent>
+                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Name </MudTh>
+                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Host</MudTh>
+                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Original Path </MudTh>
+                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Saved Location</MudTh>
+                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Download Time</MudTh>
+                            </HeaderContent>
+                            <RowTemplate Context="Rowcontext">
+                                <MudTd>@Rowcontext.Name</MudTd>
+                                <MudTd>@Rowcontext.Host</MudTd>
+                                <MudTd>@Rowcontext.OrginalPath</MudTd>
+                                <MudTd>@Rowcontext.SavedPath</MudTd>
+                                <MudTd>@Rowcontext.downloadedTime</MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    </div>
+                </div>
+            </div>
 
-<MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Save" Color="Color.Info"  Size="Size.Small" @onclick="@HandleSubmit" >Save</MudButton>
+            <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Save" Color="Color.Info"  Size="Size.Small" @onclick="@HandleSubmit" >Save</MudButton>
 
-@if (showSuccessCallAlert)
-{
-    <MudAlert Class="mt-16" Severity="Severity.Success" Variant="Variant.Outlined" ContentAlignment="HorizontalAlignment.Center" ShowCloseIcon="true" CloseIconClicked="(() => CloseMe(true))">@mudTable.SelectedItem.Name downloaded, check downloads dir inside the client folder.</MudAlert>
-}
-@if (showWarningCallAlert)
-{
-    <MudAlert Class="mt-16" Severity="Severity.Warning" Variant="Variant.Outlined" ContentAlignment="HorizontalAlignment.Center" ShowCloseIcon="true" CloseIconClicked="(() => CloseMe(false))">Failed to download file or no file selected. Check terminal for errors.</MudAlert>
-}
+            @if (showSuccessCallAlert)
+            {
+                <MudAlert Class="mt-16" Severity="Severity.Success" Variant="Variant.Outlined" ContentAlignment="HorizontalAlignment.Center" ShowCloseIcon="true" CloseIconClicked="(() => CloseMe(true))">@mudTable.SelectedItem.Name downloaded, check downloads dir inside the client folder.</MudAlert>
+            }
+            @if (showWarningCallAlert)
+            {
+                <MudAlert Class="mt-16" Severity="Severity.Warning" Variant="Variant.Outlined" ContentAlignment="HorizontalAlignment.Center" ShowCloseIcon="true" CloseIconClicked="(() => CloseMe(false))">Failed to download file or no file selected. Check terminal for errors.</MudAlert>
+            }
 
-    </Authorized>
-    <NotAuthorized>
-        <h1 class="text-center">Not Authorized</h1>
-            <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
-    </NotAuthorized>
-</AuthorizeView>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Roles="Guest">
+        <Authorized>
+            <h3 class="text-center">Downloads</h3>
+            <div class="container-fluid" style="height:500px; overflow-y:scroll">
+                <div class="row">
+                    <div class="col-md-12">
+                        <style>
+                .selected 
+                {
+                    background-color: #1E88E5 !important;
+                }
+                .selected > td 
+                {
+                    color: white !important;
+                }   
+                .selected > td .mud-input 
+                {
+                    color: white !important;
+                }
+                </style>
+                        <MudTable Items="@DownloadedFiles" HorizontalScrollbar="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Outlined="true" Striped="true" RowClassFunc="@SelectedRowClassFunc" OnRowClick="RowClickEvent" @ref="mudTable" T="DownloadFile">
+                            <HeaderContent>
+                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Name </MudTh>
+                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Host</MudTh>
+                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Original Path </MudTh>
+                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Saved Location</MudTh>
+                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Download Time</MudTh>
+                            </HeaderContent>
+                            <RowTemplate Context="Rowcontext">
+                                <MudTd>@Rowcontext.Name</MudTd>
+                                <MudTd>@Rowcontext.Host</MudTd>
+                                <MudTd>@Rowcontext.OrginalPath</MudTd>
+                                <MudTd>@Rowcontext.SavedPath</MudTd>
+                                <MudTd>@Rowcontext.downloadedTime</MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    </div>
+                </div>
+            </div>
+        </Authorized>
+    </AuthorizeView>
+     <AuthorizeView Roles="TeamLead,Operator,Guest">
+                   <NotAuthorized>
+                        <h1 class="text-center">Not Authorized</h1>
+                        <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+                    </NotAuthorized>
+        </AuthorizeView>
 </CascadingAuthenticationState>
 
 @code {

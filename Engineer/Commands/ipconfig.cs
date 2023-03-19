@@ -27,7 +27,7 @@ namespace Engineer.Commands
             {
                 output.AppendLine(ipAddress);
             }
-            Tasking.FillTaskResults(output.ToString(),task,EngTaskStatus.Complete);
+            Tasking.FillTaskResults(output.ToString(),task,EngTaskStatus.Complete,TaskResponseType.String);
         }
     }
 }

@@ -28,9 +28,6 @@ namespace TeamServer.Models.Dbstorage
         [Column("Status")]
         public string Status { get; set; }
 
-        [Column("Sleep")]
-        public int Sleep { get; set; }
-
         //create an implicit operator to convert from the model to the DAO
         public static implicit operator Engineer_DAO(Engineer model)
         {
@@ -41,8 +38,7 @@ namespace TeamServer.Models.Dbstorage
                 ManagerName = model.ManagerName,
                 ExternalAddress = model.ExternalAddress,
                 LastSeen = model.LastSeen,
-                Status = model.Status,
-                Sleep = model.Sleep
+                Status = model.Status
             };
         }
 
@@ -57,7 +53,6 @@ namespace TeamServer.Models.Dbstorage
                 ExternalAddress = dao.ExternalAddress,
                 LastSeen = dao.LastSeen,
                 Status = dao.Status,
-                Sleep = dao.Sleep
             };
         }
 

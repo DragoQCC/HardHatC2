@@ -36,7 +36,7 @@ namespace TeamServer.Utilities
             // return shellcode;
             
             Process donut = new Process();
-            donut.StartInfo.FileName = @"D:\Share between vms\Donut_windows\donut.exe";
+            donut.StartInfo.FileName = $"{pathSplit[0]}{allPlatformPathSeperator}Programs{allPlatformPathSeperator}Builtin{allPlatformPathSeperator}Donut_Windows{allPlatformPathSeperator}donut.exe";
             donut.StartInfo.Arguments = $" -x 2 -a 3 -b 3 -o {tempFolder}{allPlatformPathSeperator}payload.bin -p {arguments} {filePath}";
             donut.StartInfo.UseShellExecute = false;
             donut.StartInfo.RedirectStandardOutput = true;
@@ -44,6 +44,7 @@ namespace TeamServer.Utilities
             
             //redirect output to console
             donut.OutputDataReceived += (sender, args) => Console.WriteLine(args.Data);
+            donut.ErrorDataReceived += (sender, args) => Console.WriteLine(args.Data);
             
             donut.Start();
             donut.WaitForExit();

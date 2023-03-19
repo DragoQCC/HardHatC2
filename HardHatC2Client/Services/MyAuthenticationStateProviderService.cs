@@ -2,19 +2,27 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using Blazored.LocalStorage;
 
 namespace HardHatC2Client.Services
 {
     public class MyAuthenticationStateProviderService : AuthenticationStateProvider
     {
         private readonly JwtSecurityTokenHandler _tokenHandler = new();
-        public string jwtToken { get; set;}
+        //public string jwtToken { get; set;}
+        private readonly ILocalStorageService _localStorageService;
+        internal string LocalStorageTokenName = "bearerToken";
+        
+        public MyAuthenticationStateProviderService(ILocalStorageService localStorageService)
+        {
+            _localStorageService = localStorageService;
+        }
 
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
             try
             {
-                jwtToken = Login.jwtToken;
+                string jwtToken = await _localStorageService.GetItemAsync<string>(LocalStorageTokenName);
                 if (jwtToken != null)
                 {
                     JwtSecurityToken token = _tokenHandler.ReadJwtToken(jwtToken);

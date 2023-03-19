@@ -50,11 +50,11 @@ namespace Engineer.Commands
 
                 process.Dispose();
 
-                Tasking.FillTaskResults(output.ToString(), task, EngTaskStatus.Complete);
+                Tasking.FillTaskResults(output.ToString(), task, EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception ex)
             {
-                Tasking.FillTaskResults(ex.Message, task, EngTaskStatus.Failed);
+                Tasking.FillTaskResults(ex.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
     }

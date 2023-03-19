@@ -105,7 +105,6 @@ namespace TeamServer.Utilities
             else if (currentTask.Command.Equals("sleep", StringComparison.CurrentCultureIgnoreCase))
             {
                 currentTask.Arguments.TryGetValue("/time", out string sleep);
-                engineer.Sleep = int.Parse(sleep);
                 engineer.engineerMetadata.Sleep = int.Parse(sleep);
             }
 
@@ -211,6 +210,7 @@ namespace TeamServer.Utilities
                 JumpRequest.managerName = managerToJumpTo.Name;
                 JumpRequest.Sleep = engineer.engineerMetadata.Sleep;
                 JumpRequest.ConnectionAttempts = 1000;
+
                 if (currentTask.Arguments.TryGetValue("/method", out string method))
                 {
                     method = method.TrimStart(' ');
@@ -218,21 +218,20 @@ namespace TeamServer.Utilities
                     if (method.Equals("psexec", StringComparison.CurrentCultureIgnoreCase))
                     {
                         JumpRequest.complieType = SpawnEngineerRequest.EngCompileType.serviceexe;
-                        filepath = Directory.GetFiles(pathSplit[0] + "temp" + $"{allPlatformPathSeperator}", $"Engineer_{manager}_service.exe").FirstOrDefault();
+                        filepath = pathSplit[0] + "temp" + $"{allPlatformPathSeperator}" + $"Engineer_{manager}_service.exe";
                     }
                     else
                     {
                         JumpRequest.complieType = SpawnEngineerRequest.EngCompileType.exe;
-                        filepath = Directory.GetFiles(pathSplit[0] + "temp" + $"{allPlatformPathSeperator}", $"Engineer_{manager}.exe").FirstOrDefault();
+                        filepath = pathSplit[0] + "temp" + $"{allPlatformPathSeperator}" + $"Engineer_{manager}.exe";
                     }
                 }
                 else
                 {
                     JumpRequest.complieType = SpawnEngineerRequest.EngCompileType.exe;
-                    filepath = Directory.GetFiles(pathSplit[0] + "temp" + $"{allPlatformPathSeperator}", $"Engineer_{manager}.exe").FirstOrDefault();
+                    filepath = pathSplit[0] + "temp" + $"{allPlatformPathSeperator}" + $"Engineer_{manager}.exe";
                 }
-
-                bool isCreated =  EngineerService.CreateEngineers(JumpRequest);
+                bool isCreated = EngineerService.CreateEngineers(JumpRequest);
                 if (isCreated)
                 {
                     //read the file at filepath and turn it into a base64 string and add it to the task.Arguments dictionary with the key /binary

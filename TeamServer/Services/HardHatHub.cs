@@ -150,9 +150,9 @@ namespace TeamServer.Services
             }
             ReconCenterEntity_DAO entityToUpdate = DatabaseService.Connection.Table<ReconCenterEntity_DAO>().Where(x => x.Name == entityName).ToList()[0];
             //we do this so the list can grow otherwise we would only be able to store one property in the database
-            List<ReconCenterEntity.ReconCenterEntityProperty> entitiesProperties = entityToUpdate.Properties.ProDeserialize<List<ReconCenterEntity.ReconCenterEntityProperty>>();
+            List<ReconCenterEntity.ReconCenterEntityProperty> entitiesProperties = entityToUpdate.Properties.ProDeserializeForDatabase<List<ReconCenterEntity.ReconCenterEntityProperty>>();
             entitiesProperties.Add(reconCenterProperty);
-            entityToUpdate.Properties = entitiesProperties.ProSerialise(); // need to reseralize here
+            entityToUpdate.Properties = entitiesProperties.ProSerialiseForDatabase(); // need to reseralize here
             DatabaseService.Connection.Update(entityToUpdate);
             return "Success: Created Recon Center Property";
         }
@@ -172,7 +172,7 @@ namespace TeamServer.Services
             return "Success: Updated Recon Center Property";
         }
 
-        public async Task<bool> CreateUser(string username, string passwordHash, byte[] salt)
+        public async Task<bool> CreateUser(string username, string passwordHash, byte[] salt,string role)
         {
             try
             {
@@ -184,7 +184,7 @@ namespace TeamServer.Services
                 await userStore.SetPasswordSaltAsync(user, salt);
 
                 //created user needs to be give Operator role 
-                await userStore.AddToRoleAsync(user, "Operator", new CancellationToken());
+                await userStore.AddToRoleAsync(user, role, new CancellationToken());
                 if (result.Succeeded)
                 {
                     return true;

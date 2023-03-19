@@ -4,7 +4,7 @@
 <PageTitle>Index</PageTitle>
 <!--Insert table with 2 rows -->
 <CascadingAuthenticationState>
-<AuthorizeView Roles="Operator">
+<AuthorizeView Roles="Operator,TeamLead,Administrator,Guest">
     <Authorized>
 <!--Top Images -->
 <div class = "row-cols-md-auto">
@@ -53,21 +53,18 @@
     [Inject]
     public NavigationManager Nav { get; set; }
 
-    private static bool firstRender = true;
+    private static bool FirstRender = true;
 
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         //if user is logged in we need to initalize the other pages
-        if (firstRender && Login.IsLoggedIn)
+        if (FirstRender && Login.IsLoggedIn)
         {
-            firstRender = false;
+            FirstRender = false;
             Nav.NavigateTo("Engineers");
-
         }
-        await base.OnInitializedAsync();
     }
-    
 }
 
 

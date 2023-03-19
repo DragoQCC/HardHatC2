@@ -1,4 +1,5 @@
-﻿using HardHatC2Client.Pages;
+﻿using ApiModels.Responses;
+using HardHatC2Client.Pages;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
@@ -62,6 +63,23 @@ namespace HardHatC2Client.Models
             Arch = engineerMetadata.Arch;
             ManagerName = engineerMetadata.ManagerName;
             Sleep = engineerMetadata.Sleep;
+        }
+
+        //create an implcit operator to convert from the EngineerResponse to an Engineer 
+        public static implicit operator Engineer(EngineerResponse response)
+        {
+            return new Engineer
+            {
+                Id = response.Id,
+                Hostname = response.Hostname,
+                Address = response.Address,
+                Username = response.Username,
+                ProcessName = response.ProcessName,
+                ProcessId = response.ProcessId,
+                Integrity = response.Integrity,
+                Arch = response.Arch,
+                LastSeen = response.LastSeen
+            };
         }
     }
 }

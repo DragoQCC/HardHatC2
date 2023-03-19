@@ -3,42 +3,59 @@
     public class Help
     {
        public static List<HelpMenuItem> menuItems = HelpMenuItem.itemList;        
-        public static string DisplayHelp(Dictionary<string,string> input)
+        public static List<HelpMenuItem> DisplayHelp(Dictionary<string,string> input)
         {
-            string output = "";
-            if (!input.TryGetValue("/command",out var command))
-            {
-                //add the Name, Description and Keys of each item to the output as long as they are not null
+            //string output = "";
+            //if (!input.TryGetValue("/command",out var command))
+            //{
+            //    //add the Name, Description and Keys of each item to the output as long as they are not null
 
-                foreach (HelpMenuItem item in menuItems)
-                {
-                    output += $"\nName: {item.Name} | Desc: {item.Description}\n";
-                    output += $" | Usage:\n     {item.Usage}";
-                }
-                return output;
+            //    foreach (HelpMenuItem item in menuItems)
+            //    {
+            //        output += $"\nName: {item.Name} | Desc: {item.Description}\n";
+            //        output += $" | Usage:\n     {item.Usage}";
+            //    }
+            //    return output;
+            //}
+            ////else if input has value find the matching command by name and print just its info
+            //else
+            //{
+            //    foreach (HelpMenuItem item in menuItems)
+            //    {
+            //        if (item.Name.ToLower() == command.ToLower())
+            //        {
+            //            output += $"-Name: {item.Name}\n";
+            //            output += $"    -Desc: {item.Description}\n";
+            //            output += $"    -Usage: {item.Usage}\n";
+            //            output += $"    -Needs Admin: {item.NeedsAdmin}\n";
+            //            output += $"    -Opsec Risk Status: {item.Opsec}\n";
+            //            output += $"    -Details: {item.Details}\n";
+            //            if (!string.IsNullOrEmpty(item.Keys))
+            //            {
+            //                output += $"    -Keys:\n     {item.Keys}\n";
+            //            }
+            //            output += "\n";
+            //            return output;
+            //        }
+            //    }
+            //    return "Command not found";
+            //}
+
+            if (!input.TryGetValue("/command", out var command))
+            {
+                return menuItems;
             }
-            //else if input has value find the matching command by name and print just its info
             else
             {
+                List<HelpMenuItem> output = new List<HelpMenuItem>();
                 foreach (HelpMenuItem item in menuItems)
                 {
                     if (item.Name.ToLower() == command.ToLower())
                     {
-                        output += $"-Name: {item.Name}\n";
-                        output += $"    -Desc: {item.Description}\n";
-                        output += $"    -Usage: {item.Usage}\n";
-                        output += $"    -Needs Admin: {item.NeedsAdmin}\n";
-                        output += $"    -Opsec Risk Status: {item.Opsec}\n";
-                        output += $"    -Details: {item.Details}\n";
-                        if (!string.IsNullOrEmpty(item.Keys))
-                        {
-                            output += $"    -Keys:\n     {item.Keys}\n";
-                        }
-                        output += "\n";
-                        return output;
+                        output.Add(item);
                     }
                 }
-                return "Command not found";
+                return output;
             }
         }
 
@@ -63,6 +80,7 @@
                 Moderate,
                 High,
                 RequiresLeadAuthorization,
+                Blocked
             }
 
             public static List<HelpMenuItem> itemList = new List<HelpMenuItem>
@@ -83,7 +101,7 @@
                     Description = "adds a machine account to the domain, can provide optional username and password to authenticate to the domain / other domains",
                     Usage = "Add-MachineAccount /name value /machinePassword value /domain value /username value /password value",
                     NeedsAdmin = false,
-                    Opsec = OpsecStatus.NotSet,
+                    Opsec = OpsecStatus.Blocked,
                     Details = "more details about what it does",
                     Keys = "/name - the name of the machine account to create \n/machinePassword - the password to assign the new account \n/domain - the domain to add the machine account to \n/username - the user account to auth with to the target domain \n/password - password for the user account you are authing with"
                 },
@@ -93,9 +111,9 @@
                     Description = "executes the built in arp tool to return arp table",
                     Usage = "arp",
                     NeedsAdmin = false,
-                    Opsec = OpsecStatus.NotSet,
+                    Opsec = OpsecStatus.Low,
                     Details = "executes the arp -a command and returns the output",
-                    Keys = null
+                    Keys = ""
                 },
                 new HelpMenuItem()
                 {
@@ -103,7 +121,7 @@
                     Description = "reads the target file ",
                     Usage = "cat /file value",
                     NeedsAdmin = false,
-                    Opsec = OpsecStatus.NotSet,
+                    Opsec = OpsecStatus.Moderate,
                     Details = "read a file as a string",
                     Keys = "/file - the location of the file to read , eg. c:\\test.txt"
                 },
@@ -113,7 +131,7 @@
                     Description = "changes the current working directory",
                     Usage = "cd /path value",
                     NeedsAdmin = false,
-                    Opsec = OpsecStatus.NotSet,
+                    Opsec = OpsecStatus.High,
                     Details = "changes the current working directory to the input path",
                     Keys = "/path - the path to change to"
                 },
@@ -123,7 +141,7 @@
                     Description = "copy a file from one location to another",
                     Usage = "copy /file value /dest value",
                     NeedsAdmin = false,
-                    Opsec = OpsecStatus.NotSet,
+                    Opsec = OpsecStatus.RequiresLeadAuthorization,
                     Details = "copy source file to destination",
                     Keys = "/file - the source file to copy \n /dest - where you want the file to be copied to"
                 },
@@ -175,7 +193,7 @@
                     NeedsAdmin = false,
                     Opsec = OpsecStatus.NotSet,
                     Details = "Exits the program",
-                    Keys = null
+                    Keys = ""
                 },
                 new HelpMenuItem()
                 {
@@ -185,7 +203,7 @@
                     NeedsAdmin = false,
                     Opsec = OpsecStatus.NotSet,
                     Details = "get the current user luid",
-                    Keys = null
+                    Keys = ""
                 },
                 new HelpMenuItem()
                 {
@@ -195,7 +213,7 @@
                     NeedsAdmin = false,
                     Opsec = OpsecStatus.NotSet,
                     Details = "not implement yet",
-                    Keys = null
+                    Keys = ""
                 },
                  new HelpMenuItem()
                 {
@@ -295,7 +313,7 @@
                     NeedsAdmin = false,
                     Opsec = OpsecStatus.NotSet,
                     Details = "uses d/invoke to patch amsi scan buffer",
-                    Keys = null
+                    Keys = ""
                 },
                 new HelpMenuItem()
                 {
@@ -305,7 +323,7 @@
                     NeedsAdmin = false,
                     Opsec = OpsecStatus.NotSet,
                     Details = "patches etw in the current process with d/invoke",
-                    Keys = null
+                    Keys = ""
                 },
                 new HelpMenuItem()
                 {
@@ -325,7 +343,7 @@
                     NeedsAdmin = false,
                     Opsec = OpsecStatus.NotSet,
                     Details = "lists al the running processes, the arch, session and owner if possible",
-                    Keys = null
+                    Keys = ""
                 },
                  new HelpMenuItem()
                 {
@@ -335,7 +353,7 @@
                     NeedsAdmin = false,
                     Opsec = OpsecStatus.NotSet,
                     Details = "prints the current working directory",
-                    Keys = null
+                    Keys = ""
                 },
                 new HelpMenuItem()
                 {
@@ -345,7 +363,7 @@
                     NeedsAdmin = false,
                     Opsec = OpsecStatus.NotSet,
                     Details = "use after make_token or steal_token to revert the token back to the original",
-                    Keys = null
+                    Keys = ""
                 },
                 new HelpMenuItem()
                 {
@@ -455,7 +473,7 @@
                     NeedsAdmin = false,
                     Opsec = OpsecStatus.NotSet,
                     Details = "finds who the user is in the local context is not effected by make_token or steal_token",
-                    Keys = null
+                    Keys = ""
                 }
             };
         }

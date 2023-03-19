@@ -22,10 +22,10 @@ namespace Engineer.Commands
                     WinAPIs.Advapi.OpenProcessToken(Process.GetCurrentProcess().Handle, WinAPIs.Advapi.TOKEN_ALL_ACCESS, out var htest);
                     string result = $" process handle is: {htest}\n" + "Dropped impersonation, reverted to previous user";
 
-                    Tasking.FillTaskResults(result,task,EngTaskStatus.Complete);
+                    Tasking.FillTaskResults(result,task,EngTaskStatus.Complete,TaskResponseType.String);
                     return;
                 }
-                Tasking.FillTaskResults("error: " + "Failed to drop token", task, EngTaskStatus.Failed);
+                Tasking.FillTaskResults("error: " + "Failed to drop token", task, EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
     }

@@ -110,17 +110,24 @@ namespace TeamServer
                 endpoints.MapControllers();
                 endpoints.MapHub<HardHatHub>("/HardHatHub");
             });
+            Seralization.Init();
             TeamserverIP = app.ServerFeatures.Get<Microsoft.AspNetCore.Hosting.Server.Features.IServerAddressesFeature>().Addresses.First();
             Console.WriteLine("TeamServer is running on " + TeamserverIP);
             LoggingService.Init();
             Console.WriteLine("Initiating SQLite server");
             DatabaseService.Init();
             RestClientOptions options = new RestClientOptions($"{TeamserverIP}");
-            options.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
-            client = new RestClient(options);
+            //options.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+            //client = new RestClient(options);
+            Console.WriteLine("Connecting to database");
             DatabaseService.ConnectDb();
+            Console.WriteLine("Creating tables");
             DatabaseService.CreateTables();
+            Console.WriteLine("Creating default roles");
             UsersRolesDatabaseService.CreateDefaultRoles();
+            Console.WriteLine("Creating default admin");
+            UsersRolesDatabaseService.CreateDefaultAdmin();
+            Console.WriteLine("Filling teamserver from database");
             DatabaseService.FillTeamserverFromDatabase().ContinueWith((task) =>
             {
                 if (String.IsNullOrEmpty(Encryption.UniversialMetadataKey))

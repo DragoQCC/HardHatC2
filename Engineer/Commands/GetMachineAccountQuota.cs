@@ -54,13 +54,13 @@ namespace Engineer.Commands
                 var result = searcher.FindOne();
                 var machineAccountQuota = result.Properties["ms-DS-MachineAccountQuota"][0].ToString();
                 //return the machine account quota value
-                Tasking.FillTaskResults("[+] Machine Account Quota: " + machineAccountQuota,task,EngTaskStatus.Complete);
+                Tasking.FillTaskResults("[+] Machine Account Quota: " + machineAccountQuota,task,EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
                 Console.WriteLine(e.StackTrace);
-                Tasking.FillTaskResults("[-] Error Getting Machine Account Quota: " + e.Message,task,EngTaskStatus.Failed);
+                Tasking.FillTaskResults("[-] Error Getting Machine Account Quota: " + e.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
 
 

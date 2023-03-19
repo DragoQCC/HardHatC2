@@ -22,7 +22,7 @@ namespace Engineer.Commands
                 task.Arguments.TryGetValue("/command", out string command);
                 if (command == null)
                 {
-                    Tasking.FillTaskResults("No command specified", task, EngTaskStatus.FailedWithWarnings);
+                    Tasking.FillTaskResults("No command specified", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
                 command = command.TrimStart(' ');
@@ -54,11 +54,11 @@ namespace Engineer.Commands
 
                 process.Dispose();
 
-                Tasking.FillTaskResults(output.ToString(), task, EngTaskStatus.Complete);
+                Tasking.FillTaskResults(output.ToString(), task, EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception ex)
             {
-                Tasking.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed);
+                Tasking.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
     }

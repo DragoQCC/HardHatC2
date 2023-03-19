@@ -18,5 +18,5 @@ namespace ApiModels.Responses
         public string Arch { get; set; }
        public DateTime LastSeen { get; set; }
     }
-   
+
 }

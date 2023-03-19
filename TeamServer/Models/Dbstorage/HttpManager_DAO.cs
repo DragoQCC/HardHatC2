@@ -21,6 +21,12 @@ namespace TeamServer.Models.Dbstorage
         [Column("ConnectionAddress")]
         public string ConnectionAddress { get; set; }   // bind address for http manager again set on creation
         
+        [Column("BindPort")]
+        public int BindPort { get; set; }         // bind port for http manager again set on creation 
+        
+        [Column("BindAddress")]
+        public string BindAddress { get; set; }   // bind address for http manager again set on creation
+        
         [Column("IsSecure")]
         public bool IsSecure { get; set; }
         
@@ -38,6 +44,8 @@ namespace TeamServer.Models.Dbstorage
                 Name = dao.Name,
                 ConnectionPort = dao.ConnectionPort,
                 ConnectionAddress = dao.ConnectionAddress,
+                BindPort = dao.BindPort,
+                BindAddress = dao.BindAddress,
                 IsSecure = dao.IsSecure,
                 CertificatePath = dao.CertificatePath,
                 c2Profile = dao.c2Profile.ProDeserializeForDatabase<C2Profile>()
@@ -52,6 +60,8 @@ namespace TeamServer.Models.Dbstorage
                 Name = manager.Name,
                 ConnectionPort = manager.ConnectionPort,
                 ConnectionAddress = manager.ConnectionAddress,
+                BindPort = manager.BindPort,
+                BindAddress = manager.BindAddress,
                 IsSecure = manager.IsSecure,
                 CertificatePath = manager.CertificatePath,
                 c2Profile = manager.c2Profile.ProSerialiseForDatabase()

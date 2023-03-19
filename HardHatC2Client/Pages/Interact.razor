@@ -8,219 +8,362 @@
 @using BlazorXTabs
 @using MudBlazor
 @using RestSharp
-@using AutoMapper
 @using System.Collections.Generic
 @using System.Collections.Concurrent
 @using System.Collections.ObjectModel
 @using System.Linq
-@using Blazored.Typeahead
 @using System.Diagnostics;
+@using HardHatC2Client.Models.TaskResultTypes
 @inject RestClient restClient
 @inject NavigationManager navigationManagerDefault
 @inject ISnackbar Snackbar
 @inject IToastService toastService
 
 <CascadingAuthenticationState>
-<AuthorizeView Roles="Operator">
-    <Authorized>
-        
-<h3 class="text-center">Interact</h3>
-<div class="container-fluid">
-</div>
-
- 
-<MudContainer Fixed="true">
-<MudTabs Outlined="true">
-    <MudTabPanel Text="Engineers" Icon="@Icons.Material.Filled.Build" >
-        <XTabs Style="@setTabStyle(Settings.IsCheckedBox)" IsDraggable="true" NewTabSetActive="true" RenderMode="BlazorXTabs.Configuration.RenderMode.Full" CloseTabs="true">
-    @foreach (Engineer engineer in InteractEngineers)
-    {
-        string tabTitle = EngTabTitleDic[engineer.Id];
-        <XTab Title=@tabTitle>
-            <MudCard Class="" Style=" background:#111111; overflow-y:auto" Outlined="true"> <!--This is the parent card  -->
-                <MudCardContent Style="background:#111111; color:white; height:800px">
-                    @if (EngineerOutboundTaskIds.ContainsKey(engineer.Id))
-                    {
-                        @foreach (string currenttask in EngineerOutboundTaskIds[engineer.Id])
-                        {
-                                string commandHeaderText = TaskOutputHeaderInfo[currenttask]; // gets the input based on the current task index so its always unique
-                                <MudExpansionPanels Style="background:#32333d; color:white;" MultiExpansion="true">
-                                <MudExpansionPanel IsExpandedChanged="(e)=>ExpandedChanged(e,engineer.Id,currenttask)"  style="background:#32333d; color:white;">
-                                <TitleContent>
-                                @if (PickedUpTasks.Contains(currenttask) && !(EngineerReturnedTaskIds.Values.Any(x => x.Contains(currenttask))))
-                                {
-                                    <div class="d-flex">
-                                        <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3" />
-                                        <MudIconButton Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() =>CancelTask(currenttask,engineer.Id)"></MudIconButton>
-                                        <MudText>@commandHeaderText</MudText>                                                   
-                                    </div>
-                                }
-                                else if (EngineerReturnedTaskIds.Values.Any(x => x.Contains(currenttask) && TaskStatusDic.ContainsKey(currenttask)))
-                                {
-                                    if (TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Running)
-                                    {
-                                        <div class="d-flex">
-                                            <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3" />
-                                            <MudIconButton Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() =>CancelTask(currenttask,engineer.Id)"></MudIconButton>
-                                            <MudText>@commandHeaderText</MudText>
-
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="d-flex">
-                                            <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon>
-                                            <MudText>@commandHeaderText</MudText>
-                                        </div>
-                                    }
-                                }
-                                else
-                                {
-                                    <div class="d-flex">
-                                        <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon>
-                                        <MudText>@commandHeaderText</MudText>
-                                    </div>
-                                }
-                                
-                                </TitleContent>
-                                <ChildContent>
-                                <MudCard Class="" Style="background:var(--background);" Outlined="true"> <!--This is the per input and output card-->
-                                <MudCardContent Style="background:#111111; color:white; white-space:pre-wrap;">
-                                
-                                    @if (TaskOutputDic.ContainsKey(currenttask))
-                                    {
-                                        <!-- <MudText>output for components go here atm thats ls command, ps command, ipconfig, anything that can use a table</MudText> -->
-                                        // List<string> output = TaskOutputDic[currenttask];
-                                        string output = TaskOutputDic[currenttask];
-                                        @if(output !=null)
-                                        {
-                                            @if (TaskInputDic[currenttask].Command =="ls")
+    <AuthorizeView Roles="Operator,TeamLead">
+        <Authorized>
+            <h3 class="text-center">Interact</h3>
+            <MudContainer Fixed="true">
+                <MudTabs Outlined="true">
+                    <MudTabPanel Text="Engineers" Icon="@Icons.Material.Filled.Build" >
+                        <XTabs Style="@setTabStyle(Settings.IsCheckedBox)" IsDraggable="true" NewTabSetActive="true" RenderMode="BlazorXTabs.Configuration.RenderMode.Full" CloseTabs="true">
+                            @foreach (Engineer engineer in InteractEngineers)
+                            {
+                                string tabTitle = EngTabTitleDic[engineer.Id];
+                                <XTab Title=@tabTitle>
+                                    <MudCard Class="" Style=" background:#111111; overflow-y:auto" Outlined="true"> <!--This is the parent card  -->
+                                        <MudCardContent Style="background:#111111; color:white; height:850px">
+                                            @if (EngineerOutboundTaskIds.ContainsKey(engineer.Id))
                                             {
-                                                <HardHatC2Client.Components.DirectoryListingTable Outputs="@output.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList()" />
-                                            }
-                                            else if (TaskInputDic[currenttask].Command == "ps")
-                                            {
-                                                <HardHatC2Client.Components.ProcessListingTable Outputs="@output.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList()" />
-                                            }
-                                            else if (TaskInputDic[currenttask].Command == "getprivs")
-                                            {
-                                                <HardHatC2Client.Components.GetPrivsTable Outputs="@output.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList()" />
-                                            }
-                                            else if (TaskInputDic[currenttask].Command == "print-env")
-                                            {
-                                                <HardHatC2Client.Components.PrintEnvTable Outputs="@output.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList()" />
-                                            }
-                                            else if (ParsedCommandOutputDic.ContainsKey(currenttask))
-                                            {
-                                                                <MudSwitch @bind-Checked="@IsTableView" Label="Toggle Table View" Color="Color.Success" />
-                                                if(IsTableView == true)
+                                                @foreach (string currenttask in EngineerOutboundTaskIds[engineer.Id])
                                                 {
-                                                    <HardHatC2Client.Components.AutpParsedCommandTable Outputs="ParsedCommandOutputDic[currenttask]"></HardHatC2Client.Components.AutpParsedCommandTable>
-                                                }
-                                                else
-                                                {
-                                                                    <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@output</MudText>
-                                                    @*@foreach (string outputtext in output)
+                                                    string commandHeaderText = TaskOutputHeaderInfo[currenttask]; // gets the input based on the current task index so its always unique
+                                                   bool gotStatus = TaskStatusDic.TryGetValue(currenttask, out EngineerTaskResponse.EngTaskStatus status);
+                                                   if(gotStatus == false)
                                                     {
-                                                        <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@outputtext</MudText>
+                                                        status = EngineerTaskResponse.EngTaskStatus.NONE;
+                                                    }
+                                                    bool gotContent = TaskOutputDic.TryGetValue(currenttask, out EngineerTaskResponse cardContent);
+                                                    if (gotContent == false)
+                                                    {
+                                                        cardContent = null;
+                                                    }
+                                                    bool gotTask =  TaskInputDic.TryGetValue(currenttask, out EngineerTask task);
+                                                    if(gotTask == false)
+                                                    {
+                                                        task = null;
+                                                    }
+                                                    <MudExpansionPanels Style="background:#32333d; color:white;" MultiExpansion="true">
+                                                    @*@if(RenderedFinalFormDic.Contains(currenttask))
+                                                        {}
+                                                    else
+                                                    {
+                                                        <InteractWindowContent HeaderContent="@commandHeaderText" engTaskStatus="@status" engineer="@engineer" CardContent="@cardContent" EngTask="@task"></InteractWindowContent>
                                                     }*@
+                                                        <MudExpansionPanel IsExpandedChanged="(e)=>ExpandedChanged(e,engineer.Id,currenttask)"  style="background:#32333d; color:white;">
+                                                            <TitleContent>
+                                                                @if (PickedUpTasks.Contains(currenttask) && !(EngineerReturnedTaskIds.Values.Any(x => x.Contains(currenttask))))
+                                                                {
+                                                                    <div class="d-flex">
+                                                                        <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3" />
+                                                                        <MudIconButton Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() =>CancelTask(currenttask,engineer.Id)"></MudIconButton>
+                                                                        <MudText>@commandHeaderText</MudText>                                                   
+                                                                    </div>
+                                                                }
+                                                                else if (EngineerReturnedTaskIds.Values.Any(x => x.Contains(currenttask) && TaskStatusDic.ContainsKey(currenttask)))
+                                                                {
+                                                                    if (TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Running)
+                                                                    {
+                                                                        <div class="d-flex">
+                                                                            <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3" />
+                                                                            <MudIconButton Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() =>CancelTask(currenttask,engineer.Id)"></MudIconButton>
+                                                                            <MudText>@commandHeaderText</MudText>
+
+                                                                        </div>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <div class="d-flex">
+                                                                            <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon>
+                                                                            <MudText>@commandHeaderText</MudText>
+                                                                        </div>
+                                                                    }
+                                                                }
+                                                                else
+                                                                {
+                                                                    <div class="d-flex">
+                                                                        <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon>
+                                                                        <MudText>@commandHeaderText</MudText>
+                                                                    </div>
+                                                                }
+                                
+                                                            </TitleContent>
+                                                            <ChildContent>
+                                                                <MudCard Class="" Style="background:var(--background);" Outlined="true"> <!--This is the per input and output card-->
+                                                                    <MudCardContent Style="background:#111111; color:white; white-space:pre-wrap;">
+                                
+                                                                        @if (TaskOutputDic.ContainsKey(currenttask))
+                                                                        {
+                                                                            <!-- <MudText>output for components go here atm thats ls command, ps command, ipconfig, anything that can use a table</MudText> -->
+                                                                            // List<string> output = TaskOutputDic[currenttask];
+                                                                        @if(TaskOutputDic[currenttask] !=null)
+                                                                        {
+                                                                            @if (TaskOutputDic[currenttask].Result != null)
+                                                                            {
+                                                                                @if (TaskInputDic[currenttask].Command == "ls" && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete)
+                                                                                {
+                                                                                    TaskInputDic[currenttask].Arguments.TryGetValue("/path", out string pathValue);
+                                                                                    <HardHatC2Client.Components.DirectoryListingTable Outputs="@TaskOutputDic[currenttask].Result"/>
+                                                                                    if (pathValue != null)
+                                                                                    {
+                                                                                        pathValue = pathValue.TrimStart(' ').TrimEnd(' ');
+                                                                                        FileBrowser.AddContent(engineer.Hostname, pathValue, TaskOutputDic[currenttask].Result.Deserialize<List<FileSystemItem>>());
+                                                                                    }
+                                                                                }
+                                                                                else if (TaskInputDic[currenttask].Command == "ps" && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete)
+                                                                                {
+                                                                                    var result = TaskOutputDic[currenttask].Result.Deserialize<string>().Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
+                                                                                    <HardHatC2Client.Components.ProcessListingTable Outputs="@result"/>
+                                                                                }
+                                                                                else if (TaskInputDic[currenttask].Command == "getprivs" && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete)
+                                                                                {
+                                                                                    var result = TaskOutputDic[currenttask].Result.Deserialize<string>().Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
+                                                                                    <HardHatC2Client.Components.GetPrivsTable Outputs="@result"/>
+                                                                                }
+                                                                                else if (TaskInputDic[currenttask].Command == "print-env" && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete)
+                                                                                {
+                                                                                    var result = TaskOutputDic[currenttask].Result.Deserialize<string>().Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
+                                                                                        <HardHatC2Client.Components.PrintEnvTable Outputs="@result"/>
+                                                                                    }
+                                                                                else if (TaskInputDic[currenttask].Command.Equals("help",StringComparison.CurrentCultureIgnoreCase))
+                                                                                {
+                                                                                    <HelpTable Outputs="TaskOutputDic[currenttask].Result"></HelpTable> 
+                                                                                }
+                                                                                else if (ParsedCommandOutputDic.ContainsKey(currenttask) && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete)
+                                                                                {
+                                                                                    <MudSwitch @bind-Checked="@IsTableView" Label="Toggle Table View" Color="Color.Success"/>
+                                                                                    if (IsTableView == true)
+                                                                                    {
+                                                                                        <HardHatC2Client.Components.AutpParsedCommandTable Outputs="ParsedCommandOutputDic[currenttask]"></HardHatC2Client.Components.AutpParsedCommandTable>
+                                                                                    }
+                                                                                    else
+                                                                                    {
+                                                                                        var output = TaskOutputDic[currenttask].Result.Deserialize<string>();
+                                                                                        <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@output</MudText>
+                                                                                    }
+                                                                                }
+                                                                                else
+                                                                                {
+                                                                                    var output = TaskOutputDic[currenttask].Result.Deserialize<string>();
+                                                                                    <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@output</MudText>
+                                                                                }
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                <MudText Typo="Typo.body2">No output yet</MudText>
+                                                                            }
+                                                                        }
+                                                                        }            
+                                                                        else if (!TaskOutputDic.ContainsKey(currenttask))
+                                                                        {
+                                                                            <MudText Typo="Typo.body2">No output yet</MudText>
+                                                                        }
+ 
+                                                                    </MudCardContent>
+                                                                </MudCard>  
+                                                            </ChildContent>
+                                                        </MudExpansionPanel><!--This is the end of per input and output card -->   
+                                                    </MudExpansionPanels>
                                                 }
                                             }
-                                            else
-                                            {
-                                                                <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@output</MudText>
-                                                @*@foreach (string outputtext in output)
-                                                {
-                                                    <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@outputtext</MudText>
-                                                }*@
-                                            }
-                                        }
-                                    }
-                                                   
-                                    else if (!TaskOutputDic.ContainsKey(currenttask))
-                                    {
-                                        <MudText Typo="Typo.body2">No output yet</MudText>
-                                    }
-                                 
-                                    
-                               </MudCardContent>
-                            </MudCard>  
-                             </ChildContent>
-                            </MudExpansionPanel><!--This is the end of per input and output card -->   
-                            </MudExpansionPanels>
-                        }
-                    }
-                </MudCardContent>
-            </MudCard>
-            <EditForm Context="EditFormContext" Model="engineer" OnValidSubmit="@Send">
-            <div class="d-flex mb-xl-5">
+                                        </MudCardContent>
+                                    </MudCard>
+                                    <EditForm Context="EditFormContext" Model="engineer" OnValidSubmit="@Send">
+                                        <div class="d-flex mb-xl-5">
                 
-                    <MudAutocomplete OnKeyUp="OnShowHistoryUp" @ref="mudauto" @bind-Value=@placeHolder T="string" ResetValueOnEmptyText="true" SearchFunc="@SearchCommand"
-                                   Dense="true" Margin="Margin.Dense" SelectValueOnTab="true"  SelectOnClick="false" CoerceText="false" CoerceValue="true"
-                                     InputMode="InputMode.text" Variant="Variant.Text" Adornment="Adornment.Start" AdornmentText="[ENGINEER]> " Immediate="true" Clearable="true" KeyDownPreventDefault="true" KeyUpPreventDefault="true" TextUpdateSuppression="@TextSuppersion">
-                </MudAutocomplete>
+                                            <MudAutocomplete OnKeyUp="OnShowHistoryUp" @ref="mudauto" @bind-Value=@placeHolder T="string" ResetValueOnEmptyText="true" SearchFunc="@SearchCommand"
+                                                             Dense="true" Margin="Margin.Dense" SelectValueOnTab="true"  SelectOnClick="false" CoerceText="false" CoerceValue="true"
+                                                             InputMode="InputMode.text" Variant="Variant.Text" Adornment="Adornment.Start" AdornmentText="[ENGINEER]> " Immediate="true" Clearable="true" KeyDownPreventDefault="true" KeyUpPreventDefault="true" TextUpdateSuppression="@TextSuppersion">
+                                            </MudAutocomplete>
                                  
-                <MudButton style="background:var(--font-color);color:var(--background)" OnClick=@Send> <MudText>Send</MudText></MudButton>
-                @if (IsEnterkey)
-                {
-                    Task.Run(async () => await SendTask(engineer, UserInput));
-                    IsEnterkey = false;
-                }
-            </div>
-            </EditForm>
-            <MudSimpleTable Dense=true>
-                <thead class ="table table-bordered border-dark" style="background:var(--font-color); color:var(--background);">
-                <tr>
-                    <th>Status</th>
-                    <th>External Address</th>
-                    <th>Manager</th>
-                    <th>Connection Type</th>
-                    <th>Address</th>
-                    <th>hostname</th>
-                    <th>username</th>
-                    <th>process</th>
-                    <th>pid</th>
-                    <th>Integrity</th>
-                    <th>arch</th>
-                    <th>Sleep</th>
-                    <th>lastseen</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr class="table" style="background:var(--background); color:var(--font-color);">
-                    <td>@engineer.Status</td>
-                    <td>@engineer.ExternalAddress</td>
-                    <td>@engineer.ManagerName</td>
-                    <td>@engineer.ConnectionType</td>
-                    <td>@engineer.Address</td>
-                    <td>@engineer.Hostname</td>
-                    <td>@engineer.Username</td>
-                    <td>@engineer.ProcessName</td>
-                    <td>@engineer.ProcessId</td>
-                    <td>@engineer.Integrity</td>
-                    <td>@engineer.Arch</td>
-                    <td>@engineer.Sleep</td>
-                    <td>@Engineers.LastSeenTimer(engineer)</td>
-                </tr>
-                </tbody>
-            </MudSimpleTable>
-        </XTab>
-    }
-</XTabs>
-    </MudTabPanel>
-    <MudTabPanel Text="Browsers" Icon="@Icons.Material.Filled.FolderOpen">
+                                            <MudButton style="background:var(--font-color);color:var(--background)" OnClick=@Send> <MudText>Send</MudText></MudButton>
+                                            @if (IsEnterkey)
+                                            {
+                                                Task.Run(async () => await SendTask(engineer, UserInput));
+                                                IsEnterkey = false;
+                                            }
+                                        </div>
+                                    </EditForm>
+                                    <EngineerDataTable engineer="@engineer"></EngineerDataTable>
+                                </XTab>
+                            }
+                        </XTabs>
+                    </MudTabPanel>
+                    <MudTabPanel Text="Browsers" Icon="@Icons.Material.Filled.FolderOpen">
                         <FileBrowser></FileBrowser>
-    </MudTabPanel>
-    <MudTabPanel Text="Terminal" Icon="@Icons.Material.Filled.Terminal" >
-        <InteractiveTerminal></InteractiveTerminal>            
-    </MudTabPanel>
-</MudTabs>
-</MudContainer>
-
-    </Authorized>
+                    </MudTabPanel>
+                    <MudTabPanel Text="Terminal" Icon="@Icons.Material.Filled.Terminal" >
+                        <InteractiveTerminal></InteractiveTerminal>            
+                    </MudTabPanel>
+                </MudTabs>
+            </MudContainer>
+        </Authorized>
+    </AuthorizeView>
+<!--This is the Start of the GUEST READ ONLY section-->
+@* <AuthorizeView Roles="Guest"> *@
+@*         <Authorized> *@
+@*             <h3 class="text-center">Interact</h3> *@
+@*             <MudContainer Fixed="true"> *@
+@*         <MudTabs Outlined="true"> *@
+@*             <MudTabPanel Text="Engineers" Icon="@Icons.Material.Filled.Build" > *@
+@*                 <XTabs Style="@setTabStyle(Settings.IsCheckedBox)" IsDraggable="true" NewTabSetActive="true" RenderMode="BlazorXTabs.Configuration.RenderMode.Full" CloseTabs="true"> *@
+@*             @foreach (Engineer engineer in InteractEngineers) *@
+@*             { *@
+@*                 string tabTitle = EngTabTitleDic[engineer.Id]; *@
+@*                 <XTab Title=@tabTitle> *@
+@*                     <MudCard Class="" Style=" background:#111111; overflow-y:auto" Outlined="true"> <!--This is the parent card  --> *@
+@*                         <MudCardContent Style="background:#111111; color:white; height:800px"> *@
+@*                             @if (EngineerOutboundTaskIds.ContainsKey(engineer.Id)) *@
+@*                             { *@
+@*                                 @foreach (string currenttask in EngineerOutboundTaskIds[engineer.Id]) *@
+@*                                 { *@
+@*                                         string commandHeaderText = TaskOutputHeaderInfo[currenttask]; // gets the input based on the current task index so its always unique *@
+@*                                         <MudExpansionPanels Style="background:#32333d; color:white;" MultiExpansion="true"> *@
+@*                                         <MudExpansionPanel IsExpandedChanged="(e)=>ExpandedChanged(e,engineer.Id,currenttask)"  style="background:#32333d; color:white;"> *@
+@*                                         <TitleContent> *@
+@*                                         @if (PickedUpTasks.Contains(currenttask) && !(EngineerReturnedTaskIds.Values.Any(x => x.Contains(currenttask)))) *@
+@*                                         { *@
+@*                                             <div class="d-flex"> *@
+@*                                                 <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3" /> *@
+@*                                                 <MudIconButton Disabled="true" Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() =>CancelTask(currenttask,engineer.Id)"></MudIconButton> *@
+@*                                                 <MudText>@commandHeaderText</MudText>                                                    *@
+@*                                             </div> *@
+@*                                         } *@
+@*                                         else if (EngineerReturnedTaskIds.Values.Any(x => x.Contains(currenttask) && TaskStatusDic.ContainsKey(currenttask))) *@
+@*                                         { *@
+@*                                             if (TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Running) *@
+@*                                             { *@
+@*                                                 <div class="d-flex"> *@
+@*                                                     <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3" /> *@
+@*                                                     <MudIconButton Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() =>CancelTask(currenttask,engineer.Id)"></MudIconButton> *@
+@*                                                     <MudText>@commandHeaderText</MudText> *@
+@*          *@
+@*                                                 </div> *@
+@*                                             } *@
+@*                                             else *@
+@*                                             { *@
+@*                                                 <div class="d-flex"> *@
+@*                                                     <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon> *@
+@*                                                     <MudText>@commandHeaderText</MudText> *@
+@*                                                 </div> *@
+@*                                             } *@
+@*                                         } *@
+@*                                         else *@
+@*                                         { *@
+@*                                             <div class="d-flex"> *@
+@*                                                 <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon> *@
+@*                                                 <MudText>@commandHeaderText</MudText> *@
+@*                                             </div> *@
+@*                                         } *@
+@*                                          *@
+@*                                         </TitleContent> *@
+@*                                         <ChildContent> *@
+@*                                         <MudCard Class="" Style="background:var(--background);" Outlined="true"> <!--This is the per input and output card--> *@
+@*                                         <MudCardContent Style="background:#111111; color:white; white-space:pre-wrap;"> *@
+@*                                          *@
+@*                                             @if (TaskOutputDic.ContainsKey(currenttask)) *@
+@*                                             { *@
+@*                                                 <!-- <MudText>output for components go here atm thats ls command, ps command, ipconfig, anything that can use a table</MudText> --> *@
+@*                                                 // List<string> output = TaskOutputDic[currenttask]; *@
+@*                                                 @if(TaskOutputDic[currenttask].Result !=null) *@
+@*                                                 { *@
+@*                                                     @if (TaskInputDic[currenttask].Command =="ls" && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete ) *@
+@*                                                     { *@
+@*                                                         TaskInputDic[currenttask].Arguments.TryGetValue("/path", out string pathValue); *@
+@*                                                          *@
+@*                                                         <HardHatC2Client.Components.DirectoryListingTable Outputs="@TaskOutputDic[currenttask].Result" /> *@
+@*                                                         if (pathValue != null) *@
+@*                                                         { *@
+@*                                                             pathValue = pathValue.TrimStart(' ').TrimEnd(' '); *@
+@*                                                             FileBrowser.AddContent(engineer.Hostname, pathValue,TaskOutputDic[currenttask].Result.Deserialize<List<FileSystemItem>>() ); *@
+@*                                                         } *@
+@*                                                     } *@
+@*                                                     else if (TaskInputDic[currenttask].Command == "ps" && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete) *@
+@*                                                     { *@
+@*                                                         <HardHatC2Client.Components.ProcessListingTable Outputs="@TaskOutputDic[currenttask].Result.Deserialize<string>().Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList()" /> *@
+@*                                                     } *@
+@*                                                     else if (TaskInputDic[currenttask].Command == "getprivs" && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete) *@
+@*                                                     { *@
+@*                                                         <HardHatC2Client.Components.GetPrivsTable Outputs="@TaskOutputDic[currenttask].Result.Deserialize<string>().Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList()" /> *@
+@*                                                     } *@
+@*                                                     else if (TaskInputDic[currenttask].Command == "print-env" && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete) *@
+@*                                                     { *@
+@*                                                         <HardHatC2Client.Components.PrintEnvTable Outputs="@TaskOutputDic[currenttask].Result.Deserialize<string>().Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList()" /> *@
+@*                                                     } *@
+@*                                                     else if (ParsedCommandOutputDic.ContainsKey(currenttask) && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete) *@
+@*                                                     { *@
+@*                                                         <MudSwitch @bind-Checked="@IsTableView" Label="Toggle Table View" Color="Color.Success" /> *@
+@*                                                         if(IsTableView) *@
+@*                                                         { *@
+@*                                                             <HardHatC2Client.Components.AutpParsedCommandTable Outputs="ParsedCommandOutputDic[currenttask]"></HardHatC2Client.Components.AutpParsedCommandTable> *@
+@*                                                         } *@
+@*                                                         else *@
+@*                                                         { *@
+@*                                                             <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@TaskOutputDic[currenttask].Result.Deserialize<string>()</MudText> *@
+@*                                                         } *@
+@*                                                     } *@
+@*                                                     else *@
+@*                                                     { *@
+@*                                                         <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@TaskOutputDic[currenttask].Result.Deserialize<string>()</MudText> *@
+@*                                                     } *@
+@*                                                 } *@
+@*                                             }              *@
+@*                                             else if (!TaskOutputDic.ContainsKey(currenttask)) *@
+@*                                             { *@
+@*                                                 <MudText Typo="Typo.body2">No output yet</MudText> *@
+@*                                             } *@
+@*                                         </MudCardContent> *@
+@*                                     </MudCard>   *@
+@*                                      </ChildContent> *@
+@*                                     </MudExpansionPanel><!--This is the end of per input and output card -->    *@
+@*                                     </MudExpansionPanels> *@
+@*                                 } *@
+@*                             } *@
+@*                         </MudCardContent> *@
+@*                     </MudCard> *@
+@*                     <div class="d-flex mb-xl-5"> *@
+@*                          *@
+@*                             <MudAutocomplete Disabled="true" OnKeyUp="OnShowHistoryUp" @ref="mudauto" @bind-Value=@placeHolder T="string" ResetValueOnEmptyText="true" SearchFunc="@SearchCommand" *@
+@*                                            Dense="true" Margin="Margin.Dense" SelectValueOnTab="true"  SelectOnClick="false" CoerceText="false" CoerceValue="true" *@
+@*                                              InputMode="InputMode.text" Variant="Variant.Text" Adornment="Adornment.Start" AdornmentText="[ENGINEER]> " Immediate="true" Clearable="true" KeyDownPreventDefault="true" KeyUpPreventDefault="true" TextUpdateSuppression="@TextSuppersion"> *@
+@*                         </MudAutocomplete> *@
+@*                                           *@
+@*                         <MudButton Disabled="true" style="background:var(--font-color);color:var(--background)" OnClick=@Send> <MudText>Send</MudText></MudButton> *@
+@*                         @if (IsEnterkey) *@
+@*                         { *@
+@*                             Task.Run(async () => await SendTask(engineer, UserInput)); *@
+@*                             IsEnterkey = false; *@
+@*                         } *@
+@*                     </div> *@
+@*                     <EngineerDataTable engineer="@engineer"></EngineerDataTable> *@
+@*                 </XTab> *@
+@*             } *@
+@*         </XTabs> *@
+@*             </MudTabPanel> *@
+@*             <MudTabPanel Text="Browsers" Icon="@Icons.Material.Filled.FolderOpen"> *@
+@*                                 <FileBrowser></FileBrowser> *@
+@*             </MudTabPanel> *@
+@*             <MudTabPanel Text="Terminal" Icon="@Icons.Material.Filled.Terminal" > *@
+@*                 <InteractiveTerminal></InteractiveTerminal>             *@
+@*             </MudTabPanel> *@
+@*         </MudTabs> *@
+@*         </MudContainer> *@
+@*         </Authorized> *@
+@* </AuthorizeView> *@
+<AuthorizeView Roles="Operator,TeamLead,Guest">
     <NotAuthorized>
         <h1 class="text-center">Not Authorized</h1>
-            <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+        <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
     </NotAuthorized>
 </AuthorizeView>
 </CascadingAuthenticationState>
@@ -237,7 +380,7 @@
 
 
     private static Dictionary<string,List<string>> EngineerReturnedTaskIds = new(); // key is engineer id, value is list of task ids
-    private static Dictionary<string,string> TaskOutputDic = new(); // first key is taskID and value is the output from the task
+    internal static Dictionary<string,EngineerTaskResponse> TaskOutputDic = new(); // first key is taskID and value is the output from the task
     private static Dictionary<string, EngineerTaskResponse.EngTaskStatus> TaskStatusDic = new(); // first key is taskID and value is the status of the task
 
     private static Dictionary<string, string> TaskOutputHeaderInfo = new(); // first key is taskID and value is the task output header 
@@ -247,6 +390,7 @@
 
     public static Dictionary<string, List<string>> ParsedCommandOutputDic = new(); // key is task id, value is a dictionary of properties containing the property name and value
     public static Dictionary<string, int> LinesParsedCommandsDic = new();
+    public static List<string> RenderedFinalFormDic = new List<string>();
 
     public static List<string> PickedUpTasks = new();
 
@@ -270,7 +414,12 @@
     private static Stopwatch stopwatch2 = new Stopwatch();
 
     private static string OutputOneStringTest = "";
-    //private static event  OnStateChangeRequested;
+    //create a delegate that we can use to invoke statehaschanged 
+    public delegate void OnStateChangeDelegate();
+    public static OnStateChangeDelegate OnStateChange;
+    private static DateTime? LastRefresh { get; set; } = null;
+
+
 
     private string setTabStyle(bool IsDark)
     {
@@ -282,23 +431,23 @@
     }
 
     //set the icon and color for commands 
-    private string setIcon(string currentTaskId)
+    private string setIcon(string currenttask)
     {
-        if (TaskStatusDic.ContainsKey(currentTaskId))
+        if (TaskStatusDic.ContainsKey(currenttask))
         {
-            if (TaskStatusDic[currentTaskId] == EngineerTaskResponse.EngTaskStatus.Complete)
+            if (TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete)
             {
                 return Icons.Filled.CheckCircle;
             }
-            else if (TaskStatusDic[currentTaskId] == EngineerTaskResponse.EngTaskStatus.Cancelled)
+            else if (TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Cancelled)
             {
                 return Icons.Filled.StopCircle;
             }
-            else if (TaskStatusDic[currentTaskId] == EngineerTaskResponse.EngTaskStatus.Failed)
+            else if (TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Failed)
             {
                 return Icons.Filled.SmsFailed;
             }
-            else if (TaskStatusDic[currentTaskId] == EngineerTaskResponse.EngTaskStatus.FailedWithWarnings)
+            else if (TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.FailedWithWarnings)
             {
                 return Icons.Filled.Warning;
             }
@@ -313,23 +462,23 @@
         }
     }
 
-    private Color SetColor(string currentTaskId)
+    private Color SetColor(string currenttask)
     {
-        if (TaskStatusDic.ContainsKey(currentTaskId))
+        if (TaskStatusDic.ContainsKey(currenttask))
         {
-            if (TaskStatusDic[currentTaskId] == EngineerTaskResponse.EngTaskStatus.Complete)
+            if (TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete)
             {
                 return Color.Success;
             }
-            else if (TaskStatusDic[currentTaskId] == EngineerTaskResponse.EngTaskStatus.Cancelled)
+            else if (TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Cancelled)
             {
                 return Color.Secondary;
             }
-            else if (TaskStatusDic[currentTaskId] == EngineerTaskResponse.EngTaskStatus.Failed)
+            else if (TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Failed)
             {
                 return Color.Error;
             }
-            else if (TaskStatusDic[currentTaskId] == EngineerTaskResponse.EngTaskStatus.FailedWithWarnings)
+            else if (TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.FailedWithWarnings)
             {
                 return Color.Warning;
             }
@@ -350,7 +499,31 @@
         {
             PickedUpTasks.Add(taskid);
         }
+        if (OnStateChange is not null)
+        {
+            OnStateChange();
+        }
     }
+
+
+    public void ImplementOnStateChangeEvent()
+    {
+        if (LastRefresh == null)
+        {
+            LastRefresh = DateTime.Now;
+            InvokeAsync(StateHasChanged);
+        }
+        else
+        {
+            // if more then 500 ms has passed since the last refresh then refresh the page
+            if (DateTime.Now.Subtract(LastRefresh.Value).TotalMilliseconds > 500)
+            {
+                LastRefresh = DateTime.Now;
+                InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
 
     private async Task<IEnumerable<string>> SearchCommand(string value)
     {
@@ -380,6 +553,10 @@
             await Task.Delay(2);
             TextSuppersion = true; // reset so textbox can be typed in without autoclearing until submission 
                                    //if any of the strings in PreviousCommands matches UserInput then do not add it
+            if (OnStateChange is not null)
+            {
+                OnStateChange();
+            }
             if (!PreviousCommands.Contains(UserInput))
             {
                 PreviousCommands.Add(UserInput);
@@ -388,25 +565,10 @@
         }
     }
 
-    //public async Task<bool> OnEnterPress(KeyboardEventArgs e)
-    //{
-    //    if (!String.IsNullOrWhiteSpace(UserInput))
-    //    {
-    //        if (e.Code == "Enter" || e.Code == "NumpadEnter")
-    //        {
-    //            IsEnterkey = true;
-    //            return true;
-    //        }
-    //        return false;
-    //    }
-    //    return false;
-    //}
-
 
 
     public static async Task UpdateOutGoingTaskDic(string engineerId,string taskId, string commandHeader)
     {
-
         //if engineer.Id is not already a key in the EngineerUniqueInputDictionary make it a new list with the name InputList plus the engineer.Id at the end
         if (!EngineerOutboundTaskIds.ContainsKey(engineerId))
         {
@@ -425,6 +587,10 @@
                 }
             }
         }
+        if (OnStateChange is not null)
+        {
+            OnStateChange();
+        }
     }
 
 
@@ -441,45 +607,63 @@
                 if(!TaskInputDic.ContainsKey(task.Id))
                 {
                     //the split should pull out the command only so engineer instructed to ls /path c:\users\ would be come ls /path c:\users\ , then split on the first non leading space so becomes ls
-                    EngineerTask temp = new EngineerTask() {Id = task.Id, Command= task.Command.Split("to")[1].TrimStart().Split(' ')[0]};
+                    EngineerTask temp = new EngineerTask() {Id = task.Id, Command= task.Command.Split("to")[1].TrimStart().Split(' ')[0], Arguments = task.Arguments};
                     TaskInputDic.Add(temp.Id, temp);
                 }
                 await UpdateOutGoingTaskDic(kvp.Key, task.Id, task.Command);
             }
         }
+        if (OnStateChange is not null)
+        {
+            OnStateChange();
+        }
     }
 
-    public async Task SendTask(Engineer engineer, string command)
+    public static async Task SendTask(Engineer engineer, string command)
     {
         string currentTaskId = Guid.NewGuid().ToString();
         var createObject = new TaskEngineerRequest();
         createObject.Command = command.Split(' ')[0];
         //if command is help then run help and return
-        if (createObject.Command == "help")
+        if (createObject.Command.Trim().Equals("help",StringComparison.CurrentCultureIgnoreCase))
         {
             Dictionary<string, string> helpDiction = new Dictionary<string, string>();
             string commandCheck = "";
+            string helpCommandheader = "";
             if(command.Split(' ').Length >2)
             {
                 commandCheck = command.Split(' ')[2];
+                helpCommandheader = $"({DateTime.UtcNow}) Engineer instructed to {createObject.Command} {command.Split(' ')[1]} {command.Split(' ')[2]}\n";
+            }
+            else
+            {
+                helpCommandheader = $"({DateTime.UtcNow}) Engineer instructed to {createObject.Command}\n";
             }
             if(!string.IsNullOrWhiteSpace(commandCheck))
             {
                 helpDiction.Add("/command", commandCheck);
             }
-            string helpMenu = Help.DisplayHelp(helpDiction);
-
+            List<Help.HelpMenuItem> helpMenu = Help.DisplayHelp(helpDiction);
+            
 
             if (!TaskOutputDic.ContainsKey(currentTaskId))
             {
-                TaskOutputDic.Add(currentTaskId, helpMenu);
+                if (!TaskInputDic.ContainsKey(currentTaskId))
+                {
+                    TaskInputDic.Add(currentTaskId, new EngineerTask { Id = currentTaskId, Command = createObject.Command, Arguments = helpDiction, File = null });
+                }
+                await UpdateOutGoingTaskDic(engineer.Id, currentTaskId, helpCommandheader);
+                var taskResponse = new EngineerTaskResponse();
+                taskResponse.Id = currentTaskId;
+                taskResponse.status = EngineerTaskResponse.EngTaskStatus.Complete;
+                taskResponse.ResponseType = EngineerTaskResponse.TaskResponseType.HelpMenuItem;
+                taskResponse.Result = helpMenu.Serialise();
+                TaskOutputDic.Add(currentTaskId,taskResponse);
+                if (!TaskStatusDic.ContainsKey(currentTaskId))
+                {
+                    TaskStatusDic.Add(currentTaskId, taskResponse.status);
+                }
             }
-            // split the helpmenu into lines and add each line to the list in TaskOutputDic for the currentTaskId
-            //string[] helpMenuLines = helpMenu.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-            //foreach (string line in helpMenuLines)
-            //{
-            //    TaskOutputDic[currentTaskId].Add(line);
-            //}
             return; //return here because help command does not need to be sent to the engineers
         }
 
@@ -553,11 +737,9 @@
                 Console.WriteLine("values with a / need to be encloused in double quoutes. values with a \" in them should not be encloused in quotes. values with both a \" & / in them need to have no spaces.");
             }  
         }
-        //send the task to the server
-        string resource = $"/engineers/{engineer.Id}";
-        var request = new RestRequest(resource, Method.Post);
-        createObject.taskID = currentTaskId;
 
+        //assign the task id to the task    
+        createObject.taskID = currentTaskId;
 
         //if arguments contains /method as a key then if the value is sync set the IsBlocking parameter to true if its async set it to false, if the key is not present set it to false
         if (createObject.Arguments.ContainsKey("/method"))
@@ -581,8 +763,7 @@
             createObject.IsBlocking = false;
         }
 
-        request.AddJsonBody(createObject);
-        _ = await Task.Run(()=> restClient.PostAsync(request));
+        //update the input dictionary with the new task
         if (TaskInputDic.ContainsKey(createObject.taskID))
         {
             TaskInputDic[createObject.taskID] = new EngineerTask { Id = createObject.taskID, Command = createObject.Command, Arguments = createObject.Arguments, File = null };
@@ -591,26 +772,69 @@
         {
             TaskInputDic.Add(createObject.taskID, new EngineerTask { Id = createObject.taskID, Command = createObject.Command, Arguments = createObject.Arguments, File = null });
         }
+        if (OnStateChange is not null)
+        {
+            OnStateChange();
+        }
+
+        //update the local outgoing header to make it apear faster upon submit
+        var args = createObject.Arguments is null ? "" : string.Join(" ", createObject.Arguments.Select(kvp => $"{kvp.Key} {kvp.Value}"));
+        string Commandheader = $"({DateTime.UtcNow}) Engineer instructed to {createObject.Command + " " + args}\n";
+        Task.Run(async() => await UpdateOutGoingTaskDic(engineer.Id,currentTaskId,Commandheader));
+        if (OnStateChange is not null)
+        {
+            OnStateChange();
+        }
+
+        //send the task to the server
+        string resource = $"/engineers/{engineer.Id}";
+        var request = new RestRequest(resource, Method.Post);
+        request.AddJsonBody(createObject);
+        _ = await Task.Run(()=> _restClient.PostAsync(request));
     }
     // end of send task function
 
 
-    private async Task ExpandedChanged(bool IsChanged,string enhgineerId, string taskId)
+    public static async Task ExpandedChanged(bool IsChanged,string enhgineerId, string taskId)
     {
-        if(IsChanged)
+        try
         {
-            if (!TaskOutputDic.ContainsKey(taskId))
+            //check if task command is help if so skip 
+            if(TaskInputDic[taskId].Command.Equals("help",StringComparison.CurrentCultureIgnoreCase))
             {
-                TaskOutputDic.Add(taskId, null);
+                return;
             }
-            TaskOutputDic[taskId] =  await GetTaskResults(enhgineerId, taskId);
+
+            if(IsChanged)
+            {
+                if (!TaskOutputDic.ContainsKey(taskId))
+                {
+                    var taskInfo = await GetTaskResults(enhgineerId, taskId);
+                    TaskOutputDic.Add(taskId, taskInfo);
+                }
+                if (OnStateChange is not null)
+                {
+                    OnStateChange();
+                }
+            }
+            else
+            {
+                TaskOutputDic.Remove(taskId);
+                if (OnStateChange is not null)
+                {
+                    OnStateChange();
+                }
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+
         }
-        else
+        catch (Exception e)
         {
-            TaskOutputDic.Remove(taskId);
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
+            Console.WriteLine(e.Message);
+            Console.WriteLine(e.StackTrace);
         }
+
     }
 
 
@@ -645,62 +869,109 @@
                     TaskOutputDic.Add(taskid, null);
                 }
                 TaskOutputDic[taskid] = await GetTaskResults(engineerid, taskid);
+                //if TaskOutputDic[taskid] == No Output then remove the taskid from the TaskOutputDic
+                if (TaskOutputDic[taskid] != null)
+                {
+                    if (TaskOutputDic[taskid].Result.Deserialize<string>() == "No Output")
+                    {
+                        TaskOutputDic.Remove(taskid);
+                    }
+                }
+                //check the taskid against the taskInputDic to see if its an ls command if so then we can send data to the file browser component
+                if (TaskInputDic.ContainsKey(taskid))
+                {
+                    if (TaskInputDic[taskid].Command == "ls")
+                    {
+                        if (TaskOutputDic[taskid] != null)
+                        {
+                            if (TaskOutputDic[taskid].Result.Deserialize<string>().Contains("No Output"))
+                            {
+                                TaskOutputDic[taskid] = null;
+                            }
+                            else
+                            {
+                                //send the output to the file browser component
+                                //find the engineer object this task belongs to
+                                Engineer engineer = null;
+                                foreach (Engineer eng in Engineers.EngineerList)
+                                {
+                                    if (eng.Id == engineerid)
+                                    {
+                                        engineer = eng;
+                                    }
+                                }
+                                //check the task status to see if it was successful
+                                if (TaskStatusDic[taskid] == EngineerTaskResponse.EngTaskStatus.Complete)
+                                {
+                                    bool gotOutput = TaskInputDic[taskid].Arguments.TryGetValue("/path", out string pathValue);
+                                    if (gotOutput)
+                                    {
+                                        pathValue = pathValue.TrimStart(' ').TrimEnd(' ');
+                                        FileBrowser.AddContent(engineer.Hostname, pathValue, TaskOutputDic[taskid].Result.Deserialize<List<FileSystemItem>>());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (OnStateChange is not null)
+            {
+                OnStateChange();
             }
 
         }
     }
 
-    public static async Task<string> GetTaskResults(string engineerId, string taskid) 
+    public static async Task<EngineerTaskResponse> GetTaskResults(string engineerId, string taskid) 
     {
-        //gets the task results from the server
-        string resource = $"/engineers/{engineerId}/tasks/{taskid}";
-        var request = new RestRequest(resource, Method.Get);
-        var requestResponse = await _restClient.GetAsync<EngineerTaskResponse>(request);
-        if (requestResponse != null && requestResponse.Result != null)
+        try
         {
-            //if (EngineerReturnedTaskIds[engineerId].Count() <= EngineerOutboundTaskIds[engineerId].Count())
-            //{
-            if (!EngineerReturnedTaskIds[engineerId].Contains(taskid))
+            if (_restClient is not null)
             {
-                EngineerReturnedTaskIds[engineerId].Add(taskid);
+                //gets the task results from the server
+                string resource = $"/engineers/{engineerId}/tasks/{taskid}";
+                var request = new RestRequest(resource, Method.Get);
+                var requestResponse = await _restClient.GetAsync<EngineerTaskResponse>(request);
+                if (requestResponse != null && requestResponse.Result != null)
+                {
+                    if(!EngineerReturnedTaskIds.ContainsKey(engineerId))
+                    {
+                        EngineerReturnedTaskIds.Add(engineerId, new List<string>());
+                    }
+                    if (!EngineerReturnedTaskIds[engineerId].Contains(taskid))
+                    {
+                        EngineerReturnedTaskIds[engineerId].Add(taskid);
+                    }
+                    // var results = requestResponse.Result;
+                    //
+                    // //add the task to the TaskStatusDic and update its status
+                    if (!TaskStatusDic.ContainsKey(taskid))
+                    {
+                        TaskStatusDic.Add(taskid, requestResponse.status);
+                    }
+                    else
+                    {
+                        TaskStatusDic[taskid] = requestResponse.status;
+                    }
+                    if (OnStateChange is not null)
+                    {
+                        OnStateChange();
+                    }
+                    return requestResponse;
+                }
+                return null;
             }
-            //if (!TaskOutputDic.ContainsKey(taskid))
-            //{
-            //    TaskOutputDic.Add(taskid, new List<string>());
-            //}
-            var results = requestResponse.Result;
+            return null;
 
-            //add the task to the TaskStatusDic and update its status
-            if (!TaskStatusDic.ContainsKey(taskid))
-            {
-                TaskStatusDic.Add(taskid, requestResponse.status);
-            }
-            else
-            {
-                TaskStatusDic[taskid] = requestResponse.status;
-            }
-            return results;
-
-            //string[] resultLines = results.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-
-            ////check to see if TaskInputDic contains the string seatbelt in any of its values
-            ////if(!LinesParsedCommandsDic.ContainsKey(requestResponse.Id))
-            ////{
-            ////    LinesParsedCommandsDic.Add(requestResponse.Id, 0);
-            ////}
-            ////we clear because each time this is called we have a bigger result to display and appending is not displaying right
-            //TaskOutputDic[taskid].Clear();
-            //foreach (string result in resultLines)
-            //{
-            //    TaskOutputDic[taskid].Add(result);
-            //}
-            //if (TaskInputDic[taskid].Arguments.Any(s => s.Value.Contains("seatbelt")) && requestResponse.status == EngineerTaskResponse.EngTaskStatus.Complete)
-            //{
-            //    await ParseAndStoreCommandOutput(TaskOutputDic[taskid].ToArray(), "seatbelt", taskid, engineerId);
-            //}
-            //}
         }
-        return "No Output";
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+            Console.WriteLine(e.StackTrace);
+            return null;
+        }
+
     }
 
     public  async Task CancelTask(string taskid, string engineerid)
@@ -715,6 +986,10 @@
         {
             await HardHatHubClient._hub.CancelRunningTask(taskid, engineerid);
             Engineers.ShowInfoToast($"Request to cancel task {taskid} sent");
+        }
+        if (OnStateChange is not null)
+        {
+            OnStateChange();
         }
     }
 
@@ -792,6 +1067,10 @@
                 }
             }
         }
+        if (OnStateChange is not null)
+        {
+            OnStateChange();
+        }
     }
 
     private async Task ForceHistoryUpdateUP()
@@ -801,6 +1080,10 @@
         await Task.Delay(2);
         TextSuppersion = true; // reset so textbox can be typed in without autoclearing until submission
         HistoryIndex++;
+        if (OnStateChange is not null)
+        {
+            OnStateChange();
+        }
     }
     private async Task ForceHistoryUpdateDOWN()
     {
@@ -808,46 +1091,45 @@
         placeHolder = PreviousCommands[PreviousCommands.Count - HistoryIndex];
         await Task.Delay(2);
         TextSuppersion = true; // reset so textbox can be typed in without autoclearing until submission
-
+        if (OnStateChange is not null)
+        {
+            OnStateChange();
+        }
     }
 
 
     protected override async Task OnInitializedAsync()
     {
+        OnStateChange = ImplementOnStateChangeEvent;
         _restClient = restClient;
         Nav = navigationManagerDefault;
-        // var timer = new Timer(new TimerCallback(_ =>{InvokeAsync(StateHasChanged);}), null, 100, 1000);
-
-        stopwatch.Start();
-        stopwatch2.Start();
-        Task.Run(() =>
-        {
-            while (true)
+        // if (stopwatch2.IsRunning == false)
+        // {
+        //     stopwatch2.Start();
+        //     Task.Run(() =>
+        //     {
+        //         while (true)
+        //         {
+        //             if (stopwatch2.ElapsedMilliseconds > 500)
+        //             {
+        //                 OnStateChange();
+        //                 stopwatch2.Restart();
+        //             }
+        //             Thread.Sleep(100);
+        //         }
+        //     });
+        // }
+            if (firstRender && _restClient is not null)
             {
-                if (stopwatch.ElapsedMilliseconds > 500)
+                foreach (KeyValuePair<string, List<string>> kvp in EngineerOutboundTaskIds)
                 {
-                    InvokeAsync(StateHasChanged);
-                    stopwatch.Restart();
+                    UpdateTaskResponse(kvp.Key, kvp.Value);
                 }
-                if(stopwatch2.ElapsedMilliseconds > 30000)
-                {
-                    GC.Collect();
-                    GC.WaitForPendingFinalizers();
-                    stopwatch2.Restart();
-                }
-                Thread.Sleep(1);
+                firstRender = false;
+                Nav.NavigateTo("/Index");
             }
-        });
-        if (firstRender)
-        {
-            foreach(KeyValuePair<string,List<string>> kvp in EngineerOutboundTaskIds)
-            {
-                UpdateTaskResponse(kvp.Key, kvp.Value);
-            }
-            firstRender = false;
-            Nav.NavigateTo("/Index");
-            
-        }
+        
+        OnStateChange();
     }
 }
   

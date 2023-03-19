@@ -74,7 +74,7 @@ namespace Engineer.Models
             if (Outbound.Any(t => t.Id == result.Id))
             {
                 var existingResult = Outbound.FirstOrDefault(t => t.Id == result.Id);
-                existingResult.Result += result.Result;
+                existingResult.Result = existingResult.Result.Concat(result.Result).ToArray();
                 existingResult.Status = result.Status;
             }
             else

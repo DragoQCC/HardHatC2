@@ -53,7 +53,9 @@ namespace TeamServer.Models
         
         public async Task<IActionResult> HandleImplantAsync()                // the http tags are not always needed with IActionResults 
         {
-            // by this point we have gotten back data from the eng either for a check in or a task response.
+            try
+            {
+                // by this point we have gotten back data from the eng either for a check in or a task response.
             // DeEncrypt the HttpRequest using the Encryption.AES_Decrypt function
             var engineermetadata = ExtractMetadata(HttpContext.Request.Headers);
             if (engineermetadata is null)
@@ -132,9 +134,9 @@ namespace TeamServer.Models
                     {
                         await HardHatHub.CheckIn(engineer);
                     }
-                    else
+                    else if(HardHatHub._clients.Count() ==0 && engineer.engineerMetadata.Sleep > 0)
                     {
-                        Console.WriteLine("Failed to connect to hub");
+                        Console.WriteLine("No clients connected to the hub");
                     }
                 }
                 
@@ -274,9 +276,12 @@ namespace TeamServer.Models
                             }
                             
                             //these 2 command types can be processed by the cred check
-                            else if (result.Result.Contains("mimikatz") || result.Result.Contains("rubeus"))
-                            {
-                               Task.Run(async() => await TaskPostProcess.PostProcess_CredTask(result));
+                            else if(!result.Command.Equals("ls",StringComparison.CurrentCultureIgnoreCase) && !result.Command.Equals("ps", StringComparison.CurrentCultureIgnoreCase))
+                            { 
+                                if (result.Result.Deserialize<string>().Contains("mimikatz") || result.Result.Deserialize<string>().Contains("rubeus"))
+                                {
+                                    Task.Run(async () => await TaskPostProcess.PostProcess_CredTask(result));
+                                }
                             }
                         }
                         if (result.IsHidden)
@@ -402,23 +407,21 @@ namespace TeamServer.Models
                 Console.WriteLine(ex.StackTrace);
                 return BadRequest();
             }
-           
-         }
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+                return BadRequest();
+            }
+        }
         
         
         private EngineerMetadata ExtractMetadata(IHeaderDictionary headers)            
         {
             try
             {
-               //  if (!headers.TryGetValue("Authentication", out var encryptedImplantId))
-               //  {
-               //      return null;
-               //  }
-               //  var decryptedImplantIdByte = Encryption.AES_Decrypt(Convert.FromBase64String(encryptedImplantId), Encryption.UniversialMetadataKey);
-               //  //undo the utf-8 encoding to get back the string 
-               //  var decryptedImplantId = Encoding.UTF8.GetString(decryptedImplantIdByte);
-               // // Console.WriteLine($"implant id is {decryptedImplantId}");
-
                 if (!headers.TryGetValue("Authorization", out var encryptedencodedMetadata))     //extracted as base64 due too TryGetValue
                 {
                     Console.WriteLine("no authorization header");

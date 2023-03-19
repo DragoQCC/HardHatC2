@@ -24,11 +24,11 @@ namespace Engineer.Commands
                 {
                     output.AppendLine(group.Name);
                 }
-                Tasking.FillTaskResults(output.ToString(),task,EngTaskStatus.Complete);
+                Tasking.FillTaskResults(output.ToString(),task,EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception ex)
             {
-                Tasking.FillTaskResults(ex.ToString(),task,EngTaskStatus.Failed);
+                Tasking.FillTaskResults(ex.ToString(),task,EngTaskStatus.Failed,TaskResponseType.String);
             }
 
         }

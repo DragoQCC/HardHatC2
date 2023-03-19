@@ -3,6 +3,7 @@
 @using HardHatC2Client.Services;
 @using HardHatC2Client.Utilities;
 @using RestSharp;
+@using Blazored.LocalStorage;
 @inject IToastService toastService
 @inject RestClient _restClient
 
@@ -30,16 +31,16 @@
                     </div>
                 </MudForm>
             </MudTabPanel>
-            <MudTabPanel Text="Create User">
-                <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
-                    <MudTextField T="string" @bind-Value="UserName" Label="Username" Required="true" RequiredError="User name is required!" />
-                    <MudTextField T="string" @bind-Value="Password" Label="Password" HelperText="Choose a strong password" @ref="pwField1" InputType="InputType.Password" Required="true"RequiredError="Password is required!" />
-                    <MudTextField T="string" Label="Confirm Password" HelperText="Repeat the password" InputType="InputType.Password" Validation="@(new Func<string, string>(PasswordMatch))" />
-                    <div class="d-flex align-center justify-space-between">
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" Class="ml-auto" @onclick="@handleValidCreateUser">Create</MudButton>
-                    </div>
-                </MudForm>
-            </MudTabPanel>
+            @* <MudTabPanel Text="Create User"> *@
+            @*     <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors"> *@
+            @*         <MudTextField T="string" @bind-Value="UserName" Label="Username" Required="true" RequiredError="User name is required!" /> *@
+            @*         <MudTextField T="string" @bind-Value="Password" Label="Password" HelperText="Choose a strong password" @ref="pwField1" InputType="InputType.Password" Required="true"RequiredError="Password is required!" /> *@
+            @*         <MudTextField T="string" Label="Confirm Password" HelperText="Repeat the password" InputType="InputType.Password" Validation="@(new Func<string, string>(PasswordMatch))" /> *@
+            @*         <div class="d-flex align-center justify-space-between"> *@
+            @*             <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" Class="ml-auto" @onclick="@handleValidCreateUser">Create</MudButton> *@
+            @*         </div> *@
+            @*     </MudForm> *@
+            @* </MudTabPanel> *@
         </MudTabs>
     </MudPaper>
 </MudContainer>
@@ -47,8 +48,12 @@
 @code {
     [Inject]
     public NavigationManager Nav { get; set; }
+    [Inject]
+    public  ILocalStorageService localStorage { get; set; }
+    private static ILocalStorageService _localStorage { get; set; }
     private static RestClient restClient;
     private static ToastService _toastService;
+    private static NavigationManager _Nav;
     private MudForm form;
     private string UserName { get; set; }
     private string Password { get; set; }
@@ -57,9 +62,8 @@
     private MudTextField<string> pwField1;
     private MudTextField<string> pwField2;
     private MudTabs tabs;
-    public static string jwtToken { get; set; }
-    public static string SignedInUser { get; private set; }
     public static bool IsLoggedIn { get; set; } = false;
+    public static string SignedInUser { get; private set; }
     private bool isVisible;
     private bool FormSubmitted;
 
@@ -88,7 +92,9 @@
             string token = await _restClient.PostAsync<string>(request);
             if(token != null)
             {
-                jwtToken = token;
+                //jwtToken = token;
+                localStorage.SetItemAsync("bearerToken", token);
+                localStorage.SetItemAsync("UserName", UserName);
                 SignedInUser = UserName;
                 IsLoggedIn = true;
                 FormSubmitted = false;
@@ -116,33 +122,85 @@
         }
         
     }
-
-    private async Task handleValidCreateUser()
+    
+    public static async Task HandleSignOut()
     {
-        bool CreateResult = await HardHatHubClient._hub.CreateUser(UserName, Password);
-        if(CreateResult)
-        {
-            ShowSuccessToast("User Created! Please Login");
-            UserName = "";
-            Password = "";
-            tabs.ActivatePanel(0);
-            InvokeAsync(StateHasChanged);
-        }
-        else
-        {
-            ShowErrorToast("User Creation Failed, user may already exist try logging in!");
-        }
+        _localStorage.RemoveItemAsync("bearerToken");
+        _localStorage.RemoveItemAsync("UserName");
+        _Nav.NavigateTo(_Nav.BaseUri);
+        SignedInUser = "";
+        IsLoggedIn = false;
+    }
 
+    // private async Task handleValidCreateUser()
+    // {
+    //     bool CreateResult = await HardHatHubClient._hub.CreateUser(UserName, Password);
+    //     if(CreateResult)
+    //     {
+    //         ShowSuccessToast("User Created! Please Login");
+    //         UserName = "";
+    //         Password = "";
+    //         tabs.ActivatePanel(0);
+    //         InvokeAsync(StateHasChanged);
+    //     }
+    //     else
+    //     {
+    //         ShowErrorToast("User Creation Failed, user may already exist try logging in!");
+    //     }
+    //
+    // }
+
+    public static async Task<bool> CheckIsLoggedIn()
+    {
+        try
+        {
+            if (_localStorage == null)
+            {
+                return false;
+            }
+            string token = await _localStorage.GetItemAsync<string>("bearerToken");
+            if(token != null)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+            return false;
+        }
     }
 
 
-    private static void ShowSuccessToast(string successMessage)
+    public static void ShowSuccessToast(string successMessage)
     {
         _toastService.ShowSuccess(successMessage);
     }
-    private static void ShowErrorToast(string errorMessage)
+    public static void ShowErrorToast(string errorMessage)
     {
         _toastService.ShowError(errorMessage);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            string token = await localStorage.GetItemAsync<string>("bearerToken");
+            if (token != null)
+            {
+                SignedInUser = await localStorage.GetItemAsync<string>("UserName");
+                FormSubmitted = false;
+                isVisible = false;
+                IsLoggedIn = true;
+                StateHasChanged();
+                ShowSuccessToast("Logging in!");
+                Nav.NavigateTo("/Index");
+            }
+        }
     }
 
     protected override async Task OnInitializedAsync()
@@ -153,5 +211,7 @@
         }
         _toastService = (ToastService)toastService;
         restClient = _restClient;
+        _localStorage = localStorage;
+        _Nav = Nav;
     }
 }

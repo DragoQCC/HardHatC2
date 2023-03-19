@@ -15,7 +15,7 @@ namespace Engineer.Commands
 	
 	public override async Task Execute(EngineerTask task)
 		{
-            Tasking.FillTaskResults(Directory.GetCurrentDirectory(),task,EngTaskStatus.Complete); 
+            Tasking.FillTaskResults(Directory.GetCurrentDirectory(),task,EngTaskStatus.Complete,TaskResponseType.String); 
 		}
 	}
 }

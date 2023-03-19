@@ -40,7 +40,7 @@ namespace Engineer.Commands
 
                 if (task.File.Length < 1)
                 {
-                    Tasking.FillTaskResults("Error: No file provided", task, EngTaskStatus.Failed);
+                    Tasking.FillTaskResults("Error: No file provided", task, EngTaskStatus.Failed,TaskResponseType.String);
                 }
                 //convert from base64 string to byte array
                 byte[] shellcode = task.File;
@@ -121,7 +121,7 @@ namespace Engineer.Commands
                             if (task.cancelToken.IsCancellationRequested)
                             {
                                 theThread.Abort();
-                                Tasking.FillTaskResults("[-]Task Cancelled", task, EngTaskStatus.Cancelled);
+                                Tasking.FillTaskResults("[-]Task Cancelled", task, EngTaskStatus.Cancelled,TaskResponseType.String);
                                 return;
                             }
 
@@ -136,7 +136,7 @@ namespace Engineer.Commands
                             {
                                 Console.WriteLine($"read {bytesRead} bytes from pipe");
                                 Output = Encoding.UTF8.GetString(buffer, 0, (int)bytesRead);
-                                Tasking.FillTaskResults(Output, task, EngTaskStatus.Running);
+                                Tasking.FillTaskResults(Output, task, EngTaskStatus.Running,TaskResponseType.String);
                                 buffer = new byte[1024];
                                 bytesRead = 0;
                             }
@@ -155,14 +155,14 @@ namespace Engineer.Commands
                     }
                     else
                     {
-                        Tasking.FillTaskResults("[-]MapViewLoadShellcode failed", task, EngTaskStatus.FailedWithWarnings);
+                        Tasking.FillTaskResults("[-]MapViewLoadShellcode failed", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     }
                     //once the process is done, read the output from the pipe and send it back to the server
                     Console.WriteLine("Exited while loop");
                     var buffer2 = new byte[1024];
                     var readSuccess2 = WinAPIs.Kernel32.ReadFile(outR_handle, buffer2, (uint)buffer2.Length, out uint bytesRead2, IntPtr.Zero);
                     Output = Encoding.UTF8.GetString(buffer2, 0, (int)bytesRead2);
-                    Tasking.FillTaskResults(Output, task, EngTaskStatus.Complete);
+                    Tasking.FillTaskResults(Output, task, EngTaskStatus.Complete,TaskResponseType.String);
                     
                  }
                 
@@ -170,7 +170,7 @@ namespace Engineer.Commands
                 {
                     Console.WriteLine(ex.Message);
                     Console.WriteLine(ex.StackTrace);
-                    Tasking.FillTaskResults(ex.Message, task, EngTaskStatus.FailedWithWarnings);
+                    Tasking.FillTaskResults(ex.Message, task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 }
                 
             }

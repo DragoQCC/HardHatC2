@@ -14,7 +14,7 @@ namespace Engineer.Commands
 
 		public override async Task Execute(EngineerTask task)
 		{
-			Tasking.FillTaskResults("Hello from test command", task, EngTaskStatus.Complete);
+			Tasking.FillTaskResults("Hello from test command", task, EngTaskStatus.Complete,TaskResponseType.String);
 		}
 
 	}

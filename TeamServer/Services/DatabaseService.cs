@@ -112,9 +112,10 @@ namespace TeamServer.Services
                 managerService._managers.AddRange(httpManagers);
 
                 //make an http post to the managers controller calling the AddManagersFromDB and pass in the httpManagers list
-                var request = new RestRequest("/managers/addDB", Method.Post);
-                request.AddBody(httpManagers);
-                _ = await Startup.client.PostAsync<IActionResult>(request);
+                // var request = new RestRequest("/managers/addDB", Method.Post);
+                // request.AddBody(httpManagers);
+                // _ = await Startup.client.PostAsync<IActionResult>(request);
+                await managerService.StartManagersFromDB(httpManagers);
 
 
                 managerService._managers.AddRange(await GetTCPManagers());

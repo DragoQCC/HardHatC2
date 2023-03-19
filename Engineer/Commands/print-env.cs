@@ -21,7 +21,7 @@ namespace Engineer.Commands
             {
                 output.AppendLine(env.ToString() + "|" + System.Environment.GetEnvironmentVariable(env.ToString()));
             }
-            Tasking.FillTaskResults(output.ToString(),task,EngTaskStatus.Complete);
+            Tasking.FillTaskResults(output.ToString(),task,EngTaskStatus.Complete,TaskResponseType.String);
 
         }
     }

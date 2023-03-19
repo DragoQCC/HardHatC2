@@ -27,14 +27,14 @@ namespace Engineer.Commands
                 var contentbytes = task.File;
                 if(contentbytes.Length == 0)
                 {
-                    Tasking.FillTaskResults("Error: Missing file content to upload", task, EngTaskStatus.FailedWithWarnings);
+                    Tasking.FillTaskResults("Error: Missing file content to upload", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 }
                 File.WriteAllBytes(destination, contentbytes);
-                Tasking.FillTaskResults("file uploaded at " + destination, task, EngTaskStatus.Complete);
+                Tasking.FillTaskResults("file uploaded at " + destination, task, EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception ex)
             {
-                Tasking.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed);
+                Tasking.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
     }

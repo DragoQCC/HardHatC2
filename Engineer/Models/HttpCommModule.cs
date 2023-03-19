@@ -321,9 +321,6 @@ namespace Engineer.Models
             }
             _client.DefaultRequestHeaders.Add("Cookie",Cookies);
             _client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
-            
-
-
-        }
+		}
     }
 }

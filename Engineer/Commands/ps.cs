@@ -41,11 +41,11 @@ namespace Engineer.Commands
                     results.Add(result);
                 }
 
-                Tasking.FillTaskResults(results.ToString(), task, EngTaskStatus.Complete);
+                Tasking.FillTaskResults(results.ToString(), task, EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception e)
             {
-                Tasking.FillTaskResults(e.Message, task, EngTaskStatus.Failed);
+                Tasking.FillTaskResults(e.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
         

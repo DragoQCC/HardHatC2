@@ -34,14 +34,14 @@ namespace Engineer.Commands
                 //remove the script from the tracking dictionary
                 ImportedScriptsTracking.Remove(scriptToRemove);
                 //return the success message
-                Tasking.FillTaskResults($"[+] Script {scriptToRemove} removed from the imported scripts list",task,EngTaskStatus.Complete);
+                Tasking.FillTaskResults($"[+] Script {scriptToRemove} removed from the imported scripts list",task,EngTaskStatus.Complete,TaskResponseType.String);
                 return;
             }
 
             if (task.File.Length < 1)
             {
                 Console.WriteLine(task.File.Length);
-                Tasking.FillTaskResults(" Error: File not specified",task,EngTaskStatus.FailedWithWarnings);
+                Tasking.FillTaskResults(" Error: File not specified",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 return;
             }
             var script = Encoding.UTF8.GetString(task.File);
@@ -50,20 +50,20 @@ namespace Engineer.Commands
             {
                 ImportedScripts.Add(1, script);
                 ImportedScriptsTracking.Add(1, scriptName);
-                Tasking.FillTaskResults("Script Imported",task,EngTaskStatus.Complete);
+                Tasking.FillTaskResults("Script Imported",task,EngTaskStatus.Complete,TaskResponseType.String);
             }
             else
             {
                 if (ImportedScripts.ContainsValue(script))
                 {
-                    Tasking.FillTaskResults("script already imported, if u want to reimport, use the remove option and then re add it", task, EngTaskStatus.FailedWithWarnings);
+                    Tasking.FillTaskResults("script already imported, if u want to reimport, use the remove option and then re add it", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 }
                 else
                 {
                     var key = ImportedScripts.Keys.Max() + 1;
                     ImportedScripts.Add(key, script);
                     ImportedScriptsTracking.Add(key, scriptName);
-                    Tasking.FillTaskResults("Script Imported",task,EngTaskStatus.Complete);
+                    Tasking.FillTaskResults("Script Imported",task,EngTaskStatus.Complete,TaskResponseType.String);
                 }
             }
         }

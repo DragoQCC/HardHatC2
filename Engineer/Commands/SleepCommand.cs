@@ -19,10 +19,10 @@ namespace Engineer.Commands
                 task.Arguments.TryGetValue("/time", out var sleep);
 
                 EngCommBase.Sleep = int.Parse(sleep) * 1000;
-                Tasking.FillTaskResults("Sleep set to " + EngCommBase.Sleep / 1000, task, EngTaskStatus.Complete);
+                Tasking.FillTaskResults("Sleep set to " + EngCommBase.Sleep / 1000, task, EngTaskStatus.Complete,TaskResponseType.String);
             }
             else
-                Tasking.FillTaskResults("error: " + "Sleep setting change failed, please provide a number in seconds like so Sleep 5", task, EngTaskStatus.FailedWithWarnings);
+                Tasking.FillTaskResults("error: " + "Sleep setting change failed, please provide a number in seconds like so Sleep 5", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
             
         }
     }

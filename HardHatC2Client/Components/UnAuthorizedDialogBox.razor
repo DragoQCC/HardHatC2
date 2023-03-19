@@ -27,16 +27,15 @@
     {
         if (firstRender)
         {
-            if (Login.IsLoggedIn == false)
+           
+        DialogOptions options = new DialogOptions()
             {
-                DialogOptions options = new DialogOptions()
-                    {
-                        DisableBackdropClick = true,
-                        CloseOnEscapeKey = false,
-                        MaxWidth = MaxWidth.Large
-                    };
-                await MessageBox.Show(options);
-            }
+                DisableBackdropClick = true,
+                CloseOnEscapeKey = false,
+                MaxWidth = MaxWidth.Large
+            };
+        await MessageBox.Show(options);
+            
         }
         await base.OnAfterRenderAsync(firstRender);
     }

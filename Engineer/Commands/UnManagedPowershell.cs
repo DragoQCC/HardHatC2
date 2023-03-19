@@ -102,11 +102,11 @@ namespace Engineer.Commands
                 ps.Commands.Clear();
                 ps.Dispose();
 
-                Tasking.FillTaskResults(output, task, EngTaskStatus.Complete);
+                Tasking.FillTaskResults(output, task, EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception ex)
             {
-                Tasking.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed);
+                Tasking.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
             }
             finally
             {

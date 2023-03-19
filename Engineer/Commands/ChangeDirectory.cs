@@ -22,11 +22,11 @@ namespace Engineer.Commands
 					path = Directory.GetCurrentDirectory();
 				}
 				Directory.SetCurrentDirectory(path);
-                Tasking.FillTaskResults(Directory.GetCurrentDirectory(),task,EngTaskStatus.Complete); // needs a return since string should print updated dir.
+                Tasking.FillTaskResults(Directory.GetCurrentDirectory(),task,EngTaskStatus.Complete,TaskResponseType.String); // needs a return since string should print updated dir.
 			}
 			catch (Exception ex)
 			{
-               Tasking.FillTaskResults("error: " + ex.Message,task,EngTaskStatus.Failed);
+               Tasking.FillTaskResults("error: " + ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
 			}
 		}
 	}

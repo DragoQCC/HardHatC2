@@ -64,8 +64,8 @@ namespace TeamServer.Services
             string managerName = request.managerName;
 			int connectionAttempts = request.ConnectionAttempts;
             int sleep = request.Sleep;
-            string managerBindAddress = "";
-            string managerBindPort = "";
+            string managerConnectionAddress = "";
+            string managerConnectionPort = "";
 			string managerType = "";
 
 
@@ -77,8 +77,8 @@ namespace TeamServer.Services
                     if (manager.Name == managerName)
                     {
                         managerType = manager.Type.ToString();
-                        managerBindAddress = manager.ConnectionAddress;
-                        managerBindPort = manager.ConnectionPort.ToString();
+                        managerConnectionAddress = manager.ConnectionAddress;
+                        managerConnectionPort = manager.ConnectionPort.ToString();
                         file = file.Replace("{{REPLACE_MANAGER_NAME}}", managerName);
                         file = file.Replace("{{REPLACE_MANAGER_TYPE}}", managerType);
                         //update some C2 Profile stuff 
@@ -110,7 +110,7 @@ namespace TeamServer.Services
 						else if (manager.connectionMode == TCPManager.ConnectionMode.reverse)
 						{
 							file = file.Replace("{{REPLACE_CHILD_IS_SERVER}}", "false");
-                            managerBindAddress = manager.ConnectionAddress;
+                            managerConnectionAddress = manager.ConnectionAddress;
                         }
 					}
                 }
@@ -130,7 +130,7 @@ namespace TeamServer.Services
                         else if (manager.connectionMode == SMBmanager.ConnectionMode.reverse)
                         {
                             file = file.Replace("{{REPLACE_CHILD_IS_SERVER}}", "false");
-                            managerBindAddress = manager.ConnectionAddress;
+                            managerConnectionAddress = manager.ConnectionAddress;
                         }
                     }
                 }
@@ -141,8 +141,8 @@ namespace TeamServer.Services
             file = file.Replace("{{REPLACE_SLEEP_TIME}}", sleep.ToString());
 
             //update file with ConnectionIP and ConnectionPort from request
-            file = file.Replace("{{REPLACE_CONNECTION_IP}}", managerBindAddress);
-            file = file.Replace("{{REPLACE_CONNECTION_PORT}}", managerBindPort);
+            file = file.Replace("{{REPLACE_CONNECTION_IP}}", managerConnectionAddress);
+            file = file.Replace("{{REPLACE_CONNECTION_PORT}}", managerConnectionPort);
 			if (request.WorkingHours != null)
 			{
 				file = file.Replace("{{REPLACE_WORK_HOURS_START}}", request.WorkingHours.Split('-')[0]);

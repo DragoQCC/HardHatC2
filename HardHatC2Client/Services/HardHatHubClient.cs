@@ -213,13 +213,13 @@ namespace HardHatC2Client.Services
                 return;
             }
 
-            public async Task<bool> CreateUser(string username, string password)
+            public async Task<bool> CreateUser(string username, string password,string Role)
             {
                 try
                 {
                     Console.WriteLine("c2 hub create user called, invoking on ts");
                     string passwordHash = Hash.HashPassword(password, out byte[] salt);
-                    bool result = await _hubConnection.InvokeAsync<bool>("CreateUser", arg1: username, arg2: passwordHash, arg3: salt);
+                    bool result = await _hubConnection.InvokeAsync<bool>("CreateUser", arg1: username, arg2: passwordHash, arg3: salt,arg4:Role);
                     return result;
                 }
                 catch (Exception ex)

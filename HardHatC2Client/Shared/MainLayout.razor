@@ -43,7 +43,18 @@
             <MudAlert Variant="Variant.Filled" Dense="true" Severity="Severity.Warning">Status: teamserver is @TeamServerStatus</MudAlert>
         }
         <MudSpacer />
-        <MudIconButton Icon="@Icons.Custom.Brands.GitHub" Color="Color.Inherit" Link="https://github.com/queen-city-cyber/" Target="_blank" />
+        <MudMenu ActivationEvent="@MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopRight">
+            <ActivatorContent>
+                <MudAvatar>
+                    <MudIcon Icon="@Icons.Material.Outlined.AccountCircle" />
+                </MudAvatar>
+            </ActivatorContent>
+            <ChildContent>
+                <MudMenuItem Disabled="true" >Welcome @Login.SignedInUser</MudMenuItem>
+                <MudMenuItem OnClick="NavigateToSettings">Settings</MudMenuItem>
+                <MudMenuItem OnClick="Login.HandleSignOut">Sign Out</MudMenuItem>
+            </ChildContent>
+        </MudMenu>
     </MudAppBar>
     <MudDrawer  ClipMode="DrawerClipMode.Docked" @bind-Open="@open" Elevation="10" Variant="@DrawerVariant.Mini" OpenMiniOnHover="false">
         <MudNavMenu Color="Color.Warning" Margin="Margin.Dense" Bordered="true">
@@ -109,6 +120,11 @@ else
             }
         };
 
+    private async Task NavigateToSettings()
+    {
+        Nav.NavigateTo("/Settings");
+    }
+    
     public static async Task ToggleDrawer()
     {
         if (open)
@@ -121,26 +137,29 @@ else
         }
     }
     
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            var themeFromLocalStorage = await js.InvokeAsync<string>("readLocalStorage", "theme");
-            if (!string.IsNullOrEmpty(themeFromLocalStorage))
-            {
-                Settings.selectedTheme = themeFromLocalStorage;
-            }
-            try
-            {
-                bool isChecked = await js.InvokeAsync<bool>("readLocalStorage", "checkbox");
-                Settings.IsCheckedBox = isChecked;
-            }
-            catch (Exception)
-            {
-                // ignore
-            }
-        }
-    } 
+    // protected override async Task OnAfterRenderAsync(bool firstRender)
+    // {
+    //     if (firstRender)
+    //     {
+    //         var themeFromLocalStorage = await js.InvokeAsync<string>("readLocalStorage", "theme");
+    //         if (!string.IsNullOrEmpty(themeFromLocalStorage))
+    //         {
+    //             Settings.selectedTheme = themeFromLocalStorage;
+    //         }
+    //         try
+    //         {
+    //             string checkbox = await js.InvokeAsync<string>("readLocalStorage", "checkbox");
+    //             bool isChecked = bool.TryParse(checkbox,out isChecked);
+    //             Settings.IsCheckedBox = isChecked;
+    //         }
+    //         catch (Exception e)
+    //         {
+    //             // ignore
+    //             Console.WriteLine(e.Message);
+    //             
+    //         }
+    //     }
+    // } 
 
     protected override async Task OnInitializedAsync()
     {

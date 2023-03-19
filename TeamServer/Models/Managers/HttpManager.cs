@@ -14,14 +14,17 @@ using System.Security;
 using TeamServer.Models.Extras;
 using System.Linq;
 using System.Collections.Generic;
+using System.Security.Authentication;
 
 namespace TeamServer.Models
 {
     public class Httpmanager : manager
     {
         public override string Name { get; set; } // properties allows us to get Name when manager is created later so set will go with creation functions later
-        public int ConnectionPort { get; set; }         // bind port for http manager again set on creation 
-        public string ConnectionAddress { get; set; }   // bind address for http manager again set on creation
+        public int ConnectionPort { get; set; }         // connection location for engineers created with this manager
+        public string ConnectionAddress { get; set; }   // connection location for engineers created with this manager
+        public string BindAddress { get; set; }         // local teamserver address to bind to
+        public int BindPort { get; set; }               // local teamserver port to bind to 
         public bool Active => _tokenSource is not null && !_tokenSource.IsCancellationRequested;     // active is true when manager is running which is whenever the token source is not null and not cancelled
         public bool IsSecure { get; set; }
         public string CertificatePath { get; set; }
@@ -37,11 +40,13 @@ namespace TeamServer.Models
         
 
 
-        public Httpmanager(string name, int bindPort, string bindAddress, bool isSecure, ApiModels.Requests.C2Profile profile)    //Constructor for Httpmanager
+        public Httpmanager(string name, string connectionAddress,int connectionPort ,string bindAddress,int bindPort, bool isSecure, ApiModels.Requests.C2Profile profile)    //Constructor for Httpmanager
         {
             Name = name;
-            ConnectionPort = bindPort;
-            ConnectionAddress = bindAddress;
+            ConnectionPort = connectionPort;
+            ConnectionAddress = connectionAddress;
+            BindAddress = bindAddress;
+            BindPort = bindPort;
             IsSecure = isSecure;
             c2Profile = profile;
         }
@@ -60,21 +65,23 @@ namespace TeamServer.Models
 
                     var hostBuilder = new HostBuilder().ConfigureWebHostDefaults(host =>
                     {
-                        host.UseUrls($"https://{ConnectionAddress}:{ConnectionPort}");
+                        host.UseUrls($"https://{BindAddress}:{BindPort}");
                         host.Configure(ConfigureApp);
                         host.ConfigureServices(ConfigureServices);
                         // have the host use the certificate
                         host.ConfigureKestrel(serverOptions =>
                         {
+                            serverOptions.AddServerHeader = false;
                             serverOptions.ConfigureEndpointDefaults(listenOptions =>
                             {
                                 listenOptions.UseHttps(new X509Certificate2(CertificatePath, CertificatePassword));
+                                listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1AndHttp2AndHttp3;
 
                             });
                             //set connectionOptions to make sure client has a cert
                             serverOptions.ConfigureHttpsDefaults(httpsOptions =>
                             {
-                                httpsOptions.SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls11 | System.Security.Authentication.SslProtocols.Tls;
+                                httpsOptions.SslProtocols = SslProtocols.Tls13 | SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls;
                                 httpsOptions.ClientCertificateMode = ClientCertificateMode.RequireCertificate;
                                 httpsOptions.ClientCertificateValidation = (certificate, chain, sslPolicyErrors) =>
                                 {
@@ -106,12 +113,20 @@ namespace TeamServer.Models
                 {
                     var hostBuilder = new HostBuilder().ConfigureWebHostDefaults(host =>
                     {
-                        host.UseUrls($"http://{ConnectionAddress}:{ConnectionPort}");
+                        host.UseUrls($"http://{BindAddress}:{BindPort}");
                         host.Configure(ConfigureApp);
                         host.ConfigureServices(ConfigureServices);
+                        host.ConfigureKestrel(serverOptions =>
+                        {
+                            serverOptions.AddServerHeader = false;
+                            serverOptions.ConfigureEndpointDefaults(listenOptions =>
+                            {
+                                listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1AndHttp2AndHttp3;
+                            });
+                        });
                     });
                     var host = hostBuilder.Build();
-                    host.RunAsync(_tokenSource.Token);
+                    await host.RunAsync(_tokenSource.Token);
                 }
             }
             catch (Exception e)

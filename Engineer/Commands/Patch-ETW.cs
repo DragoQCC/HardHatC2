@@ -32,12 +32,12 @@ namespace Engineer.Commands
 
 
 
-                Tasking.FillTaskResults("ETW Patched with D/Invoke",task,EngTaskStatus.Complete);
+                Tasking.FillTaskResults("ETW Patched with D/Invoke",task,EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception e)
             {
                 var error = "error: " + "[!] {patch failed}" + e.Message;
-                Tasking.FillTaskResults(error, task, EngTaskStatus.Failed);
+                Tasking.FillTaskResults(error, task, EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
 

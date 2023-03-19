@@ -54,11 +54,11 @@ namespace Engineer.Commands
                     }
                 }
 
-                Tasking.FillTaskResults(output,task,EngTaskStatus.Complete);
+                Tasking.FillTaskResults(output,task,EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch(Exception ex)
             {
-                Tasking.FillTaskResults("error: " + ex.Message + "\n"+ ex.StackTrace,task,EngTaskStatus.Failed);
+                Tasking.FillTaskResults("error: " + ex.Message + "\n"+ ex.StackTrace,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
 
         }

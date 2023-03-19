@@ -3,7 +3,6 @@
 @using ApiModels.Responses
 @using Models
 @using RestSharp
-@using AutoMapper
 @using MudBlazor
 @using System.Collections.Generic
 @using HardHatC2Client.Services
@@ -11,21 +10,22 @@
 @using System.Linq
 @using System.Diagnostics;
 @using RestSharp.Authenticators;
+@using Blazored.LocalStorage;
 @inject RestClient restClientDefault
 @inject IToastService toastDefault
 @inject NavigationManager navigationManagerDefault
 
 <CascadingAuthenticationState>
-<AuthorizeView Roles="Operator">
-    <Authorized>
+    <AuthorizeView Roles="Operator,TeamLead">
+        <Authorized>
 
-<h3 class="text-center">Engineers</h3>
-<br>
-<div oncontextmenu="return false;" @onclick="HandleClick" @onmouseup="HandleMouseUp">
-<div class="container-fluid" style="height:500px; overflow-y:scroll">
-	<div class="row">
-		<div class="col-md-12">
-            <style>
+            <h3 class="text-center">Engineers</h3>
+            <br>
+            <div oncontextmenu="return false;" @onclick="HandleClick" @onmouseup="HandleMouseUp">
+                <div class="container-fluid" style="height:500px; overflow-y:scroll">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <style>
             .selected 
             {
                 background-color: #1E88E5 !important;
@@ -39,91 +39,213 @@
                 color: white !important;
             }
             </style>
-			<MudTable Items="@EngineerList" HorizontalScrollbar="true" Virtualize="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Elevation="10" Outlined="true" Striped="true" RowClassFunc="@SelectedRowClassFunc" OnRowClick="RowClickEvent" @ref="mudTable" T="Engineer">
-				<HeaderContent>
-                        <MudTh Style="@setStyle(Settings.IsCheckedBox)"></MudTh>
-                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">Status</MudTh>
-                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">External Address</MudTh>
-                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">Manager</MudTh>
-                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">Connection Type</MudTh>                        
-						<MudTh Style="@setStyle(Settings.IsCheckedBox)">Address</MudTh>
-						<MudTh Style="@setStyle(Settings.IsCheckedBox)">hostname</MudTh>
-						<MudTh Style="@setStyle(Settings.IsCheckedBox)">username</MudTh>
-						<MudTh Style="@setStyle(Settings.IsCheckedBox)">process</MudTh>
-						<MudTh Style="@setStyle(Settings.IsCheckedBox)">pid</MudTh>
-                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">Integrity</MudTh>
-                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">arch</MudTh>
-                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">Sleep Time</MudTh>
-                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">lastseen</MudTh>
-                        <MudTh Style="@setStyle(Settings.IsCheckedBox)">Options</MudTh>
-				</HeaderContent>
-				<RowTemplate Context="Rowcontext">
-                        <MudTd><MudIcon Size="Size.Small" Class="mb-2 ms-2" Icon=@Icons.Material.Outlined.DesktopWindows Color=@SetColor(Rowcontext.Integrity)></MudIcon></MudTd>
-                        <MudTd Style="@GetEngineerStatus(Rowcontext)">@Rowcontext.Status</MudTd>
-                        <MudTd Style="@opacitySetting">@Rowcontext.ExternalAddress</MudTd>
-                            <MudTd Style="@opacitySetting">@Rowcontext.ManagerName</MudTd>
-                        <MudTd Style="@opacitySetting">@Rowcontext.ConnectionType @FindManager(Rowcontext,Rowcontext.ManagerName)</MudTd>
-                            <MudTd Style="@opacitySetting">@Rowcontext.Address</MudTd>
-                            <MudTd Style="@opacitySetting">@Rowcontext.Hostname</MudTd>
-                            <MudTd Style="@opacitySetting">@Rowcontext.Username</MudTd>
-                            <MudTd Style="@opacitySetting">@Rowcontext.ProcessName</MudTd>
-                            <MudTd Style="@opacitySetting">@Rowcontext.ProcessId</MudTd>
-                            <MudTd Style="@opacitySetting">@Rowcontext.Integrity</MudTd>
-                           <MudTd Style="@opacitySetting">@Rowcontext.Arch</MudTd>
-                            <MudTd Style="@opacitySetting">@Rowcontext.Sleep sec</MudTd>
-                        <MudTd Style="@opacitySetting">@LastSeenTimer(Rowcontext)</MudTd>
-                           <MudTd> 
-                               <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
-                                <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown">
-                                    <MudMenuItem OnClick="() =>ContextMenuItems(0,Rowcontext)">Interact</MudMenuItem>
-                                    <MudMenuItem OnClick="() =>ContextMenuItems(1,Rowcontext)">Note</MudMenuItem>
-                                    <MudMenuItem OnClick="() =>ContextMenuItems(2,Rowcontext)">Color</MudMenuItem>
-                                    <MudMenuItem OnClick="() =>ContextMenuItems(3,Rowcontext)">Exit</MudMenuItem>
-                                </MudMenu>
-                            </MudButtonGroup>
-                            </MudTd>
-                </RowTemplate>
-            </MudTable>
-        </div>
-    </div>
-</div>
-</div>
+                            <MudSwitch @bind-Checked="@HideOfflineEngineers" Label="Hide Offline Engineers" Color="Color.Primary" />
+                            @if (HideOfflineEngineers)
+                            {
+                                EngineerDisplayList = EngineerList.Where(x => x.Status == "Active").ToList();
+                            }
+                            else
+                            {
+                                EngineerDisplayList = EngineerList.ToList();
+                            }
+                            <MudTable Items="@EngineerDisplayList" HorizontalScrollbar="true" Virtualize="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Elevation="10" Outlined="true" Striped="true" RowClassFunc="@SelectedRowClassFunc" OnRowClick="RowClickEvent" @ref="mudTable" T="Engineer">
+                                <HeaderContent>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)"></MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Status</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">External Address</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Manager</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Connection Type</MudTh>                        
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Address</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">hostname</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">username</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">process</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">pid</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Integrity</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">arch</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Sleep Time</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">lastseen</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Options</MudTh>
+                                </HeaderContent>
+                                <RowTemplate Context="Rowcontext">
+                                    <MudTd><MudIcon Size="Size.Small" Class="mb-2 ms-2" Icon=@Icons.Material.Outlined.DesktopWindows Color=@SetColor(Rowcontext.Integrity)></MudIcon></MudTd>
+                                    <MudTd Style="@GetEngineerStatus(Rowcontext)">@Rowcontext.Status</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.ExternalAddress</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.ManagerName</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.ConnectionType @FindManager(Rowcontext,Rowcontext.ManagerName)</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.Address</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.Hostname</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.Username</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.ProcessName</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.ProcessId</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.Integrity</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.Arch</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.Sleep sec</MudTd>
+                                    <MudTd Style="@opacitySetting">@LastSeenTimer(Rowcontext)</MudTd>
+                                    <MudTd> 
+                                        <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
+                                            <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown">
+                                                <MudMenuItem OnClick="() =>ContextMenuItems(0,Rowcontext)">Interact</MudMenuItem>
+                                                <MudMenuItem OnClick="() =>ContextMenuItems(1,Rowcontext)">Note</MudMenuItem>
+                                                <MudMenuItem OnClick="() =>ContextMenuItems(2,Rowcontext)">Color</MudMenuItem>
+                                                <MudMenuItem OnClick="() =>ContextMenuItems(3,Rowcontext)">Exit</MudMenuItem>
+                                            </MudMenu>
+                                        </MudButtonGroup>
+                                    </MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
 
-<div class ="container-fluid">
-    <h3 class="text-center position-relative">Create New Engineer</h3>
-    <hr>
+            <div class ="container-fluid">
+                <h3 class="text-center position-relative">Create New Engineer</h3>
+                <hr>
 
-<MudForm @bind-IsValid="@success" @bind-Errors="@errors">
-     <MudSelect Class="mb-4 mt-4"  T="string" Label="Manager Name" Variant="Variant.Filled" Required="true" @bind-value="formData.managerName" RequiredError="Type is required!">
-          @foreach (Manager manager in @Managers.managersList)
-            {
-                <MudSelectItem Value="@manager.Name"/>
-            }
-        </MudSelect>
-        <MudTextField Class="mb-4 mt-4"  T="int" Label="Connection Attempts" Variant="Variant.Filled" Required="true" @bind-value="formData.ConnectionAttempts" RequiredError="callback address is required!"/>
-        <MudTextField Class="mb-4 mt-4" T="int" Label="sleep timer" Variant="Variant.Filled"  Required="true" @bind-value="formData.Sleep" RequiredError="port is required!"/>
-        <MudTextField Class="mb-4 mt-4" T="string" Label="working hours format (01:00:00-23:00:00)" Variant="Variant.Filled"  @bind-value="formData.WorkingHours" RequiredError="port is required!" />
-        <MudSelect Class="mb-4 mt-4"  T="SpawnEngineerRequest.EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
-            <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.exe)" />
-            <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.shellcode)" />
-            <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.powershellcmd)" />
-        </MudSelect>
-        <MudButton StartIcon="@Icons.Filled.Bolt" Variant="Variant.Filled" Color="Color.Success"  Disabled="@(!success)" @onclick="@validSubmit"> Create</MudButton>
-    </MudForm>
-</div>
-<br>
-<br>
-<div>
-    <MudTextField @bind-Value="PsCmd" Label="Powershell Commmand" ReadOnly="true" Variant="Variant.Outlined"/>
-</div>
-
-
-    </Authorized>
-    <NotAuthorized>
-        <h1 class="text-center">Not Authorized</h1>
+                <MudForm @bind-IsValid="@success" @bind-Errors="@errors">
+                    <MudSelect Class="mb-4 mt-4"  T="string" Label="Manager Name" Variant="Variant.Filled" Required="true" @bind-value="formData.managerName" RequiredError="Type is required!">
+                        @foreach (Manager manager in @Managers.managersList)
+                        {
+                            <MudSelectItem Value="@manager.Name"/>
+                        }
+                    </MudSelect>
+                    <MudTextField Class="mb-4 mt-4"  T="int" Label="Connection Attempts" Variant="Variant.Filled" Required="true" @bind-value="formData.ConnectionAttempts" RequiredError="callback address is required!"/>
+                    <MudTextField Class="mb-4 mt-4" T="int" Label="sleep timer" Variant="Variant.Filled"  Required="true" @bind-value="formData.Sleep" RequiredError="port is required!"/>
+                    <MudTextField Class="mb-4 mt-4" T="string" Label="working hours format (01:00:00-23:00:00)" Variant="Variant.Filled"  @bind-value="formData.WorkingHours" RequiredError="port is required!" />
+                    <MudSelect Class="mb-4 mt-4"  T="SpawnEngineerRequest.EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
+                        <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.exe)" />
+                        <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.shellcode)" />
+                        <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.powershellcmd)" />
+                    </MudSelect>
+                    <MudButton StartIcon="@Icons.Filled.Bolt" Variant="Variant.Filled" Color="Color.Success"  Disabled="@(!success)" @onclick="@validSubmit"> Create</MudButton>
+                </MudForm>
+            </div>
+            <br>
+            <br>
+            <div>
+                <MudTextField @bind-Value="PsCmd" Label="Powershell Commmand" ReadOnly="true" Variant="Variant.Outlined"/>
+            </div>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Roles="Guest">
+        <Authorized>
+            <h3 class="text-center">Engineers</h3>
+            <br>
+            <div oncontextmenu="return false;" @onclick="HandleClick" @onmouseup="HandleMouseUp">
+                <div class="container-fluid" style="height:500px; overflow-y:scroll">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <style>
+                    .selected 
+                    {
+                        background-color: #1E88E5 !important;
+                    }
+                    .selected > td 
+                    {
+                        color: white !important;
+                    }   
+                    .selected > td .mud-input 
+                    {
+                        color: white !important;
+                    }
+                    </style>
+                            <MudSwitch @bind-Checked="@HideOfflineEngineers" Label="Hide Offline Engineers" Color="Color.Primary" />
+                            @if (HideOfflineEngineers)
+                            {
+                                EngineerDisplayList = EngineerList.Where(x => x.Status == "Active").ToList();
+                            }
+                            else
+                            {
+                                EngineerDisplayList = EngineerList.ToList();
+                            }
+                            <MudTable Items="@EngineerDisplayList" HorizontalScrollbar="true" Virtualize="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Elevation="10" Outlined="true" Striped="true" RowClassFunc="@SelectedRowClassFunc" OnRowClick="RowClickEvent" @ref="mudTable" T="Engineer">
+                                <HeaderContent>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)"></MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Status</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">External Address</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Manager</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Connection Type</MudTh>                        
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Address</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">hostname</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">username</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">process</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">pid</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Integrity</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">arch</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Sleep Time</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">lastseen</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Options</MudTh>
+                                </HeaderContent>
+                                <RowTemplate Context="Rowcontext">
+                                    <MudTd><MudIcon Size="Size.Small" Class="mb-2 ms-2" Icon=@Icons.Material.Outlined.DesktopWindows Color=@SetColor(Rowcontext.Integrity)></MudIcon></MudTd>
+                                    <MudTd Style="@GetEngineerStatus(Rowcontext)">@Rowcontext.Status</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.ExternalAddress</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.ManagerName</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.ConnectionType @FindManager(Rowcontext,Rowcontext.ManagerName)</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.Address</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.Hostname</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.Username</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.ProcessName</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.ProcessId</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.Integrity</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.Arch</MudTd>
+                                    <MudTd Style="@opacitySetting">@Rowcontext.Sleep sec</MudTd>
+                                    <MudTd Style="@opacitySetting">@LastSeenTimer(Rowcontext)</MudTd>
+                                    <MudTd> 
+                                        <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
+                                            <MudMenu Disabled="true" Icon="@Icons.Material.Filled.ArrowDropDown">
+                                                <MudMenuItem OnClick="() =>ContextMenuItems(0,Rowcontext)">Interact</MudMenuItem>
+                                                <MudMenuItem OnClick="() =>ContextMenuItems(1,Rowcontext)">Note</MudMenuItem>
+                                                <MudMenuItem OnClick="() =>ContextMenuItems(2,Rowcontext)">Color</MudMenuItem>
+                                                <MudMenuItem OnClick="() =>ContextMenuItems(3,Rowcontext)">Exit</MudMenuItem>
+                                            </MudMenu>
+                                        </MudButtonGroup>
+                                    </MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        
+        
+            <div class ="container-fluid">
+                <h3 class="text-center position-relative">Create New Engineer</h3>
+                <hr>
+        
+                <MudForm @bind-IsValid="@success" @bind-Errors="@errors">
+                    <MudSelect Disabled="true" Class="mb-4 mt-4"  T="string" Label="Manager Name" Variant="Variant.Filled" Required="true" @bind-value="formData.managerName" RequiredError="Type is required!">
+                        @foreach (Manager manager in @Managers.managersList)
+                        {
+                            <MudSelectItem Value="@manager.Name"/>
+                        }
+                    </MudSelect>
+                    <MudTextField Disabled="true" Class="mb-4 mt-4"  T="int" Label="Connection Attempts" Variant="Variant.Filled" Required="true" @bind-value="formData.ConnectionAttempts" RequiredError="callback address is required!"/>
+                    <MudTextField Disabled="true" Class="mb-4 mt-4" T="int" Label="sleep timer" Variant="Variant.Filled"  Required="true" @bind-value="formData.Sleep" RequiredError="port is required!"/>
+                    <MudTextField Disabled="true" Class="mb-4 mt-4" T="string" Label="working hours format (01:00:00-23:00:00)" Variant="Variant.Filled"  @bind-value="formData.WorkingHours" RequiredError="port is required!" />
+                    <MudSelect Disabled="true" Class="mb-4 mt-4"  T="SpawnEngineerRequest.EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
+                        <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.exe)" />
+                        <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.shellcode)" />
+                        <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.powershellcmd)" />
+                    </MudSelect>
+                    <MudButton StartIcon="@Icons.Filled.Bolt" Variant="Variant.Filled" Color="Color.Success"  Disabled="true"> Create</MudButton>
+                </MudForm>
+            </div>
+            <br>
+            <br>
+            <div>
+                <MudTextField @bind-Value="PsCmd" Label="Powershell Commmand" ReadOnly="true" Variant="Variant.Outlined"/>
+            </div>
+        
+        
+        </Authorized>
+    </AuthorizeView>
+<AuthorizeView Roles="Guest,Operator,TeamLead">
+        <NotAuthorized>
+            <h1 class="text-center">Not Authorized</h1>
             <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
-    </NotAuthorized>
+        </NotAuthorized>
 </AuthorizeView>
 </CascadingAuthenticationState>
 
@@ -131,17 +253,19 @@
     [Inject]
     private static RestClient _restClient { get; set; }
     [Inject]
-    private static IMapper _mapper { get; set; }
-    [Inject]
     private static IToastService toastService { get; set; }
     [Inject]
     private static NavigationManager Nav { get; set; }
 
+    [Inject]
+    public ILocalStorageService localStorage { get; set; }
+
     protected internal static ObservableCollection<Engineer> EngineerList = new ObservableCollection<Engineer>();
+    protected internal static List<Engineer> EngineerDisplayList = new List<Engineer>();
     private static SpawnEngineerRequest formData = new SpawnEngineerRequest();
     private string EngineerTestID { get; set; }
     public Double OpacityValue { get; set; }
-    public static bool firstRender = true;
+    public static bool FirstRender = true;
     private static bool Initialized = false;
     private bool success;
     private string[] errors = { };
@@ -151,6 +275,7 @@
     private static string opacitySetting {get; set;}
     private static Stopwatch stopwatch = new Stopwatch();
     private static bool IsCurrentLocation { get; set; }
+    private static bool HideOfflineEngineers { get; set; }
 
     public static async Task SetPsCommand(string command)
     {
@@ -191,7 +316,7 @@
     {
         if (formData.managerName != null)
         {
-            await CreateHttpEngineer();
+            await CreateEngineer();
         }
     }
 
@@ -289,7 +414,7 @@
         return "";
     }
 
-    public static async Task CreateHttpEngineer()
+    public static async Task CreateEngineer()
     {
         string resource = "/engineers";
         var createObject = new SpawnEngineerRequest
@@ -302,6 +427,7 @@
 		};
         var request = new RestRequest(resource,Method.Post);
         request.AddJsonBody(createObject);
+        ShowInfoToast("Sending Request To Create Engineer");
         var requestResponse = await _restClient.PostAsync<String>(request);
         if (requestResponse != null)
         {
@@ -379,7 +505,7 @@
             Currentengineer.LastSeen = engineer.LastSeen;
             Currentengineer.Sleep = engineer.Sleep;
         }
-        
+
     }
 
     public async Task GetHttpEngineer(string engineerId)
@@ -388,7 +514,7 @@
         var request = new RestRequest(resource, Method.Get);
         request.RootElement = "metadata";        
         var requestResponse = await _restClient.GetAsync<EngineerResponse>(request);
-        var engineerObject = _mapper.Map<EngineerResponse,Engineer>(requestResponse);
+        var engineerObject = (Engineer)requestResponse;
         if (engineerObject != null)
         {
             EngineerList.Add(engineerObject);
@@ -480,38 +606,42 @@
     }
 
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if(FirstRender)
+        {
+            _restClient = restClientDefault;
+            string jwtToken = await localStorage.GetItemAsync<string>("bearerToken");
+            if (jwtToken != null)
+            {
+                _restClient.UseAuthenticator(new JwtAuthenticator(jwtToken));
+            }
+            await Engineers.GetAllEngineers();
+            FirstRender = false;
+            Nav.NavigateTo("Interact");
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
-
-        _restClient = restClientDefault;
-        _restClient.UseAuthenticator(new JwtAuthenticator(Login.jwtToken));
-        //_mapper = mapperDefault;
         toastService = toastDefault;
         Nav = navigationManagerDefault;
-        //var timer = new Timer(new TimerCallback(_ => { InvokeAsync(StateHasChanged); }), null, 100, 1000);
-        
-        
-        stopwatch.Start();
-        Task.Run(() =>
-        {
-            while (Nav.Uri.Split('/')[3].Equals("engineers",StringComparison.CurrentCultureIgnoreCase))
-            {
-                if (stopwatch.ElapsedMilliseconds > 750)
-                {
-                    InvokeAsync(StateHasChanged);
-                    stopwatch.Restart();
-                }
-                Thread.Sleep(1);
-            }
-        });
-        if (firstRender)
-        {
-            await Engineers.GetAllEngineers();
-            firstRender = false;
-            Nav.NavigateTo("Interact");
-        }
-        
-    }
 
+        if (stopwatch.IsRunning == false)
+        {
+            stopwatch.Start();
+            Task.Run(() =>
+            {
+                while (true)
+                {
+                    if (stopwatch.ElapsedMilliseconds > 500)
+                    {
+                        InvokeAsync(StateHasChanged);
+                        stopwatch.Restart();
+                    }
+                    Thread.Sleep(100);
+                }
+            });
+        }    
+    }
 }

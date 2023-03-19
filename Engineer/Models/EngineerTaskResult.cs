@@ -14,13 +14,15 @@ namespace Engineer.Models
 
         public string Command { get; set;}
        
-        public string Result { get; set; }
+        public byte[] Result { get; set; }
      
         public bool IsHidden { get; set; }
 
         public string EngineerId { get; set; }
 
         public EngTaskStatus Status { get; set; }
+       
+        public TaskResponseType ResponseType { get; set; }
     }
     public enum EngTaskStatus
     {
@@ -30,5 +32,12 @@ namespace Engineer.Models
         CompleteWithErrors = 5,
         Failed = 6,
         Cancelled =7
+    }
+    public enum TaskResponseType
+    {
+        None,
+        String, 
+        FileSystemItem,
+        ProcessItem,
     }
 }

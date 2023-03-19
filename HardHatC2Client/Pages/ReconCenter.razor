@@ -7,66 +7,127 @@
 @using HardHatC2Client.Services;
 
 <CascadingAuthenticationState>
-<AuthorizeView Roles="Operator">
-    <Authorized>
-        
-<h3 class="text-center">Recon Center</h3>
+    <AuthorizeView Roles="Operator,TeamLead">
+        <Authorized>
+            <h3 class="text-center">Recon Center</h3>
+            <MudContainer Fixed="true">
+                <MudTabs Outlined="true">
+                    <!-- Entities -->
+                    <MudTabPanel Text="Entities" Icon="@Icons.Material.Filled.PeopleAlt">
+                        <MudSelect Class="mb-4 mt-4" T="ReconCenterEntity" Label="Entity Name" Variant="Variant.Filled" SelectedValuesChanged="@SelectedEntityChanged" Required="true" @bind-value="selectedEntity" RequiredError="Type is required!">
+                            @foreach (ReconCenterEntity entity in dropDownEntities)
+                            {
+                                <MudSelectItem Value="@entity">@entity.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                        <br>
 
-<MudSelect Class="mb-4 mt-4"  T="ReconCenterEntity" Label="Entity Name" Variant="Variant.Filled" SelectedValuesChanged="@SelectedEntityChanged" Required="true" @bind-value="selectedEntity" RequiredError="Type is required!">
-          @foreach (ReconCenterEntity entity in dropDownEntities)
-            {
-                <MudSelectItem Value="@entity">@entity.Name</MudSelectItem>
-            }
-</MudSelect>
-<br>
-
-<MudDataGrid T="ReconCenterEntity.ReconCenterEntityProperty" Items="@BodyContent" ReadOnly="false" Dense="true" Hover="true" CanCancelEdit="true"  Height="500px" Elevation="10" Outlined="true" Striped="true"
-            @bind-SelectedItem="selectedItem1"  EditMode="DataGridEditMode.Form" StartedEditingItem="@StartedEditingItem" CanceledEditingItem="@CanceledEditingItem" CommittedItemChanges="@CommittedItemChanges" 
-            EditTrigger="DataGridEditTrigger.OnRowClick" QuickFilter="@_quickFilter">
-    <ToolBarContent>
-        @if (selectedEntity != null)
-        {
-            <MudText Typo="Typo.h6">Properties for @selectedEntity.Name</MudText>
-        }
-        else
-        {
-                  <MudText Typo="Typo.h6">Properties</MudText>      
-        }
-        <MudSpacer />
-        <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
-        @if(selectedEntity != null)
-        {
-            <MudButton StartIcon="@Icons.Filled.Add" Variant="Variant.Filled" Color="Color.Success" @onclick="@OpenPropertyCreateDialog">Add Property</MudButton>
-        }
-    </ToolBarContent>
-    <Columns>
-        <Column HeaderStyle="@setStyle(Settings.IsCheckedBox)"  T="ReconCenterEntity.ReconCenterEntityProperty"  Field="Name" Title="Property Name" IsEditable="true" />
-        <Column HeaderStyle="@setStyle(Settings.IsCheckedBox)"  T="ReconCenterEntity.ReconCenterEntityProperty"  Field="Value" CellStyleFunc="@_styleFunc" IsEditable="true" />
-        <Column HeaderStyle="@setStyle(Settings.IsCheckedBox)"  T="ReconCenterEntity.ReconCenterEntityProperty"  Field="Note" CellStyleFunc="@_styleFunc" IsEditable="true" />
-    </Columns>
-</MudDataGrid>
+                        <MudDataGrid T="ReconCenterEntity.ReconCenterEntityProperty" Items="@BodyContent" ReadOnly="false" Dense="true" Hover="true" CanCancelEdit="true" Height="500px" Elevation="10" Outlined="true" Striped="true"
+                                     @bind-SelectedItem="selectedItem1" EditMode="DataGridEditMode.Form" StartedEditingItem="@StartedEditingItem" CanceledEditingItem="@CanceledEditingItem" CommittedItemChanges="@CommittedItemChanges"
+                                     EditTrigger="DataGridEditTrigger.OnRowClick" QuickFilter="@_quickFilter">
+                            <ToolBarContent>
+                                @if (selectedEntity != null)
+                                {
+                                    <MudText Typo="Typo.h6">Properties for @selectedEntity.Name</MudText>
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.h6">Properties</MudText>
+                                }
+                                <MudSpacer/>
+                                <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                                @if (selectedEntity != null)
+                                {
+                                    <MudButton StartIcon="@Icons.Filled.Add" Variant="Variant.Filled" Color="Color.Success" @onclick="@OpenPropertyCreateDialog">Add Property</MudButton>
+                                }
+                            </ToolBarContent>
+                            <Columns>
+                                <Column HeaderStyle="@setStyle(Settings.IsCheckedBox)" T="ReconCenterEntity.ReconCenterEntityProperty" Field="Name" Title="Property Name" IsEditable="true"/>
+                                <Column HeaderStyle="@setStyle(Settings.IsCheckedBox)" T="ReconCenterEntity.ReconCenterEntityProperty" Field="Value" CellStyleFunc="@_styleFunc" IsEditable="true"/>
+                                <Column HeaderStyle="@setStyle(Settings.IsCheckedBox)" T="ReconCenterEntity.ReconCenterEntityProperty" Field="Note" CellStyleFunc="@_styleFunc" IsEditable="true"/>
+                            </Columns>
+                        </MudDataGrid>
 
 
 
-<br>
-<div class="container-fluid">
-    <h3 class="text-center position-relative">Submit Entity</h3>
-    <hr>
-    <MudForm @bind-IsValid="@EntitySuccess" @bind-Errors="@EntityErrors">
-        <MudTextField Class="mb-4 mt-4" T="string" Label="Entity" Variant="Variant.Filled" Required="true" @bind-value="NewEntityformData.Name" RequiredError="entity name is required." />
-        <MudTextField Lines="2" Class="mb-4 mt-4" T="string" Label="Value" Variant="Variant.Filled" Required="false" @bind-value="NewEntityformData.Description"/>
-        <MudButton StartIcon="@Icons.Filled.Bolt" Variant="Variant.Filled" Color="Color.Success" Disabled="@(!EntitySuccess)" @onclick="@NewEntityValidSubmit">Create Entity</MudButton>
-    </MudForm>
-</div>
+                        <br>
+                        <div class="container-fluid">
+                            <h3 class="text-center position-relative">Submit Entity</h3>
+                            <hr>
+                            <MudForm @bind-IsValid="@EntitySuccess" @bind-Errors="@EntityErrors">
+                                <MudTextField Class="mb-4 mt-4" T="string" Label="Entity" Variant="Variant.Filled" Required="true" @bind-value="NewEntityformData.Name" RequiredError="entity name is required."/>
+                                <MudTextField Lines="2" Class="mb-4 mt-4" T="string" Label="Value" Variant="Variant.Filled" Required="false" @bind-value="NewEntityformData.Description"/>
+                                <MudButton StartIcon="@Icons.Filled.Bolt" Variant="Variant.Filled" Color="Color.Success" Disabled="@(!EntitySuccess)" @onclick="@NewEntityValidSubmit">Create Entity</MudButton>
+                            </MudForm>
+                        </div>
 
-<br>
+                        <br>
+                    </MudTabPanel>
+                    <!-- IOC -->
+                    <MudTabPanel Text="IOC" Icon="@Icons.Material.Filled.Scoreboard">
+                        <MudTabs Outlined="true">
+                            <MudTabPanel Text="Host IOC" Icon="@Icons.Custom.Brands.Microsoft">
+                                <HostIOCTable> </HostIOCTable>
+                            </MudTabPanel>
+                            <MudTabPanel Text="Network IOC" Icon="@Icons.Material.Filled.NetworkCheck">
+                                <NetworkIOCTable> </NetworkIOCTable>
+                            </MudTabPanel>
+                            <MudTabPanel Text="File IOC" Icon="@Icons.Material.Filled.FilePresent">
+                                <FileIOCTable> </FileIOCTable>
+                            </MudTabPanel>
+                        </MudTabs>
+                    </MudTabPanel>
+                </MudTabs> 
+       </MudContainer>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Roles="Guest">
+        <Authorized>
+            
+            <h3 class="text-center">Recon Center</h3>
+    
+            <MudSelect Class="mb-4 mt-4"  T="ReconCenterEntity" Label="Entity Name" Variant="Variant.Filled" SelectedValuesChanged="@SelectedEntityChanged" Required="true" @bind-value="selectedEntity" RequiredError="Type is required!">
+                @foreach (ReconCenterEntity entity in dropDownEntities)
+                {
+                    <MudSelectItem Value="@entity">@entity.Name</MudSelectItem>
+                }
+            </MudSelect>
+            <br>
+    
+            <MudDataGrid T="ReconCenterEntity.ReconCenterEntityProperty" Items="@BodyContent" ReadOnly="false" Dense="true" Hover="true" CanCancelEdit="true"  Height="500px" Elevation="10" Outlined="true" Striped="true"
+                         @bind-SelectedItem="selectedItem1" QuickFilter="@_quickFilter">
+                <ToolBarContent>
+                    @if (selectedEntity != null)
+                    {
+                        <MudText Typo="Typo.h6">Properties for @selectedEntity.Name</MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.h6">Properties</MudText>      
+                    }
+                    <MudSpacer />
+                    <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                    @if(selectedEntity != null)
+                    {
+                        <MudButton StartIcon="@Icons.Filled.Add" Variant="Variant.Filled" Color="Color.Success" @onclick="@OpenPropertyCreateDialog">Add Property</MudButton>
+                    }
+                </ToolBarContent>
+                <Columns>
+                    <Column HeaderStyle="@setStyle(Settings.IsCheckedBox)"  T="ReconCenterEntity.ReconCenterEntityProperty"  Field="Name" Title="Property Name" IsEditable="true" />
+                    <Column HeaderStyle="@setStyle(Settings.IsCheckedBox)"  T="ReconCenterEntity.ReconCenterEntityProperty"  Field="Value" CellStyleFunc="@_styleFunc" IsEditable="true" />
+                    <Column HeaderStyle="@setStyle(Settings.IsCheckedBox)"  T="ReconCenterEntity.ReconCenterEntityProperty"  Field="Note" CellStyleFunc="@_styleFunc" IsEditable="true" />
+                </Columns>
+            </MudDataGrid>
 
-    </Authorized>
-    <NotAuthorized>
-        <h1 class="text-center">Not Authorized</h1>
-            <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
-    </NotAuthorized>
-</AuthorizeView>
+            <br>
+        </Authorized>
+    </AuthorizeView>
+     <AuthorizeView Roles="TeamLead,Operator,Guest">
+                   <NotAuthorized>
+                        <h1 class="text-center">Not Authorized</h1>
+                        <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+                    </NotAuthorized>
+        </AuthorizeView>
 </CascadingAuthenticationState>
 
 

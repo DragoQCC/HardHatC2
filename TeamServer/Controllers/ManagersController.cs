@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System;
+using Microsoft.AspNetCore.Mvc;
 using TeamServer.Models;
 using TeamServer.Services;
 using ApiModels.Requests;
@@ -55,7 +56,7 @@ namespace TeamServer.Controllers
 		{
 			if (request.managertype == StartManagerRequest.ManagerType.http || request.managertype == StartManagerRequest.ManagerType.https)
 			{
-                var manager = new Httpmanager(request.Name, request.ConnectionPort, request.ConnectionAddress, request.IsSecure, request.C2profile);
+                var manager = new Httpmanager(request.Name, request.ConnectionAddress,request.ConnectionPort,request.BindAddress,request.BindPort, request.IsSecure, request.C2profile);
 
 				manager.Init(_EngineerService);
 				manager.Start();
@@ -135,26 +136,15 @@ namespace TeamServer.Controllers
 		{
             foreach (Httpmanager _manager in _managers)
             {
+	            Console.WriteLine($"Calling Init on {_manager.Name}");
 				_manager.Init(_EngineerService);
-				_manager.Start();
+	            _manager.Start();
+				Console.WriteLine($"{_manager.Name} started should be listening on {_manager.ConnectionAddress}:{_manager.ConnectionPort}");
 				return Ok();
             }
             return BadRequest();
         }
 		
-		//http put to allow users to update a maangers values 
-		//[HttpPut("{name}", Name = "UpdateManager")]
-		//public IActionResult UpdateManager(string name, [FromBody] StartManagerRequest request)
-		//{
-  //          var manager = _managers.Getmanager(name);
-  //          if (manager is null)
-  //          {
-  //              return NotFound();
-  //          }
-           
-
-
-  //      }
 
         [HttpDelete("{name}",Name = "Deletemanager")]
 		public IActionResult Stopmanager(string name)

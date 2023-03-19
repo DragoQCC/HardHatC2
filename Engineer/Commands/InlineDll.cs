@@ -21,12 +21,12 @@ namespace Engineer.Commands
             {
                 if (task.File.Length < 1)
                 {
-                    Tasking.FillTaskResults("Error: /dll argument not found, please include the path to the dll to load, it should be present on the ts",task,EngTaskStatus.FailedWithWarnings);
+                    Tasking.FillTaskResults("Error: /dll argument not found, please include the path to the dll to load, it should be present on the ts",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
                 if (!task.Arguments.TryGetValue("/function", out string export))
                 {
-                    Tasking.FillTaskResults("Error: /function argument not found, this is the exported function of the dll to call",task,EngTaskStatus.FailedWithWarnings);
+                    Tasking.FillTaskResults("Error: /function argument not found, this is the exported function of the dll to call",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
                 task.Arguments.TryGetValue("/args", out string args);
@@ -42,7 +42,7 @@ namespace Engineer.Commands
 
                 if (string.IsNullOrWhiteSpace(decoy))
                 {
-                    Tasking.FillTaskResults("Error: No suitable decoy found",task,EngTaskStatus.FailedWithWarnings);
+                    Tasking.FillTaskResults("Error: No suitable decoy found",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
                 Console.WriteLine("found decoy trying to overload module");
@@ -56,13 +56,13 @@ namespace Engineer.Commands
                 var result = (string)reprobate.CallMappedDLLModuleExport(map.PEINFO, map.ModuleBase, export, typeof(WinApiDynamicDelegate.GenericDelegate), parameters);
 
                 // return output
-                Tasking.FillTaskResults(result,task,EngTaskStatus.Complete);
+                Tasking.FillTaskResults(result,task,EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(ex.StackTrace);
-                Tasking.FillTaskResults(ex.Message,task,EngTaskStatus.Failed);
+                Tasking.FillTaskResults(ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
     }

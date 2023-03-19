@@ -26,11 +26,11 @@ namespace Engineer.Commands
                 arpProcess.Start();
                 var output = arpProcess.StandardOutput.ReadToEnd();
                 arpProcess.WaitForExit();
-                Tasking.FillTaskResults(output, task, EngTaskStatus.Complete);
+                Tasking.FillTaskResults(output, task, EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception e)
             {
-                Tasking.FillTaskResults(e.Message, task, EngTaskStatus.Failed);
+                Tasking.FillTaskResults(e.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
     }

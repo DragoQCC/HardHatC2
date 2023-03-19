@@ -61,13 +61,13 @@ namespace TeamServer.Services.Extra
             try
             {
                 List<UserInfo> testUsers = DatabaseService.Connection.Table<UserInfo>().ToList();
-                foreach (UserInfo testUser in testUsers)
-                {
-                    Console.WriteLine($"Id is {testUser.Id}");
-                    Console.WriteLine($"Username is {testUser.UserName}");
-                    Console.WriteLine($"Normalized Username is {testUser.NormalizedUserName}");
-                }
-                Console.WriteLine($"Name we are looking for is {normalizedUserName}");
+                // foreach (UserInfo testUser in testUsers)
+                // {
+                //     Console.WriteLine($"Id is {testUser.Id}");
+                //     Console.WriteLine($"Username is {testUser.UserName}");
+                //     Console.WriteLine($"Normalized Username is {testUser.NormalizedUserName}");
+                // }
+                // Console.WriteLine($"Name we are looking for is {normalizedUserName}");
                 UserInfo user = DatabaseService.Connection.Table<UserInfo>().Where(x => x.NormalizedUserName == normalizedUserName).ToList()[0]; // should only return 1 thing anyway as the id is unique
                 return user;
             }

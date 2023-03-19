@@ -18,7 +18,7 @@ namespace Engineer.Commands
         {
             Console.WriteLine("doing first checkIN ");
             task.Arguments.TryGetValue("/parentid", out string parentId);
-            Tasking.FillTaskResults(Convert.ToBase64String(Program._metadata.ProSerialise()) +"\n" + parentId,task,EngTaskStatus.Complete); //gives back the engineers metadata and the parent so the teamserver can make the path
+            Tasking.FillTaskResults(Convert.ToBase64String(Program._metadata.ProSerialise()) +"\n" + parentId,task,EngTaskStatus.Complete,TaskResponseType.String); //gives back the engineers metadata and the parent so the teamserver can make the path
         }
     }
 }

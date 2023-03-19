@@ -24,12 +24,12 @@ namespace Engineer.Commands
                 task.Arguments.TryGetValue("/args", out string argument);
                 if (command == null)
                 {
-                    Tasking.FillTaskResults("Command not specified", task,EngTaskStatus.FailedWithWarnings);
+                    Tasking.FillTaskResults("Command not specified", task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
                 if (argument == null)
                 {
-                    Tasking.FillTaskResults("Arguments not specified", task, EngTaskStatus.FailedWithWarnings);
+                    Tasking.FillTaskResults("Arguments not specified", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
 
@@ -49,11 +49,11 @@ namespace Engineer.Commands
                 };
 
                 process.Start();
-                Tasking.FillTaskResults($"{command} executed",task,EngTaskStatus.Complete);
+                Tasking.FillTaskResults($"{command} executed",task,EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception e)
             {
-                Tasking.FillTaskResults(e.Message,task,EngTaskStatus.Failed);
+                Tasking.FillTaskResults(e.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
     }

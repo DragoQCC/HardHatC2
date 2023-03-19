@@ -28,11 +28,11 @@ namespace Engineer.Commands
             //Console.SetError(writer);
             try
             {
-                Tasking.FillTaskResults(("[*] Current LogonID (LUID) : " + GetCurrentLUID(task) + " " + "(" + (UInt64)GetCurrentLUID(task) + ")" + "\n"),task,EngTaskStatus.Complete);
+                Tasking.FillTaskResults(("[*] Current LogonID (LUID) : " + GetCurrentLUID(task) + " " + "(" + (UInt64)GetCurrentLUID(task) + ")" + "\n"),task,EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception ex)
             {
-                Tasking.FillTaskResults("error: " + ex.Message,task,EngTaskStatus.Failed);
+                Tasking.FillTaskResults("error: " + ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
             finally
             {
@@ -65,7 +65,7 @@ namespace Engineer.Commands
                 else
                 {
                     var lastError = WinAPIs.Kernel32.GetLastError();
-                    Tasking.FillTaskResults($"[-] GetTokenInformation error: {lastError}",task,EngTaskStatus.Failed);
+                    Tasking.FillTaskResults($"[-] GetTokenInformation error: {lastError}",task,EngTaskStatus.Failed,TaskResponseType.String);
                     Marshal.FreeHGlobal(TokenInformation);
                 }
                 return luid;

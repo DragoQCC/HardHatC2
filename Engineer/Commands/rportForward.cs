@@ -29,7 +29,7 @@ namespace Engineer.Commands
             client = client.TrimStart(' ');
             rportForward.rPortClientData.TryAdd(client, new ConcurrentQueue<byte[]>());
             Task.Run(async ()=> await HandleSendRecive(bindport,client));
-            Tasking.FillTaskResults("Starting Reverse Port Forward on engineers host at port " + bindport, task, EngTaskStatus.Running);
+            Tasking.FillTaskResults("Starting Reverse Port Forward on engineers host at port " + bindport, task, EngTaskStatus.Running,TaskResponseType.String);
         }
 
         private static async Task HandleSendRecive(string bindPort, string client)
@@ -99,7 +99,7 @@ namespace Engineer.Commands
                 rportForward.rPortClientData.TryAdd(client, new ConcurrentQueue<byte[]>());
                 rportForward.rPortClientData[client].Enqueue(task.File);
             }
-            Tasking.FillTaskResults("Data queued for client",task,EngTaskStatus.Complete);
+            Tasking.FillTaskResults("Data queued for client",task,EngTaskStatus.Complete,TaskResponseType.String);
 
         }
     }
@@ -113,7 +113,7 @@ namespace Engineer.Commands
         {
             task.Arguments.TryGetValue("/client", out string client);
             var data = task.File;
-            Tasking.FillTaskResults(Convert.ToBase64String(data) + "\n" + client,task,EngTaskStatus.Complete);
+            Tasking.FillTaskResults(Convert.ToBase64String(data) + "\n" + client,task,EngTaskStatus.Complete,TaskResponseType.String);
         }
     }
     

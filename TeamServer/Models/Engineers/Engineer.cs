@@ -17,7 +17,7 @@ namespace TeamServer.Models
 		public string ExternalAddress { get; set; }
         public DateTime LastSeen { get; set; } //private set because we dont ant any other class to set it
         public string Status { get; set; }
-        public int Sleep { get; set; }
+        //public int Sleep { get; set; }
 
         public readonly ConcurrentQueue<EngineerTask> _pendingTasks = new();
         private readonly List<EngineerTaskResult> _taskResults = new();
@@ -81,7 +81,7 @@ namespace TeamServer.Models
 				if (existing != null)
 				{
 					existing.Status = result.Status;
-					existing.Result += result.Result;
+					existing.Result = existing.Result.Concat(result.Result).ToArray();
 				}
 				else
 				{

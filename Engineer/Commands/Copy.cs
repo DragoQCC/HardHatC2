@@ -20,21 +20,21 @@ namespace Engineer.Commands
 
                 if (!task.Arguments.TryGetValue("/file", out string file))
                 {
-                    Tasking.FillTaskResults("error: " + "no file to copy set pls use the /file key", task, EngTaskStatus.FailedWithWarnings);
+                    Tasking.FillTaskResults("error: " + "no file to copy set pls use the /file key", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
                 if (!task.Arguments.TryGetValue("/dest", out string destination))
                 {
-                    Tasking.FillTaskResults("error: " + "no destination file set pls use the /destination key", task, EngTaskStatus.FailedWithWarnings);
+                    Tasking.FillTaskResults("error: " + "no destination file set pls use the /destination key", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
                 //copy file to destionation
                 File.Copy(file, destination);
-                Tasking.FillTaskResults($"Copied {file} to {destination}", task, EngTaskStatus.Complete);
+                Tasking.FillTaskResults($"Copied {file} to {destination}", task, EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception ex)
             {
-                Tasking.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed);
+                Tasking.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
             }
 
         }

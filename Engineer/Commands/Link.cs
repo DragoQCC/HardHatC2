@@ -56,7 +56,7 @@ namespace Engineer.Commands
             {
                 System.Threading.Thread.Sleep(20);
             }
-            Tasking.FillTaskResults(Output,task,EngTaskStatus.Complete);
+            Tasking.FillTaskResults(Output,task,EngTaskStatus.Complete,TaskResponseType.String);
         }
     }
 }

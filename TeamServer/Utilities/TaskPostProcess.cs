@@ -26,7 +26,7 @@ namespace TeamServer.Utilities
         {
             var CredsList = new List<Cred>();
             
-            var capturedCreds = CapturedCredential.ParseCredentials(result.Result);
+            var capturedCreds = CapturedCredential.ParseCredentials(result.Result.Deserialize<string>());
             // for each credential in the list of captured credentials convert it to a Cred object, where CapturedCredential.Type is the Cred.Type and the Cred.Value is either the CapturedCredential Hash,Password, or ticket depending on type
             foreach (var cred in capturedCreds)
             {
@@ -66,7 +66,7 @@ namespace TeamServer.Utilities
             List<string> parts = new List<string>();
 
             //take result.Results, find each occureance of PARTS and everything before that until the next occurance of PARTS and add it to the parts list
-            var partTest = result.Result;
+            var partTest = result.Result.Deserialize<string>();
             while (partTest.Contains("PARTS"))
             {
                 var partIndex = partTest.IndexOf("PARTS");
@@ -113,7 +113,7 @@ namespace TeamServer.Utilities
 
                     System.IO.File.WriteAllBytes(pathSplit[0] + "Downloads" + $"{allPlatformPathSeperator}{fileNameSplit}", Convert.FromBase64String(finalb64));
                     HttpmanagerController.CommandIds.Remove(result.Id);
-                    result.Result = "Successfully downloaded file check the downloads folder on the ts or the downloads tab on the client to sync up.";
+                    result.Result = "Successfully downloaded file check the downloads folder on the ts or the downloads tab on the client to sync up.".Serialise();
                     DownloadFile file = new DownloadFile();
                     file.Name = fileNameSplit;
                     file.OrginalPath = filename;
@@ -139,7 +139,7 @@ namespace TeamServer.Utilities
                 //if result.Id is socksConnected then split the incoming result string into an array and element 1 is the client unique string and we need to update the Proxy.SocksDestinationConnected
                 if (result.Command.Equals("SocksConnect", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    var socksConnected = result.Result.Split(new[] { "\n" }, StringSplitOptions.None);
+                    var socksConnected = result.Result.Deserialize<string>().Split(new[] { "\n" }, StringSplitOptions.None);
                     //element 1 in the array matches a key in the SocksDestinationConnected dictionary update the value to true 
                     HttpmanagerController.Proxy.SocksDestinationConnected[socksConnected[1]] = true;
                 }
@@ -148,7 +148,7 @@ namespace TeamServer.Utilities
                 else if (result.Command.Equals("socksReceive", StringComparison.CurrentCultureIgnoreCase))
                 {
                     //split result.Result at the new line 
-                    var split = result.Result.Split(new[] { "\n" }, StringSplitOptions.None);
+                    var split = result.Result.Deserialize<string>().Split(new[] { "\n" }, StringSplitOptions.None);
                     byte[] temp = Convert.FromBase64String(split[0]); //split 0 is the data split 1 is the guid
                     string client = split[1];
                     Console.WriteLine($"teamserver received {temp.Length} bytes from {client}");
@@ -166,7 +166,7 @@ namespace TeamServer.Utilities
             //if result.Id is rportsend take the result.Result and split it at the new line and element 0 is the data and element 1 is the guid
             if (result.Id.Equals("rportsend", StringComparison.CurrentCultureIgnoreCase))
             {
-                var split = result.Result.Split(new[] { "\n" }, StringSplitOptions.None);
+                var split = result.Result.Deserialize<string>().Split(new[] { "\n" }, StringSplitOptions.None);
                 byte[] temp = Convert.FromBase64String(split[0]); //split 0 is the data split 1 is the guid
                 string client = split[1];
                 Console.WriteLine($"teamserver received {temp.Length} bytes from {client}");
@@ -177,7 +177,7 @@ namespace TeamServer.Utilities
 
         public static async Task<string> PostProcess_P2PFirstCheckIn(EngineerTaskResult result, Engineer HttpEng)
         {
-            string[] resultArray = result.Result.Split('\n');
+            string[] resultArray = result.Result.Deserialize<string>().Split('\n');
             //this is the metadata stored in the result string from the p2p implant
             string Base64Metadata = resultArray[0];
             string parentId = resultArray[1];
