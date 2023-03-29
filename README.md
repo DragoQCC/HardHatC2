@@ -7,7 +7,7 @@ It contains three primary components, an ASP.NET teamserver, a blazor .NET clien
 
 # Relase Tracking 
 Alpha Release - 3/29/23
- NOTE: HardHat is in Alpha release; it will have bugs, missing features, and unexpected things will happen. TThank you for trying it, and please report back any issues or missing features so they can be addressed.
+ NOTE: HardHat is in Alpha release; it will have bugs, missing features, and unexpected things will happen. Thank you for trying it, and please report back any issues or missing features so they can be addressed.
 
 # Features 
 ## Teamserver & Client 
