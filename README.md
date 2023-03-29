@@ -4,6 +4,10 @@
 HardHat is a multiplayer c# .NET-based command and control framework. Designed to aid in red team engagements and penetration testing. HardHat aims to improve the quality of life factors during engagements by providing an easy-to-use but still robust C2 framework.    
 It contains three primary components, an ASP.NET teamserver, a blazor .NET client, and c# based implants.
 
+# Relase Tracking 
+Alpha Release - 3/29/23
+ NOTE: HardHat is in Alpha release; it will have bugs, missing features, and unexpected things will happen. Thank you for trying it, and please report back and issues missing features so they can be addressed.
+
 # Features 
 ## Teamserver & Client 
 - Per-operator accounts with account tiers to allow customized access control and features, including view-only guest modes, team-lead opsec approval(WIP), and admin accounts for general operation management. 
