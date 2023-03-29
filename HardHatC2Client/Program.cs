@@ -1,12 +1,17 @@
+using System.Net.Security;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using Blazored.LocalStorage;
 using Blazored.Toast;
 using HardHatC2Client.Services;
+using HardHatC2Client.Utilities;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using RestSharp;
 using MudBlazor.Services;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Server.Kestrel.Https;
 using RestSharp.Authenticators;
 
 internal class Program
@@ -41,7 +46,15 @@ internal class Program
 
         builder.Services.AddScoped<AuthenticationStateProvider, MyAuthenticationStateProviderService>();
 
+        await CertGen.GeneerateCert();
+        builder.WebHost.ConfigureKestrel(serverOptions =>
+                        {
+                            serverOptions.ConfigureEndpointDefaults(listenOptions =>
+                            {
+                                listenOptions.UseHttps(new X509Certificate2(CertGen.CertificatePath, CertGen.CertificatePassword));
 
+                            });
+                        });
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
@@ -51,6 +64,8 @@ internal class Program
             // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
             app.UseHsts();
         }
+        
+        
 
         app.UseHttpsRedirection();
 

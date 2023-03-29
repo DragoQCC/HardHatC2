@@ -27,7 +27,7 @@ namespace TeamServer.Utilities
 
             Process donut = new Process();
             donut.StartInfo.FileName = $"{pathSplit[0]}{allPlatformPathSeperator}Programs{allPlatformPathSeperator}Builtin{allPlatformPathSeperator}Donut_Windows{allPlatformPathSeperator}donut.exe";
-            donut.StartInfo.Arguments = $" -i -x 2 -a 3 -b 3 -o {tempFolder}{allPlatformPathSeperator}payload.bin -p {arguments} {filePath}";
+            donut.StartInfo.Arguments = $"-x 2 -a 3 -b 3 -o {tempFolder}{allPlatformPathSeperator}payload.bin -p {arguments} {filePath}";
             donut.StartInfo.UseShellExecute = false;
             donut.StartInfo.RedirectStandardOutput = true;
             donut.StartInfo.RedirectStandardError = true;

@@ -203,6 +203,13 @@ namespace Engineer
                         else if (!(IsTaskExecuting) && EngTCPComm.IsDataInTransit == false && EngSMBComm.IsDataInTransit == false)
                         {
                             Thread.Sleep(EngCommBase.Sleep);
+                            //helps with cpu use on 0 sleep
+                            Thread.Sleep(10);
+                        }
+                        else
+                        {
+                            //helps with cpu use
+                            Thread.Sleep(10);
                         }
                         
                         

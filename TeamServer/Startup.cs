@@ -60,7 +60,7 @@ namespace TeamServer
 
             services.Configure<IPWhitelistOptions>(Configuration.GetSection("IPWhitelistOptions"));
 
-            //configure to generate a https cert vs using the dev one 
+            
             
 
 
