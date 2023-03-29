@@ -1,5 +1,6 @@
 # HardHat C2 
 ## A cross-platform, collaborative, Command & Control framework written in C#, designed for red teaming and ease of use.
+![image](https://user-images.githubusercontent.com/15575425/228551034-e07df233-63f6-41a2-8b94-6eb840859e82.png)
 
 HardHat is a multiplayer c# .NET-based command and control framework. Designed to aid in red team engagements and penetration testing. HardHat aims to improve the quality of life factors during engagements by providing an easy-to-use but still robust C2 framework.    
 It contains three primary components, an ASP.NET teamserver, a blazor .NET client, and c# based implants.
@@ -40,6 +41,10 @@ Alpha Release - 3/29/23
 - table-based output option for some commands like ls, ps, etc. 
 - Auto parsing of output from seatbelt to create "recon entities" and fill entries to reference back to later easily 
 - Dark and Light 🤮 theme 
+
+ ![image](https://user-images.githubusercontent.com/15575425/228551170-cd455c24-3541-47ec-ad85-dcb84ce64075.png)
+![image](https://user-images.githubusercontent.com/15575425/228551467-750a5a3a-dcff-4290-968e-7b18598e74b6.png)
+
  
 ## Engineers
 - c# .net framework implant for windows devices, currently only CLR/.NET 4 support
@@ -73,6 +78,7 @@ Alpha Release - 3/29/23
 - Spawn & Inject 
   - Spawn-to is configurable 
 - run, shell & execute
+![image](https://user-images.githubusercontent.com/15575425/228551103-0f1fe1f5-9b2d-42f9-a22d-f929f17b3b93.png)
 
 # Documentation
 documentation can be found at [docs](https://docs.hardhat-c2.net/)
