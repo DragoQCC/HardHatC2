@@ -9,6 +9,11 @@ It contains three primary components, an ASP.NET teamserver, a blazor .NET clien
 Alpha Release - 3/29/23
  NOTE: HardHat is in Alpha release; it will have bugs, missing features, and unexpected things will happen. Thank you for trying it, and please report back any issues or missing features so they can be addressed.
 
+# Community 
+[Discord](https://discord.gg/npW2yy7JFK) 
+Join the community to talk about HardHat C2, Programming, Red teaming and general cyber security things 
+The discord community is also a great way to request help, submit new features, stay up to date on the latest additions, and submit bugs. 
+
 # Features 
 ## Teamserver & Client 
 - Per-operator accounts with account tiers to allow customized access control and features, including view-only guest modes, team-lead opsec approval(WIP), and admin accounts for general operation management. 
@@ -97,11 +102,6 @@ start the teamserver with dotnet run from its top-level folder ../HrdHatC2/Teams
 3. Log in with the HardHat_Admin user (Password is printed on first TeamServer startup)
 4. Navigate to the settings page & create a new user if successful, a  message should appear, then you may log in with that account to access the full client
 
-
-# Community 
-[Discord](https://discord.gg/npW2yy7JFK) 
-Join the community to talk about HardHat C2, Programming, Red teaming and general cyber security things 
-The discord community is also a great way to request help, submit new features, stay up to date on the latest additions, and submit bugs. 
 
 # Contributions & Bug Reports 
  Code contributions are welcome feel free to submit feature requests, pull requests or send me your ideas on discord. 
