@@ -691,21 +691,22 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if(FirstRender)
+        if(firstRender)
         {
-            FirstRender = false;
+            
             _restClient = restClientDefault;
             string jwtToken = await localStorage.GetItemAsync<string>("bearerToken");
-            if (jwtToken != null)
+            RestClientOptions options = new RestClientOptions();
+            options.BaseUrl = _restClient.Options.BaseUrl;
+            options.RemoteCertificateValidationCallback = _restClient.Options.RemoteCertificateValidationCallback;
+            options.Authenticator = new JwtAuthenticator(jwtToken);
+            _restClient = new RestClient(options);
+            if (FirstRender)
             {
-                RestClientOptions options = new RestClientOptions();
-                options.BaseUrl = _restClient.Options.BaseUrl;
-                options.RemoteCertificateValidationCallback = _restClient.Options.RemoteCertificateValidationCallback;
-                options.Authenticator = new JwtAuthenticator(jwtToken);
-                _restClient = new RestClient(options);
                 await Engineers.GetAllEngineers();
+                Nav.NavigateTo("Interact");
+                FirstRender = false;
             }
-            Nav.NavigateTo("Interact");
         }
     }
 

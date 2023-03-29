@@ -299,7 +299,7 @@ namespace TeamServer.Controllers
 	            }
 
 	            
-				var jsonFastLocation = pathSplit[0] + "Data" + $"{allPlatformPathSeperator}FastJSON.dll";
+				var jsonFastLocation = pathSplit[0] + "Data" + $"{allPlatformPathSeperator}fastJSON.dll";
                 var searchDir = $"{pathSplit[0]}Data{allPlatformPathSeperator}";
 
 	            string[] assemblyArray = { sourceAssemblyLocation, jsonFastLocation};
