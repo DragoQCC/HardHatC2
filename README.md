@@ -104,4 +104,4 @@ Join the community to talk about HardHat C2, Programming, Red teaming and genera
 The discord community is also a great way to request help, submit new features, stay up to date on the latest additions, and submit bugs. 
 
 # Contributions & Bug Reports 
- Code contributions are welcome feel free to submit feature request, pull requests or send me your ideas on discord. 
+ Code contributions are welcome feel free to submit feature requests, pull requests or send me your ideas on discord. 
