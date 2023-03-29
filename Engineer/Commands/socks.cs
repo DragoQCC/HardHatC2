@@ -53,7 +53,7 @@ namespace Engineer.Commands
                 task.Arguments.TryGetValue("/Client", out var client);
                 socks.SocksClients.Add(client);
                 socks.SocksClientsData.TryAdd(client, new ConcurrentQueue<byte[]>());
-                Console.WriteLine($"Connecting to {address}:{port}");
+                //Console.WriteLine($"Connecting to {address}:{port}");
 
                 Task.Run(async () => await ConnectSocks(address, port, client));
                 Tasking.FillTaskResults($"Connecting to {address}:{port}" + $"\n{client}", task, EngTaskStatus.Complete,TaskResponseType.String);
@@ -61,8 +61,8 @@ namespace Engineer.Commands
             
             catch(Exception e)
             {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+                //Console.WriteLine(e.Message);
+                //Console.WriteLine(e.StackTrace);
                 Tasking.FillTaskResults("error with socks connect", task, EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
@@ -94,14 +94,14 @@ namespace Engineer.Commands
                     if (!socks.SocksClientsData[client].IsEmpty)
                     {
                         socks.SocksClientsData[client].TryDequeue(out var data);
-                        Console.WriteLine($"Engineer sending client {client} {data.Length} bytes");
+                        //Console.WriteLine($"Engineer sending client {client} {data.Length} bytes");
                         await destination.SendData(data, socks._tokenSource.Token);
                     }
                     // read from destination
                     if (destination.DataAvailable())
                     {
                         var resp = await destination.ReceiveData(socks._tokenSource.Token);
-                        Console.WriteLine("sending teamerver " + resp.Length + " bytes " + $"for client {client}");
+                        //Console.WriteLine("sending teamerver " + resp.Length + " bytes " + $"for client {client}");
                         //make a new engineer task with the argument /data which is resp converted to a base64 string and then add the task to the queue
                         var task = new EngineerTask
                         {
@@ -122,8 +122,8 @@ namespace Engineer.Commands
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+                //Console.WriteLine(e.Message);
+                //Console.WriteLine(e.StackTrace);
             }
         }
     }

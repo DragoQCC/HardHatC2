@@ -74,11 +74,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="fastJSON, Version=2.4.0.0, Culture=neutral, PublicKeyToken=6b75a806b86095cd, processorArchitecture=MSIL">
+      <HintPath>..\packages\fastJSON.2.4.0.4\lib\net40\fastJSON.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.IdentityModel.Clients.ActiveDirectory, Version=5.2.8.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="mscorlib" />
-    <Reference Include="NetSerializer, Version=4.1.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NetSerializer.4.1.2\lib\net45\NetSerializer.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Configuration" />
@@ -164,7 +164,7 @@
     <Compile Include="Commands\UpdateTaskKey.cs" />
     <Compile Include="Commands\Upload.cs" />
     <Compile Include="Commands\WhoAmI.cs" />
-    <Compile Include="Extensions.cs" />
+    <Compile Include="Extra\Extensions.cs" />
     <Compile Include="Extra\EngineerCommandTemplate.cs" />
     <Compile Include="Extra\h_reprobate.cs" />
     <Compile Include="Extra\reprobate.cs" />
@@ -173,11 +173,9 @@
     <Compile Include="Functions\DownloadTracker.cs" />
     <Compile Include="Functions\Encryption.cs" />
     <Compile Include="Functions\InjectionTest.cs" />
-    <Compile Include="Functions\SharpSleepEncryption.cs" />
     <Compile Include="Functions\SleepEncrypt.cs" />
-    <Compile Include="Functions\Sleepydll.cs" />
+    <Compile Include="Functions\SleepEnum.cs" />
     <Compile Include="Functions\Tasking.cs" />
-    <Compile Include="Generic.cs" />
     <Compile Include="Models\C2TaskMessage.cs" />
     <Compile Include="Models\EngineerCommand.cs" />
     <Compile Include="Models\EngineerMetadata.cs" />

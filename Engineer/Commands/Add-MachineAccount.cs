@@ -102,8 +102,8 @@ namespace Engineer.Commands
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+               // Console.WriteLine(e.Message);
+                //Console.WriteLine(e.StackTrace);
                 Tasking.FillTaskResults("[-] Error Creating Machine Account: " + e.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
         }

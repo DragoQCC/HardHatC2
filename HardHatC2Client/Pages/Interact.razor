@@ -1,6 +1,7 @@
 ﻿@page "/Interact"
 @using ApiModels.Requests
 @using ApiModels.Responses
+@using Blazored.LocalStorage;
 @using HardHatC2Client.Components;
 @using HardHatC2Client.Models
 @using HardHatC2Client.Services
@@ -14,6 +15,7 @@
 @using System.Linq
 @using System.Diagnostics;
 @using HardHatC2Client.Models.TaskResultTypes
+@using RestSharp.Authenticators;
 @inject RestClient restClient
 @inject NavigationManager navigationManagerDefault
 @inject ISnackbar Snackbar
@@ -26,7 +28,7 @@
             <MudContainer Fixed="true">
                 <MudTabs Outlined="true">
                     <MudTabPanel Text="Engineers" Icon="@Icons.Material.Filled.Build" >
-                        <XTabs Style="@setTabStyle(Settings.IsCheckedBox)" IsDraggable="true" NewTabSetActive="true" RenderMode="BlazorXTabs.Configuration.RenderMode.Full" CloseTabs="true">
+                        <XTabs Style="@setTabStyle(Settings.IsCheckedBox)" IsDraggable="true" NewTabSetActive="true" RenderMode="BlazorXTabs.Configuration.RenderMode.Partial" CloseTabs="true" OnTabRemoved="TabRemove">
                             @foreach (Engineer engineer in InteractEngineers)
                             {
                                 string tabTitle = EngTabTitleDic[engineer.Id];
@@ -210,157 +212,191 @@
         </Authorized>
     </AuthorizeView>
 <!--This is the Start of the GUEST READ ONLY section-->
-@* <AuthorizeView Roles="Guest"> *@
-@*         <Authorized> *@
-@*             <h3 class="text-center">Interact</h3> *@
-@*             <MudContainer Fixed="true"> *@
-@*         <MudTabs Outlined="true"> *@
-@*             <MudTabPanel Text="Engineers" Icon="@Icons.Material.Filled.Build" > *@
-@*                 <XTabs Style="@setTabStyle(Settings.IsCheckedBox)" IsDraggable="true" NewTabSetActive="true" RenderMode="BlazorXTabs.Configuration.RenderMode.Full" CloseTabs="true"> *@
-@*             @foreach (Engineer engineer in InteractEngineers) *@
-@*             { *@
-@*                 string tabTitle = EngTabTitleDic[engineer.Id]; *@
-@*                 <XTab Title=@tabTitle> *@
-@*                     <MudCard Class="" Style=" background:#111111; overflow-y:auto" Outlined="true"> <!--This is the parent card  --> *@
-@*                         <MudCardContent Style="background:#111111; color:white; height:800px"> *@
-@*                             @if (EngineerOutboundTaskIds.ContainsKey(engineer.Id)) *@
-@*                             { *@
-@*                                 @foreach (string currenttask in EngineerOutboundTaskIds[engineer.Id]) *@
-@*                                 { *@
-@*                                         string commandHeaderText = TaskOutputHeaderInfo[currenttask]; // gets the input based on the current task index so its always unique *@
-@*                                         <MudExpansionPanels Style="background:#32333d; color:white;" MultiExpansion="true"> *@
-@*                                         <MudExpansionPanel IsExpandedChanged="(e)=>ExpandedChanged(e,engineer.Id,currenttask)"  style="background:#32333d; color:white;"> *@
-@*                                         <TitleContent> *@
-@*                                         @if (PickedUpTasks.Contains(currenttask) && !(EngineerReturnedTaskIds.Values.Any(x => x.Contains(currenttask)))) *@
-@*                                         { *@
-@*                                             <div class="d-flex"> *@
-@*                                                 <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3" /> *@
-@*                                                 <MudIconButton Disabled="true" Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() =>CancelTask(currenttask,engineer.Id)"></MudIconButton> *@
-@*                                                 <MudText>@commandHeaderText</MudText>                                                    *@
-@*                                             </div> *@
-@*                                         } *@
-@*                                         else if (EngineerReturnedTaskIds.Values.Any(x => x.Contains(currenttask) && TaskStatusDic.ContainsKey(currenttask))) *@
-@*                                         { *@
-@*                                             if (TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Running) *@
-@*                                             { *@
-@*                                                 <div class="d-flex"> *@
-@*                                                     <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3" /> *@
-@*                                                     <MudIconButton Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() =>CancelTask(currenttask,engineer.Id)"></MudIconButton> *@
-@*                                                     <MudText>@commandHeaderText</MudText> *@
-@*          *@
-@*                                                 </div> *@
-@*                                             } *@
-@*                                             else *@
-@*                                             { *@
-@*                                                 <div class="d-flex"> *@
-@*                                                     <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon> *@
-@*                                                     <MudText>@commandHeaderText</MudText> *@
-@*                                                 </div> *@
-@*                                             } *@
-@*                                         } *@
-@*                                         else *@
-@*                                         { *@
-@*                                             <div class="d-flex"> *@
-@*                                                 <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon> *@
-@*                                                 <MudText>@commandHeaderText</MudText> *@
-@*                                             </div> *@
-@*                                         } *@
-@*                                          *@
-@*                                         </TitleContent> *@
-@*                                         <ChildContent> *@
-@*                                         <MudCard Class="" Style="background:var(--background);" Outlined="true"> <!--This is the per input and output card--> *@
-@*                                         <MudCardContent Style="background:#111111; color:white; white-space:pre-wrap;"> *@
-@*                                          *@
-@*                                             @if (TaskOutputDic.ContainsKey(currenttask)) *@
-@*                                             { *@
-@*                                                 <!-- <MudText>output for components go here atm thats ls command, ps command, ipconfig, anything that can use a table</MudText> --> *@
-@*                                                 // List<string> output = TaskOutputDic[currenttask]; *@
-@*                                                 @if(TaskOutputDic[currenttask].Result !=null) *@
-@*                                                 { *@
-@*                                                     @if (TaskInputDic[currenttask].Command =="ls" && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete ) *@
-@*                                                     { *@
-@*                                                         TaskInputDic[currenttask].Arguments.TryGetValue("/path", out string pathValue); *@
-@*                                                          *@
-@*                                                         <HardHatC2Client.Components.DirectoryListingTable Outputs="@TaskOutputDic[currenttask].Result" /> *@
-@*                                                         if (pathValue != null) *@
-@*                                                         { *@
-@*                                                             pathValue = pathValue.TrimStart(' ').TrimEnd(' '); *@
-@*                                                             FileBrowser.AddContent(engineer.Hostname, pathValue,TaskOutputDic[currenttask].Result.Deserialize<List<FileSystemItem>>() ); *@
-@*                                                         } *@
-@*                                                     } *@
-@*                                                     else if (TaskInputDic[currenttask].Command == "ps" && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete) *@
-@*                                                     { *@
-@*                                                         <HardHatC2Client.Components.ProcessListingTable Outputs="@TaskOutputDic[currenttask].Result.Deserialize<string>().Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList()" /> *@
-@*                                                     } *@
-@*                                                     else if (TaskInputDic[currenttask].Command == "getprivs" && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete) *@
-@*                                                     { *@
-@*                                                         <HardHatC2Client.Components.GetPrivsTable Outputs="@TaskOutputDic[currenttask].Result.Deserialize<string>().Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList()" /> *@
-@*                                                     } *@
-@*                                                     else if (TaskInputDic[currenttask].Command == "print-env" && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete) *@
-@*                                                     { *@
-@*                                                         <HardHatC2Client.Components.PrintEnvTable Outputs="@TaskOutputDic[currenttask].Result.Deserialize<string>().Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList()" /> *@
-@*                                                     } *@
-@*                                                     else if (ParsedCommandOutputDic.ContainsKey(currenttask) && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete) *@
-@*                                                     { *@
-@*                                                         <MudSwitch @bind-Checked="@IsTableView" Label="Toggle Table View" Color="Color.Success" /> *@
-@*                                                         if(IsTableView) *@
-@*                                                         { *@
-@*                                                             <HardHatC2Client.Components.AutpParsedCommandTable Outputs="ParsedCommandOutputDic[currenttask]"></HardHatC2Client.Components.AutpParsedCommandTable> *@
-@*                                                         } *@
-@*                                                         else *@
-@*                                                         { *@
-@*                                                             <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@TaskOutputDic[currenttask].Result.Deserialize<string>()</MudText> *@
-@*                                                         } *@
-@*                                                     } *@
-@*                                                     else *@
-@*                                                     { *@
-@*                                                         <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@TaskOutputDic[currenttask].Result.Deserialize<string>()</MudText> *@
-@*                                                     } *@
-@*                                                 } *@
-@*                                             }              *@
-@*                                             else if (!TaskOutputDic.ContainsKey(currenttask)) *@
-@*                                             { *@
-@*                                                 <MudText Typo="Typo.body2">No output yet</MudText> *@
-@*                                             } *@
-@*                                         </MudCardContent> *@
-@*                                     </MudCard>   *@
-@*                                      </ChildContent> *@
-@*                                     </MudExpansionPanel><!--This is the end of per input and output card -->    *@
-@*                                     </MudExpansionPanels> *@
-@*                                 } *@
-@*                             } *@
-@*                         </MudCardContent> *@
-@*                     </MudCard> *@
-@*                     <div class="d-flex mb-xl-5"> *@
-@*                          *@
-@*                             <MudAutocomplete Disabled="true" OnKeyUp="OnShowHistoryUp" @ref="mudauto" @bind-Value=@placeHolder T="string" ResetValueOnEmptyText="true" SearchFunc="@SearchCommand" *@
-@*                                            Dense="true" Margin="Margin.Dense" SelectValueOnTab="true"  SelectOnClick="false" CoerceText="false" CoerceValue="true" *@
-@*                                              InputMode="InputMode.text" Variant="Variant.Text" Adornment="Adornment.Start" AdornmentText="[ENGINEER]> " Immediate="true" Clearable="true" KeyDownPreventDefault="true" KeyUpPreventDefault="true" TextUpdateSuppression="@TextSuppersion"> *@
-@*                         </MudAutocomplete> *@
-@*                                           *@
-@*                         <MudButton Disabled="true" style="background:var(--font-color);color:var(--background)" OnClick=@Send> <MudText>Send</MudText></MudButton> *@
-@*                         @if (IsEnterkey) *@
-@*                         { *@
-@*                             Task.Run(async () => await SendTask(engineer, UserInput)); *@
-@*                             IsEnterkey = false; *@
-@*                         } *@
-@*                     </div> *@
-@*                     <EngineerDataTable engineer="@engineer"></EngineerDataTable> *@
-@*                 </XTab> *@
-@*             } *@
-@*         </XTabs> *@
-@*             </MudTabPanel> *@
-@*             <MudTabPanel Text="Browsers" Icon="@Icons.Material.Filled.FolderOpen"> *@
-@*                                 <FileBrowser></FileBrowser> *@
-@*             </MudTabPanel> *@
-@*             <MudTabPanel Text="Terminal" Icon="@Icons.Material.Filled.Terminal" > *@
-@*                 <InteractiveTerminal></InteractiveTerminal>             *@
-@*             </MudTabPanel> *@
-@*         </MudTabs> *@
-@*         </MudContainer> *@
-@*         </Authorized> *@
-@* </AuthorizeView> *@
-<AuthorizeView Roles="Operator,TeamLead,Guest">
+<AuthorizeView Roles="Guest">
+        <Authorized>
+                    <h3 class="text-center">Interact</h3>
+                    <MudContainer Fixed="true">
+                        <MudTabs Outlined="true">
+                            <MudTabPanel Text="Engineers" Icon="@Icons.Material.Filled.Build" >
+                                <XTabs Style="@setTabStyle(Settings.IsCheckedBox)" IsDraggable="true" NewTabSetActive="true" RenderMode="BlazorXTabs.Configuration.RenderMode.Partial" CloseTabs="true" OnTabRemoved="TabRemove">
+                                    @foreach (Engineer engineer in InteractEngineers)
+                                    {
+                                        string tabTitle = EngTabTitleDic[engineer.Id];
+                                        <XTab Title=@tabTitle>
+                                            <MudCard Class="" Style=" background:#111111; overflow-y:auto" Outlined="true"> <!--This is the parent card  -->
+                                                <MudCardContent Style="background:#111111; color:white; height:850px">
+                                                    @if (EngineerOutboundTaskIds.ContainsKey(engineer.Id))
+                                                    {
+                                                        @foreach (string currenttask in EngineerOutboundTaskIds[engineer.Id])
+                                                        {
+                                                            string commandHeaderText = TaskOutputHeaderInfo[currenttask]; // gets the input based on the current task index so its always unique
+                                                           bool gotStatus = TaskStatusDic.TryGetValue(currenttask, out EngineerTaskResponse.EngTaskStatus status);
+                                                           if(gotStatus == false)
+                                                            {
+                                                                status = EngineerTaskResponse.EngTaskStatus.NONE;
+                                                            }
+                                                            bool gotContent = TaskOutputDic.TryGetValue(currenttask, out EngineerTaskResponse cardContent);
+                                                            if (gotContent == false)
+                                                            {
+                                                                cardContent = null;
+                                                            }
+                                                            bool gotTask =  TaskInputDic.TryGetValue(currenttask, out EngineerTask task);
+                                                            if(gotTask == false)
+                                                            {
+                                                                task = null;
+                                                            }
+                                                            <MudExpansionPanels Style="background:#32333d; color:white;" MultiExpansion="true">
+                                                            @*@if(RenderedFinalFormDic.Contains(currenttask))
+                                                                {}
+                                                            else
+                                                            {
+                                                                <InteractWindowContent HeaderContent="@commandHeaderText" engTaskStatus="@status" engineer="@engineer" CardContent="@cardContent" EngTask="@task"></InteractWindowContent>
+                                                            }*@
+                                                                <MudExpansionPanel IsExpandedChanged="(e)=>ExpandedChanged(e,engineer.Id,currenttask)"  style="background:#32333d; color:white;">
+                                                                    <TitleContent>
+                                                                        @if (PickedUpTasks.Contains(currenttask) && !(EngineerReturnedTaskIds.Values.Any(x => x.Contains(currenttask))))
+                                                                        {
+                                                                            <div class="d-flex">
+                                                                                <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3" />
+                                                                                <MudIconButton Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() =>CancelTask(currenttask,engineer.Id)"></MudIconButton>
+                                                                                <MudText>@commandHeaderText</MudText>                                                   
+                                                                            </div>
+                                                                        }
+                                                                        else if (EngineerReturnedTaskIds.Values.Any(x => x.Contains(currenttask) && TaskStatusDic.ContainsKey(currenttask)))
+                                                                        {
+                                                                            if (TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Running)
+                                                                            {
+                                                                                <div class="d-flex">
+                                                                                    <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3" />
+                                                                                    <MudIconButton Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() =>CancelTask(currenttask,engineer.Id)"></MudIconButton>
+                                                                                    <MudText>@commandHeaderText</MudText>
+        
+                                                                                </div>
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                <div class="d-flex">
+                                                                                    <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon>
+                                                                                    <MudText>@commandHeaderText</MudText>
+                                                                                </div>
+                                                                            }
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <div class="d-flex">
+                                                                                <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon>
+                                                                                <MudText>@commandHeaderText</MudText>
+                                                                            </div>
+                                                                        }
+                                        
+                                                                    </TitleContent>
+                                                                    <ChildContent>
+                                                                        <MudCard Class="" Style="background:var(--background);" Outlined="true"> <!--This is the per input and output card-->
+                                                                            <MudCardContent Style="background:#111111; color:white; white-space:pre-wrap;">
+                                        
+                                                                                @if (TaskOutputDic.ContainsKey(currenttask))
+                                                                                {
+                                                                                    <!-- <MudText>output for components go here atm thats ls command, ps command, ipconfig, anything that can use a table</MudText> -->
+                                                                                    // List<string> output = TaskOutputDic[currenttask];
+                                                                                @if(TaskOutputDic[currenttask] !=null)
+                                                                                {
+                                                                                    @if (TaskOutputDic[currenttask].Result != null)
+                                                                                    {
+                                                                                        @if (TaskInputDic[currenttask].Command == "ls" && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete)
+                                                                                        {
+                                                                                            TaskInputDic[currenttask].Arguments.TryGetValue("/path", out string pathValue);
+                                                                                            <HardHatC2Client.Components.DirectoryListingTable Outputs="@TaskOutputDic[currenttask].Result"/>
+                                                                                            if (pathValue != null)
+                                                                                            {
+                                                                                                pathValue = pathValue.TrimStart(' ').TrimEnd(' ');
+                                                                                                FileBrowser.AddContent(engineer.Hostname, pathValue, TaskOutputDic[currenttask].Result.Deserialize<List<FileSystemItem>>());
+                                                                                            }
+                                                                                        }
+                                                                                        else if (TaskInputDic[currenttask].Command == "ps" && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete)
+                                                                                        {
+                                                                                            var result = TaskOutputDic[currenttask].Result.Deserialize<string>().Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
+                                                                                            <HardHatC2Client.Components.ProcessListingTable Outputs="@result"/>
+                                                                                        }
+                                                                                        else if (TaskInputDic[currenttask].Command == "getprivs" && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete)
+                                                                                        {
+                                                                                            var result = TaskOutputDic[currenttask].Result.Deserialize<string>().Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
+                                                                                            <HardHatC2Client.Components.GetPrivsTable Outputs="@result"/>
+                                                                                        }
+                                                                                        else if (TaskInputDic[currenttask].Command == "print-env" && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete)
+                                                                                        {
+                                                                                            var result = TaskOutputDic[currenttask].Result.Deserialize<string>().Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
+                                                                                                <HardHatC2Client.Components.PrintEnvTable Outputs="@result"/>
+                                                                                            }
+                                                                                        else if (TaskInputDic[currenttask].Command.Equals("help",StringComparison.CurrentCultureIgnoreCase))
+                                                                                        {
+                                                                                            <HelpTable Outputs="TaskOutputDic[currenttask].Result"></HelpTable> 
+                                                                                        }
+                                                                                        else if (ParsedCommandOutputDic.ContainsKey(currenttask) && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete)
+                                                                                        {
+                                                                                            <MudSwitch @bind-Checked="@IsTableView" Label="Toggle Table View" Color="Color.Success"/>
+                                                                                            if (IsTableView == true)
+                                                                                            {
+                                                                                                <HardHatC2Client.Components.AutpParsedCommandTable Outputs="ParsedCommandOutputDic[currenttask]"></HardHatC2Client.Components.AutpParsedCommandTable>
+                                                                                            }
+                                                                                            else
+                                                                                            {
+                                                                                                var output = TaskOutputDic[currenttask].Result.Deserialize<string>();
+                                                                                                <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@output</MudText>
+                                                                                            }
+                                                                                        }
+                                                                                        else
+                                                                                        {
+                                                                                            var output = TaskOutputDic[currenttask].Result.Deserialize<string>();
+                                                                                            <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@output</MudText>
+                                                                                        }
+                                                                                    }
+                                                                                    else
+                                                                                    {
+                                                                                        <MudText Typo="Typo.body2">No output yet</MudText>
+                                                                                    }
+                                                                                }
+                                                                                }            
+                                                                                else if (!TaskOutputDic.ContainsKey(currenttask))
+                                                                                {
+                                                                                    <MudText Typo="Typo.body2">No output yet</MudText>
+                                                                                }
+         
+                                                                            </MudCardContent>
+                                                                        </MudCard>  
+                                                                    </ChildContent>
+                                                                </MudExpansionPanel><!--This is the end of per input and output card -->   
+                                                            </MudExpansionPanels>
+                                                        }
+                                                    }
+                                                </MudCardContent>
+                                            </MudCard>
+                                            <EditForm Context="EditFormContext" Model="engineer">
+                                                <div class="d-flex mb-xl-5">
+                        
+                                                    <MudAutocomplete Disabled="true"  @ref="mudauto" @bind-Value=@placeHolder T="string" ResetValueOnEmptyText="true"
+                                                                     Dense="true" Margin="Margin.Dense" SelectValueOnTab="true"  SelectOnClick="false" CoerceText="false" CoerceValue="true"
+                                                                     InputMode="InputMode.text" Variant="Variant.Text" Adornment="Adornment.Start" AdornmentText="[ENGINEER]> " Immediate="true" Clearable="true" KeyDownPreventDefault="true" KeyUpPreventDefault="true" TextUpdateSuppression="@TextSuppersion">
+                                                    </MudAutocomplete>
+                                         
+                                                    <MudButton Disabled="true" style="background:var(--font-color);color:var(--background)" > <MudText>Send</MudText></MudButton>
+                                                </div>
+                                            </EditForm>
+                                            <EngineerDataTable engineer="@engineer"></EngineerDataTable>
+                                        </XTab>
+                                    }
+                                </XTabs>
+                            </MudTabPanel>
+                            <MudTabPanel Text="Browsers" Icon="@Icons.Material.Filled.FolderOpen">
+                                <FileBrowser></FileBrowser>
+                            </MudTabPanel>
+                            <MudTabPanel Text="Terminal" Icon="@Icons.Material.Filled.Terminal" >
+                                <InteractiveTerminal></InteractiveTerminal>            
+                            </MudTabPanel>
+                        </MudTabs>
+                    </MudContainer>
+                </Authorized>
+</AuthorizeView>
+<AuthorizeView Roles="Operator,TeamLead,Guest,Administrator">
     <NotAuthorized>
         <h1 class="text-center">Not Authorized</h1>
         <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
@@ -375,6 +411,8 @@
     private static RestClient _restClient { get; set; }
     [Inject]
     private static NavigationManager Nav { get; set; }
+    [Inject]
+    public ILocalStorageService LocalStorage { get; set; }
     private static Dictionary<string,List<string>> EngineerOutboundTaskIds = new(); // key is engineer id, value is list of task ids
     private static Dictionary<string,EngineerTask> TaskInputDic = new(); // first key is taskId and value is the userInput for commands
 
@@ -407,7 +445,7 @@
     private string icon = Icons.Material.Filled.CheckCircle;
     private static bool TextSuppersion = true;
     private static bool IsTableView = true;
-    private static bool firstRender = true;
+    private static bool FirstRender = true;
     private static bool Initialized = false;
 
     private static Stopwatch stopwatch = new Stopwatch();
@@ -644,13 +682,13 @@
                 helpDiction.Add("/command", commandCheck);
             }
             List<Help.HelpMenuItem> helpMenu = Help.DisplayHelp(helpDiction);
-            
+
 
             if (!TaskOutputDic.ContainsKey(currentTaskId))
             {
                 if (!TaskInputDic.ContainsKey(currentTaskId))
                 {
-                    TaskInputDic.Add(currentTaskId, new EngineerTask { Id = currentTaskId, Command = createObject.Command, Arguments = helpDiction, File = null });
+                    TaskInputDic.Add(currentTaskId, new EngineerTask { Id = currentTaskId, Command = createObject.Command, Arguments = helpDiction, File = null});
                 }
                 await UpdateOutGoingTaskDic(engineer.Id, currentTaskId, helpCommandheader);
                 var taskResponse = new EngineerTaskResponse();
@@ -667,76 +705,86 @@
             return; //return here because help command does not need to be sent to the engineers
         }
 
-        // if command is not help keep going and parse out the arguments the user entered 
-        createObject.Arguments = new Dictionary<string, string>();
-        //checks if arg starts with a / and if so, it adds it to the dictionary.
-        List<string> inputList = command.Split(' ').Skip(1).ToList();
-        if (inputList.Count > 0)
+        Dictionary<string,string> commandargs = new Dictionary<string, string>();
+        string error = null;
+        CommandValidation.ValidateCommand(command,out commandargs,out error);
+        if (error != null)
         {
-            //check if inputList ends in a space and if so, remove it
-            if (inputList.Last() == "")
-            {
-                inputList.RemoveAt(inputList.Count - 1);
-            }
-            var quoteCount = 0;
-            try
-            {
-                for (int i = 0; i < inputList.Count(); i++)
-                {
-                    // if the string ahead of a key holds a quote we are entering a value that should not stop collection until that quote ends.
-                    if (inputList[i + 1].Contains("\\\"\""))
-                    {
-                        quoteCount++;
-                    }
-                    var input = inputList[i];
-                    if (input.StartsWith("/"))
-                    {
-                        string result = "";
-                        List<string> results;
-                        // if quoteCount is even take until the next / 
-                        if (quoteCount % 2 == 0)
-                        {
-                            results = inputList.Skip(i + 1).TakeWhile(s => !s.Contains("/")).ToList();
-                            //update i based on the munber of things in results
-                            i += results.Count();
-                            foreach (string s in results)
-                            {
-                                result += " " + s;
-                            }
-                            result = result.TrimStart(' ');
-                            createObject.Arguments.Add(input, result);
-                        }
-                        //if its not even we are inside a "" and should take until the next quoute
-                        else
-                        {
-                            result = inputList[i + 1];
-                            results = inputList.Skip(i + 2).TakeWhile(s => !s.Contains("\\\"\"")).ToList();
-                            i += results.Count() + 2;
-                            results.Add(inputList[i]);
-                            foreach (string s in results)
-                            {
-                                result += " " + s;
-                            }
-                            result = result.TrimStart(' ');
-                            //remove the \"" from the start and end of the result string 
-                            result = result.TrimStart('\\', '\"','\"');
-                            result = result.TrimEnd('\\', '\"', '\"');
-
-                            createObject.Arguments.Add(input, result);
-                            quoteCount++;
-                        }
-                    }
-                }
-            }
-            catch(Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
-                string errorMessage = "invalid input foramt, check Client console for help.";
-                Engineers.ShowErrorToast(errorMessage);
-                Console.WriteLine("values with a / need to be encloused in double quoutes. values with a \" in them should not be encloused in quotes. values with both a \" & / in them need to have no spaces.");
-            }  
+            Engineers.ShowErrorToast(error);
+            return;
         }
+        createObject.Arguments = commandargs;
+        
+        // // if command is not help keep going and parse out the arguments the user entered 
+        // createObject.Arguments = new Dictionary<string, string>();
+        // //checks if arg starts with a / and if so, it adds it to the dictionary.
+        // List<string> inputList = command.Split(' ').Skip(1).ToList();
+        // if (inputList.Count > 0)
+        // {
+        //     //check if inputList ends in a space and if so, remove it
+        //     if (inputList.Last() == "")
+        //     {
+        //         inputList.RemoveAt(inputList.Count - 1);
+        //     }
+        //     var quoteCount = 0;
+        //     try
+        //     {
+        //         for (int i = 0; i < inputList.Count(); i++)
+        //         {
+        //             // if the string ahead of a key holds a quote we are entering a value that should not stop collection until that quote ends.
+        //             if (inputList[i + 1].Contains("\\\"\""))
+        //             {
+        //                 quoteCount++;
+        //             }
+        //             var input = inputList[i];
+        //             if (input.StartsWith("/"))
+        //             {
+        //                 string result = "";
+        //                 List<string> results;
+        //                 // if quoteCount is even take until the next / 
+        //                 if (quoteCount % 2 == 0)
+        //                 {
+        //                     results = inputList.Skip(i + 1).TakeWhile(s => !s.Contains("/")).ToList();
+        //                     //update i based on the munber of things in results
+        //                     i += results.Count();
+        //                     foreach (string s in results)
+        //                     {
+        //                         result += " " + s;
+        //                     }
+        //                     result = result.TrimStart(' ');
+        //                     createObject.Arguments.Add(input, result);
+        //                 }
+        //                 //if its not even we are inside a "" and should take until the next quoute
+        //                 else
+        //                 {
+        //                     result = inputList[i + 1];
+        //                     results = inputList.Skip(i + 2).TakeWhile(s => !s.Contains("\\\"\"")).ToList();
+        //                     i += results.Count() + 2;
+        //                     results.Add(inputList[i]);
+        //                     foreach (string s in results)
+        //                     {
+        //                         result += " " + s;
+        //                     }
+        //                     result = result.TrimStart(' ');
+        //                     //remove the \"" from the start and end of the result string 
+        //                     result = result.TrimStart('\\', '\"','\"');
+        //                     result = result.TrimEnd('\\', '\"', '\"');
+        //
+        //                     createObject.Arguments.Add(input, result);
+        //                     quoteCount++;
+        //                 }
+        //             }
+        //         }
+        //     }
+        //     catch(Exception ex)
+        //     {
+        //         Console.WriteLine(ex.Message);
+        //         Console.WriteLine(ex.StackTrace);
+        //         string errorMessage = "invalid input foramt, check Client console for help.";
+        //         Engineers.ShowErrorToast(errorMessage);
+        //         Console.WriteLine("values with a / need to be encloused in double quoutes. values with a \" in them should not be encloused in quotes. values with both a \" & / in them need to have no spaces.");
+        //     }  
+        // }
 
         //assign the task id to the task    
         createObject.taskID = currentTaskId;
@@ -790,6 +838,10 @@
         string resource = $"/engineers/{engineer.Id}";
         var request = new RestRequest(resource, Method.Post);
         request.AddJsonBody(createObject);
+        request.OnBeforeDeserialization = (resp =>
+        {
+            Console.WriteLine(resp.Content);
+        });
         _ = await Task.Run(()=> _restClient.PostAsync(request));
     }
     // end of send task function
@@ -838,6 +890,15 @@
     }
 
 
+    private Task TabRemove(XTab tab)
+    {
+        //find the engineer with the matching id and remove the task from the task list
+        var engineer = InteractEngineers.FirstOrDefault(e => e.Id == tab.Title);
+        InteractEngineers.Remove(engineer);
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
     //called by signalR when a new task response comes in 
     public static async Task UpdateTaskResponse(string engineerid, List<string> returnedTaskids)
     {
@@ -872,7 +933,7 @@
                 //if TaskOutputDic[taskid] == No Output then remove the taskid from the TaskOutputDic
                 if (TaskOutputDic[taskid] != null)
                 {
-                    if (TaskOutputDic[taskid].Result.Deserialize<string>() == "No Output")
+                    if (TaskOutputDic[taskid].Result == null)
                     {
                         TaskOutputDic.Remove(taskid);
                     }
@@ -884,7 +945,7 @@
                     {
                         if (TaskOutputDic[taskid] != null)
                         {
-                            if (TaskOutputDic[taskid].Result.Deserialize<string>().Contains("No Output"))
+                            if (TaskOutputDic[taskid].Result == null)
                             {
                                 TaskOutputDic[taskid] = null;
                             }
@@ -1098,38 +1159,33 @@
     }
 
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        OnStateChange = ImplementOnStateChangeEvent;
-        _restClient = restClient;
-        Nav = navigationManagerDefault;
-        // if (stopwatch2.IsRunning == false)
-        // {
-        //     stopwatch2.Start();
-        //     Task.Run(() =>
-        //     {
-        //         while (true)
-        //         {
-        //             if (stopwatch2.ElapsedMilliseconds > 500)
-        //             {
-        //                 OnStateChange();
-        //                 stopwatch2.Restart();
-        //             }
-        //             Thread.Sleep(100);
-        //         }
-        //     });
-        // }
-            if (firstRender && _restClient is not null)
+        if (FirstRender)
+        {
+            RestClientOptions options = new RestClientOptions();
+            options.BaseUrl = restClient.Options.BaseUrl;
+            options.RemoteCertificateValidationCallback = restClient.Options.RemoteCertificateValidationCallback;
+            string jwtToken = await LocalStorage.GetItemAsync<string>("bearerToken");
+            options.Authenticator = new JwtAuthenticator(jwtToken);
+            _restClient = new RestClient(options);
+
+            if (FirstRender)
             {
                 foreach (KeyValuePair<string, List<string>> kvp in EngineerOutboundTaskIds)
                 {
                     UpdateTaskResponse(kvp.Key, kvp.Value);
                 }
-                firstRender = false;
-                Nav.NavigateTo("/Index");
+                FirstRender = false;
+                Nav.NavigateTo("Index");
             }
-        
-        OnStateChange();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        OnStateChange = ImplementOnStateChangeEvent;
+        Nav = navigationManagerDefault;
     }
 }
   

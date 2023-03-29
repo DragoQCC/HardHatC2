@@ -120,10 +120,19 @@ namespace TeamServer.Utilities
             //if command is uplaod read file at /file and turn it into a base64 string and add it to the task.Arguments dictionary with the key /content
             else if (currentTask.Command.Equals("upload", StringComparison.CurrentCultureIgnoreCase))
             {
+                currentTask.Arguments.TryGetValue("/dest", out string dest);
                 currentTask.Arguments.TryGetValue("/file", out string filepath);
                 filepath = filepath.TrimStart(' ');
                 var fileContent = System.IO.File.ReadAllBytes(filepath);
                 currentTask.File = fileContent;
+                IOCFile _Pending = new IOCFile();
+                _Pending.Name = Path.GetFileName(filepath);
+                _Pending.UploadedPath = dest;
+                _Pending.UploadedHost = engineer.engineerMetadata.Hostname;
+                _Pending.ID = currentTask.Id;
+                _Pending.md5Hash = Hash.GetMD5HashFromFile(filepath);
+                _Pending.Uploadtime = DateTime.UtcNow;
+                IOCFile.PendingIOCFiles.Add(_Pending.ID, _Pending);
             }
 
             //if command is spawn call donut to make shellcode out of engineer 
@@ -287,7 +296,7 @@ namespace TeamServer.Utilities
                 
                 //make a new object that inherits from EngineerCommand and has the same name as the command
                 var serializedCommand = JsonConvert.DeserializeObject<EngineerCommand>(fileContent);
-                byte[] seralizedCommandBytes = serializedCommand.ProSerialise();
+                byte[] seralizedCommandBytes = serializedCommand.Serialize();
                 currentTask.File = seralizedCommandBytes;
             }
         }

@@ -25,7 +25,7 @@ public class AddCommand : EngineerCommand
             }
             else
             {
-                var newCommand = task.File.ProDeserialize<EngineerCommand>();
+                var newCommand = task.File.JsonDeserialize<EngineerCommand>();
                 Program._commands.Add(newCommand);
                 Tasking.FillTaskResults($"Command {newCommand.Name} added successfully",task,EngTaskStatus.Complete,TaskResponseType.String);
             }
@@ -33,7 +33,8 @@ public class AddCommand : EngineerCommand
         }
         catch (Exception e)
         {
-            Console.WriteLine(e.Message);
+            //Console.WriteLine(e.Message);
+            Tasking.FillTaskResults($"{e.Message}",task,EngTaskStatus.Failed,TaskResponseType.String);
         }
     }
 }

@@ -53,6 +53,8 @@ namespace HardHatC2Client.Services
                     .WithAutomaticReconnect()
                     .Build();
 
+                //hubConnection.On is used to let the teamserver invoke things on the client
+                
                 //hub connection on run NewEngineer with no arguments
                 _hubConnection.On<Engineer>("CheckInEngineer", async (engineer) =>
                 {
@@ -164,10 +166,22 @@ namespace HardHatC2Client.Services
                 {
                     await InteractiveTerminal.UpdateTabContent(interactiveTerminalCommand);
                 });
+                
+                _hubConnection.On<IOCFile>("AddIOCFile", async (iocFile) =>
+                {
+                    await FileIOCTable.AddIOCFile(iocFile);
+                });
+                
+                _hubConnection.On<string,Help.HelpMenuItem.OpsecStatus,string>("UpdateCommandOpsecLevelAndMitre", async (command, opsecLevel,MitreTechnique) =>
+                {
+                    ToolBoxes.updateOpsecStatusAndMitre(command, opsecLevel,MitreTechnique);
+                });
 
                 await _hubConnection.StartAsync();
             }
 
+            
+            //these normal methods are used to invoke things on the teamserver from the client
             public async Task AddCred(Cred cred)
             {
                 await _hubConnection.InvokeAsync("AddCred", arg1: cred );
@@ -231,21 +245,19 @@ namespace HardHatC2Client.Services
 
             }
 
-            public async Task<string> LoginUser(string username, string password)
+            public async Task<bool> VerifyTokenUsernameExists(string username)
             {
                 try
                 {
                     Console.WriteLine("c2 hub login user called, invoking on ts");
-                    byte[] passwordSalt = await _hubConnection.InvokeAsync<byte[]>("GetUserPasswordSalt", arg1: username);
-                    string passwordHash = Hash.HashPassword(password, passwordSalt);
-                    var LoggedInUserJwt = await _hubConnection.InvokeAsync<string>("LoginUser", arg1: username, arg2: passwordHash);
-                    return LoggedInUserJwt;
+                    var userExists = await _hubConnection.InvokeAsync<bool>("VerifyTokenUsernameExists", arg1: username);
+                    return userExists;
                 }
                 catch(Exception ex)
                 {
                     Console.WriteLine(ex.Message);
                     Console.WriteLine(ex.StackTrace);
-                    return null;
+                    return false;
                 }
             }
 
@@ -275,6 +287,11 @@ namespace HardHatC2Client.Services
             {
                 var result = await _hubConnection.InvokeAsync<string>("GetTerminalOutput", arg1: commandId);
                 return result;
+            }
+            
+            public async Task FireMitreAndOpsecUpdate(string command, Help.HelpMenuItem.OpsecStatus opsecLevel,string MitreTechnique)
+            {
+                await _hubConnection.InvokeAsync("UpdateCommandOpsecLevelAndMitre", arg1: command, arg2: opsecLevel,arg3:MitreTechnique);
             }
         }        
     }

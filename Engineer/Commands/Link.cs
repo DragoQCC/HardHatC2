@@ -41,14 +41,16 @@ namespace Engineer.Commands
 
             if (ParentIsServer)
             {
-                Console.WriteLine("starting parent as server");
+               // Console.WriteLine("starting parent as server");
+                Tasking.FillTaskResults($"starting parent as server", task, EngTaskStatus.Running,TaskResponseType.String);
                 ParentSMBcommModule = new EngSMBComm(namedPipe, true); // parent as server
                 Task.Run(async () => await ParentSMBcommModule.Start());
             }
             else if (!ParentIsServer)
             {
-                Console.WriteLine("starting parent as client");
-                Console.WriteLine($"trying to connect to named pipe {namedPipe} at {serverip}");
+                //Console.WriteLine("starting parent as client");
+                //Console.WriteLine($"trying to connect to named pipe {namedPipe} at {serverip}");
+                Tasking.FillTaskResults($"starting parent as client \n trying to connect to named pipe {namedPipe} at {serverip}", task, EngTaskStatus.Running,TaskResponseType.String);
                 ParentSMBcommModule = new EngSMBComm(namedPipe, serverip, true); // parent as client
                 Task.Run(async () => await ParentSMBcommModule.Start());
             }

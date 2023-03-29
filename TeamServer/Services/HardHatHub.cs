@@ -180,7 +180,7 @@ namespace TeamServer.Services
                 UserInfo user = new UserInfo { Id = Guid.NewGuid().ToString(), UserName = username, NormalizedUserName = username.Normalize().ToUpperInvariant(), PasswordHash = passwordHash };
                 UserStore userStore = new UserStore();
                 var result = await userStore.CreateAsync(user, new CancellationToken());
-                Console.WriteLine($"{username}'s hashed password is {passwordHash}");
+                //Console.WriteLine($"{username}'s hashed password is {passwordHash}");
                 await userStore.SetPasswordSaltAsync(user, salt);
 
                 //created user needs to be give Operator role 
@@ -202,31 +202,20 @@ namespace TeamServer.Services
             }
         }
 
-        public async Task<string> LoginUser(string username, string passwordHash)
+        public async Task<bool> VerifyTokenUsernameExists(string username)
         {
             //create an instance of the UserStore and check if the user exists
             UserStore userStore = new UserStore();
-            var user = new UserInfo { UserName = username, PasswordHash = passwordHash, NormalizedUserName = username.Normalize().ToUpper() };
-            Console.WriteLine($"{username}'s logging in hashed password is {passwordHash}");
+            var user = await userStore.FindByNameAsync(username, new CancellationToken());
             if (user != null)
             {
-                string token = await Authentication.SignIn(user);
-                //if the user exists check if the password hash matches the one in the store
-                if (!string.IsNullOrEmpty(token))
-                {
-                    //sign was successful 
-                    return token;
-                }
-                else
-                {
-                    //sign in failed
-                    return null;
-                }
+                //if the user exists return true
+                return true;
             }
             else
             {
                 //if the user does not exist return false
-                return null;
+                return false;
             }
         }
 
@@ -289,6 +278,14 @@ namespace TeamServer.Services
                 return "";
             }
         }
+
+        public async Task UpdateCommandOpsecLevelAndMitre(string commandName, HelpMenuItem.OpsecStatus opsecStatus,string mitreTechnique)
+        {
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
+            await hubContext.Clients.All.SendAsync("UpdateCommandOpsecLevelAndMitre", commandName, opsecStatus,mitreTechnique);
+            
+        }
+        
         //end of hub client invokable methods 
 
         //teamserver side invokable methods 
@@ -462,6 +459,27 @@ namespace TeamServer.Services
         {
             var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
             await hubContext.Clients.All.SendAsync("UpdateTabContent", command);
+        }
+        
+        public static async Task AddIOCFile(IOCFile iocFile)
+        {
+            if (DatabaseService.Connection == null)
+            {
+                DatabaseService.ConnectDb();
+            }
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
+            
+            //if the iocFile.Id matches any in the IOCFile.IOCFiles list then we got it from the db and can just send it to the clients 
+            if (IOCFile.IOCFiles.Any(x => x.ID == iocFile.ID))
+            {
+                await hubContext.Clients.All.SendAsync("AddIOCFile", iocFile);
+                return;
+            }
+            // otherwise this is new and add the ioc file to the database and tracking list and logging 
+            DatabaseService.Connection.Insert((IOCFIle_DAO)iocFile);
+            IOCFile.IOCFiles.Add(iocFile);
+            LoggingService.EventLogger.ForContext("IOC_File", iocFile,true).Information($"Uploaded File to target: {iocFile.Name} on host {iocFile.UploadedHost} to {iocFile.UploadedPath} @ {iocFile.Uploadtime} ");
+            await hubContext.Clients.All.SendAsync("AddIOCFile", iocFile);
         }
         //end of teamserver side invokable methods 
     }

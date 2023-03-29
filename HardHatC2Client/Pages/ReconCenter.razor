@@ -109,7 +109,7 @@
                     <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
                     @if(selectedEntity != null)
                     {
-                        <MudButton StartIcon="@Icons.Filled.Add" Variant="Variant.Filled" Color="Color.Success" @onclick="@OpenPropertyCreateDialog">Add Property</MudButton>
+                        <MudButton Disabled="true" StartIcon="@Icons.Filled.Add" Variant="Variant.Filled" Color="Color.Success" @onclick="@OpenPropertyCreateDialog">Add Property</MudButton>
                     }
                 </ToolBarContent>
                 <Columns>

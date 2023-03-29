@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Threading;
 using TeamServer.Models.Database;
 using TeamServer.Services.Extra;
 using TeamServer.Services;
@@ -19,11 +20,10 @@ namespace TeamServer.Controllers
         {
             //create an instance of the UserStore and check if the user exists
             UserStore userStore = new UserStore();
-            var user = new UserInfo { UserName = request.Username, PasswordHash = request.PasswordHash, NormalizedUserName = request.Username.Normalize().ToUpper() };
-            Console.WriteLine($"{request.Username}'s logging in hashed password is {request.PasswordHash}");
+            var user = await userStore.FindByNameAsync(request.Username,new CancellationToken());
             if (user != null)
             {
-                string token = await Authentication.SignIn(user);
+                string token = await Authentication.SignIn(user,request.PasswordHash);
                 //if the user exists check if the password hash matches the one in the store
                 if (!string.IsNullOrEmpty(token))
                 {

@@ -46,8 +46,8 @@ namespace Engineer.Functions
             }
             catch (System.Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
+                //Console.WriteLine(ex.Message);
+                //Console.WriteLine(ex.StackTrace);
                 return null;
             }
         }
@@ -88,8 +88,8 @@ namespace Engineer.Functions
             }
             catch (System.Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
+                //Console.WriteLine(ex.Message);
+                //Console.WriteLine(ex.StackTrace);
                 return null;
             }
         }

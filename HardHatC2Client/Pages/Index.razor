@@ -4,49 +4,58 @@
 <PageTitle>Index</PageTitle>
 <!--Insert table with 2 rows -->
 <CascadingAuthenticationState>
-<AuthorizeView Roles="Operator,TeamLead,Administrator,Guest">
-    <Authorized>
-<!--Top Images -->
-<div class = "row-cols-md-auto">
-		<img class="rounded mx-auto d-block" src="Images/MainIcon_Orange_shadows.png"/>
-		<hr>
-</div>
+    <AuthorizeView Roles="Operator,TeamLead,Administrator,Guest">
+        <Authorized>
+            <!--Top Images -->
+            <div class = "row-cols-md-auto">
+                <img class="rounded mx-auto d-block" src="Images/MainIcon_Orange_shadows.png"/>
+                <hr>
+            </div>
     
- <!--Help Menu Headewr with Icon -->
-<div class="container pt-3 pb-2 text-center">
-	    <h2  style="display:inline-block" class="oi oi-align-left oi-book"></h2>
-		<h2  style="display:inline-block">Getting Started Menu</h2>
- </div>
- <!--Help Menu Sections with Collapsible -->
-<div class="container mb-2 pt-2">
-<MudExpansionPanels MultiExpansion="true">
-    <MudExpansionPanel Text="Starting a Manager (listener)">
-        To Start a Manager, Click on the Manager button bellow or go to the Manager page. Managers handle the inbound connections from the Engineers for the TeamServer/Client.
-    </MudExpansionPanel>
-    <MudExpansionPanel Text="What is an Enginner">
-        Engineers serve as the connection from the target machine. They connect back to the Manager and send the commands to the target machine and send back the results to the Teamserver.
-    </MudExpansionPanel>
-    <MudExpansionPanel Text="More Help.">
-         For more in depth details visit the docs at <a href="github.com/queen-city-cyber/">Docs.</a>
-    </MudExpansionPanel>
-</MudExpansionPanels>
-    <br>
-	<hr>
-</div>
+            <!--Help Menu Headewr with Icon -->
+            <div class="container pt-3 pb-2 text-center">
+                <h2  style="display:inline-block" class="oi oi-align-left oi-book"></h2>
+                <h2  style="display:inline-block">Getting Started Menu</h2>
+            </div>
+            <!--Help Menu Sections with Collapsible -->
+            <div class="container mb-2 pt-2">
+                <MudExpansionPanels MultiExpansion="true">
+                    <MudExpansionPanel Text="Starting a Manager (listener)">
+                        To Start a Manager, Click on the Manager button bellow or go to the Manager page. Managers handle the inbound connections from the Engineers for the TeamServer/Client.
+                    </MudExpansionPanel>
+                    <MudExpansionPanel Text="What is an Enginner">
+                        Engineers serve as the connection from the target machine. They connect back to the Manager and send the commands to the target machine and send back the results to the Teamserver.
+                    </MudExpansionPanel>
+                    <MudExpansionPanel Text="More Help.">
+                        For more in depth details visit the docs at <a href="github.com/queen-city-cyber/">Docs.</a>
+                    </MudExpansionPanel>
+                </MudExpansionPanels>
+                <br>
+                <hr>
+            </div>
 	
-<!-- add a div for an outline button that is yellow and loads the Engineer page -->
-<div class="container-lg mt-xxl-5 text-center mb-lg-5 pb-lg-5">
-	<button class="btn btn-outline-success btn-lg pt-xl-5 pb-xl-5 px-xl-4 mx-lg-4 shadow-lg" style="display:inline-block" onclick="window.location.href='/Managers'">Create Manager</button>
-    <button class="btn btn-outline-warning btn-lg pt-xl-5 pb-xl-5 px-xl-4 mx-lg-4 shadow-lg" style="display:inline-block" onclick="window.location.href='/Engineers'">Create Engineer</button>	
-    <button class="btn btn-outline-primary btn-lg pt-xl-5 pb-xl-5 px-xl-5 mx-lg-4 shadow-lg" style="display:inline-block" onclick="window.location.href='/Interact'">Interact</button>
-</div>
-<br>
-    </Authorized>
-    <NotAuthorized>
-        <h1 class="text-center">Not Authorized</h1>
-            <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
-    </NotAuthorized>
-</AuthorizeView>
+            <!-- add a div for an outline button that is yellow and loads the Engineer page -->
+            <div class="container-lg mt-xxl-5 text-center mb-lg-5 pb-lg-5">
+                <button class="btn btn-outline-success btn-lg pt-xl-5 pb-xl-5 px-xl-4 mx-lg-4 shadow-lg" style="display:inline-block" onclick="window.location.href='/Managers'">Create Manager</button>
+                <button class="btn btn-outline-warning btn-lg pt-xl-5 pb-xl-5 px-xl-4 mx-lg-4 shadow-lg" style="display:inline-block" onclick="window.location.href='/Engineers'">Create Engineer</button>	
+                <button class="btn btn-outline-primary btn-lg pt-xl-5 pb-xl-5 px-xl-5 mx-lg-4 shadow-lg" style="display:inline-block" onclick="window.location.href='/Interact'">Interact</button>
+            </div>
+            <br>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Roles="Operator,TeamLead,Administrator,Guest">
+        <Authorized>
+        </Authorized>
+        <Authorizing>
+             <MudOverlay DarkBackground="true" Absolute="true">
+                        <MudProgressCircular Color="Color.Secondary" Indeterminate="true" />
+            </MudOverlay>
+        </Authorizing>
+        <NotAuthorized>
+            <h1 class="text-center">Not Authorized</h1>
+        <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+        </NotAuthorized>
+    </AuthorizeView>
 </CascadingAuthenticationState>
 
 @code{
@@ -59,7 +68,7 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         //if user is logged in we need to initalize the other pages
-        if (FirstRender && Login.IsLoggedIn)
+        if (FirstRender)
         {
             FirstRender = false;
             Nav.NavigateTo("Engineers");

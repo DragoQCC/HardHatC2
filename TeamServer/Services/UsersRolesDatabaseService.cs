@@ -43,13 +43,12 @@ namespace TeamServer.Services
             }
             string AdminPass = Encryption.GenerateRandomString(20);
             var passwordHash = MyPasswordHasher.HashPassword(AdminPass, out byte[] salt);
-            Console.WriteLine($"HardHat_Admin's hashed password is {passwordHash}");
             UserInfo user = new UserInfo { Id = Guid.NewGuid().ToString(), UserName = "HardHat_Admin", NormalizedUserName = "HardHat_Admin".Normalize().ToUpperInvariant(), PasswordHash = passwordHash };
             
             var result = await userStore.CreateAsync(user, new CancellationToken());
             await userStore.SetPasswordSaltAsync(user, salt);
             await userStore.AddToRoleAsync(user, "Administrator", new CancellationToken());
-            Console.WriteLine($"HardHat_Admin's password is {AdminPass}");
+            Console.WriteLine($"[**] HardHat_Admin's password is {AdminPass}, make sure to save this password, as on the next start of the server it will not be displayed again [**]");
         }
     }
 }

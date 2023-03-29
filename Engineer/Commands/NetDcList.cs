@@ -35,14 +35,15 @@ namespace Engineer.Commands
                 {
                     targetDomain = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().DomainName;
                 }
-                Console.WriteLine($"target domain is {targetDomain}");
+                //Console.WriteLine($"target domain is {targetDomain}");
+                Tasking.FillTaskResults($"target domain is {targetDomain}", task, EngTaskStatus.Running,TaskResponseType.String);
                 //search the targetDomain for all domain controllers
                 //if username and password are not null then use them to authenticate
                 DirectoryEntry domain;
                 if (username != null && password != null)
                 {
-                    Console.WriteLine($"username is {username}");
-                    Console.WriteLine($"password is {password}");
+                   // Console.WriteLine($"username is {username}");
+                    //Console.WriteLine($"password is {password}");
                     domain = new DirectoryEntry("LDAP://" + targetDomain, username, password);
                 }
                 else
@@ -78,8 +79,8 @@ namespace Engineer.Commands
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
+                //Console.WriteLine(ex.Message);
+                //Console.WriteLine(ex.StackTrace);
                 Tasking.FillTaskResults(ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
         }

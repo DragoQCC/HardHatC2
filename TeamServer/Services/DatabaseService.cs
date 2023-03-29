@@ -29,7 +29,7 @@ namespace TeamServer.Services
         public static SQLiteAsyncConnection AsyncConnection = null;
         public static SQLiteConnection Connection = null;
         private static List<Type> dbItemTypes = new List<Type> { typeof(Cred_DAO), typeof(DownloadFile_DAO), typeof(EncryptionKeys_DAO), typeof(Engineer_DAO), typeof(EngineerTaskResult_DAO), typeof(HistoryEvent_DAO),
-                                                        typeof(HttpManager_DAO), typeof(PivotProxy_DAO),typeof(ReconCenterEntity_DAO), typeof(SMBManager_DAO), typeof(TCPManager_DAO), typeof(UploadedFile_DAO),typeof(EngineerTask_DAO) };
+                                                        typeof(HttpManager_DAO), typeof(PivotProxy_DAO),typeof(ReconCenterEntity_DAO), typeof(SMBManager_DAO), typeof(TCPManager_DAO), typeof(UploadedFile_DAO),typeof(EngineerTask_DAO),typeof(IOCFIle_DAO) };
 
 
         //create a function to init the database file, location string, and setup tables 
@@ -185,6 +185,11 @@ namespace TeamServer.Services
 
                 PivotProxy.PivotProxyList = await GetPivotProxies();
                 ReconCenterEntity.ReconCenterEntityList = await GetReconCenterEntities();
+                IOCFile.IOCFiles = await GetIOCFiles();
+                foreach (var iocFile in IOCFile.IOCFiles)
+                {
+                    await HardHatHub.AddIOCFile(iocFile);
+                }
             }
             catch (Exception ex)
             {
@@ -460,6 +465,27 @@ namespace TeamServer.Services
                 var storedReconCenterEntities = Connection.Table<ReconCenterEntity_DAO>().ToList().Select(x => (ReconCenterEntity)x);
                 List<ReconCenterEntity> reconCenterEntityList = new List<ReconCenterEntity>(storedReconCenterEntities);
                 return reconCenterEntityList;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
+                return null;
+            }
+        }
+        
+        //function to return all the IOCFiles from the database
+        public static async Task<List<IOCFile>> GetIOCFiles()
+        {
+            try
+            {
+                if (Connection == null)
+                {
+                    ConnectDb();
+                }
+                var storedIOCFiles = Connection.Table<IOCFIle_DAO>().ToList().Select(x => (IOCFile)x);
+                List<IOCFile> iocFileList = new List<IOCFile>(storedIOCFiles);
+                return iocFileList;
             }
             catch (Exception ex)
             {

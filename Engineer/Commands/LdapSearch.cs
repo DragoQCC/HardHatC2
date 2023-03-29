@@ -88,8 +88,8 @@ namespace Engineer.Commands
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
+                //Console.WriteLine(ex.Message);
+               // Console.WriteLine(ex.StackTrace);
                 Tasking.FillTaskResults(ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
            

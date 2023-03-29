@@ -16,7 +16,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace TeamServer.Controllers
 {
-	[Authorize(Roles ="Operator")]
+	[Authorize(Roles ="Operator,TeamLead")]
 	[ApiController]
 	[Route("[controller]")]
 	public class EngineersController : ControllerBase
@@ -44,7 +44,9 @@ namespace TeamServer.Controllers
 		{
 			var Engineer = _Engineers.GetEngineer(EngineerId);
 			if (Engineer is null)
-			{ return NotFound(); }
+			{ 
+				return NotFound(); 
+			}
 			return Ok(Engineer);
 		}
 
@@ -52,33 +54,19 @@ namespace TeamServer.Controllers
 		public IActionResult GetTaskResult(string EngineerId, string taskId)
 		{
 			var engineer = _Engineers.GetEngineer(EngineerId);
-			if (engineer is null) return NotFound("Engineer not found");
-			//if (Engineer.taskQueueDic.ContainsKey(taskId))
-			//{
-			//	if (Engineer.taskQueueDic[taskId].Count() > 0)
-			//	{
-			//		var task = engineer.DeQueueTaskResults(taskId);
-			//		return Ok(task);
-			//	}
-   //             else
-   //             {
-   //                 var result = engineer.GetTaskResult(taskId);
-   //                 if (result is null)
-   //                 {
-   //                     return NotFound("Task not found");
-   //                 }
-   //                 return Ok(result);
-   //             }
-   //         }
-            else
-            {
-                var result = engineer.GetTaskResult(taskId);
-                if (result is null)
-                {
-                    return NotFound(result);
-                }
-                return Ok(result);
-            }
+			if (engineer is null)
+			{
+				return NotFound("Engineer not found");
+			}
+			else
+			{
+				var result = engineer.GetTaskResult(taskId);
+				if (result is null)
+				{
+					return NotFound(result);
+				}
+				return Ok(result);
+			}
         }
 
 		[HttpGet("{EngineerId}/tasks", Name = "RetrieveAllEngineerTasks")]
@@ -151,6 +139,7 @@ namespace TeamServer.Controllers
             string managerName = request.managerName;
 			int connectionAttempts = request.ConnectionAttempts;
             int sleep = request.Sleep;
+			SpawnEngineerRequest.SleepTypes sleepType = request.SleepType;
             string managerBindAddress = "";
             string managerBindPort = "";
             string managerConnectionAddress = "";
@@ -170,6 +159,14 @@ namespace TeamServer.Controllers
                         managerConnectionPort = manager.ConnectionPort.ToString();
                         file = file.Replace("{{REPLACE_MANAGER_NAME}}", managerName);
                         file = file.Replace("{{REPLACE_MANAGER_TYPE}}", managerType);
+						if (manager.Type == Models.manager.ManagerType.http)
+						{
+                            file = file.Replace("{{REPLACE_ISSECURE_STATUS}}", "False");
+                        }
+						else if (manager.Type == Models.manager.ManagerType.https)
+						{
+							file = file.Replace("{{REPLACE_ISSECURE_STATUS}}", "True");
+						}
                         //update some C2 Profile stuff 
                         file = file.Replace("{{REPLACE_URLS}}", manager.c2Profile.Urls);
                         file = file.Replace("{{REPLACE_COOKIES}}", manager.c2Profile.Cookies);
@@ -178,10 +175,6 @@ namespace TeamServer.Controllers
                         //update file with ConnectionIP and ConnectionPort from request
                         file = file.Replace("{{REPLACE_CONNECTION_IP}}", managerConnectionAddress);
                         file = file.Replace("{{REPLACE_CONNECTION_PORT}}", managerConnectionPort);
-                    }
-                    if (manager.IsSecure)
-                    {
-                        file = file.Replace("{{REPLACE_ISSECURE_STATUS}}", "True");
                     }
                 }
                 else if(m.Type == manager.ManagerType.tcp)
@@ -238,7 +231,7 @@ namespace TeamServer.Controllers
             file = file.Replace("{{REPLACE_CONNECTION_ATTEMPTS}}", connectionAttempts.ToString());
             //update file with sleep time
             file = file.Replace("{{REPLACE_SLEEP_TIME}}", sleep.ToString());
-
+			file = file.Replace("{{REPLACE_SLEEP_TYPE}}", sleepType.ToString());
 
 			if (request.WorkingHours != null)
 			{
@@ -256,11 +249,9 @@ namespace TeamServer.Controllers
 
             file = file.Replace("{{REPLACE_UNIQUE_TASK_KEY}}", Encryption.UniversalTaskEncryptionKey);
 
-			//string sleepFuncFile = System.IO.File.ReadAllText(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer"+$"{allPlatformPathSeperator}"+"Functions"+$"{allPlatformPathSeperator}"+"Sleepydll.cs");
-            file = file.Replace("{{REPLACE_SLEEP_DLL}}", Convert.ToBase64String(System.IO.File.ReadAllBytes(pathSplit[0] + "Programs" + $"{allPlatformPathSeperator}" + "Extensions" + $"{allPlatformPathSeperator}" + "run3.dll")));
 
             //generate code for the implant
-            byte[] assemblyBytes = Utilities.Compile.GenerateCode(file, request.complieType);
+            byte[] assemblyBytes = Utilities.Compile.GenerateCode(file, request.complieType, request.SleepType);
             if (assemblyBytes is null)
 			{
 				return BadRequest("Failed to compile Engineer, check teamServer Console for errors.");
@@ -307,12 +298,11 @@ namespace TeamServer.Controllers
 		            System.IO.File.WriteAllBytes(sourceAssemblyLocation, assemblyBytes);
 	            }
 
+	            
+				var jsonFastLocation = pathSplit[0] + "Data" + $"{allPlatformPathSeperator}FastJSON.dll";
+                var searchDir = $"{pathSplit[0]}Data{allPlatformPathSeperator}";
 
-	            var netserlLocation = pathSplit[0] + "Data" + $"{allPlatformPathSeperator}NetSerializer.dll";
-	            var netstnlLocation = pathSplit[0] + "Data" + $"{allPlatformPathSeperator}netstandard.dll";
-	            var searchDir = $"{pathSplit[0]}Data{allPlatformPathSeperator}";
-
-	            string[] assemblyArray = { sourceAssemblyLocation, netserlLocation, netstnlLocation };
+	            string[] assemblyArray = { sourceAssemblyLocation, jsonFastLocation};
 	            Utilities.MergeAssembly.MergeAssemblies(outputLocation, assemblyArray, searchDir);
 
 
@@ -404,7 +394,19 @@ namespace TeamServer.Controllers
                     //call the shellcode utility giving it the path we just wrote this exe to then return the shellcode and write its content to a file 
                     var shellcodeLocation = pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
                     var shellcode = Utilities.Shellcode.AssemToShellcode(shellcodeLocation, "");
-                    System.IO.File.WriteAllBytes(pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_shellcode.bin", shellcode);
+                    if (request.EncodeShellcode)
+                    {
+	                    var encoded_shellcode = Shellcode.EncodeShellcode(shellcode);
+	                    System.IO.File.WriteAllBytes(
+		                    pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_shellcode.bin",
+		                    encoded_shellcode);
+                    }
+					else
+					{
+	                    System.IO.File.WriteAllBytes(
+		                    pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_shellcode.bin",
+		                    shellcode);
+					}
 
                     //Utilities.Compile.RunConfuser(pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.exe");
                     string shellLocation = $"{pathSplit[0]}..{allPlatformPathSeperator }Engineer_{managerName}_shellcode.bin";

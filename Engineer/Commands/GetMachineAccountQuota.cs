@@ -31,14 +31,14 @@ namespace Engineer.Commands
                 {
                     targetDomain = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().DomainName;
                 }
-                Console.WriteLine($"target domain is {targetDomain}");
+                Tasking.FillTaskResults($"target domain is {targetDomain}" ,task,EngTaskStatus.Running,TaskResponseType.String);
                 //search the targetDomain for all domain controllers
                 //if username and password are not null then use them to authenticate
                 DirectoryEntry domain;
                 if (username != null && password != null)
                 {
-                    Console.WriteLine($"username is {username}");
-                    Console.WriteLine($"password is {password}");
+                    //Console.WriteLine($"username is {username}");
+                    //Console.WriteLine($"password is {password}");
                     domain = new DirectoryEntry("LDAP://" + targetDomain, username, password);
                 }
                 else
@@ -58,8 +58,8 @@ namespace Engineer.Commands
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+                //Console.WriteLine(e.Message);
+                //Console.WriteLine(e.StackTrace);
                 Tasking.FillTaskResults("[-] Error Getting Machine Account Quota: " + e.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
 

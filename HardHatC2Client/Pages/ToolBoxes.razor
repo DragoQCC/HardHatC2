@@ -1,24 +1,195 @@
 ﻿@page "/Toolboxes"
+@inject IToastService toastService
+@using HardHatC2Client.Utilities
+@using HardHatC2Client.Services
+@using System.ComponentModel.Design.Serialization
 <CascadingAuthenticationState>
-<AuthorizeView Roles="Teamlead">
+<AuthorizeView Roles="TeamLead">
     <Authorized>
 <h3 class="text-center">ToolBoxes</h3>
-<h6 class="text-center">Modules that can be loaded to the Engineer to give it extra capabilities.</h6>
+<MudDataGrid @ref="_table" T="ToolboxCommand" Items="@BodyContent" ReadOnly="false" Dense="true" Hover="true" CanCancelEdit="true" Height="700px" Elevation="10" Outlined="true" Striped="true"
+                                     @bind-SelectedItem="selectedItem1" EditMode="DataGridEditMode.Form" StartedEditingItem="@StartedEditingItem" CanceledEditingItem="@CanceledEditingItem" CommittedItemChanges="@CommittedItemChanges"
+                                     EditTrigger="DataGridEditTrigger.Manual" QuickFilter="@_quickFilter">
+                            <ToolBarContent>
+                                <MudText Typo="Typo.h6">Command OPSEC & MITRE ATT&CK Mapping</MudText>
+                                <MudSpacer/>
+                                <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                            </ToolBarContent>
+    <Columns>
+        <PropertyColumn HeaderStyle="@setStyle(Settings.IsCheckedBox)" Property="x => x.commandName" Title="Command Name" CellStyleFunc="@_styleFunc" IsEditable="false"/>
+                    <TemplateColumn CellClass="d-flex" HeaderStyle="@setStyle(Settings.IsCheckedBox)" Title="Opsec Status" CellStyleFunc="@_styleFunc" IsEditable="true">
+            <CellTemplate Context="cellcontext">
+            <MudSelect ValueChanged="(e)=>OpsecChanged(selectedItem1.commandName,e)"  T="Help.HelpMenuItem.OpsecStatus">
+                @foreach (Help.HelpMenuItem.OpsecStatus opsec in Enum.GetValues(typeof(Help.HelpMenuItem.OpsecStatus)))
+                {
+                    <MudSelectItem Value="@opsec">@opsec</MudSelectItem>
+                }
+            </MudSelect>
+            </CellTemplate>
+        </TemplateColumn>
+        <PropertyColumn HeaderStyle="@setStyle(Settings.IsCheckedBox)" Property="x=>x.MitreTechnique" Title="Mitre ATT&CK Map" CellStyleFunc="@_styleFunc" IsEditable="true"/>
+        <TemplateColumn HeaderStyle="@setStyle(Settings.IsCheckedBox)" CellStyleFunc="@_styleFunc" CellClass="d-flex">
+            <CellTemplate Context="editCellContext">
+                <MudIconButton Icon="@Icons.Material.Outlined.Edit" OnClick="@editCellContext.Actions.StartEditingItem" />
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+        <PagerContent>
+                <MudDataGridPager T="ToolboxCommand" />
+            </PagerContent>
+    </MudDataGrid>
     </Authorized>
 </AuthorizeView>
-<AuthorizeView Roles="Operator">
+<AuthorizeView Roles="Operator,Guest">
+<Authorized>
+    <h3 class="text-center">ToolBoxes</h3>
+    <h6 class="text-center">This is text operators see vs the message teamleads get</h6>
+</Authorized>
+</AuthorizeView>
+<AuthorizeView roles="TeamLead,Operator,Guest">
     <Authorized>
-        <h3 class="text-center">ToolBoxes</h3>
-<h6 class="text-center">This is text operators see vs the message teamleads get</h6>
     </Authorized>
     <NotAuthorized>
         <h1 class="text-center">Not Authorized</h1>
-            <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+        <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
     </NotAuthorized>
-    </AuthorizeView>
-    
+</AuthorizeView>
 </CascadingAuthenticationState>
 
 @code {
+    public static List<ToolboxCommand> BodyContent { get; set; } = new List<ToolboxCommand>();
+    public static ToolboxCommand selectedItem1 { get; set; }
+    public static ToolboxCommand ToolboxCommandBeforeEdit { get; set; } = new ToolboxCommand();
+    private static ToastService _toastService = new ToastService();
+    private string searchString1 = "";
+    private MudDataGrid<ToolboxCommand> _table;
+    private List<string> editEvents = new();
+    private static Dictionary<string, Help.HelpMenuItem.OpsecStatus> CommandSelectedOpsecLevel { get; set; } = new();
+
+    public class ToolboxCommand
+    {
+       public string commandName { get; set; }
+       public Help.HelpMenuItem.OpsecStatus opsecStatus { get; set; }
+       public string MitreTechnique { get; set; }
+    }
+    
+    //functions
+    private string setStyle(bool IsDark)
+    {
+        if (IsDark)
+        {
+            return "background:white; color:black;";
+        }
+        return "background:#333333; color:white;";
+    }
+    
+    private void PageChanged(int i)
+    {
+        _table.CurrentPage = i - 1;
+        _table.NavigateTo((Page)_table.CurrentPage);
+    }
+
+    private Func<ToolboxCommand, bool> _quickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(searchString1))
+            return true;
+
+        if (x.commandName.Contains(searchString1, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (x.opsecStatus.ToString().Contains(searchString1, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (x.MitreTechnique.Contains(searchString1, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
+    };
+
+    //create func that takes in a ReconCenterEntity.ReconCenterEntityProperty and returns string for the style where it allows multi line text 
+    private Func<ToolboxCommand, string> _styleFunc => x =>
+    {
+        return "white-space: pre-line;";
+    };
+
+    private void AddEditionEvent(string message)
+    {
+        editEvents.Add(message);
+        StateHasChanged();
+    }
+
+    // events
+    void StartedEditingItem(ToolboxCommand item)
+    {
+        ToolboxCommandBeforeEdit.commandName = item.commandName;
+        ToolboxCommandBeforeEdit.opsecStatus = item.opsecStatus;
+        ToolboxCommandBeforeEdit.MitreTechnique = item.MitreTechnique;
+        AddEditionEvent($"Event = StartedEditingItem, Data = {System.Text.Json.JsonSerializer.Serialize(item)}");
+
+    }
+
+    void CanceledEditingItem(ToolboxCommand item)
+    {
+        AddEditionEvent($"Event = CanceledEditingItem, Data = {System.Text.Json.JsonSerializer.Serialize(item)}");
+    }
+
+    void CommittedItemChanges(ToolboxCommand item)
+    {
+        //HardHatHubClient._hub.
+        AddEditionEvent($"Event = CommittedItemChanges, Data = {System.Text.Json.JsonSerializer.Serialize(item)}");
+    }
+    
+    private static void ShowSuccessToast(string successMessage)
+    {
+        _toastService.ShowSuccess(successMessage);
+    }
+    private static void ShowErrorToast(string errorMessage)
+    {
+        _toastService.ShowError(errorMessage);
+    }
+    
+    
+    public void OpsecChanged(string commandName, Help.HelpMenuItem.OpsecStatus opsecStatus)
+    {
+        string MitreTechnique = "";
+        CommandSelectedOpsecLevel[commandName] = opsecStatus;
+        //find the matching helpmenuitem 
+        foreach (Help.HelpMenuItem item in Help.menuItems)
+        {
+            if (item.Name == commandName)
+            {
+                MitreTechnique = item.MitreTechnique;
+            }
+        }
+        HardHatHubClient._hub.FireMitreAndOpsecUpdate(commandName, opsecStatus,MitreTechnique);
+        ShowSuccessToast($"Opsec Status for {commandName} has been changed to {opsecStatus}");
+    }
+
+    public static void updateOpsecStatusAndMitre(string commandName, Help.HelpMenuItem.OpsecStatus opsecStatus,string MitreTechnique)
+    {
+        CommandSelectedOpsecLevel[commandName] = opsecStatus;
+        foreach (ToolboxCommand command in BodyContent)
+        {
+            if (command.commandName == commandName)
+            {
+                command.opsecStatus = opsecStatus;
+                command.MitreTechnique = MitreTechnique;
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _toastService = (ToastService)toastService;
+        foreach (Help.HelpMenuItem menuItem in Help.menuItems)
+        {
+            ToolboxCommand command = new ToolboxCommand();
+            command.commandName = menuItem.Name;
+            command.opsecStatus = menuItem.Opsec;
+            command.MitreTechnique = menuItem.MitreTechnique;
+            BodyContent.Add(command);
+        }
+    //var timer = new Timer(new TimerCallback(_ => { InvokeAsync(StateHasChanged); }), null, 1000, 1000);
+    }
 
 }

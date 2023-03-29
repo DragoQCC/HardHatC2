@@ -15,14 +15,4 @@ namespace HardHatC2Client.Models
         public string ManagerName { get; set; }
         public int Sleep { get; set; }
     }
-
-    public class Root
-    {
-        public EngineerMetadata engineerMetadata { get; set; }
-        public DateTime LastSeen { get; set; }
-        public string Status { get; set; }
-        public string ExternalAddress { get; set; }
-        public string ConnectionType { get; set; }
-        public int Sleep { get; set; }
-    }
 }

@@ -36,7 +36,7 @@ namespace HardHatC2Client.Utilities
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                         RedirectStandardInput = true,
-                        CreateNoWindow = true
+                        CreateNoWindow = false
                     }
                 };
                 //add the output to the string builder
@@ -93,7 +93,7 @@ namespace HardHatC2Client.Utilities
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                         RedirectStandardInput = true,
-                        CreateNoWindow = true
+                        CreateNoWindow = false
                     }
                 };
 

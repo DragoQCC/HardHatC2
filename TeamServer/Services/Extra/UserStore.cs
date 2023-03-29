@@ -31,7 +31,7 @@ namespace TeamServer.Services.Extra
         public async Task<IdentityResult> CreateAsync(UserInfo user, CancellationToken cancellationToken)
         {
             //check if a user with the same name already exists
-            List<UserInfo> users = DatabaseService.Connection.Table<UserInfo>().Where(x => x.UserName == user.UserName).ToList();
+            List<UserInfo> users = DatabaseService.Connection.Table<UserInfo>().Where(x => x.UserName.ToLower() == user.UserName.ToLower()).ToList();
             if (users.Count > 0)
             {
                 return IdentityResult.Failed(new IdentityError { Code = "UserExists", Description = "A user with the same name already exists" });
@@ -61,20 +61,13 @@ namespace TeamServer.Services.Extra
             try
             {
                 List<UserInfo> testUsers = DatabaseService.Connection.Table<UserInfo>().ToList();
-                // foreach (UserInfo testUser in testUsers)
-                // {
-                //     Console.WriteLine($"Id is {testUser.Id}");
-                //     Console.WriteLine($"Username is {testUser.UserName}");
-                //     Console.WriteLine($"Normalized Username is {testUser.NormalizedUserName}");
-                // }
-                // Console.WriteLine($"Name we are looking for is {normalizedUserName}");
-                UserInfo user = DatabaseService.Connection.Table<UserInfo>().Where(x => x.NormalizedUserName == normalizedUserName).ToList()[0]; // should only return 1 thing anyway as the id is unique
+                UserInfo user = DatabaseService.Connection.Table<UserInfo>().Where(x => x.NormalizedUserName.ToUpper() == normalizedUserName.ToUpper()).ToList()[0]; // should only return 1 thing anyway as the id is unique
                 return user;
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
+                // Console.WriteLine(ex.Message);
+                // Console.WriteLine(ex.StackTrace);
                 return null;
             }
 
@@ -225,7 +218,7 @@ namespace TeamServer.Services.Extra
         {
             try
             {
-                UserInfo returnedUser = DatabaseService.Connection.Table<UserInfo>().Where(x => x.UserName == username).ToList()[0];
+                UserInfo returnedUser = DatabaseService.Connection.Table<UserInfo>().Where(x => x.UserName.ToUpper() == username.ToUpper()).ToList()[0];
                 UserSalt returnedSalt = DatabaseService.Connection.Table<UserSalt>().Where(x => x.UserId == returnedUser.Id).ToList()[0];
                 return returnedSalt.Salt;
             }

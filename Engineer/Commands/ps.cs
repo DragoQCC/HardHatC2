@@ -21,12 +21,12 @@ namespace Engineer.Commands
             try
             {
 
-                var results = new SharpSploitResultList<ListProcessesResult>();
+                var results = new List<ProcessItem>();
                 var processes = Process.GetProcesses();
 
                 foreach (var process in processes)
                 {
-                    var result = new ListProcessesResult
+                    var result = new ProcessItem
                     {
                         ProcessName = process.ProcessName,
                         ProcessId = process.Id,
@@ -120,7 +120,7 @@ namespace Engineer.Commands
         }
     }
 
-    public sealed class ListProcessesResult : SharpSploitResult
+    public class ProcessItem
     {
         public string ProcessName { get; set; }
         public string ProcessPath { get; set; }
@@ -129,17 +129,6 @@ namespace Engineer.Commands
         public int ProcessParentId { get; set; }
         public int SessionId { get; set; }
         public string Arch { get; set; }
-
-        protected internal override IList<SharpSploitResultProperty> ResultProperties => new List<SharpSploitResultProperty>
-        {
-            new SharpSploitResultProperty{Name = nameof(ProcessName), Value = ProcessName},
-            new SharpSploitResultProperty{Name = nameof(ProcessPath), Value = ProcessPath},
-            new SharpSploitResultProperty{Name = nameof(Owner), Value = Owner},
-            new SharpSploitResultProperty{Name = "PID", Value = ProcessId},
-            new SharpSploitResultProperty{Name = "PPID", Value = ProcessParentId},
-            new SharpSploitResultProperty{Name = nameof(SessionId), Value = SessionId},
-            new SharpSploitResultProperty{Name = nameof(Arch), Value = Arch}
-        };
     }
 }
 

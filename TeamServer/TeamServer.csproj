@@ -12,14 +12,12 @@
 </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DonutCore" Version="1.0.0" />
     <PackageReference Include="ILRepack.Lib.NET" Version="2.0.0" />
     <PackageReference Include="Microsoft.AspNet.SignalR.Core" Version="2.4.2" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.2" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.4.0" />
     <PackageReference Include="NetSerializer" Version="4.1.2" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-    <PackageReference Include="RestSharp" Version="108.0.3" />
+    <PackageReference Include="RestSharp" Version="109.0.1" />
     <PackageReference Include="Serilog" Version="2.12.0" />
     <PackageReference Include="Serilog.Expressions" Version="3.4.1" />
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.0" />

@@ -11,13 +11,28 @@ namespace ApiModels.Requests
         public string managerName { get; set; }
         public int ConnectionAttempts { get; set; }
         public int Sleep { get; set; }
-        public string WorkingHours { get; set; }
+        public string? WorkingHours { get; set; }
+        
+        public bool EncodeShellcode { get; set; }
 
         public EngCompileType complieType { get; set; }
 
+        public SleepTypes SleepType { get; set; }
+
         public enum EngCompileType
         {
-         exe, shellcode, powershellcmd, dll, serviceexe, 
+            exe, 
+            shellcode, 
+            powershellcmd, 
+            dll, 
+            serviceexe
+        }
+
+        public enum SleepTypes
+        {
+            None,
+            Custom_RC4,
+            // Ekko,
         }
     }
 }

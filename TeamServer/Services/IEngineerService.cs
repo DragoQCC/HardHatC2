@@ -163,7 +163,7 @@ namespace TeamServer.Services
             file = file.Replace("{{REPLACE_SLEEP_DLL}}", Convert.ToBase64String(System.IO.File.ReadAllBytes(pathSplit[0] + "Programs" + $"{allPlatformPathSeperator}" + "Extensions" + $"{allPlatformPathSeperator}" + "run3.dll")));
 
             //generate code for the implant
-            byte[] assemblyBytes = Utilities.Compile.GenerateCode(file, request.complieType);
+            byte[] assemblyBytes = Utilities.Compile.GenerateCode(file, request.complieType, request.SleepType);
             if (assemblyBytes is null)
 			{
 				return false;

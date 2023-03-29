@@ -1,0 +1,51 @@
+﻿@using Blazor.Diagrams.Components.Renderers
+@using HardHatC2Client.Models
+@using HardHatC2Client.Pages
+@using MudBlazor;
+
+
+<MudCard Outlined="false" Square="true" Elevation="0" Style="width: 200px; height: 150px;">
+    <MudCardContent>
+        <div Class="d-flex">
+            <MudIcon Class="justify-center align-center" Color="SetColor(Node._engineer.Integrity, Node._engineer.Status)" Size="Size.Large" Icon="@Icons.Material.Outlined.DesktopWindows"></MudIcon>
+            <MudIconButton Icon="@Icons.Material.Outlined.Terminal" Color="Color.Primary" OnClick="() => Engineers.ContextMenuItems(0, Node._engineer)"></MudIconButton>
+        </div>
+        <MudText Class="d-flex  align-center" Typo="Typo.caption">@Node._engineer.Hostname</MudText>
+        <MudText Class="d-flex  align-center" Typo="Typo.caption">@Node._engineer.Username</MudText>
+        <MudText Class="d-flex  align-center" Typo="Typo.caption">@Node._engineer.ProcessId@@@Node._engineer.Address</MudText>
+    </MudCardContent>
+</MudCard>
+
+    
+@code {
+    [Parameter] public ImplantGraph.ImplantNode Node { get; set; }
+
+    private static Color SetColor(string integrity,string status)
+    {
+        if(status is null)
+        {
+            return Color.Default;
+        }
+        if (status.Equals("offline",StringComparison.CurrentCultureIgnoreCase))
+        {
+            return Color.Default;
+        }
+        if (integrity.Equals("high",StringComparison.CurrentCultureIgnoreCase))
+        {
+            return Color.Warning;
+        }
+        if (integrity.Equals("system",StringComparison.CurrentCultureIgnoreCase))
+        {
+            return Color.Error;
+        }
+        else if (integrity.Equals("medium",StringComparison.CurrentCultureIgnoreCase))
+        {
+            return Color.Info;
+        }
+        else if (integrity.Equals("low",StringComparison.CurrentCultureIgnoreCase))
+        {
+            return Color.Tertiary;
+        }
+        return Color.Primary;
+    }
+}

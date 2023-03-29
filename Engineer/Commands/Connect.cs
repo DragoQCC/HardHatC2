@@ -43,14 +43,14 @@ namespace Engineer.Commands
 
             if (ParentIsServer)
             {
-                Console.WriteLine("starting parent as server");
+                Tasking.FillTaskResults($"starting parent as server", task, EngTaskStatus.Running,TaskResponseType.String);
                 ParentTCPcommModule = new EngTCPComm(int.Parse(serverport), bool.Parse(isLocalHost), true); // parent as server
                 Task.Run(async()=> await ParentTCPcommModule.Start());                                                                                            
             }
             else if (!ParentIsServer)
             {
-                Console.WriteLine("starting parent as client");
-                Console.WriteLine($"trying to connect to {serverip}:{serverport}");
+
+               Tasking.FillTaskResults($"starting parent as client\ntrying to connect to {serverip}:{serverport}", task, EngTaskStatus.Running,TaskResponseType.String);
                 ParentTCPcommModule = new EngTCPComm(int.Parse(serverport), serverip, true); // parent as client
                 Task.Run(async () => await ParentTCPcommModule.Start());
             }

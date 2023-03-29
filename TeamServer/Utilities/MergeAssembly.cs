@@ -19,6 +19,7 @@ public class MergeAssembly
                 XmlDocumentation = false,
                 DebugInfo = false,
                 TargetKind = ILRepacking.ILRepack.Kind.SameAsPrimaryAssembly,
+                
             });
             repack.Repack();
         }

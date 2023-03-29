@@ -86,8 +86,8 @@ namespace Engineer.Commands
             }
             catch (Exception ex)
             {
-	            Console.WriteLine(ex.Message);
-	            Console.WriteLine(ex.StackTrace);
+	           // Console.WriteLine(ex.Message);
+	            //Console.WriteLine(ex.StackTrace);
                 Tasking.FillTaskResults("error: " + ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
@@ -96,7 +96,7 @@ namespace Engineer.Commands
 		
 		public static List<FileSystemItem> GetDirectoryListing(string Path)
 		{
-			SharpSploitResultList<FileSystemEntryResult> results = new SharpSploitResultList<FileSystemEntryResult>();
+			//SharpSploitResultList<FileSystemEntryResult> results = new SharpSploitResultList<FileSystemEntryResult>();
 			var newResults = new List<FileSystemItem>();
 			foreach (string dir in Directory.GetDirectories(Path))
             {
@@ -160,7 +160,7 @@ namespace Engineer.Commands
 		                    }
 		                    catch (UnauthorizedAccessException)
 		                    {
-			                    Console.WriteLine("Caught Unauthorized access Error");
+			                   // Console.WriteLine("Caught Unauthorized access Error");
 		                    }
 	                    }
 	                }
@@ -207,8 +207,8 @@ namespace Engineer.Commands
 	            }
 	            catch (Exception e)
 	            {
-		            Console.WriteLine(e.Message);
-		            Console.WriteLine(e.StackTrace);
+		            //Console.WriteLine(e.Message);
+		           // Console.WriteLine(e.StackTrace);
 	            }
                 
             }
@@ -223,13 +223,13 @@ namespace Engineer.Commands
                 {
 	                if (GetACLs)
 	                {
-						Console.WriteLine($"Getting ACLs for {file}");
+						//Console.WriteLine($"Getting ACLs for {file}");
 						//check if the file is in use and if so then skip it
 						var accessControl = fileInfo.GetAccessControl();
 						_owner = accessControl.GetOwner(typeof(NTAccount)).ToString();
-		                Console.WriteLine($"Owner: {_owner}");
+		               // Console.WriteLine($"Owner: {_owner}");
 		                var ACEs = fileInfo.GetAccessControl().GetAccessRules(true, true, typeof(NTAccount));
-		                Console.WriteLine($"got back {ACEs.Count} ACEs");
+		                //Console.WriteLine($"got back {ACEs.Count} ACEs");
 		                
 		                foreach (FileSystemAccessRule rule in ACEs)
 		                {
@@ -248,14 +248,14 @@ namespace Engineer.Commands
                 }
                 catch (Exception e) when ((e.HResult & 0x0000FFFF) == 32 ) 
                 {
-	                Console.WriteLine(e.HResult);
-	                Console.WriteLine("There is a sharing violation.");
+	                //Console.WriteLine(e.HResult);
+	               // Console.WriteLine("There is a sharing violation.");
                 }
                 catch (Exception e)
 				{
-	                Console.WriteLine(e.HResult & 0x0000FFFF);
-	                Console.WriteLine(e.Message);
-	                Console.WriteLine(e.StackTrace);
+	               // Console.WriteLine(e.HResult & 0x0000FFFF);
+	                //Console.WriteLine(e.Message);
+	               // Console.WriteLine(e.StackTrace);
 				}
                 string FileACL = sb.ToString();
                 
@@ -296,74 +296,5 @@ namespace Engineer.Commands
 		public string AccessControlType { get; set; } = "";
 		public string FileSystemRights { get; set; } = "";
 		public bool IsInherited { get; set; }
-	}
-
-	public sealed class FileSystemEntryResult : SharpSploitResult
-	{
-		public string Name { get; set; } = "";
-		public long Length { get; set; } = 0;
-		public string Owner { get; set; } = "";
-		public long ChildItemCount { get; set; } = 0;
-		public DateTime CreationTimeUtc { get; set; } = new DateTime();
-		public DateTime LastAccessTimeUtc { get; set; } = new DateTime();
-		public DateTime LastWriteTimeUtc { get; set; } = new DateTime();
-		public string DirACL { get; set; } = "";
-		public string FileACL { get; set; } = "";
-		
-		protected internal override IList<SharpSploitResultProperty> ResultProperties
-		{
-			get
-			{
-				return new List<SharpSploitResultProperty>
-					{
-						new SharpSploitResultProperty
-						{
-							Name = "Name",
-							Value = this.Name
-						},
-						new SharpSploitResultProperty
-						{
-							Name = "Length",
-							Value = this.Length
-						},
-						new SharpSploitResultProperty
-						{
-							Name = "Owner",
-							Value = this.Owner
-						},
-						new SharpSploitResultProperty
-						{
-							Name = "ChildItemCount",
-							Value = this.ChildItemCount
-						},
-						new SharpSploitResultProperty
-						{
-							Name = "CreationTimeUtc",
-							Value = this.CreationTimeUtc
-						},
-						new SharpSploitResultProperty
-						{
-							Name = "LastAccessTimeUtc",
-							Value = this.LastAccessTimeUtc
-						},
-						new SharpSploitResultProperty
-						{
-							Name = "LastWriteTimeUtc",
-							Value = this.LastWriteTimeUtc
-						},
-						new SharpSploitResultProperty
-						{
-							Name = "DirACL",
-							Value = this.DirACL
-						},
-						new SharpSploitResultProperty
-						{
-							Name = "FileACL",
-							Value = this.FileACL
-						}
-						
-					};
-			}
-		}
 	}
 }

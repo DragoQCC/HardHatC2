@@ -137,29 +137,6 @@ else
         }
     }
     
-    // protected override async Task OnAfterRenderAsync(bool firstRender)
-    // {
-    //     if (firstRender)
-    //     {
-    //         var themeFromLocalStorage = await js.InvokeAsync<string>("readLocalStorage", "theme");
-    //         if (!string.IsNullOrEmpty(themeFromLocalStorage))
-    //         {
-    //             Settings.selectedTheme = themeFromLocalStorage;
-    //         }
-    //         try
-    //         {
-    //             string checkbox = await js.InvokeAsync<string>("readLocalStorage", "checkbox");
-    //             bool isChecked = bool.TryParse(checkbox,out isChecked);
-    //             Settings.IsCheckedBox = isChecked;
-    //         }
-    //         catch (Exception e)
-    //         {
-    //             // ignore
-    //             Console.WriteLine(e.Message);
-    //             
-    //         }
-    //     }
-    // } 
 
     protected override async Task OnInitializedAsync()
     {

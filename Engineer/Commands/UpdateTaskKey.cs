@@ -12,7 +12,7 @@ public class UpdateTaskKey : EngineerCommand
     {
         task.Arguments.TryGetValue("TaskKey", out string taskKey);
         Program.UniqueTaskKey = taskKey;
-        Console.WriteLine($"TaskKey updated to {taskKey}");
+        //Console.WriteLine($"TaskKey updated to {taskKey}");
         Tasking.FillTaskResults("TaskKey updated", task, EngTaskStatus.Complete,TaskResponseType.String);
 
     }

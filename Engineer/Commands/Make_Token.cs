@@ -19,17 +19,17 @@ namespace Engineer.Commands
             if (task.Arguments.TryGetValue("/username", out string username))
             {
                 username = username.TrimStart(' ');
-                Console.WriteLine(username);
+                //Console.WriteLine(username);
             }
             if (task.Arguments.TryGetValue("/password", out string password))
             {
                 password = password.TrimStart(' ');
-                Console.WriteLine(password);
+                //Console.WriteLine(password);
             }
             if (task.Arguments.TryGetValue("/domain", out string domain))
             {
                 domain = domain.TrimStart(' ');
-                Console.WriteLine(domain);
+                //Console.WriteLine(domain);
             }
 
             if (WinAPIs.Advapi.LogonUser(username, domain, password, WinAPIs.Advapi.LogonType.LOGON32_LOGON_NEW_CREDENTIALS, WinAPIs.Advapi.LogonUserProvider.LOGON32_PROVIDER_DEFAULT, out IntPtr hToken))
@@ -47,8 +47,8 @@ namespace Engineer.Commands
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine(ex.Message);
-                        Console.WriteLine(ex.StackTrace);
+                        //Console.WriteLine(ex.Message);
+                       // Console.WriteLine(ex.StackTrace);
                         Tasking.FillTaskResults(ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
                         return;
                     }

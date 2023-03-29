@@ -23,7 +23,7 @@ namespace TeamServer.Models.Dbstorage
             {
                 Id = model.Id,
                 CommandHeader = model.Command,
-                Arguments = model.Arguments.ProSerialise()
+                Arguments = model.Arguments.Serialize()
             };
         }
 
@@ -35,7 +35,7 @@ namespace TeamServer.Models.Dbstorage
             {
                 Id = dao.Id,
                 Command = dao.CommandHeader,
-                Arguments = dao.Arguments.ProDeserialize<Dictionary<string, string>>()
+                Arguments = dao.Arguments.Deserialize<Dictionary<string, string>>()
             };
         }
     }

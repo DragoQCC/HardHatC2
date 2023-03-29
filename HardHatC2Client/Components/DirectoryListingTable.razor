@@ -75,17 +75,17 @@
 
 @code {
 
-    [Parameter]
-    public byte[] Outputs {get; set;}
-    [Parameter]
-    public string Path {get; set;}
+        [Parameter]
+        public byte[] Outputs {get; set;}
+        [Parameter]
+        public string Path {get; set;}
     public Dictionary<string, FileSystemItem> BodyContent = new Dictionary<string, FileSystemItem>();
     private MudTable<FileSystemItem>? _table;
     private MudTable<ACL>? _child_table;
     private string searchString1 = "";
     public bool _isOpen;
 
-    
+
     public void ToggleACLOpen()
     {
         if (_isOpen)
@@ -93,7 +93,7 @@
         else
             _isOpen = true;
     }
-    
+
     private string setStyle(bool IsDark)
     {
         if (IsDark)
@@ -315,7 +315,7 @@
         if (size > 1000000 && size < 1000000000)
         {
             result = (size / 1000000).ToString();
-             //if split[1] contains a decimal then only include the first 2 numbers after the decimal
+            //if split[1] contains a decimal then only include the first 2 numbers after the decimal
             if (result.Contains("."))
             {
                 result = result.Substring(0, result.IndexOf(".") + 2);
@@ -344,13 +344,20 @@
         {
             return true;
         }
-    //for each element in the array if it contains searchString then return true
-        foreach(object item in search.GetType().GetProperties())
+        //for each element in the array if it contains searchString then return true
+        if (search.Name.Contains(searchString))
         {
-            if (item.ToString().Contains(searchString, StringComparison.OrdinalIgnoreCase))
-                return true;
+            return true;
         }
-        return false;
+        else if (search.Owner.Contains(searchString))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+        
     }
 
     private void PageChanged(int i)

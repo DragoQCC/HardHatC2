@@ -18,7 +18,7 @@ It then uses Models & services as needed to run those checks, grab data, store n
  */
 namespace TeamServer.Controllers
 {
-    [Authorize(Roles ="Operator")]
+    [Authorize(Roles ="Operator,TeamLead")]
     [ApiController]         
 	[Route("[Controller]")]									// Route used for the url we go too interact with API like "curl http:localhost:5000/managers/managersname" it auto drops controller keyword and just uses stuff before suffix
 	public class managersController : ControllerBase
@@ -70,8 +70,8 @@ namespace TeamServer.Controllers
 				var root = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}{HttpContext.Request.Path}";
 				var path = $"{root}/{manager.Name}";
 				HardHatHub.UpdateManagerList(manager);
-				HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"HTTP/HTTPS manager {manager.Name} created on {manager.ConnectionAddress}:{manager.ConnectionPort}", Status = "success" });
-                LoggingService.EventLogger.Information("HTTP/HTTPS manager created.{@manager}", manager);
+				HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"{manager.Type} manager {manager.Name} created on {manager.ConnectionAddress}:{manager.ConnectionPort}", Status = "success" });
+                LoggingService.EventLogger.Information($"{manager.Type} manager created.{@manager}", manager);
                 return Created(path, manager);
 			}
 			else if(request.managertype == StartManagerRequest.ManagerType.tcp)

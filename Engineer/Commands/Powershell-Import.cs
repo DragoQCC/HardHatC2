@@ -40,7 +40,7 @@ namespace Engineer.Commands
 
             if (task.File.Length < 1)
             {
-                Console.WriteLine(task.File.Length);
+                //Console.WriteLine(task.File.Length);
                 Tasking.FillTaskResults(" Error: File not specified",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 return;
             }

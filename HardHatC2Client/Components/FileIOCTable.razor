@@ -1,5 +1,93 @@
-﻿<h3>FileIOCTable</h3>
+﻿@using HardHatC2Client.Pages;
+@using HardHatC2Client.Models
+
+
+<h3>Files</h3>
+<MudTable T="IOCFile" @ref=@_table Items="BodyContent.Values" HorizontalScrollbar="false" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Outlined="true" Striped="true" Filter="new Func<IOCFile,bool>(FilterFunc1)" SortLabel="Sort By">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Uploaded File IOCs</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<IOCFile, object>(x=>x.Name)">Name</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<IOCFile, object>(x=>x.UploadedHost)">Uploaded Host</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<IOCFile, object>(x=>x.UploadedPath)">Uploaded Path</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<IOCFile, object>(x=>x.Uploadtime)">Upload time</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<IOCFile, object>(x=>x.md5Hash)">md5 Hash</MudTableSortLabel></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>@context.Name</MudTd>
+        <MudTd>@context.UploadedHost</MudTd>
+        <MudTd>@context.UploadedPath</MudTd>
+        <MudTd>@context.Uploadtime</MudTd>
+        <MudTd>@context.md5Hash</MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager HorizontalAlignment="HorizontalAlignment.Left" HidePageNumber="true" HidePagination="true" />
+        <MudPagination SelectedChanged="PageChanged" Count="@((_table.GetFilteredItemsCount() + _table.RowsPerPage - 1) / _table.RowsPerPage)" Class="pb-3" />
+    </PagerContent>
+</MudTable>
+
 
 @code {
+
     
+    public static Dictionary<string, IOCFile> BodyContent = new Dictionary<string, IOCFile>();
+    private MudTable<IOCFile> _table;
+    private string searchString1 = "";
+
+    private string setStyle(bool IsDark)
+    {
+        if (IsDark)
+        {
+            return "background:white; color:black;";
+        }
+        return "background:#333333; color:white;";
+    }
+
+
+    public static async Task AddIOCFile(IOCFile file)
+    {
+        if (!BodyContent.ContainsKey(file.ID))
+        {
+            BodyContent.Add(file.ID, file);
+        }
+    }
+    
+
+    private bool FilterFunc1(IOCFile search) => FilterFunc(search, searchString1);
+
+    private bool FilterFunc(IOCFile search, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        //for each element in the array if it contains searchString then return true
+        if (search.Name.ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.UploadedHost.ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.UploadedPath.ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.Uploadtime.ToString().ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.md5Hash.ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private void PageChanged(int i)
+    {
+        _table.NavigateTo(i - 1);
+    }
 }

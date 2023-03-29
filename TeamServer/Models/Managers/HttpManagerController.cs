@@ -88,6 +88,7 @@ namespace TeamServer.Models
                     ExternalAddress = HttpContext.Connection.RemoteIpAddress.ToString(),
                     ConnectionType = HttpContext.Request.Scheme,
                 };
+                //check in here so it goes into the database with a checkin time
                 _engineers.AddEngineer(engineer);                    // uses service too add Engineer to list
                 EngineersController.engineerList.Add(engineer);
                 if (DatabaseService.Connection == null)
@@ -111,11 +112,20 @@ namespace TeamServer.Models
                 };
                 engineer.QueueTask(updateTaskKey);
             }
+                //checkin and get/post data to or from the engineer 
+                //checkin updates some of the properties for the engineer
+                engineer.CheckIn();
+                //update sleep 0 implants every 5 seconds to keep the database up to date without it being a huge performance hit
+                if (engineer.engineerMetadata.Sleep == 0 && engineer.LastSeen < DateTime.UtcNow.AddSeconds(-5))
+                {
+                    DatabaseService.Connection.Update((Engineer_DAO)engineer);
+                }
+                else
+                {
+                    DatabaseService.Connection.Update((Engineer_DAO)engineer);
+                }
 
-            //checkin and get/post data to or from the engineer 
-            //checkin updates some of the properties for the engineer
-            engineer.CheckIn();
-            if (EngineerCheckinCount.ContainsKey(engineer.engineerMetadata.Id))
+                if (EngineerCheckinCount.ContainsKey(engineer.engineerMetadata.Id))
             {
                 EngineerCheckinCount[engineer.engineerMetadata.Id] += 1;
             }
@@ -150,12 +160,12 @@ namespace TeamServer.Models
                     byte[] decryptedBytes;
                     if (Encryption.UniqueTaskEncryptionKey.ContainsKey(engineer.engineerMetadata.Id))
                     {
-                        Console.WriteLine($"Uaing unique key {Encryption.UniqueTaskEncryptionKey[engineer.engineerMetadata.Id]}");
+                        //Console.WriteLine($"Uaing unique key {Encryption.UniqueTaskEncryptionKey[engineer.engineerMetadata.Id]}");
                         decryptedBytes = Encryption.AES_Decrypt(encryptedData,Encryption.UniqueTaskEncryptionKey[engineer.engineerMetadata.Id]);
                     }
                     else
                     {
-                        Console.WriteLine($"using universal key {Encryption.UniversalTaskEncryptionKey}");
+                        //Console.WriteLine($"using universal key {Encryption.UniversalTaskEncryptionKey}");
                         decryptedBytes = Encryption.AES_Decrypt(encryptedData,Encryption.UniversalTaskEncryptionKey);
                     }
                     //if decryptedBytes is null then the decryption failed & we should try using the pathStorage dictionary to find the correct key
@@ -178,7 +188,7 @@ namespace TeamServer.Models
                         }
                     }
 
-                    results = decryptedBytes.ProDeserialize<IEnumerable<EngineerTaskResult>>(); //should hold the results of the Engineer response to a command
+                    results = decryptedBytes.Deserialize<IEnumerable<EngineerTaskResult>>(); //should hold the results of the Engineer response to a command
 
                     // for each result sends its Result.result to the CredParse.ParseCredentials
                     List<string> engIds = new List<string>();
@@ -213,7 +223,7 @@ namespace TeamServer.Models
                             {
                                 string p2pEngMetadataString = await TaskPostProcess.PostProcess_P2PFirstCheckIn(result, engineer);
                                 byte[] p2pMetaDataByte = Convert.FromBase64String(p2pEngMetadataString);
-                                EngineerMetadata p2pEngMetadata = p2pMetaDataByte.ProDeserialize<EngineerMetadata>();
+                                EngineerMetadata p2pEngMetadata = p2pMetaDataByte.Deserialize<EngineerMetadata>();
                                 var p2pengineer = _engineers.GetEngineer(p2pEngMetadata.Id);
                                 if (p2pengineer is null)                              // if Engineer is null then this is the first time connecting so send metadata and add to list
                                 {
@@ -276,12 +286,16 @@ namespace TeamServer.Models
                             }
                             
                             //these 2 command types can be processed by the cred check
-                            else if(!result.Command.Equals("ls",StringComparison.CurrentCultureIgnoreCase) && !result.Command.Equals("ps", StringComparison.CurrentCultureIgnoreCase))
-                            { 
-                                if (result.Result.Deserialize<string>().Contains("mimikatz") || result.Result.Deserialize<string>().Contains("rubeus"))
-                                {
-                                    Task.Run(async () => await TaskPostProcess.PostProcess_CredTask(result));
-                                }
+                            //else if(!result.Command.Equals("ls",StringComparison.CurrentCultureIgnoreCase) && !result.Command.Equals("ps", StringComparison.CurrentCultureIgnoreCase))
+                            //{ 
+                            //    //if (result.Result.Deserialize<string>().Contains("mimikatz") || result.Result.Deserialize<string>().Contains("rubeus"))
+                            //    //{
+                            //    //    Task.Run(async () => await TaskPostProcess.PostProcess_CredTask(result));
+                            //    //}
+                            //}
+                            else if (result.Command.Equals("upload", StringComparison.CurrentCultureIgnoreCase))
+                            {
+                               Task.Run(async ()=> await TaskPostProcess.PostProcess_IOCFileUpload(result));
                             }
                         }
                         if (result.IsHidden)
@@ -362,16 +376,16 @@ namespace TeamServer.Models
                                     }
                                     HardHatHub.AddTaskIdToPickedUpList(task.Id);
                                 }
-                                var taskArray = engTasks.ProSerialise();
+                                var taskArray = engTasks.Serialize();
                                 byte[] encryptedTaskArray;
                                 if (EngineerCheckinCount[eng.engineerMetadata.Id] > 1)
                                 {
-                                    Console.WriteLine($"Using unique encryption key {Encryption.UniqueTaskEncryptionKey[eng.engineerMetadata.Id]}");
+                                    //Console.WriteLine($"Using unique encryption key {Encryption.UniqueTaskEncryptionKey[eng.engineerMetadata.Id]}");
                                     encryptedTaskArray = Encryption.AES_Encrypt(taskArray,Encryption.UniqueTaskEncryptionKey[eng.engineerMetadata.Id]);
                                 }
                                 else
                                 {
-                                    Console.WriteLine($"Using encryption key {Encryption.UniversalTaskEncryptionKey}");
+                                    //Console.WriteLine($"Using encryption key {Encryption.UniversalTaskEncryptionKey}");
                                     encryptedTaskArray = Encryption.AES_Encrypt(taskArray,Encryption.UniversalTaskEncryptionKey);
                                 }
 
@@ -383,7 +397,7 @@ namespace TeamServer.Models
                         }
                     }
                 }
-                var c2TaskMessageArraySeralized = c2TaskMessageArray.ProSerialise();
+                var c2TaskMessageArraySeralized = c2TaskMessageArray.Serialize();
                 var encrypedc2messageArray = Encryption.AES_Encrypt(c2TaskMessageArraySeralized,Encryption.UniversialMessagePathKey);
 
                 if(TaskingEngs.Count() > 0)
@@ -431,7 +445,7 @@ namespace TeamServer.Models
                 encryptedencodedMetadata = encryptedencodedMetadata.ToString().Remove(0, 7);           // cleans up the from out the `Authorization: Bearer METADATAHERE`  response 
                                                                                                        // DeEncrypt the metadata using the Encryption.AES_Decrypt function
                 byte[] encodedMetadataArray = Encryption.AES_Decrypt(Convert.FromBase64String(encryptedencodedMetadata), Encryption.UniversialMetadataKey);
-                return encodedMetadataArray.ProDeserialize<EngineerMetadata>(); // deserialise the metadata
+                return encodedMetadataArray.Deserialize<EngineerMetadata>(); // deserialise the metadata
             }
             catch (Exception ex)
             {
