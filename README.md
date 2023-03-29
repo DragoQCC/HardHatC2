@@ -92,7 +92,7 @@ To configure the team server's starting address (where clients will connect), ed
 start the teamserver with dotnet run from its top-level folder ../HrdHatC2/Teamserver/
 
 ### HardHat Client 
-1. When starting the client to set the target teamserver location, include it in the command line dotnet run https:\\127.0.0.1:5000 for example 
+1. When starting the client to set the target teamserver location, include it in the command line dotnet run https://127.0.0.1:5000 for example 
 2. open a web browser and navigate to https://localhost:7096/ if this works, you should see the login page 
 3. Log in with the HardHat_Admin user (Password is printed on first TeamServer startup)
 4. Navigate to the settings page & create a new user if successful, a  message should appear, then you may log in with that account to access the full client
