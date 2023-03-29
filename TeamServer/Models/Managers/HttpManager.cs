@@ -118,6 +118,7 @@ namespace TeamServer.Models
                         host.ConfigureServices(ConfigureServices);
                         host.ConfigureKestrel(serverOptions =>
                         {
+                            
                             serverOptions.AddServerHeader = false;
                             serverOptions.ConfigureEndpointDefaults(listenOptions =>
                             {

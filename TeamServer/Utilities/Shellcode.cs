@@ -24,20 +24,10 @@ namespace TeamServer.Utilities
             arguments = arguments.TrimStart(' ');
             filePath = filePath.TrimStart(' ');
           
-            // DonutConfig config = new DonutConfig();
-            // config.Arch = 3;
-            // config.Bypass = 3;
-            // config.InputFile = @$"{filePath}";
-            // config.Args = arguments;
-            // config.Payload = $"{tempFolder}{allPlatformPathSeperator}payload.bin";
-            // int ret = Generator.Donut_Create(ref config);
-            // Console.WriteLine(Helper.GetError(ret));
-            // byte[] shellcode = File.ReadAllBytes($"{config.Payload}");
-            // return shellcode;
-            
+
             Process donut = new Process();
             donut.StartInfo.FileName = $"{pathSplit[0]}{allPlatformPathSeperator}Programs{allPlatformPathSeperator}Builtin{allPlatformPathSeperator}Donut_Windows{allPlatformPathSeperator}donut.exe";
-            donut.StartInfo.Arguments = $" -x 2 -a 3 -b 3 -o {tempFolder}{allPlatformPathSeperator}payload.bin -p {arguments} {filePath}";
+            donut.StartInfo.Arguments = $" -i -x 2 -a 3 -b 3 -o {tempFolder}{allPlatformPathSeperator}payload.bin -p {arguments} {filePath}";
             donut.StartInfo.UseShellExecute = false;
             donut.StartInfo.RedirectStandardOutput = true;
             donut.StartInfo.RedirectStandardError = true;
@@ -48,10 +38,10 @@ namespace TeamServer.Utilities
             
             donut.Start();
             donut.WaitForExit();
-            // string output = donut.StandardOutput.ReadToEnd();
-            // string error = donut.StandardError.ReadToEnd();
-            // Console.WriteLine(output);
-            // Console.WriteLine(error);
+             string output = donut.StandardOutput.ReadToEnd();
+             string error = donut.StandardError.ReadToEnd();
+             Console.WriteLine(output);
+             Console.WriteLine(error);
             byte[] shellcode = File.ReadAllBytes($"{tempFolder}{allPlatformPathSeperator}payload.bin");
             return shellcode;
             

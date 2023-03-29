@@ -60,6 +60,9 @@ namespace TeamServer
 
             services.Configure<IPWhitelistOptions>(Configuration.GetSection("IPWhitelistOptions"));
 
+            //configure to generate a https cert vs using the dev one 
+            
+
 
             //add role-based authorization services
             services.AddAuthentication(o =>
@@ -100,7 +103,6 @@ namespace TeamServer
             }
 
             app.UseRouting();
-
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseIPWhitelist();
