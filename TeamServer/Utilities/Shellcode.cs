@@ -24,27 +24,62 @@ namespace TeamServer.Utilities
             arguments = arguments.TrimStart(' ');
             filePath = filePath.TrimStart(' ');
           
+            //check the os that we are running on 
 
-            Process donut = new Process();
-            donut.StartInfo.FileName = $"{pathSplit[0]}{allPlatformPathSeperator}Programs{allPlatformPathSeperator}Builtin{allPlatformPathSeperator}Donut_Windows{allPlatformPathSeperator}donut.exe";
-            donut.StartInfo.Arguments = $"-x 2 -a 3 -b 3 -o {tempFolder}{allPlatformPathSeperator}payload.bin -p {arguments} {filePath}";
-            donut.StartInfo.UseShellExecute = false;
-            donut.StartInfo.RedirectStandardOutput = true;
-            donut.StartInfo.RedirectStandardError = true;
-            
-            //redirect output to console
-            donut.OutputDataReceived += (sender, args) => Console.WriteLine(args.Data);
-            donut.ErrorDataReceived += (sender, args) => Console.WriteLine(args.Data);
-            
-            donut.Start();
-            donut.WaitForExit();
-             string output = donut.StandardOutput.ReadToEnd();
-             string error = donut.StandardError.ReadToEnd();
-             Console.WriteLine(output);
-             Console.WriteLine(error);
-            byte[] shellcode = File.ReadAllBytes($"{tempFolder}{allPlatformPathSeperator}payload.bin");
-            return shellcode;
-            
+
+
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+            {
+                Process donut = new Process();
+                donut.StartInfo.FileName =
+                    $"{pathSplit[0]}{allPlatformPathSeperator}Programs{allPlatformPathSeperator}Builtin{allPlatformPathSeperator}Donut_Windows{allPlatformPathSeperator}donut.exe";
+                donut.StartInfo.Arguments =
+                    $"-x 2 -a 3 -b 3 -o {tempFolder}{allPlatformPathSeperator}payload.bin -p {arguments} {filePath}";
+                donut.StartInfo.UseShellExecute = false;
+                donut.StartInfo.RedirectStandardOutput = true;
+                donut.StartInfo.RedirectStandardError = true;
+
+                //redirect output to console
+                donut.OutputDataReceived += (sender, args) => Console.WriteLine(args.Data);
+                donut.ErrorDataReceived += (sender, args) => Console.WriteLine(args.Data);
+
+                donut.Start();
+                donut.WaitForExit();
+                string output = donut.StandardOutput.ReadToEnd();
+                string error = donut.StandardError.ReadToEnd();
+                Console.WriteLine(output);
+                Console.WriteLine(error);
+                byte[] shellcode = File.ReadAllBytes($"{tempFolder}{allPlatformPathSeperator}payload.bin");
+                return shellcode;
+            }
+            else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux) || System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+            {
+                Process donut = new Process();
+                donut.StartInfo.FileName =
+                    $"{pathSplit[0]}{allPlatformPathSeperator}Programs{allPlatformPathSeperator}Builtin{allPlatformPathSeperator}Donut_Linux{allPlatformPathSeperator}donut";
+                donut.StartInfo.Arguments =
+                    $"-x 2 -a 3 -b 3 -o {tempFolder}{allPlatformPathSeperator}payload.bin -p {arguments} -i {filePath}";
+                donut.StartInfo.UseShellExecute = false;
+                donut.StartInfo.RedirectStandardOutput = true;
+                donut.StartInfo.RedirectStandardError = true;
+
+                //redirect output to console
+                donut.OutputDataReceived += (sender, args) => Console.WriteLine(args.Data);
+                donut.ErrorDataReceived += (sender, args) => Console.WriteLine(args.Data);
+
+                donut.Start();
+                donut.WaitForExit();
+                string output = donut.StandardOutput.ReadToEnd();
+                string error = donut.StandardError.ReadToEnd();
+                Console.WriteLine(output);
+                Console.WriteLine(error);
+                byte[] shellcode = File.ReadAllBytes($"{tempFolder}{allPlatformPathSeperator}payload.bin");
+                return shellcode;
+            }
+            else 
+            {
+                return null;
+            }
         }
 
 
