@@ -181,7 +181,7 @@ namespace Engineer
                         }
                         
                         //meed to modify this so it can be interruppted, if another thread finishes a task or p2p data is ready to be sent it shouldnt have to keep waiting for the sleep time to finish
-                        if(IsTaskExecuting)
+                        if(IsTaskExecuting && EngCommBase.Sleep > 0)
                         {
                             Thread.Sleep(EngCommBase.Sleep);
                         }
@@ -206,45 +206,43 @@ namespace Engineer
                             //helps with cpu use on 0 sleep
                             Thread.Sleep(10);
                         }
-                        else
-                        {
-                            //helps with cpu use
-                            Thread.Sleep(10);
-                        }
+                        //helps with cpu use
+                        Thread.Sleep(10);
                         
                         
                         
                         
-                        //if WorkingHoursEnd equal UTCTimeNow then Sleep until WorkingHoursStart
-                        DateTime endHours;
-                        DateTime startHours;
-                        if (DateTime.TryParse(WorkHoursStart, out startHours))
-                        {
-                            if (DateTime.TryParse(WorkHoursEnd, out endHours))
-                            {
-                               // Console.WriteLine($"endHours is a valid time of {endHours}");
-                            }
-                            else
-                            {
-                               // Console.WriteLine($"DateTime unable to parse {WorkHoursEnd}");
-                            }
-
-                            if (endHours.Minute == DateTime.UtcNow.Minute)
-                            {
-                                //while the current hour is not the start hour sleep
-                                while (DateTime.UtcNow.Minute != startHours.Minute)
-                                {
-                                    if (Sleeptype == SleepEnum.SleepTypes.Custom_RC4)
-                                    {
-                                        Functions.SleepEncrypt.ExecuteSleep(EngCommBase.Sleep); //if we did not recvData and we have no data to send sleep for a bit
-                                    }
-                                    else if (Sleeptype == SleepEnum.SleepTypes.None)
-                                    {
-                                        Thread.Sleep(EngCommBase.Sleep);
-                                    }
-                                }
-                            }
-                        }
+                        
+                        // //if WorkingHoursEnd equal UTCTimeNow then Sleep until WorkingHoursStart
+                        // DateTime endHours;
+                        // DateTime startHours;
+                        // if (DateTime.TryParse(WorkHoursStart, out startHours))
+                        // {
+                        //     if (DateTime.TryParse(WorkHoursEnd, out endHours))
+                        //     {
+                        //        // Console.WriteLine($"endHours is a valid time of {endHours}");
+                        //     }
+                        //     else
+                        //     {
+                        //        // Console.WriteLine($"DateTime unable to parse {WorkHoursEnd}");
+                        //     }
+                        //
+                        //     if (endHours.Minute == DateTime.UtcNow.Minute)
+                        //     {
+                        //         //while the current hour is not the start hour sleep
+                        //         while (DateTime.UtcNow.Minute != startHours.Minute)
+                        //         {
+                        //             if (Sleeptype == SleepEnum.SleepTypes.Custom_RC4)
+                        //             {
+                        //                 Functions.SleepEncrypt.ExecuteSleep(EngCommBase.Sleep); //if we did not recvData and we have no data to send sleep for a bit
+                        //             }
+                        //             else if (Sleeptype == SleepEnum.SleepTypes.None)
+                        //             {
+                        //                 Thread.Sleep(EngCommBase.Sleep);
+                        //             }
+                        //         }
+                        //     }
+                        // }
                     }
                     catch (Exception ex)
                     {
