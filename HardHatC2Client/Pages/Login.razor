@@ -4,6 +4,7 @@
 @using HardHatC2Client.Utilities;
 @using RestSharp;
 @using Blazored.LocalStorage;
+@using Microsoft.AspNetCore.SignalR.Client
 @inject IToastService toastService
 @inject RestClient _restClient
 
@@ -72,6 +73,15 @@
             FormSubmitted = true;
             StateHasChanged();
             Console.WriteLine("login request started");
+            if (HardHatHubClient._hub._hubConnection.State != HubConnectionState.Connected)
+            {
+                await HardHatHubClient._hub.Connect();
+                if (HardHatHubClient._hub._hubConnection.State != HubConnectionState.Connected)
+                {
+                    ShowErrorToast("HardHat Hub Connection Failed!, please try to login again");
+                    return;
+                }
+            }
             byte[] passwordSalt = await HardHatHubClient._hub.GetUserPasswordSalt(UserName);
             string passwordHash = Hash.HashPassword(Password, passwordSalt);
             LoginRequest loginRequest = new LoginRequest();
@@ -80,6 +90,7 @@
             var request = new RestRequest("/login", Method.Post);
             request.AddJsonBody(loginRequest);
             string token = await _restClient.PostAsync<string>(request);
+
             if(token != null)
             {
                 //jwtToken = token;
@@ -108,7 +119,8 @@
                 FormSubmitted = false;
                 isVisible = false;
                 StateHasChanged();
-                ShowErrorToast("Login Failed!");
+            ShowErrorToast($"Login Failed! {ex.Message}");
+                Console.WriteLine(ex.Message);
         }
         
     }
