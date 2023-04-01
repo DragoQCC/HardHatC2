@@ -2,8 +2,8 @@
 ## A cross-platform, collaborative, Command & Control framework written in C#, designed for red teaming and ease of use.
 ![image](https://user-images.githubusercontent.com/15575425/228551034-e07df233-63f6-41a2-8b94-6eb840859e82.png)
 
-HardHat is a multiplayer c# .NET-based command and control framework. Designed to aid in red team engagements and penetration testing. HardHat aims to improve the quality of life factors during engagements by providing an easy-to-use but still robust C2 framework.    
-It contains three primary components, an ASP.NET teamserver, a blazor .NET client, and c# based implants.
+HardHat is a multiplayer C# .NET-based command and control framework. Designed to aid in red team engagements and penetration testing. HardHat aims to improve the quality of life factors during engagements by providing an easy-to-use but still robust C2 framework.    
+It contains three primary components, an ASP.NET teamserver, a blazor .NET client, and C# based implants.
 
 # Release Tracking 
 Alpha Release - 3/29/23
@@ -52,7 +52,7 @@ The discord community is also a great way to request help, submit new features, 
 
  
 ## Engineers
-- c# .net framework implant for windows devices, currently only CLR/.NET 4 support
+- C# .NET framework implant for windows devices, currently only CLR/.NET 4 support
 - atm only one implant, but looking to add others 
 - It can be generated as EXE, DLL, shellcode, or PowerShell stager
 - Rc4 encryption of payload memory & heap when sleeping (Exe / DLL only)
