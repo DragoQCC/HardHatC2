@@ -592,7 +592,13 @@
     {   
         // if engineer LastSeen is in the past then Status is offline
         // add 5 seconds to the LastSeen to make sure the engineer is still online
-        if (engineer.LastSeen.AddSeconds(engineer.Sleep*2) < DateTime.Now)
+        int sleepTime = engineer.Sleep;
+        //makes it so the ui wont auto timeout engineers at sleep 0 unless they dont check in for 4-5 seconds 
+        if (sleepTime == 0)
+        {
+            sleepTime = 2;
+        }
+        if (engineer.LastSeen.AddSeconds(sleepTime*3) < DateTime.Now)
         {
             engineer.Status = "Offline";
         }
