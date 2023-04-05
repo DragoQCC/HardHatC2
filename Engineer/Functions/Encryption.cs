@@ -24,7 +24,9 @@ namespace Engineer.Functions
                 byte[] saltBytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
+
+                    
+                    using (Aes aes = Aes.Create())
                     {
                         aes.KeySize = 256;
                         aes.BlockSize = 128;
@@ -32,7 +34,7 @@ namespace Engineer.Functions
                         aes.Key = key.GetBytes(aes.KeySize / 8);
                         aes.IV = key.GetBytes(aes.BlockSize / 8);
                         aes.Mode = CipherMode.CBC;
-                        aes.Padding = PaddingMode.ANSIX923;
+                        aes.Padding = PaddingMode.PKCS7;
                         using (var cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
                         {
                             cs.Write(bytesToBeEncrypted, 0, bytesToBeEncrypted.Length);
@@ -66,7 +68,7 @@ namespace Engineer.Functions
                 byte[] saltBytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
+                    using (Aes aes = Aes.Create())
                     {
                         aes.KeySize = 256;
                         aes.BlockSize = 128;
@@ -74,7 +76,7 @@ namespace Engineer.Functions
                         aes.Key = key.GetBytes(aes.KeySize / 8);
                         aes.IV = key.GetBytes(aes.BlockSize / 8);
                         aes.Mode = CipherMode.CBC;
-                        aes.Padding = PaddingMode.ANSIX923;
+                        aes.Padding = PaddingMode.PKCS7;
                         using (var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Write))
                         {
                             cs.Write(bytesToBeDecrypted, 0, bytesToBeDecrypted.Length);
@@ -89,7 +91,7 @@ namespace Engineer.Functions
             catch (System.Exception ex)
             {
                 //Console.WriteLine(ex.Message);
-                //Console.WriteLine(ex.StackTrace);
+               // Console.WriteLine(ex.StackTrace);
                 return null;
             }
         }

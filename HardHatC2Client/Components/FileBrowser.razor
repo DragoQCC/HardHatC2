@@ -142,7 +142,7 @@
                                     ShowSuccessToast($"Got back content for {SelectedValue.FullPath}");
                                     OnStateChange();
                                 }
-                                 <DirectoryListingTable Outputs="@outputs.Serialise()" Path="@SelectedValue.FullPath"></DirectoryListingTable>
+                                 <DirectoryListingTable Outputs="@outputs" Path="@SelectedValue.FullPath"></DirectoryListingTable>
                              }
                              else
                              {
@@ -548,31 +548,6 @@
 
         OnStateChange = ImplementOnStateChangeEvent;
         toastService = toastDefault;
-        // List<string> exampleListingDesktop = new List<string>();
-        // List<string> exampleListingSub1 = new List<string>();
-        // List<string> exampleListingSub2 = new List<string>();
-        // List<string> exampleListingSub3 = new List<string>();
-        // exampleListingDesktop.TryAdd("C:\\Users\\user\\Desktop\\test.txt |100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
-        // exampleListingDesktop.TryAdd("C:\\Users\\user\\Desktop\\test2.txt|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
-        // exampleListingDesktop.TryAdd("C:\\Users\\user\\Desktop\\mock.pdf|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
-        // exampleListingDesktop.TryAdd("C:\\Users\\user\\Desktop\\fake.docx|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
-        // exampleListingDesktop.TryAdd("C:\\Users\\user\\Desktop\\test.ps1|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
-        // exampleListingDesktop.TryAdd("C:\\Users\\user\\Desktop\\snake.py|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
-        // exampleListingDesktop.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1|0|3|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
-        // exampleListingSub1.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\test4.txt|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
-        // exampleListingSub1.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\test5.txt|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
-        // exampleListingSub1.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2|0|3|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
-        // exampleListingSub2.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2\\test6.txt|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
-        // exampleListingSub2.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2\\test7.txt|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
-        // exampleListingSub2.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2\\SubFolder3|0|2|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
-        // exampleListingSub3.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2\\SubFolder3\\test8.txt|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
-        // exampleListingSub3.TryAdd("C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2\\SubFolder3\\test9.txt|100|0|2021-05-05 12:00:00|2021-05-05 12:00:00|2021-05-05 12:00:00");
-        //
-        // AddContent("computer1", "C:\\Users\\user\\Desktop", exampleListingDesktop);
-        // AddContent("computer1", "C:\\Users\\user\\Desktop\\SubFolder1", exampleListingSub1);
-        // AddContent("computer1", "C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2", exampleListingSub2);
-        // AddContent("computer1", "C:\\Users\\user\\Desktop\\SubFolder1\\SubFOlder2\\SubFolder3", exampleListingSub3);
-        
     }
 
 }

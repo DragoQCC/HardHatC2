@@ -14,7 +14,7 @@ namespace TeamServer.Services.Extra
             {
                 DatabaseService.Init();
             }
-            if (DatabaseService.Connection == null)
+            if (DatabaseService.AsyncConnection == null)
             {
                 DatabaseService.ConnectDb();
                 DatabaseService.CreateTables();
@@ -23,13 +23,13 @@ namespace TeamServer.Services.Extra
 
         public async Task<IdentityResult> CreateAsync(RoleInfo role, CancellationToken cancellationToken)
         {
-            DatabaseService.Connection.Insert(role);
+            DatabaseService.AsyncConnection.InsertAsync(role);
             return IdentityResult.Success;
         }
 
         public async Task<IdentityResult> DeleteAsync(RoleInfo role, CancellationToken cancellationToken)
         {
-            DatabaseService.Connection.Delete(role);
+            DatabaseService.AsyncConnection.DeleteAsync(role);
             return IdentityResult.Success;
         }
 
@@ -40,35 +40,35 @@ namespace TeamServer.Services.Extra
 
         public async Task<RoleInfo> FindByIdAsync(string roleId, CancellationToken cancellationToken)
         {
-            RoleInfo role = DatabaseService.Connection.Table<RoleInfo>().Where(x => x.Id == roleId).ToList()[0]; // should only return 1 thing anyway as the id is unique
+            RoleInfo role = DatabaseService.AsyncConnection.Table<RoleInfo>().Where(x => x.Id == roleId).ToListAsync().Result[0]; // should only return 1 thing anyway as the id is unique
             return role;
 
         }
 
         public async Task<RoleInfo> FindByNameAsync(string normalizedRoleName, CancellationToken cancellationToken)
         {
-            RoleInfo role = DatabaseService.Connection.Table<RoleInfo>().Where(x => x.Name == normalizedRoleName).ToList()[0]; // should only return 1 thing anyway as the id is unique
+            RoleInfo role = DatabaseService.AsyncConnection.Table<RoleInfo>().Where(x => x.Name == normalizedRoleName).ToListAsync().Result[0]; // should only return 1 thing anyway as the id is unique
             return role;
 
         }
 
         public async Task<string> GetNormalizedRoleNameAsync(RoleInfo role, CancellationToken cancellationToken)
         {
-            string name = DatabaseService.Connection.Table<RoleInfo>().Where(x => x == role).ToList()[0].Name; // this should get the user item from the table and return its name? 
+            string name = DatabaseService.AsyncConnection.Table<RoleInfo>().Where(x => x == role).ToListAsync().Result[0].Name; // this should get the user item from the table and return its name? 
             return name;
 
         }
 
         public async Task<string> GetRoleIdAsync(RoleInfo role, CancellationToken cancellationToken)
         {
-            string id = DatabaseService.Connection.Table<RoleInfo>().Where(x => x == role).ToList()[0].Id; // this should get the user item from the table and return its name? 
+            string id = DatabaseService.AsyncConnection.Table<RoleInfo>().Where(x => x == role).ToListAsync().Result[0].Id; // this should get the user item from the table and return its name? 
             return id;
 
         }
 
         public async Task<string> GetRoleNameAsync(RoleInfo role, CancellationToken cancellationToken)
         {
-            string name = DatabaseService.Connection.Table<RoleInfo>().Where(x => x == role).ToList()[0].Name; // this should get the user item from the table and return its name? 
+            string name = DatabaseService.AsyncConnection.Table<RoleInfo>().Where(x => x == role).ToListAsync().Result[0].Name; // this should get the user item from the table and return its name? 
             return name;
 
         }
@@ -76,20 +76,20 @@ namespace TeamServer.Services.Extra
         public async Task SetNormalizedRoleNameAsync(RoleInfo role, string normalizedName, CancellationToken cancellationToken)
         {
             role.Name = normalizedName;
-            DatabaseService.Connection.Update(role);
+            DatabaseService.AsyncConnection.UpdateAsync(role);
 
         }
 
         public async Task SetRoleNameAsync(RoleInfo role, string roleName, CancellationToken cancellationToken)
         {
             role.Name = roleName;
-            DatabaseService.Connection.Update(role);
+            DatabaseService.AsyncConnection.UpdateAsync(role);
 
         }
 
         public async Task<IdentityResult> UpdateAsync(RoleInfo role, CancellationToken cancellationToken)
         {
-            DatabaseService.Connection.Update(role);
+            DatabaseService.AsyncConnection.UpdateAsync(role);
             return IdentityResult.Success;
 
         }

@@ -15,6 +15,7 @@ using TeamServer.Models.Extras;
 using System.Linq;
 using System.Collections.Generic;
 using System.Security.Authentication;
+using Microsoft.Extensions.Options;
 
 namespace TeamServer.Models
 {
@@ -71,6 +72,7 @@ namespace TeamServer.Models
                         // have the host use the certificate
                         host.ConfigureKestrel(serverOptions =>
                         {
+                            serverOptions.Limits.MaxRequestBodySize = int.MaxValue;
                             serverOptions.AddServerHeader = false;
                             serverOptions.ConfigureEndpointDefaults(listenOptions =>
                             {
@@ -118,7 +120,7 @@ namespace TeamServer.Models
                         host.ConfigureServices(ConfigureServices);
                         host.ConfigureKestrel(serverOptions =>
                         {
-                            
+                            serverOptions.Limits.MaxRequestBodySize = int.MaxValue;
                             serverOptions.AddServerHeader = false;
                             serverOptions.ConfigureEndpointDefaults(listenOptions =>
                             {

@@ -78,6 +78,7 @@ namespace TeamServer.Utilities
             }
             catch (Exception ex)
             {
+                //Console.WriteLine(Encoding.UTF8.GetString(data));
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(ex.StackTrace);
                 return default;

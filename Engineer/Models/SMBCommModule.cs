@@ -204,7 +204,6 @@ namespace Engineer.Models
                             },
                         IsBlocking = true
                     };
-                    Program.InboundCommandsRec += 1;
                     await Task.Run(async () => await Tasking.DealWithTask(firstCheckTask));
                     byte[] Id = Encoding.ASCII.GetBytes(Program._metadata.Id);
                     await pipeServer.WriteAsync(Id, 0, Id.Length);
@@ -250,7 +249,7 @@ namespace Engineer.Models
                    // Console.WriteLine($"got back parent id byte size of {ParentId.Length}");
                    // Console.WriteLine($"got back parent id {ParentIdString}");
                     EngCommBase.Sleep = BitConverter.ToInt32(Sleep, 0);
-                    Console.WriteLine($"got back parent sleep value {EngCommBase.Sleep}");
+                    //Console.WriteLine($"got back parent sleep value {EngCommBase.Sleep}");
                     Program.SmbParentCommModules.TryAdd(ParentIdString, this);
                     ChildToParentData.TryAdd(ParentIdString, new ConcurrentQueue<byte[]>());
                     var firstCheckTask = new EngineerTask
@@ -262,7 +261,6 @@ namespace Engineer.Models
                             },
                         IsBlocking = true
                     };
-                    Program.InboundCommandsRec += 1;
                     Task.Run(async () => await Tasking.DealWithTask(firstCheckTask));
                     byte[] Id = Encoding.ASCII.GetBytes(Program._metadata.Id);
                     await pipeClient.WriteAsync(Id, 0, Id.Length);

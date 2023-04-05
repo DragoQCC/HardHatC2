@@ -76,7 +76,7 @@
 @code {
 
         [Parameter]
-        public byte[] Outputs {get; set;}
+        public List<FileSystemItem> Outputs {get; set;}
         [Parameter]
         public string Path {get; set;}
     public Dictionary<string, FileSystemItem> BodyContent = new Dictionary<string, FileSystemItem>();
@@ -285,7 +285,7 @@
 
     public void FillContents()
     {
-        foreach (FileSystemItem output in Outputs.Deserialize<List<FileSystemItem>>())
+        foreach (FileSystemItem output in Outputs)
         {
             if (!BodyContent.ContainsKey(output.Name))
             {

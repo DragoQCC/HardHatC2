@@ -296,7 +296,7 @@
                 {
                     Name = "link",
                     Description = "",
-                    Usage = "ls /",
+                    Usage = "link /pipe value /ip optionalValue",
                     NeedsAdmin = false,
                     Opsec = OpsecStatus.NotSet,
                     MitreTechnique = "T1570,T1572",

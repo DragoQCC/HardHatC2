@@ -29,10 +29,6 @@ namespace Engineer.Models
 			while (Outbound.TryDequeue(out var task))
 			{
 				outbound.Add(task);
-				if (task.Status != EngTaskStatus.Running)
-				{
-					Program.OutboundResponsesSent += 1;
-				}
             }
 			return outbound;
 		}
@@ -59,11 +55,9 @@ namespace Engineer.Models
 			while (Inbound.TryDequeue(out var task))
 			{
 				list.Add(task);
-                Program.InboundCommandsRec += 1;
             }
 
 			tasks = list;
-			//Console.WriteLine("dequeued task");
 			return true;
 
 		}

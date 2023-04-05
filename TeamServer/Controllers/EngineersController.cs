@@ -249,6 +249,14 @@ namespace TeamServer.Controllers
 
             file = file.Replace("{{REPLACE_UNIQUE_TASK_KEY}}", Encryption.UniversalTaskEncryptionKey);
 
+            if(request.implantType == SpawnEngineerRequest.ImplantType.Engineer)
+            {
+				file = file.Replace("{{REPLACE_IMPLANT_TYPE}}", Encryption.EncryptImplantName("Engineer"));
+			}
+			else if(request.implantType == SpawnEngineerRequest.ImplantType.Constructor)
+			{
+				file = file.Replace("{{REPLACE_IMPLANT_TYPE}}", Encryption.EncryptImplantName("Constructor"));
+			}
 
             //generate code for the implant
             byte[] assemblyBytes = Utilities.Compile.GenerateCode(file, request.complieType, request.SleepType);
@@ -309,10 +317,10 @@ namespace TeamServer.Controllers
 	            Console.WriteLine("Merged Engineer and needed dlls");
 	            var updatedExe = System.IO.File.ReadAllBytes(outputLocation);
 	            //if file exists for delete it so write all bytes can work
-	            GC.Collect();
-	            GC.WaitForPendingFinalizers();
-	            //make a copy of the engineer in the temp folder to use for some commands later
-	            System.IO.File.WriteAllBytes(sourceAssemblyLocation, updatedExe);
+	            //GC.Collect();
+	            //GC.WaitForPendingFinalizers();
+	            ////make a copy of the engineer in the temp folder to use for some commands later
+	            //System.IO.File.WriteAllBytes(sourceAssemblyLocation, updatedExe);
             }
             catch (Exception ex)
             {

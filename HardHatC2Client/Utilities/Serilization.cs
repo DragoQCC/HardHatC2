@@ -19,15 +19,6 @@ namespace HardHatC2Client.Utilities
         {
             try
             {
-                //var options = new DataContractJsonSerializerSettings();
-                //options.KnownTypes = GenericTypes;
-                //var serializer = new DataContractJsonSerializer(typeof(T));
-
-                //using (var ms = new MemoryStream())
-                //{
-                //    serializer.WriteObject(ms, data);
-                //    return ms.ToArray();
-                //}
                 return Encoding.UTF8.GetBytes(JsonSerializer.Serialize(data));
 
             }
@@ -45,20 +36,13 @@ namespace HardHatC2Client.Utilities
         {
             try
             {
-                //var options = new DataContractJsonSerializerSettings();
-                //options.KnownTypes = GenericTypes;
-                //var serializer = new DataContractJsonSerializer(typeof(T));
+  
                 //string json = Encoding.UTF8.GetString(data);
-                //Console.WriteLine(json);
-                //using (var ms = new MemoryStream(data))
-                //{
-                //    return (T)serializer.ReadObject(ms);
-                //}
-                string json = Encoding.UTF8.GetString(data);
-                if (!string.IsNullOrEmpty(json))
+                //if (!string.IsNullOrEmpty(json))
+                if(data.Length > 0)
                 {
-                   // Console.WriteLine(json);
-                    return JsonSerializer.Deserialize<T>(json);
+                    //Console.WriteLine(json);
+                    return JsonSerializer.Deserialize<T>(data);
                 }
                 else
                 {

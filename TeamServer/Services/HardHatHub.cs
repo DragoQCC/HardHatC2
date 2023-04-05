@@ -107,11 +107,11 @@ namespace TeamServer.Services
                 SavedPath = pathSplit[0] + "wwwroot" + $"{allPlatformPathSeperator}{filename}",
                 FileContent = fileBytes
             };
-            if (DatabaseService.Connection == null)
+            if (DatabaseService.AsyncConnection == null)
             {
                 DatabaseService.ConnectDb();
             }
-            DatabaseService.Connection.Insert((UploadedFile_DAO)upload_file);
+            DatabaseService.AsyncConnection.InsertAsync((UploadedFile_DAO)upload_file);
             UploadedFile.uploadedFileList.Add(upload_file);
             return "Success: Uploaded File";
         }
@@ -129,40 +129,40 @@ namespace TeamServer.Services
         public async Task<string> CreateReconCenterEntity(ReconCenterEntity reconCenterEntity)
         {
             //send the updated recon center entity to all clients
-            Console.WriteLine("teamserver invoking push reconCenter Entity");
+           // Console.WriteLine("teamserver invoking push reconCenter Entity");
             await Clients.All.SendAsync("PushReconCenterEntity", reconCenterEntity);
-            if (DatabaseService.Connection == null)
+            if (DatabaseService.AsyncConnection == null)
             {
                 DatabaseService.ConnectDb();
             }
-            DatabaseService.Connection.Insert((ReconCenterEntity_DAO)reconCenterEntity);
+            DatabaseService.AsyncConnection.InsertAsync((ReconCenterEntity_DAO)reconCenterEntity);
             return "Success: Created Recon Center Entity";
         }
 
         public async Task<string> CreateReconCenterProperty(string entityName, ReconCenterEntity.ReconCenterEntityProperty reconCenterProperty)
         {
             //send the updated recon center property to all clients
-            Console.WriteLine("teamserver invoking push reconCenter Property");
+            //Console.WriteLine("teamserver invoking push reconCenter Property");
             await Clients.All.SendAsync("PushReconCenterProperty", entityName, reconCenterProperty);
-            if (DatabaseService.Connection == null)
+            if (DatabaseService.AsyncConnection == null)
             {
                 DatabaseService.ConnectDb();
             }
-            ReconCenterEntity_DAO entityToUpdate = DatabaseService.Connection.Table<ReconCenterEntity_DAO>().Where(x => x.Name == entityName).ToList()[0];
+            ReconCenterEntity_DAO entityToUpdate = DatabaseService.AsyncConnection.Table<ReconCenterEntity_DAO>().Where(x => x.Name == entityName).ToListAsync().Result[0];
             //we do this so the list can grow otherwise we would only be able to store one property in the database
             List<ReconCenterEntity.ReconCenterEntityProperty> entitiesProperties = entityToUpdate.Properties.ProDeserializeForDatabase<List<ReconCenterEntity.ReconCenterEntityProperty>>();
             entitiesProperties.Add(reconCenterProperty);
             entityToUpdate.Properties = entitiesProperties.ProSerialiseForDatabase(); // need to reseralize here
-            DatabaseService.Connection.Update(entityToUpdate);
+            DatabaseService.AsyncConnection.UpdateAsync(entityToUpdate);
             return "Success: Created Recon Center Property";
         }
 
         public async Task<string> UpdateReconCenterProperty(ReconCenterEntity.ReconCenterEntityProperty oldProperty, ReconCenterEntity.ReconCenterEntityProperty newProperty)
         {
             //send the updated recon center property to all clients
-            Console.WriteLine("teamserver invoking push reconCenter Property Update");
+            //Console.WriteLine("teamserver invoking push reconCenter Property Update");
             await Clients.All.SendAsync("PushReconCenterPropertyUpdate", oldProperty, newProperty);
-            if (DatabaseService.Connection == null)
+            if (DatabaseService.AsyncConnection == null)
             {
                 DatabaseService.ConnectDb();
             }
@@ -229,14 +229,14 @@ namespace TeamServer.Services
         {
             Cred.CredList.Add(cred);
             //check if database connection is not null 
-            if (DatabaseService.Connection == null)
+            if (DatabaseService.AsyncConnection == null)
             {
                 DatabaseService.ConnectDb();
             }
             else
             {
                 //add the creds to the database
-                DatabaseService.Connection.Insert((Cred_DAO)cred);
+                DatabaseService.AsyncConnection.InsertAsync((Cred_DAO)cred);
             }
 
             var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
@@ -291,11 +291,11 @@ namespace TeamServer.Services
         //teamserver side invokable methods 
         public static async Task StoreTaskHeader(EngineerTask storeHeaderTask)
         {
-            if(DatabaseService.Connection == null)
+            if(DatabaseService.AsyncConnection == null)
             {
                 DatabaseService.ConnectDb();
             }
-            DatabaseService.Connection.Insert((EngineerTask_DAO)storeHeaderTask);
+            DatabaseService.AsyncConnection.InsertAsync((EngineerTask_DAO)storeHeaderTask);
         }
 
         public static async Task CheckIn(Engineer engineer)
@@ -382,20 +382,20 @@ namespace TeamServer.Services
             var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
             await hubContext.Clients.All.SendAsync("AlertDownloadFile", file);
             DownloadFile.downloadFiles.Add(file);
-            DatabaseService.Connection.Insert((DownloadFile_DAO)file);
+            DatabaseService.AsyncConnection.InsertAsync((DownloadFile_DAO)file);
             AlertEventHistory(new HistoryEvent() { Event = $"Downloaded File: {file.Name} from {file.Host} @ {file.downloadedTime} ", Status = "Success" });
             LoggingService.EventLogger.ForContext("File", file,true).Information($"Downloaded File: {file.Name} from {file.Host} @ {file.downloadedTime} ");
         }
 
         public static async Task AlertEventHistory(HistoryEvent histEvent)
         {
-            if (DatabaseService.Connection == null)
+            if (DatabaseService.AsyncConnection == null)
             {
                 DatabaseService.ConnectDb();
             }
             
             //add the creds to the database
-            DatabaseService.Connection.Insert((HistoryEvent_DAO)histEvent);
+            DatabaseService.AsyncConnection.InsertAsync((HistoryEvent_DAO)histEvent);
             HistoryEvent.HistoryEventList.Add(histEvent);
             var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
             await hubContext.Clients.All.SendAsync("AlertEventHistory", histEvent);
@@ -409,7 +409,7 @@ namespace TeamServer.Services
                 if (AddToDB)
                 {
                     //check if database connection is not null 
-                    if (DatabaseService.Connection == null)
+                    if (DatabaseService.AsyncConnection == null)
                     {
                         DatabaseService.ConnectDb();
                     }
@@ -417,7 +417,7 @@ namespace TeamServer.Services
                     {
                         //add the creds to the database
                         var credDAOs = creds.Select(cred => (Cred_DAO)cred);
-                        DatabaseService.Connection.InsertAll(credDAOs);
+                        DatabaseService.AsyncConnection.InsertAllAsync(credDAOs);
                         //also add these creds to the in memory list
                         Cred.CredList.AddRange(creds);
                     }
@@ -463,7 +463,7 @@ namespace TeamServer.Services
         
         public static async Task AddIOCFile(IOCFile iocFile)
         {
-            if (DatabaseService.Connection == null)
+            if (DatabaseService.AsyncConnection == null)
             {
                 DatabaseService.ConnectDb();
             }
@@ -476,7 +476,7 @@ namespace TeamServer.Services
                 return;
             }
             // otherwise this is new and add the ioc file to the database and tracking list and logging 
-            DatabaseService.Connection.Insert((IOCFIle_DAO)iocFile);
+            DatabaseService.AsyncConnection.InsertAsync((IOCFIle_DAO)iocFile);
             IOCFile.IOCFiles.Add(iocFile);
             LoggingService.EventLogger.ForContext("IOC_File", iocFile,true).Information($"Uploaded File to target: {iocFile.Name} on host {iocFile.UploadedHost} to {iocFile.UploadedPath} @ {iocFile.Uploadtime} ");
             await hubContext.Clients.All.SendAsync("AddIOCFile", iocFile);

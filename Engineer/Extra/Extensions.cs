@@ -37,7 +37,16 @@ namespace Engineer
                 JSONParameters jsonParameters = new JSONParameters();
                 jsonParameters.UseValuesOfEnums = true;
                 string json = JSON.ToJSON(data,jsonParameters);
-                return Encoding.UTF8.GetBytes(json);
+                //write the json string to a memory stream and return the byte array
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    using (StreamWriter sw = new StreamWriter(ms))
+                    {
+                        sw.Write(json);
+                        sw.Flush();
+                        return ms.ToArray();
+                    }
+                }
             }
             catch (Exception e)
             {

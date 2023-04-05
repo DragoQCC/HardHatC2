@@ -66,7 +66,6 @@ namespace Engineer.Commands
                             },
                                 File = dataToSend
                             };
-                            Program.InboundCommandsRec += 1;
                             Task.Run(async () => await Tasking.DealWithTask(task));
                         }
                     }

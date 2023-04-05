@@ -8,7 +8,7 @@
 @using System.Diagnostics;
 
 <MudExpansionPanel IsExpandedChanged="(e)=>ExpandedChanged(e,engineer.Id,EngTask.Id)" style="background:#32333d; color:white;">
-    <TitleContent>
+    @*<TitleContent>
         @if (engTaskStatus == EngineerTaskResponse.EngTaskStatus.NONE)
         {
             <div class="d-flex">
@@ -109,7 +109,7 @@
                 }
             </MudCardContent>
         </MudCard>
-    </ChildContent>
+    </ChildContent>*@
 </MudExpansionPanel>
 
 @code {
@@ -117,7 +117,7 @@
     [Inject]
     private IDialogService DialogService { get; set; }
     [Parameter]
-    public EngineerTaskResponse? CardContent { get; set; } = null;
+    public EngineerTaskResult? CardContent { get; set; } = null;
     [Parameter]
     public string? HeaderContent { get; set; } = null;
     [Parameter]
@@ -125,7 +125,7 @@
     [Parameter]
     public List<string>? parsedCommand { get; set; } = null;
     [Parameter]
-    public EngineerTaskResponse.EngTaskStatus? engTaskStatus { get; set; } = null;
+    public EngineerTaskResult.EngTaskStatus? engTaskStatus { get; set; } = null;
     [Parameter]
     public Engineer engineer { get; set; }
 
@@ -142,19 +142,19 @@
     {
         if (engTaskStatus is not null)
         {
-            if (engTaskStatus == EngineerTaskResponse.EngTaskStatus.Complete)
+            if (engTaskStatus == EngineerTaskResult.EngTaskStatus.Complete)
             {
                 return Icons.Filled.CheckCircle;
             }
-            else if (engTaskStatus == EngineerTaskResponse.EngTaskStatus.Cancelled)
+            else if (engTaskStatus == EngineerTaskResult.EngTaskStatus.Cancelled)
             {
                 return Icons.Filled.StopCircle;
             }
-            else if (engTaskStatus == EngineerTaskResponse.EngTaskStatus.Failed)
+            else if (engTaskStatus == EngineerTaskResult.EngTaskStatus.Failed)
             {
                 return Icons.Filled.SmsFailed;
             }
-            else if (engTaskStatus == EngineerTaskResponse.EngTaskStatus.FailedWithWarnings)
+            else if (engTaskStatus == EngineerTaskResult.EngTaskStatus.FailedWithWarnings)
             {
                 return Icons.Filled.Warning;
             }
@@ -173,19 +173,19 @@
     {
         if (engTaskStatus is not null)
         {
-            if (engTaskStatus == EngineerTaskResponse.EngTaskStatus.Complete)
+            if (engTaskStatus == EngineerTaskResult.EngTaskStatus.Complete)
             {
                 return Color.Success;
             }
-            else if (engTaskStatus == EngineerTaskResponse.EngTaskStatus.Cancelled)
+            else if (engTaskStatus == EngineerTaskResult.EngTaskStatus.Cancelled)
             {
                 return Color.Secondary;
             }
-            else if (engTaskStatus == EngineerTaskResponse.EngTaskStatus.Failed)
+            else if (engTaskStatus == EngineerTaskResult.EngTaskStatus.Failed)
             {
                 return Color.Error;
             }
-            else if (engTaskStatus == EngineerTaskResponse.EngTaskStatus.FailedWithWarnings)
+            else if (engTaskStatus == EngineerTaskResult.EngTaskStatus.FailedWithWarnings)
             {
                 return Color.Warning;
             }
@@ -231,7 +231,7 @@
                     OnStateChange();
                 }
                 GC.Collect();
-                GC.WaitForPendingFinalizers();
+                //GC.WaitForPendingFinalizers();
             }
 
         }
@@ -299,7 +299,7 @@
         //        }
         //    });
         //}
-        if(engTaskStatus == EngineerTaskResponse.EngTaskStatus.Complete)
+        if (engTaskStatus == EngineerTaskResult.EngTaskStatus.Complete)
         {
             Interact.RenderedFinalFormDic.Add(EngTask.Id);
         }

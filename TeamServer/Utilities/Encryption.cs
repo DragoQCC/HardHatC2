@@ -1,11 +1,11 @@
-﻿  using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-  using TeamServer.Models.Dbstorage;
-  using TeamServer.Services;
+using TeamServer.Models.Dbstorage;
+using TeamServer.Services;
 
   namespace TeamServer.Utilities
 {
@@ -27,7 +27,7 @@ using System.Text;
 
 
         // Aes encryption is used to encrypt the data before sending it to the implant
-        public static byte[] AES_Encrypt(byte[] bytesToBeEncrypted, string EncodedPassword)
+        public static byte[] Engineer_AES_Encrypt(byte[] bytesToBeEncrypted, string EncodedPassword)
         {
             try
             {
@@ -39,7 +39,7 @@ using System.Text;
                 byte[] encryptedBytes = null;
                 byte[] saltBytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
                 using MemoryStream ms = new MemoryStream();
-                using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
+                using (Aes aes = Aes.Create())
                 {
                     aes.KeySize = 256;
                     aes.BlockSize = 128;
@@ -47,15 +47,16 @@ using System.Text;
                     aes.Key = key.GetBytes(aes.KeySize / 8);
                     aes.IV = key.GetBytes(aes.BlockSize / 8);
                     aes.Mode = CipherMode.CBC;
-                    aes.Padding = PaddingMode.ANSIX923;
+                    aes.Padding = PaddingMode.PKCS7;
                     using (var cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
                     {
                         cs.Write(bytesToBeEncrypted, 0, bytesToBeEncrypted.Length);
                         cs.Close();
                     }
-
+                
                     aes.Clear();
                 }
+                
 
                 encryptedBytes = ms.ToArray();
                 return encryptedBytes;
@@ -69,7 +70,7 @@ using System.Text;
 
         }
         // Aes decryption is used to decrypt the data after it has been received from the implant
-        public static byte[] AES_Decrypt(byte[] bytesToBeDecrypted, string EncodedPassword)
+        public static byte[] Engineer_AES_Decrypt(byte[] bytesToBeDecrypted, string EncodedPassword)
         {
             try
             {
@@ -88,7 +89,7 @@ using System.Text;
                     aes.Key = key.GetBytes(aes.KeySize / 8);
                     aes.IV = key.GetBytes(aes.BlockSize / 8);
                     aes.Mode = CipherMode.CBC;
-                    aes.Padding = PaddingMode.ANSIX923;
+                    aes.Padding = PaddingMode.PKCS7;
                     using (var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Write))
                     {
                         cs.Write(bytesToBeDecrypted, 0, bytesToBeDecrypted.Length);
@@ -104,6 +105,30 @@ using System.Text;
                 Console.WriteLine(ex.Message);
                 return null;
             }
+        }
+        
+        //a function that takes in a string and xor's it with the UniversialMetadataKey and returns the encrypted string this string is the implant type 
+        public static string EncryptImplantName(string implant_type)
+        {
+            
+            string encrypted_implant_type = "";
+            for (int i = 0; i < implant_type.Length; i++)
+            {
+                encrypted_implant_type += (char)(implant_type[i] ^ UniversialMetadataKey[i % UniversialMetadataKey.Length]);
+            }
+            return encrypted_implant_type;
+        }
+        
+        //a function to get the implant type from the encrypted string
+        public static string DecryptImplantName(string encrypted_implant_type)
+        {
+            
+            string implant_type = "";
+            for (int i = 0; i < encrypted_implant_type.Length; i++)
+            {
+                implant_type += (char)(encrypted_implant_type[i] ^ UniversialMetadataKey[i % UniversialMetadataKey.Length]);
+            }
+            return implant_type;
         }
 
         public static byte[] GeneratePasswordBytes(string password)
@@ -128,13 +153,13 @@ using System.Text;
             //task encryption key used during first check in 
             UniversalTaskEncryptionKey = GenerateRandomString(32);
             
-            if(DatabaseService.Connection == null)
+            if(DatabaseService.AsyncConnection == null)
             {
                 DatabaseService.ConnectDb();
             }
-            DatabaseService.Connection.Insert(new EncryptionKeys_DAO(){ItemID = "UniversialMetadataKey", Key = UniversialMetadataKey});
-            DatabaseService.Connection.Insert(new EncryptionKeys_DAO(){ItemID = "UniversialMessagePathKey", Key = UniversialMessagePathKey});
-            DatabaseService.Connection.Insert(new EncryptionKeys_DAO(){ItemID = "UniversalTaskEncryptionKey", Key = UniversalTaskEncryptionKey});
+            DatabaseService.AsyncConnection.InsertAsync(new EncryptionKeys_DAO(){ItemID = "UniversialMetadataKey", Key = UniversialMetadataKey});
+            DatabaseService.AsyncConnection.InsertAsync(new EncryptionKeys_DAO(){ItemID = "UniversialMessagePathKey", Key = UniversialMessagePathKey});
+            DatabaseService.AsyncConnection.InsertAsync(new EncryptionKeys_DAO(){ItemID = "UniversalTaskEncryptionKey", Key = UniversalTaskEncryptionKey});
             
         }
 
@@ -153,11 +178,11 @@ using System.Text;
             {
                 UniqueTaskEncryptionKey[implantId] = taskEncryptionKey;
             }
-            if(DatabaseService.Connection == null)
+            if(DatabaseService.AsyncConnection == null)
             {
                 DatabaseService.ConnectDb();
             }
-            DatabaseService.Connection.Insert(new EncryptionKeys_DAO(){ItemID = implantId, Key = taskEncryptionKey});
+            DatabaseService.AsyncConnection.InsertAsync(new EncryptionKeys_DAO(){ItemID = implantId, Key = taskEncryptionKey});
             
         }
     }

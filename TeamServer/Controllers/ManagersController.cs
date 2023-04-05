@@ -61,11 +61,11 @@ namespace TeamServer.Controllers
 				manager.Init(_EngineerService);
 				manager.Start();
 				_managers.Addmanager(manager);
-				if(DatabaseService.Connection == null)
+				if(DatabaseService.AsyncConnection == null)
 				{
                     DatabaseService.ConnectDb();
                 }
-				DatabaseService.Connection.Insert((HttpManager_DAO)manager);
+				DatabaseService.AsyncConnection.InsertAsync((HttpManager_DAO)manager);
 
 				var root = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}{HttpContext.Request.Path}";
 				var path = $"{root}/{manager.Name}";
@@ -88,11 +88,11 @@ namespace TeamServer.Controllers
                 manager.Init(_EngineerService);
                 manager.Start();
                 _managers.Addmanager(manager);
-                if (DatabaseService.Connection == null)
+                if (DatabaseService.AsyncConnection == null)
                 {
                     DatabaseService.ConnectDb();
                 }
-                DatabaseService.Connection.Insert((TCPManager_DAO)manager);
+                DatabaseService.AsyncConnection.InsertAsync((TCPManager_DAO)manager);
                 var root = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}{HttpContext.Request.Path}";
                 var path = $"{root}/{manager.Name}";
                 HardHatHub.UpdateManagerList(manager);
@@ -115,11 +115,11 @@ namespace TeamServer.Controllers
                 manager.Init(_EngineerService);
                 manager.Start();
                 _managers.Addmanager(manager);
-                if (DatabaseService.Connection == null)
+                if (DatabaseService.AsyncConnection == null)
                 {
                     DatabaseService.ConnectDb();
                 }
-                DatabaseService.Connection.Insert((SMBManager_DAO)manager);
+                DatabaseService.AsyncConnection.InsertAsync((SMBManager_DAO)manager);
                 var root = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}{HttpContext.Request.Path}";
                 var path = $"{root}/{manager.Name}";
                 HardHatHub.UpdateManagerList(manager);

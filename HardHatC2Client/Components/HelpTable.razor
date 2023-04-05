@@ -38,7 +38,7 @@
 @code {
 
     [Parameter]
-    public byte[]? Outputs {get; set;}
+    public List<Help.HelpMenuItem> Outputs {get; set;}
     public Dictionary<string, Help.HelpMenuItem> BodyContent = new Dictionary<string, Help.HelpMenuItem>();
     private MudTable<Help.HelpMenuItem>? _table;
     private string searchString1 = "";
@@ -118,7 +118,7 @@
 
     public void FillContents()
     {
-        foreach (Help.HelpMenuItem output in Outputs.Deserialize<List<Help.HelpMenuItem>>())
+        foreach (Help.HelpMenuItem output in Outputs)
         {
             if (!BodyContent.ContainsKey(output.Name))
             {

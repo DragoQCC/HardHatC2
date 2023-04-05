@@ -22,7 +22,15 @@ namespace HardHatC2Client.Services
         {
             try
             {
-                string jwtToken = await _localStorageService.GetItemAsync<string>(LocalStorageTokenName);
+                string jwtToken = null;
+                try
+                {
+                   jwtToken  = await _localStorageService.GetItemAsync<string>(LocalStorageTokenName);
+                }
+                catch (Exception)
+                {}
+                
+               
                 if (jwtToken != null)
                 {
                     JwtSecurityToken token = _tokenHandler.ReadJwtToken(jwtToken);

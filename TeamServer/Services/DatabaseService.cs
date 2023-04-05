@@ -71,7 +71,7 @@ namespace TeamServer.Services
                 {
                     Init();
                 }
-                if (Connection == null)
+                if (AsyncConnection == null)
                 {
 
                     Connection = new SQLiteConnection(ConnectionString);
@@ -87,19 +87,16 @@ namespace TeamServer.Services
 
         public static void CreateTables()
         {
-            if (Connection == null)
+            if (AsyncConnection == null)
             {
                 Connection = new SQLiteConnection(ConnectionString);
                 AsyncConnection = new SQLiteAsyncConnection(ConnectionString);
             }
             foreach (Type type in dbItemTypes)
             {
-                Connection.CreateTable(type);
+                AsyncConnection.CreateTableAsync(type);
             }
-            Connection.CreateTable<UserInfo>();
-            Connection.CreateTable<RoleInfo>();
-            Connection.CreateTable<UserRoleInfo>();
-            Connection.CreateTable<UserSalt>();
+            AsyncConnection.CreateTablesAsync<UserInfo, RoleInfo, UserRoleInfo, UserSalt>();
         }
 
         public static async Task FillTeamserverFromDatabase()
@@ -205,13 +202,13 @@ namespace TeamServer.Services
         {
             try
             {
-                if (Connection == null)
+                if (AsyncConnection == null)
                 {
                     ConnectDb();
                 }
-                var storedCreds = Connection.Table<Cred_DAO>().ToList().Select(x => (Cred)x);
+                var storedCreds = await AsyncConnection.Table<Cred_DAO>().ToListAsync();
                 //var returnedCreds = storedCreds.Select(x => (Cred)x);
-                List <Cred> credList = new List<Cred>(storedCreds);
+                List<Cred> credList = new List<Cred>(storedCreds.Select(x => (Cred)x));
 
                 //bool set to false because we just pulled from the db so we dont want to re add them
                 return credList;
@@ -229,12 +226,12 @@ namespace TeamServer.Services
         {
             try
             {
-                if(Connection == null)
+                if(AsyncConnection == null)
                 {
                     ConnectDb();
                 }
-                var storedHistoryEvents = Connection.Table<HistoryEvent_DAO>().ToList().Select(x => (HistoryEvent)x);
-                List<HistoryEvent> historyEventList = new List<HistoryEvent>(storedHistoryEvents);
+                var storedHistoryEvents = await AsyncConnection.Table<HistoryEvent_DAO>().ToListAsync();
+                List<HistoryEvent> historyEventList = new List<HistoryEvent>(storedHistoryEvents.Select(x => (HistoryEvent)x));
                 return historyEventList;
             }
             catch (Exception ex)
@@ -250,11 +247,11 @@ namespace TeamServer.Services
         {
             try
             {
-                if (Connection == null)
+                if (AsyncConnection == null)
                 {
                     ConnectDb();
                 }
-                var storedHttpManagers = Connection.Table<HttpManager_DAO>().ToList().Select(x => (Httpmanager)x);
+                var storedHttpManagers = AsyncConnection.Table<HttpManager_DAO>().ToListAsync().Result.Select(x => (Httpmanager)x);
                 List<Httpmanager> httpManagerList = new List<Httpmanager>(storedHttpManagers);
                 return httpManagerList;
             }
@@ -271,11 +268,11 @@ namespace TeamServer.Services
         {
             try
             {
-                if (Connection == null)
+                if (AsyncConnection == null)
                 {
                     ConnectDb();
                 }
-                var storedTCPManagers = Connection.Table<TCPManager_DAO>().ToList().Select(x => (TCPManager)x);
+                var storedTCPManagers = AsyncConnection.Table<TCPManager_DAO>().ToListAsync().Result.Select(x => (TCPManager)x);
                 List<TCPManager> tcpManagerList = new List<TCPManager>(storedTCPManagers);
                 return tcpManagerList;
             }
@@ -292,11 +289,11 @@ namespace TeamServer.Services
         {
             try
             {
-                if (Connection == null)
+                if (AsyncConnection == null)
                 {
                     ConnectDb();
                 }
-                var storedSMBManagers = Connection.Table<SMBManager_DAO>().ToList().Select(x => (SMBmanager)x);
+                var storedSMBManagers = AsyncConnection.Table<SMBManager_DAO>().ToListAsync().Result.Select(x => (SMBmanager)x);
                 List<SMBmanager> smbManagerList = new List<SMBmanager>(storedSMBManagers);
                 return smbManagerList;
             }
@@ -313,11 +310,11 @@ namespace TeamServer.Services
         {
             try
             {
-                if (Connection == null)
+                if (AsyncConnection == null)
                 {
                     ConnectDb();
                 }
-                var storedDownloadedFiles = Connection.Table<DownloadFile_DAO>().ToList().Select(x => (DownloadFile)x);
+                var storedDownloadedFiles = AsyncConnection.Table<DownloadFile_DAO>().ToListAsync().Result.Select(x => (DownloadFile)x);
                 List<DownloadFile> downloadedFileList = new List<DownloadFile>(storedDownloadedFiles);
                 return downloadedFileList;
             }
@@ -334,11 +331,11 @@ namespace TeamServer.Services
         {
             try
             {
-                if (Connection == null)
+                if (AsyncConnection == null)
                 {
                     ConnectDb();
                 }
-                var storedUploadedFiles = Connection.Table<UploadedFile_DAO>().ToList().Select(x => (UploadedFile)x);
+                var storedUploadedFiles = AsyncConnection.Table<UploadedFile_DAO>().ToListAsync().Result.Select(x => (UploadedFile)x);
                 List<UploadedFile> uploadedFileList = new List<UploadedFile>(storedUploadedFiles);
                 return uploadedFileList;
             }
@@ -355,11 +352,11 @@ namespace TeamServer.Services
         {
             try
             {
-                if (Connection == null)
+                if (AsyncConnection == null)
                 {
                     ConnectDb();
                 }
-                var storedEncryptionKeys = Connection.Table<EncryptionKeys_DAO>().ToList();
+                var storedEncryptionKeys = await AsyncConnection.Table<EncryptionKeys_DAO>().ToListAsync();
                 return storedEncryptionKeys;
             }
             catch (Exception ex)
@@ -376,11 +373,11 @@ namespace TeamServer.Services
         {
             try
             {
-                if (Connection == null)
+                if (AsyncConnection == null)
                 {
                     ConnectDb();
                 }
-                var storedEngineers = Connection.Table<Engineer_DAO>().ToList().Select(x => (Engineer)x);
+                var storedEngineers = AsyncConnection.Table<Engineer_DAO>().ToListAsync().Result.Select(x => (Engineer)x);
                 List<Engineer> engineerList = new List<Engineer>(storedEngineers);
                 return engineerList;
             }
@@ -396,11 +393,11 @@ namespace TeamServer.Services
         {
             try
             {
-                if (Connection == null)
+                if (AsyncConnection == null)
                 {
                     ConnectDb();
                 }
-                var storedEngineerTasks = Connection.Table<EngineerTask_DAO>().ToList().Select(x => (EngineerTask)x);
+                var storedEngineerTasks = AsyncConnection.Table<EngineerTask_DAO>().ToListAsync().Result.Select(x => (EngineerTask)x);
                 List<EngineerTask> engineerTaskList = new List<EngineerTask>(storedEngineerTasks);
                 return engineerTaskList;
             }
@@ -416,11 +413,11 @@ namespace TeamServer.Services
         {
             try
             {
-                if (Connection == null)
+                if (AsyncConnection == null)
                 {
                     ConnectDb();
                 }
-                var storedEngineerTaskResults = Connection.Table<EngineerTaskResult_DAO>().ToList().Select(x => (EngineerTaskResult)x);
+                var storedEngineerTaskResults = AsyncConnection.Table<EngineerTaskResult_DAO>().ToListAsync().Result.Select(x => (EngineerTaskResult)x);
                 List<EngineerTaskResult> engineerTaskResultList = new List<EngineerTaskResult>(storedEngineerTaskResults);
                 return engineerTaskResultList;
             }
@@ -437,11 +434,11 @@ namespace TeamServer.Services
         {
             try
             {
-                if (Connection == null)
+                if (AsyncConnection == null)
                 {
                     ConnectDb();
                 }
-                var storedPivotProxies = Connection.Table<PivotProxy_DAO>().ToList().Select(x => (PivotProxy)x);
+                var storedPivotProxies = AsyncConnection.Table<PivotProxy_DAO>().ToListAsync().Result.Select(x => (PivotProxy)x);
                 List<PivotProxy> pivotProxyList = new List<PivotProxy>(storedPivotProxies);
                 return pivotProxyList;
             }
@@ -458,11 +455,11 @@ namespace TeamServer.Services
         {
             try
             {
-                if (Connection == null)
+                if (AsyncConnection == null)
                 {
                     ConnectDb();
                 }
-                var storedReconCenterEntities = Connection.Table<ReconCenterEntity_DAO>().ToList().Select(x => (ReconCenterEntity)x);
+                var storedReconCenterEntities = AsyncConnection.Table<ReconCenterEntity_DAO>().ToListAsync().Result.Select(x => (ReconCenterEntity)x);
                 List<ReconCenterEntity> reconCenterEntityList = new List<ReconCenterEntity>(storedReconCenterEntities);
                 return reconCenterEntityList;
             }
@@ -479,11 +476,11 @@ namespace TeamServer.Services
         {
             try
             {
-                if (Connection == null)
+                if (AsyncConnection == null)
                 {
                     ConnectDb();
                 }
-                var storedIOCFiles = Connection.Table<IOCFIle_DAO>().ToList().Select(x => (IOCFile)x);
+                var storedIOCFiles = AsyncConnection.Table<IOCFIle_DAO>().ToListAsync().Result.Select(x => (IOCFile)x);
                 List<IOCFile> iocFileList = new List<IOCFile>(storedIOCFiles);
                 return iocFileList;
             }

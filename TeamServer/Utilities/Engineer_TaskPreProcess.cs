@@ -16,7 +16,7 @@ using TeamServer.Services;
 
 namespace TeamServer.Utilities
 {
-    public class TaskPreProcess
+    public class Engineer_TaskPreProcess
     {
         public static List<string> CommandsThatNeedPreProc = new List<string> { "shellcode", "inlineAssembly", "loadassembly", "sleep", "powershell_import", "upload", "spawn", "inject", "jump", "inlinedll", "mimikatz","socks","rportforward","executeassembly","addcommand"};
 
@@ -31,10 +31,19 @@ namespace TeamServer.Utilities
                     port = "1080";
                 }
                 port = port.TrimStart(' ');
-                HttpmanagerController.Proxy = new Socks4Proxy(bindPort: int.Parse(port)); // gives the user supplied value as the port to start the socks server on :) 
+                //check if any of the pivot proxies are already using the port
+                if (PivotProxy.PivotProxyList.Any(x => x.BindPort == port))
+                {
+                    await HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"socks server on {port} already exists", Status = "error" });
+                    LoggingService.EventLogger.Error("socks server on {port} already exists", port);
+                    return;
+                }
+                HttpmanagerController.Proxy.Add(port ,new Socks4Proxy(bindPort: int.Parse(port))); // gives the user supplied value as the port to start the socks server on :) 
+                //HttpmanagerController.testProxy = new Socks4Proxy(bindPort: int.Parse(port));
 
                 //call proxy.Start() but dont block execution 
-                Task.Run(() => HttpmanagerController.Proxy.Start(engineer));
+                Task.Run(() => HttpmanagerController.Proxy[port].Start(engineer));
+                //Task.Run(() => HttpmanagerController.testProxy.Start(engineer));
                 //Console.WriteLine("Socks proxy started on port " + port);
                 await HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"socks server started on {port}", Status = "success" });
                 LoggingService.EventLogger.Information("socks server started on teamserver port {port}", port);
@@ -42,7 +51,7 @@ namespace TeamServer.Utilities
                 //if /stop is in the arguments, stop the proxy
                 if (currentTask.Arguments.ContainsKey("/stop"))
                 {
-                    HttpmanagerController.Proxy.Stop();
+                    HttpmanagerController.Proxy[port].Stop();
                     await HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"socks server on {port} stopped", Status = "info" });
                     LoggingService.EventLogger.Warning("socks server stopped on teamserver port {port}", port);
                 }
@@ -259,7 +268,7 @@ namespace TeamServer.Utilities
                 currentTask.Arguments.TryGetValue("/dll", out string dllpath);
                 dllpath = dllpath.TrimStart(' ');
                 var fileContent = System.IO.File.ReadAllBytes(dllpath);
-                Console.WriteLine($"got {fileContent.Length} dll bytes");
+               // Console.WriteLine($"got {fileContent.Length} dll bytes");
                 currentTask.File = fileContent;
             }
 

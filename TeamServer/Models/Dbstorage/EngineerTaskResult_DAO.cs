@@ -27,6 +27,9 @@ namespace TeamServer.Models.Dbstorage
         [Column("Status")]
         public EngTaskStatus Status { get; set; }
 
+        [Column("ResultType")]
+        public TaskResponseType ResponseType { get; set; }
+
         //create an implcit operator to convert from model to dao
         public static implicit operator EngineerTaskResult_DAO(EngineerTaskResult model)
         {
@@ -37,7 +40,8 @@ namespace TeamServer.Models.Dbstorage
                 Result = model.Result,
                 IsHidden = model.IsHidden,
                 EngineerId = model.EngineerId,
-                Status = (EngTaskStatus)model.Status
+                Status = (EngTaskStatus)model.Status,
+                ResponseType = (TaskResponseType)model.ResponseType
             };
         }
        
@@ -51,7 +55,8 @@ namespace TeamServer.Models.Dbstorage
                 Result = dao.Result,
                 IsHidden = dao.IsHidden,
                 EngineerId = dao.EngineerId,
-                Status = (Models.EngTaskStatus)dao.Status
+                Status = (Models.EngTaskStatus)dao.Status,
+                ResponseType = (Models.TaskResponseType)dao.ResponseType
             };
         }
 
@@ -64,5 +69,13 @@ namespace TeamServer.Models.Dbstorage
         CompleteWithErrors = 5,
         Failed = 6,
         Cancelled = 7
+    }
+
+    public enum TaskResponseType
+    {
+        None,
+        String,
+        FileSystemItem,
+        ProcessItem,
     }
 }

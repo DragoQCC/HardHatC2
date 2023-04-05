@@ -15,7 +15,7 @@ namespace TeamServer.Services
     {
         public static async Task CreateDefaultRoles()
         {
-            if(DatabaseService.Connection == null)
+            if(DatabaseService.AsyncConnection == null)
             {
                DatabaseService.ConnectDb();
             }
@@ -25,10 +25,10 @@ namespace TeamServer.Services
             var TeamLeadRole = new RoleInfo { Id = Guid.NewGuid().ToString(), Name = "TeamLead" };
             var AdministratorRole = new RoleInfo { Id = Guid.NewGuid().ToString(), Name = "Administrator" };
             var guestRole = new RoleInfo { Id = Guid.NewGuid().ToString(), Name = "Guest" };
-            DatabaseService.Connection.Insert(OperatorRole);
-            DatabaseService.Connection.Insert(TeamLeadRole);
-            DatabaseService.Connection.Insert(AdministratorRole);
-            DatabaseService.Connection.Insert(guestRole);
+            DatabaseService.AsyncConnection.InsertAsync(OperatorRole);
+            DatabaseService.AsyncConnection.InsertAsync(TeamLeadRole);
+            DatabaseService.AsyncConnection.InsertAsync(AdministratorRole);
+            DatabaseService.AsyncConnection.InsertAsync(guestRole);
         }
 
         public static async Task CreateDefaultAdmin()

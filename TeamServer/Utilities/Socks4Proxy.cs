@@ -18,10 +18,8 @@ namespace TeamServer.Utilities
         private readonly IPAddress _bindAddress;
         private readonly CancellationTokenSource _tokenSource = new();
 
-        private ConcurrentDictionary<TcpClient, string> SocksClients = new();
+        private ConcurrentDictionary<string,TcpClient> SocksClients = new();
         public ConcurrentDictionary<string, ConcurrentQueue<byte[]>> SocksClientsData = new();
-       // public ConcurrentDictionary<string, bool> SocksClientsGotData = new();
-       // public ConcurrentDictionary<string,bool> SocksClientWaitingSentData = new();
         public ConcurrentDictionary<string, bool> SocksDestinationConnected = new();
         
         public Socks4Proxy(IPAddress bindAddress = null, int bindPort = 1080)
@@ -35,7 +33,7 @@ namespace TeamServer.Utilities
             try
             {
                 var listener = new TcpListener(_bindAddress, _bindPort);
-                listener.Start(200);
+                listener.Start(500);
                 while (!_tokenSource.IsCancellationRequested)
                 {
                     // this blocks until a connection is received
@@ -63,27 +61,29 @@ namespace TeamServer.Utilities
 
             if (request is null)
             {
-                Console.WriteLine("Request is null");
+                Console.WriteLine("Socks Request is null");
                 return;
             }
             //add or update the client in the dictionary
-            SocksClients.TryAdd(client, Guid.NewGuid().ToString());
-            SocksClientsData.TryAdd(SocksClients[client], new ConcurrentQueue<byte[]>());
-            SocksDestinationConnected.TryAdd(SocksClients[client], false);
+            string client_guid = Guid.NewGuid().ToString();
+            SocksClients.TryAdd(client_guid, client);
+            SocksClientsData.TryAdd(client_guid, new ConcurrentQueue<byte[]>());
+            SocksDestinationConnected.TryAdd(client_guid, false);
             Dictionary<string, string> args = new Dictionary<string, string>
             {
                 { "/Address", request.DestinationAddress.ToString() },
                 { "/Port", request.DestinationPort.ToString() },
-                { "/Client", SocksClients[client] }
+                { "/Client", client_guid }
             };
             //make an engineer task to connect to the client send task name of ConnectSocks with arguments /address and /port which are the request.DestinationAddress, request.DestinationPort
             var task = new EngineerTask(Guid.NewGuid().ToString(),"SocksConnect",args,null,false);
-            
+
             // add the task to the engineers task queue
+            //Console.WriteLine("Sending socks connect request to engineer");
             engineer.QueueTask(task);
 
             // wait for the engineer to connect to the client
-            while (!SocksDestinationConnected[SocksClients[client]])
+            while (!SocksDestinationConnected[client_guid])
             {
                 await Task.Delay(10);
             }
@@ -92,16 +92,16 @@ namespace TeamServer.Utilities
             {
                 try
                 {
-                    //if client is not connected check if it is in the dictionaries and if it is present then remove it from the dictionaries
-                    if (!client.Connected)
-                    {
-                        if (SocksClients.ContainsKey(client))
-                        {
-                            SocksClients.TryRemove(client, out var _);
-                            SocksClientsData.TryRemove(SocksClients[client], out var _);
-                        }
-                        break;
-                    }
+                    ////if client is not connected check if it is in the dictionaries and if it is present then remove it from the dictionaries
+                    //if (!client.Connected)
+                    //{
+                    //    if (SocksClients.ContainsKey(client_guid))
+                    //    {
+                    //        SocksClients.TryRemove(client_guid, out var _);
+                    //        SocksClientsData.TryRemove(client_guid, out var _);
+                    //    }
+                    //    break;
+                    //}
                     
                     // read from client
                     if (client.DataAvailable())
@@ -111,24 +111,24 @@ namespace TeamServer.Utilities
                         // make an engineer task send it the req as a base64 string in its arguments with the key of /req
                         var task2 = new EngineerTask(Guid.NewGuid().ToString(),"SocksSend",new Dictionary<string, string>
                         {
-                            {"/client", SocksClients[client] }
+                            {"/client", client_guid }
                         },req, false);
                         
                         // add the task to the engineers task queue
                         engineer.QueueTask(task2);
-                        Console.WriteLine($"sending engineer {req.Length} bytes from client {SocksClients[client]}");
+                        //Console.WriteLine($"sending engineer {req.Length} bytes from client {client_guid}");
                     }
 
                     // in a thread safe way find the clients with data to send and send it if the client is still connected
-                    if (!SocksClientsData[SocksClients[client]].IsEmpty)
+                    if (!SocksClientsData[client_guid].IsEmpty)
                     {
-                        SocksClientsData[SocksClients[client]].TryDequeue(out var data);
-                        Console.WriteLine($"sending {data.Length} bytes to client {SocksClients[client]}");
+                        SocksClientsData[client_guid].TryDequeue(out var data);
+                        //Console.WriteLine($"sending {data.Length} bytes to client {client_guid}");
                         await client.SendData(data, _tokenSource.Token);
                     }
 
                     // rip cpu
-                    await Task.Delay(5);
+                    await Task.Delay(1);
                 }
                 catch(Exception e)
                 {

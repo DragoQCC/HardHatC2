@@ -19,6 +19,8 @@ namespace ApiModels.Requests
 
         public SleepTypes SleepType { get; set; }
 
+        public ImplantType implantType { get; set; } = ImplantType.Engineer; // default to engineer
+
         public enum EngCompileType
         {
             exe, 
@@ -33,6 +35,12 @@ namespace ApiModels.Requests
             None,
             Custom_RC4,
             // Ekko,
+        }
+        
+        public enum ImplantType
+        {
+            Engineer,
+            Constructor,
         }
     }
 }

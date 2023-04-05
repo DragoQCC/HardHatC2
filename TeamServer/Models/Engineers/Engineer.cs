@@ -59,7 +59,12 @@ namespace TeamServer.Models
 			return GetTaskResults().FirstOrDefault(r => r.Id.Equals(taskId));
 		}
 
-		public IEnumerable<EngineerTaskResult> GetTaskResults()
+        public List<string> GetTaskIds()
+        {
+            return GetTaskResults().Select(r => r.Id).ToList();
+        }
+
+        public IEnumerable<EngineerTaskResult> GetTaskResults()
 		{
 			IEnumerable<EngineerTaskResult> taskresults = _taskResults;
 			return taskresults;
