@@ -22,12 +22,12 @@ namespace Engineer.Commands
 
                 task.Arguments.TryGetValue("/command", out string command);
                 task.Arguments.TryGetValue("/args", out string argument);
-                if (command == null)
+                if (String.IsNullOrWhiteSpace(command) || String.IsNullOrWhiteSpace(command))
                 {
                     Tasking.FillTaskResults("Command not specified", task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
-                if (argument == null)
+                if (String.IsNullOrEmpty(argument))
                 {
                     Tasking.FillTaskResults("Arguments not specified", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;

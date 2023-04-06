@@ -16,18 +16,26 @@ namespace Engineer.Commands
 
         public override async Task Execute(EngineerTask task)
         {
-            var identity = WindowsIdentity.GetCurrent();
-            string Username = identity.Name;
-            if (task.Arguments != null)
+            try
             {
-                if (task.Arguments.ContainsKey("/groups"))
+                var identity = WindowsIdentity.GetCurrent();
+                string Username = identity.Name;
+                if (task.Arguments != null)
                 {
-                    var groups = identity.Groups;
-                    var groupNames = groups.Select(g => g.Value);
-                    Tasking.FillTaskResults($"{Username} is a member of the following groups: {string.Join(", ", groupNames)}", task, EngTaskStatus.Complete,TaskResponseType.String);
+                    if (task.Arguments.ContainsKey("/groups"))
+                    {
+                        var groups = identity.Groups;
+                        var groupNames = groups.Select(g => g.Value);
+                        Tasking.FillTaskResults($"{Username} is a member of the following groups: {string.Join(", ", groupNames)}", task, EngTaskStatus.Complete, TaskResponseType.String);
+                    }
                 }
+                Tasking.FillTaskResults($"{Username}", task, EngTaskStatus.Complete, TaskResponseType.String);
             }
-            Tasking.FillTaskResults($"{Username}", task, EngTaskStatus.Complete,TaskResponseType.String);
+            catch (Exception ex)
+            {
+                Tasking.FillTaskResults(ex.Message, task, EngTaskStatus.Failed, TaskResponseType.String);
+            }
+            
         }
     }
 }
