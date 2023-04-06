@@ -604,12 +604,12 @@
                 {
                     Name = "whoami",
                     Description = "get the current identity of the current user",
-                    Usage = "whoami",
+                    Usage = "whoami /groups OptionalValue",
                     NeedsAdmin = false,
                     Opsec = OpsecStatus.NotSet,
                     MitreTechnique = "T1033",
                     Details = "finds who the user is in the local context is not effected by make_token or steal_token",
-                    Keys = ""
+                    Keys = "/groups - Optional, if set to true will return the groups the user is a member of"
                 }
             };
         }

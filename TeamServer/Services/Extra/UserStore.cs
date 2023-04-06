@@ -60,7 +60,7 @@ namespace TeamServer.Services.Extra
         {
             try
             {
-                List<UserInfo> testUsers = await DatabaseService.AsyncConnection.Table<UserInfo>().ToListAsync();
+               // List<UserInfo> testUsers = await DatabaseService.AsyncConnection.Table<UserInfo>().ToListAsync();
                 UserInfo user = DatabaseService.AsyncConnection.Table<UserInfo>().Where(x => x.NormalizedUserName.ToUpper() == normalizedUserName.ToUpper()).ToListAsync().Result[0]; // should only return 1 thing anyway as the id is unique
                 return user;
             }

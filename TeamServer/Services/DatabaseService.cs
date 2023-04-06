@@ -85,7 +85,7 @@ namespace TeamServer.Services
             }
         }
 
-        public static void CreateTables()
+        public static async Task CreateTables()
         {
             if (AsyncConnection == null)
             {
@@ -94,9 +94,9 @@ namespace TeamServer.Services
             }
             foreach (Type type in dbItemTypes)
             {
-                AsyncConnection.CreateTableAsync(type);
+               await AsyncConnection.CreateTableAsync(type);
             }
-            AsyncConnection.CreateTablesAsync<UserInfo, RoleInfo, UserRoleInfo, UserSalt>();
+            await AsyncConnection.CreateTablesAsync<UserInfo, RoleInfo, UserRoleInfo, UserSalt>();
         }
 
         public static async Task FillTeamserverFromDatabase()

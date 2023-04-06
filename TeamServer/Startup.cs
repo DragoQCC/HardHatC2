@@ -92,7 +92,7 @@ namespace TeamServer
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public static async void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
@@ -124,11 +124,11 @@ namespace TeamServer
             Console.WriteLine("Connecting to database");
             DatabaseService.ConnectDb();
             Console.WriteLine("Creating tables");
-            DatabaseService.CreateTables();
+            DatabaseService.CreateTables().Wait();
             Console.WriteLine("Creating default roles");
-            UsersRolesDatabaseService.CreateDefaultRoles();
+            UsersRolesDatabaseService.CreateDefaultRoles().Wait();
             Console.WriteLine("Creating default admin");
-            UsersRolesDatabaseService.CreateDefaultAdmin();
+            UsersRolesDatabaseService.CreateDefaultAdmin().Wait();
             Console.WriteLine("Filling teamserver from database");
             DatabaseService.FillTeamserverFromDatabase().ContinueWith((task) =>
             {
@@ -137,7 +137,7 @@ namespace TeamServer
                     Console.WriteLine("Generating unique encryption keys for pathing and metadata id");
                     Encryption.GenerateUniversialKeys();
                 }
-            });
+            }).Wait();
            
         }
     }
