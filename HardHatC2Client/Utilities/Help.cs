@@ -499,7 +499,7 @@
                     Opsec = OpsecStatus.NotSet,
                     MitreTechnique = "T1059",
                     Details = "executes the target program/command with the supplied arguments and returns the output to the C2",
-                    Keys = ""
+                    Keys = "/command - the program to spawn \n /args - the arguments to pass the program"
                 },
                 new HelpMenuItem()
                 {
@@ -609,7 +609,7 @@
                     Opsec = OpsecStatus.NotSet,
                     MitreTechnique = "T1033",
                     Details = "finds who the user is in the local context is not effected by make_token or steal_token",
-                    Keys = "/groups - Optional, if set to true will return the groups the user is a member of"
+                    Keys = "/groups - Optional, if set to true will return the groups the user is a member of, if false or not present then will not get group info"
                 }
             };
         }

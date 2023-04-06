@@ -110,19 +110,29 @@ using TeamServer.Services;
         //a function that takes in a string and xor's it with the UniversialMetadataKey and returns the encrypted string this string is the implant type 
         public static string EncryptImplantName(string implant_type)
         {
-            
+            //Console.WriteLine($"Encrypting implant name string with metadata key {UniversialMetadataKey}");
             string encrypted_implant_type = "";
             for (int i = 0; i < implant_type.Length; i++)
             {
                 encrypted_implant_type += (char)(implant_type[i] ^ UniversialMetadataKey[i % UniversialMetadataKey.Length]);
             }
-            return encrypted_implant_type;
+
+            // Encode the encrypted string using Base64
+            byte[] encryptedBytes = Encoding.UTF8.GetBytes(encrypted_implant_type);
+            string base64Encrypted = Convert.ToBase64String(encryptedBytes);
+
+            return base64Encrypted;
         }
         
         //a function to get the implant type from the encrypted string
-        public static string DecryptImplantName(string encrypted_implant_type)
+        public static string DecryptImplantName(string base64Encrypted)
         {
-            
+            //Console.WriteLine($"Decrypting implant name string with metadata key {UniversialMetadataKey}");
+
+            // Decode the Base64 encoded string
+            byte[] encryptedBytes = Convert.FromBase64String(base64Encrypted);
+            string encrypted_implant_type = Encoding.UTF8.GetString(encryptedBytes);
+
             string implant_type = "";
             for (int i = 0; i < encrypted_implant_type.Length; i++)
             {

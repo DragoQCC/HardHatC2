@@ -251,10 +251,12 @@ namespace TeamServer.Controllers
 
             if(request.implantType == SpawnEngineerRequest.ImplantType.Engineer)
             {
+	            Console.WriteLine("Implant is an engineer");
 				file = file.Replace("{{REPLACE_IMPLANT_TYPE}}", Encryption.EncryptImplantName("Engineer"));
 			}
 			else if(request.implantType == SpawnEngineerRequest.ImplantType.Constructor)
 			{
+				Console.WriteLine("Implant is a constructor");
 				file = file.Replace("{{REPLACE_IMPLANT_TYPE}}", Encryption.EncryptImplantName("Constructor"));
 			}
 

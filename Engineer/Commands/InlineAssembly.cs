@@ -87,7 +87,7 @@ namespace Engineer.Commands
                             Tasking.FillTaskResults("[-]Task Cancelled", task, EngTaskStatus.Cancelled,TaskResponseType.String);
                             return;
                         }
-                        Thread.Sleep(100);
+                        Thread.Sleep(10);
                     }
                     //finish reading and set status to complete 
                     output = Encoding.UTF8.GetString(ms.ToArray());

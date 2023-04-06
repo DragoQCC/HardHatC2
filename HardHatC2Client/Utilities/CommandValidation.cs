@@ -282,11 +282,11 @@ public class CommandValidation
         new CommandItem()
         {
             Name = "run",
-            Keys = {}
+            Keys = {{"/command",true},{"/args",false},}
         },
         new CommandItem()
         {
-            Name = "ahell",
+            Name = "shell",
             Keys = {{"/command",true},}
         },
         new CommandItem()
