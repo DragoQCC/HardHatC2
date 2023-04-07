@@ -226,7 +226,8 @@ namespace TeamServer.Services.Extra
             {
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(ex.StackTrace);
-                return null;
+                byte[] dummySalt = new byte[32];
+                return dummySalt;
             }
         }
         
