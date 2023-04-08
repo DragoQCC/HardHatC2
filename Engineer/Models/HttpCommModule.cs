@@ -144,7 +144,7 @@ namespace Engineer.Models
             catch (Exception ex)
             {
                 //Console.WriteLine(ex.Message);
-               // Console.WriteLine(ex.StackTrace);
+                //Console.WriteLine(ex.StackTrace);
             }
         }
 
@@ -377,10 +377,10 @@ namespace Engineer.Models
                 _client.DefaultRequestHeaders.Add("Cookie", Cookies);
                 _client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
-                throw;
+                //Console.WriteLine(ex.Message);
+                //Console.WriteLine(ex.StackTrace);
             }
 
         }

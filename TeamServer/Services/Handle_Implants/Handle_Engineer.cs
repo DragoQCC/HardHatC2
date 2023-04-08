@@ -294,7 +294,8 @@ public class Handle_Engineer : ControllerBase
                             {
                                 DatabaseService.AsyncConnection.InsertAsync((EngineerTaskResult_DAO)result);
                                 HardHatHub.AlertEventHistory(new HistoryEvent() { Event = $"Got response for task {result.Id}", Status = "Success" });
-                                LoggingService.TaskLogger.ForContext("Task Result", result, true).Information($"Got response for task {result.Id}");
+                                string ResultValue = result.Result.Deserialize<string>();
+                                LoggingService.TaskLogger.ForContext("Task", result, true).ForContext("Task Result",ResultValue).Information($"Got response for task {result.Id}");
                             }
                         }
                         foreach (string engId in engIds)
@@ -306,7 +307,15 @@ public class Handle_Engineer : ControllerBase
                             {
                                 await HardHatHub.CheckIn(TaskedEng);
                                 //get a list of the taskIds for this engineer
-                                var taskIds = TaskedEng.GetTaskIds();
+                                //call GetTaskIds with the ids of tasks from results 
+                                List<string> taskIds = new List<string>();
+                                foreach (EngineerTaskResult result in results)
+                                {
+                                    if (result.EngineerId == engId)
+                                    {
+                                        taskIds.Add(result.Id);
+                                    }
+                                }
                                 HardHatHub.ShowEngineerTaskResponse(TaskedEng.engineerMetadata.Id, taskIds);
                             }
                             else

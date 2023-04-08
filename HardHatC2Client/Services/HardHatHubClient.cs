@@ -220,11 +220,11 @@ namespace HardHatC2Client.Services
                 return result;
             }
 
-            public async Task CancelRunningTask(string taskid,string engid)
+            public async Task<string> CancelRunningTask(string taskid,string engid)
             {
                 Console.WriteLine("c2 hub cancel task called, invoking on ts");
-                await _hubConnection.InvokeAsync("CancelRunningTask", arg1: taskid, arg2: engid);
-                return;
+                string CancelTaskId =  await _hubConnection.InvokeAsync<string>("CancelRunningTask", arg1: taskid, arg2: engid);
+                return CancelTaskId;
             }
 
             public async Task<bool> CreateUser(string username, string password,string Role)

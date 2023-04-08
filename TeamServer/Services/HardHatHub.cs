@@ -116,7 +116,7 @@ namespace TeamServer.Services
             return "Success: Uploaded File";
         }
 
-        public async Task CancelRunningTask(string taskid, string eng)
+        public async Task<string> CancelRunningTask(string taskid, string eng)
         {
             Console.WriteLine("ts cancel running task called, creating task to send to implant");
             //make a new engineerTask for the engid and use the taskid in an argument with the key /TaskId
@@ -124,6 +124,7 @@ namespace TeamServer.Services
             //find the engineer with the matching engid and add the task to the engineers task list
             Engineer engineer = EngineersController.engineerList.Where(e => e.engineerMetadata.Id == eng).FirstOrDefault();
             engineer.QueueTask(task);
+            return task.Id;
         }
 
         public async Task<string> CreateReconCenterEntity(ReconCenterEntity reconCenterEntity)

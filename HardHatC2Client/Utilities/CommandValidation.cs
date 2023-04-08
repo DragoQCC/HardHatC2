@@ -282,7 +282,7 @@ public class CommandValidation
         new CommandItem()
         {
             Name = "run",
-            Keys = {{"/command",true},{"/args",false},}
+            Keys = {{"/command",true},{"/args",false}, }
         },
         new CommandItem()
         {

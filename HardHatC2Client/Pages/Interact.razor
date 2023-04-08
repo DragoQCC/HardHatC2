@@ -16,6 +16,7 @@
 @using System.Diagnostics;
 @using HardHatC2Client.Models.TaskResultTypes
 @using RestSharp.Authenticators;
+@using System.Text.RegularExpressions;
 @inject RestClient restClient
 @inject NavigationManager navigationManagerDefault
 @inject ISnackbar Snackbar
@@ -25,7 +26,7 @@
     <AuthorizeView Roles="Operator,TeamLead">
         <Authorized>
             <h3 class="text-center">Interact</h3>
-            <MudContainer Fixed="true">
+                <MudContainer Fixed="true">
                 <MudTabs Outlined="true">
                     <div class="d-flex">
                         <MudSwitch @bind-Checked="@removeContentSwitch" Label="Remove panel content on collapse" Color="Color.Primary"></MudSwitch>
@@ -45,6 +46,7 @@
                                 </MudText>
                         </TooltipContent>
                         </MudTooltip>
+                            <MudSlider  ValueLabel="true" @bind-Value="@InteractPanelHeight" Min="300"  Max="1200" Color="Color.Primary">Interact Window Height</MudSlider>
                     </div>
                     <MudTabPanel Text="Engineers" Icon="@Icons.Material.Filled.Build" >
                         <XTabs Style="@setTabStyle(Settings.IsCheckedBox)" IsDraggable="true" NewTabSetActive="true" RenderMode="BlazorXTabs.Configuration.RenderMode.Partial" CloseTabs="true" OnTabRemoved="TabRemove">
@@ -52,8 +54,11 @@
                             {
                                 string tabTitle = EngTabTitleDic[engineer.Id];
                                 <XTab Title=@tabTitle>
-                                    <MudCard Class="" Style=" background:#111111; overflow-y:auto" Outlined="true"> <!--This is the parent card  -->
-                                        <MudCardContent Style="background:#111111; color:white; height:850px">
+                                        
+                                        <MudCard Class="" Style="background:#111111; overflow-y:auto" Outlined="true">
+                                            <!--This is the parent card  -->
+                                        <MudPaper Style="background:#111111;" Height="@GetPanelHeight()">
+                                            <MudCardContent Style="background:#111111; color:white;">
                                             @if (EngineerOutboundTaskIds.ContainsKey(engineer.Id))
                                             {
                                                 @foreach (string currenttask in EngineerOutboundTaskIds[engineer.Id])
@@ -97,7 +102,7 @@
                                                                         if (TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Running)
                                                                         {
                                                                             <div class="d-flex">
-                                                                                <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3"/>
+                                                                                <MudProgressCircular Size="Size.Small" Color="Color.Success" Indeterminate="true" Class="mr-3"/>
                                                                                 <MudIconButton Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() => CancelTask(currenttask, engineer.Id)"></MudIconButton>
                                                                                 <MudText>@commandHeaderText</MudText>
 
@@ -179,7 +184,14 @@
                                                                                         else
                                                                                         {
                                                                                             var output = TaskOutputDic[currenttask].Result as string;
-                                                                                            <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@output</MudText>
+                                                                                            // Unescape the string before splitting
+                                                                                            string unescapedOutput = Regex.Unescape(output);
+                                                                                            var lines = unescapedOutput.Split(Environment.NewLine, StringSplitOptions.None);
+                                                                                            // Using a loop
+                                                                                            foreach (var line in lines)
+                                                                                            {
+                                                                                                <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@CleanString(line)</MudText>
+                                                                                            }
                                                                                         }
                                                                                     }
                                                                                     else
@@ -201,11 +213,13 @@
                                                 }
                                             }
                                         </MudCardContent>
+                                            </MudPaper>
                                     </MudCard>
+                                        
                                     <EditForm Context="EditFormContext" Model="engineer" OnValidSubmit="@Send">
                                         <div class="d-flex mb-xl-5">
                 
-                                            <MudAutocomplete OnKeyUp="OnShowHistoryUp" @ref="mudauto" @bind-Value=@placeHolder T="string" ResetValueOnEmptyText="true" SearchFunc="@SearchCommand"
+                                            <MudAutocomplete Strict="false" OnKeyUp="OnShowHistoryUp" @ref="mudauto" @bind-Value=@placeHolder T="string" ResetValueOnEmptyText="true" SearchFunc="@SearchCommand"
                                                              Dense="true" Margin="Margin.Dense" SelectValueOnTab="true"  SelectOnClick="false" CoerceText="false" CoerceValue="true"
                                                              InputMode="InputMode.text" Variant="Variant.Text" Adornment="Adornment.Start" AdornmentText="[ENGINEER]> " Immediate="true" Clearable="true" KeyDownPreventDefault="true" KeyUpPreventDefault="true" TextUpdateSuppression="@TextSuppersion">
                                             </MudAutocomplete>
@@ -476,12 +490,12 @@
 
     private static string OutputOneStringTest = "";
     //create a delegate that we can use to invoke statehaschanged 
-    public delegate void OnStateChangeDelegate();
+    public delegate Task OnStateChangeDelegate();
     public static OnStateChangeDelegate OnStateChange;
     private static DateTime? LastRefresh { get; set; } = null;
-
+    public static int InteractPanelHeight { get; set; } = 850;
     private static Dictionary<string,MudExpansionPanel> Interact_ExpansionPanels = new(); //key is the task id since those are unique per panel anyway.
-
+    private static List<string>CancelTaskNumbersToWatch = new List<string>();
 
     private string setTabStyle(bool IsDark)
     {
@@ -555,6 +569,11 @@
         }
     }
 
+    public static string GetPanelHeight()
+    {
+        return InteractPanelHeight.ToString() + "px";
+    }
+
     public static async Task AddTaskToPickedUpList(string taskid)
     {
         if (!PickedUpTasks.Contains(taskid))
@@ -563,17 +582,17 @@
         }
         if (OnStateChange is not null)
         {
-            OnStateChange();
+            await OnStateChange();
         }
     }
 
 
-    public void ImplementOnStateChangeEvent()
+    public async Task ImplementOnStateChangeEvent()
     {
         if (LastRefresh == null)
         {
             LastRefresh = DateTime.Now;
-            InvokeAsync(StateHasChanged);
+            await InvokeAsync(StateHasChanged);
         }
         else
         {
@@ -581,7 +600,8 @@
             if (DateTime.Now.Subtract(LastRefresh.Value).TotalMilliseconds > 500)
             {
                 LastRefresh = DateTime.Now;
-                InvokeAsync(StateHasChanged);
+                await Task.Delay(100);
+                await InvokeAsync(StateHasChanged);
             }
         }
     }
@@ -617,7 +637,7 @@
                                    //if any of the strings in PreviousCommands matches UserInput then do not add it
             if (OnStateChange is not null)
             {
-                OnStateChange();
+                await OnStateChange();
             }
             if (!PreviousCommands.Contains(UserInput))
             {
@@ -651,7 +671,7 @@
         }
         if (OnStateChange is not null)
         {
-            OnStateChange();
+            await OnStateChange();
         }
     }
 
@@ -677,130 +697,138 @@
         }
         if (OnStateChange is not null)
         {
-            OnStateChange();
+            await OnStateChange();
         }
     }
 
     public static async Task SendTask(Engineer engineer, string command)
     {
-        string currentTaskId = Guid.NewGuid().ToString();
-        var createObject = new TaskEngineerRequest();
-        createObject.Command = command.Split(' ')[0];
-        //if command is help then run help and return
-        if (createObject.Command.Trim().Equals("help",StringComparison.CurrentCultureIgnoreCase))
+        try
         {
-            Dictionary<string, string> helpDiction = new Dictionary<string, string>();
-            string commandCheck = "";
-            string helpCommandheader = "";
-            if(command.Split(' ').Length >2)
+            string currentTaskId = Guid.NewGuid().ToString();
+            var createObject = new TaskEngineerRequest();
+            createObject.Command = command.Split(' ')[0];
+            //if command is help then run help and return
+            if (createObject.Command.Trim().Equals("help", StringComparison.CurrentCultureIgnoreCase))
             {
-                commandCheck = command.Split(' ')[2];
-                helpCommandheader = $"({DateTime.UtcNow}) Engineer instructed to {createObject.Command} {command.Split(' ')[1]} {command.Split(' ')[2]}\n";
+                Dictionary<string, string> helpDiction = new Dictionary<string, string>();
+                string commandCheck = "";
+                string helpCommandheader = "";
+                if (command.Split(' ').Length > 2)
+                {
+                    commandCheck = command.Split(' ')[2];
+                    helpCommandheader = $"({DateTime.UtcNow}) Engineer instructed to {createObject.Command} {command.Split(' ')[1]} {command.Split(' ')[2]}\n";
+                }
+                else
+                {
+                    helpCommandheader = $"({DateTime.UtcNow}) Engineer instructed to {createObject.Command}\n";
+                }
+                if (!string.IsNullOrWhiteSpace(commandCheck))
+                {
+                    helpDiction.Add("/command", commandCheck);
+                }
+                List<Help.HelpMenuItem> helpMenu = Help.DisplayHelp(helpDiction);
+
+
+                if (!TaskOutputDic.ContainsKey(currentTaskId))
+                {
+                    if (!TaskInputDic.ContainsKey(currentTaskId))
+                    {
+                        TaskInputDic.Add(currentTaskId, new EngineerTask { Id = currentTaskId, Command = createObject.Command, Arguments = helpDiction, File = null });
+                    }
+                    await UpdateOutGoingTaskDic(engineer.Id, currentTaskId, helpCommandheader);
+                    var taskResponse = new EngineerTaskResult();
+                    taskResponse.Id = currentTaskId;
+                    taskResponse.status = EngineerTaskResult.EngTaskStatus.Complete;
+                    taskResponse.ResponseType = EngineerTaskResult.TaskResponseType.HelpMenuItem;
+                    taskResponse.Result = helpMenu;
+                    TaskOutputDic.Add(currentTaskId, taskResponse);
+                    if (!TaskStatusDic.ContainsKey(currentTaskId))
+                    {
+                        TaskStatusDic.Add(currentTaskId, (EngineerTaskResponse.EngTaskStatus)taskResponse.status);
+                    }
+                }
+                return; //return here because help command does not need to be sent to the engineers
+            }
+
+            Dictionary<string, string> commandargs = new Dictionary<string, string>();
+            string error = null;
+            CommandValidation.ValidateCommand(command, out commandargs, out error);
+            if (error != null)
+            {
+                Engineers.ShowErrorToast(error);
+                return;
+            }
+            createObject.Arguments = commandargs;
+
+            //assign the task id to the task
+            createObject.taskID = currentTaskId;
+
+            //if arguments contains /method as a key then if the value is sync set the IsBlocking parameter to true if its async set it to false, if the key is not present set it to false
+            if (createObject.Arguments.ContainsKey("/method"))
+            {
+                //createObject.Arguments["/method"] = createObject.Arguments["/method"];
+                if (createObject.Arguments["/method"].Equals("sync", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    createObject.IsBlocking = true;
+                }
+                else if (createObject.Arguments["/method"].Equals("async", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    createObject.IsBlocking = false;
+                }
+                else
+                {
+                    createObject.IsBlocking = false;
+                }
             }
             else
             {
-                helpCommandheader = $"({DateTime.UtcNow}) Engineer instructed to {createObject.Command}\n";
-            }
-            if(!string.IsNullOrWhiteSpace(commandCheck))
-            {
-                helpDiction.Add("/command", commandCheck);
-            }
-            List<Help.HelpMenuItem> helpMenu = Help.DisplayHelp(helpDiction);
-
-
-            if (!TaskOutputDic.ContainsKey(currentTaskId))
-            {
-                if (!TaskInputDic.ContainsKey(currentTaskId))
-                {
-                    TaskInputDic.Add(currentTaskId, new EngineerTask { Id = currentTaskId, Command = createObject.Command, Arguments = helpDiction, File = null});
-                }
-                await UpdateOutGoingTaskDic(engineer.Id, currentTaskId, helpCommandheader);
-                var taskResponse = new EngineerTaskResult();
-                taskResponse.Id = currentTaskId;
-                taskResponse.status = EngineerTaskResult.EngTaskStatus.Complete;
-                taskResponse.ResponseType = EngineerTaskResult.TaskResponseType.HelpMenuItem;
-                taskResponse.Result = helpMenu;
-                TaskOutputDic.Add(currentTaskId,taskResponse);
-                if (!TaskStatusDic.ContainsKey(currentTaskId))
-                {
-                    TaskStatusDic.Add(currentTaskId, (EngineerTaskResponse.EngTaskStatus)taskResponse.status);
-                }
-            }
-            return; //return here because help command does not need to be sent to the engineers
-        }
-
-        Dictionary<string,string> commandargs = new Dictionary<string, string>();
-        string error = null;
-        CommandValidation.ValidateCommand(command,out commandargs,out error);
-        if (error != null)
-        {
-            Engineers.ShowErrorToast(error);
-            return;
-        }
-        createObject.Arguments = commandargs;
-
-        //assign the task id to the task    
-        createObject.taskID = currentTaskId;
-
-        //if arguments contains /method as a key then if the value is sync set the IsBlocking parameter to true if its async set it to false, if the key is not present set it to false
-        if (createObject.Arguments.ContainsKey("/method"))
-        {
-            //createObject.Arguments["/method"] = createObject.Arguments["/method"];
-            if (createObject.Arguments["/method"].Equals("sync",StringComparison.CurrentCultureIgnoreCase))
-            {
-                createObject.IsBlocking = true;
-            }
-            else if (createObject.Arguments["/method"].Equals("async",StringComparison.CurrentCultureIgnoreCase))
-            {
                 createObject.IsBlocking = false;
             }
-            else
+
+            //update the input dictionary with the new task
+            if (TaskInputDic.ContainsKey(createObject.taskID))
             {
-                createObject.IsBlocking = false;
+                TaskInputDic[createObject.taskID] = new EngineerTask { Id = createObject.taskID, Command = createObject.Command, Arguments = createObject.Arguments, File = null };
             }
-        }
-        else
-        {
-            createObject.IsBlocking = false;
-        }
+            else if (!TaskInputDic.ContainsKey(createObject.taskID))
+            {
+                TaskInputDic.Add(createObject.taskID, new EngineerTask { Id = createObject.taskID, Command = createObject.Command, Arguments = createObject.Arguments, File = null });
+            }
+            if (OnStateChange is not null)
+            {
+                await OnStateChange();
+            }
 
-        //update the input dictionary with the new task
-        if (TaskInputDic.ContainsKey(createObject.taskID))
-        {
-            TaskInputDic[createObject.taskID] = new EngineerTask { Id = createObject.taskID, Command = createObject.Command, Arguments = createObject.Arguments, File = null };
-        }
-        else if(!TaskInputDic.ContainsKey(createObject.taskID))
-        {
-            TaskInputDic.Add(createObject.taskID, new EngineerTask { Id = createObject.taskID, Command = createObject.Command, Arguments = createObject.Arguments, File = null });
-        }
-        if (OnStateChange is not null)
-        {
-            OnStateChange();
-        }
+            //update the local outgoing header to make it apear faster upon submit
+            var args = createObject.Arguments is null ? "" : string.Join(" ", createObject.Arguments.Select(kvp => $"{kvp.Key} {kvp.Value}"));
+            string Commandheader = $"({DateTime.UtcNow}) Engineer instructed to {createObject.Command + " " + args}\n";
+            Task.Run(async () => await UpdateOutGoingTaskDic(engineer.Id, currentTaskId, Commandheader));
+            if (OnStateChange is not null)
+            {
+                await OnStateChange();
+            }
 
-        //update the local outgoing header to make it apear faster upon submit
-        var args = createObject.Arguments is null ? "" : string.Join(" ", createObject.Arguments.Select(kvp => $"{kvp.Key} {kvp.Value}"));
-        string Commandheader = $"({DateTime.UtcNow}) Engineer instructed to {createObject.Command + " " + args}\n";
-        Task.Run(async() => await UpdateOutGoingTaskDic(engineer.Id,currentTaskId,Commandheader));
-        if (OnStateChange is not null)
-        {
-            OnStateChange();
+            //send the task to the server
+            string resource = $"/engineers/{engineer.Id}";
+            var request = new RestRequest(resource, Method.Post);
+            request.AddJsonBody(createObject);
+            request.OnBeforeDeserialization = (resp =>
+            {
+                Console.WriteLine(resp.Content);
+            });
+            _ = await Task.Run(() => _restClient.PostAsync(request));
         }
-
-        //send the task to the server
-        string resource = $"/engineers/{engineer.Id}";
-        var request = new RestRequest(resource, Method.Post);
-        request.AddJsonBody(createObject);
-        request.OnBeforeDeserialization = (resp =>
+        catch (Exception ex)
         {
-            Console.WriteLine(resp.Content);
-        });
-        _ = await Task.Run(()=> _restClient.PostAsync(request));
+            Console.WriteLine(ex.Message);
+            Console.WriteLine(ex.StackTrace);
+        }
     }
     // end of send task function
 
 
-    public static async Task ExpandedChanged(bool IsChanged,string enhgineerId, string taskId)
+    public static async Task ExpandedChanged(bool IsChanged, string enhgineerId, string taskId)
     {
         try
         {
@@ -821,7 +849,7 @@
                     }
                     if (OnStateChange is not null)
                     {
-                        OnStateChange();
+                       await OnStateChange();
                     }
                 }
                 else
@@ -832,7 +860,7 @@
                     //GC.WaitForPendingFinalizers();
                 }
             }
-            
+
 
         }
         catch (Exception e)
@@ -843,11 +871,20 @@
 
     }
 
+    public static string CleanString(string input)
+    {
+        // Remove any double quotes surrounding the input string
+        string cleanedInput = input.Trim('\"');
+        // Split the cleaned input string into lines
+        string[] lines = cleanedInput.Split(Environment.NewLine);
+        // Rejoin the lines with a newline character and return the result
+        return string.Join(Environment.NewLine, lines);
+    }
 
     private Task TabRemove(XTab tab)
     {
-        //find the engineer with the matching id and remove the task from the task list
-        var engineer = InteractEngineers.FirstOrDefault(e => e.Id == tab.Title);
+        //find the engineer where its ProcessId@Address matches the tabs Title and remove it 
+        var engineer = InteractEngineers.FirstOrDefault(x => x.ProcessId + "@" + x.Address == tab.Title);
         InteractEngineers.Remove(engineer);
         StateHasChanged();
         return Task.CompletedTask;
@@ -864,17 +901,17 @@
             {
                 EngineerReturnedTaskIds.Add(engineerid, new List<string>());
             }
-            // if the engineerid is in the dictionary check it against the tasks I know have returned already and remove them from the returnedTaskids list
-            if (EngineerReturnedTaskIds.ContainsKey(engineerid))
-            {
-                foreach (string taskid in EngineerReturnedTaskIds[engineerid])
-                {
-                    if (returnedTaskids.Contains(taskid)) //&& TaskStatusDic[taskid] != EngineerTaskResponse.EngTaskStatus.Running)
-                    {
-                        returnedTaskids.Remove(taskid);
-                    }
-                }
-            }
+            //// if the engineerid is in the dictionary check it against the tasks I know have returned already and remove them from the returnedTaskids list
+            //if (EngineerReturnedTaskIds.ContainsKey(engineerid))
+            //{
+            //    foreach (string taskid in EngineerReturnedTaskIds[engineerid])
+            //    {
+            //        if (returnedTaskids.Contains(taskid) && TaskStatusDic[taskid] != EngineerTaskResponse.EngTaskStatus.Running)
+            //        {
+            //            returnedTaskids.Remove(taskid);
+            //        }
+            //    }
+            //}
 
             // using the returned id list call GetTaskResults for each taskid and add the results to the EngineerTaskOutputDic
             foreach (string taskid in returnedTaskids)
@@ -883,7 +920,23 @@
                 {
                     TaskOutputDic.Add(taskid, null);
                 }
-                TaskOutputDic[taskid] = await GetTaskResults(engineerid, taskid);
+                var tempTaskResults  = await GetTaskResults(engineerid, taskid);
+                //if task.command equals cancelTask then dont add ito the taskoutPutDic just display a toast
+                if (tempTaskResults != null)
+                {
+                    if (CancelTaskNumbersToWatch.Contains(tempTaskResults.Id))
+                    {
+                        if (tempTaskResults.status == EngineerTaskResult.EngTaskStatus.Complete)
+                        {
+                            Engineers.ShowSuccessToast((string)tempTaskResults.Result);
+                        }
+                        else if (tempTaskResults.status == EngineerTaskResult.EngTaskStatus.Failed)
+                        {
+                            Engineers.ShowErrorToast((string)tempTaskResults.Result);
+                        }
+                    }
+                }
+                TaskOutputDic[taskid] = tempTaskResults;
                 //if TaskOutputDic[taskid] == No Output then remove the taskid from the TaskOutputDic
                 if (TaskOutputDic[taskid] != null)
                 {
@@ -933,7 +986,7 @@
         }
         if (OnStateChange is not null)
         {
-            OnStateChange();
+            await OnStateChange();
         }
     }
 
@@ -1007,7 +1060,7 @@
                     }
                     if (OnStateChange is not null)
                     {
-                        OnStateChange();
+                        await OnStateChange();
                     }
                     return taskResult;
                 }
@@ -1035,12 +1088,13 @@
 
         if (!result.Cancelled)
         {
-            await HardHatHubClient._hub.CancelRunningTask(taskid, engineerid);
+            string CancelTaskRequestNumber = await HardHatHubClient._hub.CancelRunningTask(taskid, engineerid);
+            CancelTaskNumbersToWatch.Add(CancelTaskRequestNumber);
             Engineers.ShowInfoToast($"Request to cancel task {taskid} sent");
         }
         if (OnStateChange is not null)
         {
-            OnStateChange();
+            await OnStateChange();
         }
     }
 
@@ -1133,7 +1187,7 @@
         HistoryIndex++;
         if (OnStateChange is not null)
         {
-            OnStateChange();
+            await OnStateChange();
         }
     }
     private async Task ForceHistoryUpdateDOWN()
@@ -1144,7 +1198,7 @@
         TextSuppersion = true; // reset so textbox can be typed in without autoclearing until submission
         if (OnStateChange is not null)
         {
-            OnStateChange();
+            await OnStateChange();
         }
     }
 
@@ -1179,16 +1233,16 @@
         if (stopwatch.IsRunning == false)
         {
             stopwatch.Start();
-            Task.Run(() =>
+            Task.Run( async() =>
             {
                 while (true)
                 {
                     if (stopwatch.ElapsedMilliseconds > 500)
                     {
-                        InvokeAsync(StateHasChanged);
+                        await OnStateChange();
                         stopwatch.Restart();
                     }
-                    Thread.Sleep(100);
+                    await Task.Delay(100);
                 }
             });
         }

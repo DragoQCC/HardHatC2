@@ -30,19 +30,32 @@ namespace HardHatC2Client.Utilities
             }
 
         }
-        
+
 
         public static T Deserialize<T>(this byte[] data)
         {
+            string json = null;
             try
             {
-  
-                //string json = Encoding.UTF8.GetString(data);
-                //if (!string.IsNullOrEmpty(json))
-                if(data.Length > 0)
+                json = Encoding.UTF8.GetString(data);
+                if (data.Length > 0)
                 {
-                    //Console.WriteLine(json);
-                    return JsonSerializer.Deserialize<T>(data);
+                    if (IsValidJson(json))
+                    {
+                        JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions();
+                        jsonSerializerOptions.AllowTrailingCommas = true;
+                        return JsonSerializer.Deserialize<T>(json, jsonSerializerOptions);
+                    }
+                    else if (typeof(T) == typeof(string))
+                    {
+                        json.Trim('"');
+                        return (T)(object)json;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Input data is not a valid JSON & is not a normal string, returning default value");
+                        return default(T);
+                    }
                 }
                 else
                 {
@@ -52,11 +65,25 @@ namespace HardHatC2Client.Utilities
             }
             catch (Exception ex)
             {
+                Console.WriteLine(json);
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(ex.StackTrace);
                 return default(T);
             }
-	       
+        }
+
+
+        private static bool IsValidJson(string json)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(json);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

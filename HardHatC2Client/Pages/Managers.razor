@@ -282,14 +282,14 @@
         {
             case 0:
                 //Remove
-                bool? result = await DialogService.ShowMessageBox(
-            "Warning", 
-            "Deleting can not be undone!", 
-            yesText:"Delete!", cancelText:"Cancel");
+                bool? result = await DialogService.ShowMessageBox("Warning",  "Deleting can not be undone!", yesText:"Delete!", cancelText:"Cancel");
                 state= result==null ? "Cancelled" : "Deleted!";
                 StateHasChanged();
                 //if result is yes then delete the maanager 
-                await DeleteManager(selectedManager);
+                if (result == true)
+                {
+                    await DeleteManager(selectedManager);
+                }
                 break;
             case 1:
                 //edit    

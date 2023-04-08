@@ -1,11 +1,11 @@
 ﻿body {
 }
 .btn {
-    width: 20vw;
-    height: 10vh;
-    display: inline-flex;
+    width: 15vw;
+    height: 20vh;
+    /*display: inline-flex;
     align-items: center;
-    justify-content: center;
+    justify-content: center;*/
 }
 
 .responsive-image {

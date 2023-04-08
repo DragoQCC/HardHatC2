@@ -19,6 +19,7 @@ namespace Engineer.Commands
         {
             try
             {
+                //Console.WriteLine("Starting shell command");
                 task.Arguments.TryGetValue("/command", out string command);
                 if (command == null)
                 {
@@ -28,6 +29,7 @@ namespace Engineer.Commands
                 command = command.TrimStart(' ');
 
                 var output = new StringBuilder();
+                var error = new StringBuilder();
 
                 var process = new Process
                 {
@@ -44,17 +46,32 @@ namespace Engineer.Commands
                     }
                 };
 
-                process.OutputDataReceived += (_, args) => { output.AppendLine(args.Data); };
-                process.ErrorDataReceived += (_, args) => { output.AppendLine(args.Data); };
-
+               // Console.WriteLine("Starting process");
                 process.Start();
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
+
+                string line;
+                while ((line = process.StandardOutput.ReadLine()) != null)
+                {
+                    output.AppendLine(line);
+                }
+
+                while ((line = process.StandardError.ReadLine()) != null)
+                {
+                    error.AppendLine(line);
+                }
+
                 process.WaitForExit();
 
                 process.Dispose();
+                //Console.WriteLine("Shell command complete");
 
-                Tasking.FillTaskResults(output.ToString(), task, EngTaskStatus.Complete,TaskResponseType.String);
+                if (error.Length > 0)
+                {
+                    output.AppendLine("Error:");
+                    output.AppendLine(error.ToString());
+                }
+
+                Tasking.FillTaskResults(output.ToString(), task, EngTaskStatus.Complete, TaskResponseType.String);
             }
             catch (Exception ex)
             {
