@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using TeamServer.Services;
 
 // Model for Engineer defines class, constructors, and other needed functions 
 namespace TeamServer.Models
@@ -11,11 +12,12 @@ namespace TeamServer.Models
     {
 		//class memeber properties and varables 
 		public EngineerMetadata engineerMetadata { get; set; }  //added metadata from class loads all properties from there , having no setter makes this read only so it can only be set in this line nad the constructor and not changed anywhere else.
-
+        public int Number { get; set; }
         public string ConnectionType { get; set;}
 		public string ManagerName { get; set;}
 		public string ExternalAddress { get; set; }
-        public DateTime LastSeen { get; set; } //private set because we dont ant any other class to set it
+        public DateTime LastSeen { get; set; } 
+        public DateTime FirstSeen { get; set; }
         public string Status { get; set; }
 
         public readonly ConcurrentQueue<EngineerTask> _pendingTasks = new();
@@ -26,6 +28,9 @@ namespace TeamServer.Models
         public Engineer(EngineerMetadata metadata) // makes constructor and includes metadata on creation
 		{
 			engineerMetadata = metadata;
+			//get the last engineer and increment the number by 1 and set the FirstSeen to now in UTC 
+			Number = EngineerService._engineers.Count > 0 ? EngineerService._engineers.Last().Number + 1 : 1;
+			FirstSeen = DateTime.UtcNow;
 		}
 
 		public Engineer() { }

@@ -10,6 +10,9 @@ namespace TeamServer.Models.Dbstorage
         [PrimaryKey]
         public string id { get; set; }
 
+        [Column("number")]
+        public int number { get; set; }
+
         [Column("engineerMetadata")]
         public byte[] engineerMetadata { get; set; }
 
@@ -25,6 +28,9 @@ namespace TeamServer.Models.Dbstorage
         [Column("LastSeen")]
         public DateTime LastSeen { get; set; }
 
+        [Column("FirstSeen")]
+        public DateTime FirstSeen { get; set; }
+
         [Column("Status")]
         public string Status { get; set; }
 
@@ -33,12 +39,15 @@ namespace TeamServer.Models.Dbstorage
         {
             return new Engineer_DAO
             {
+
                 id = model.engineerMetadata.Id,
+                number = model.Number,
                 engineerMetadata = model.engineerMetadata.Serialize(),
                 ConnectionType = model.ConnectionType,
                 ManagerName = model.ManagerName,
                 ExternalAddress = model.ExternalAddress,
                 LastSeen = model.LastSeen,
+                FirstSeen = model.FirstSeen,
                 Status = model.Status
             };
         }
@@ -49,10 +58,12 @@ namespace TeamServer.Models.Dbstorage
             return new Engineer
             {
                 engineerMetadata = dao.engineerMetadata.Deserialize<EngineerMetadata>(),
+                Number = dao.number,
                 ConnectionType = dao.ConnectionType,
                 ManagerName = dao.ManagerName,
                 ExternalAddress = dao.ExternalAddress,
                 LastSeen = dao.LastSeen,
+                FirstSeen = dao.FirstSeen,
                 Status = dao.Status,
             };
         }

