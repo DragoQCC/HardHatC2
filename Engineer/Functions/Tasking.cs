@@ -125,74 +125,75 @@ namespace Engineer.Functions
                     }
                     engTaskResultDic[task.Id].Status = taskStatus;
                     engTaskResultDic[task.Id].ResponseType = taskResponseType;
-                }
-                //if command is download then call the Functions.DownloadTracker.SplitFileString function, get the filename from the task.Arguments, and pass the result to the function
-                if (task.Command.Equals("download", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    if (engTaskResultDic[task.Id].Status == EngTaskStatus.Complete)
+                    
+                    //if command is download then call the Functions.DownloadTracker.SplitFileString function, get the filename from the task.Arguments, and pass the result to the function
+                    if (task.Command.Equals("download", StringComparison.CurrentCultureIgnoreCase))
                     {
-                        task.Arguments.TryGetValue("/file", out string filename);
-                        Functions.DownloadTracker.SplitFileString(filename, engTaskResultDic[task.Id].Result.JsonDeserialize<string>());
-                        //send each value from the key that matches the filename variable in _downloadedFileParts to the server
-                        foreach (var value in Functions.DownloadTracker._downloadedFileParts[filename])
+                        if (engTaskResultDic[task.Id].Status == EngTaskStatus.Complete)
                         {
-                            engTaskResultDic[task.Id].Result = value.JsonSerialize();
+                            task.Arguments.TryGetValue("/file", out string filename);
+                            Functions.DownloadTracker.SplitFileString(filename, engTaskResultDic[task.Id].Result.JsonDeserialize<string>());
+                            //send each value from the key that matches the filename variable in _downloadedFileParts to the server
+                            foreach (var value in Functions.DownloadTracker._downloadedFileParts[filename])
+                            {
+                                engTaskResultDic[task.Id].Result = value.JsonSerialize();
+                                SendTaskResult(engTaskResultDic[task.Id]);
+                            }
+                        }
+                        else
+                        {
                             SendTaskResult(engTaskResultDic[task.Id]);
                         }
+                    }
+                    //if Command name is ConnectSocks, SendSocks, ReceiveSocks send a true for ishidden
+                    else if (task.Command.Equals("socksConnect", StringComparison.CurrentCultureIgnoreCase) || task.Command.Equals("socksSend", StringComparison.CurrentCultureIgnoreCase) || task.Command.Equals("socksReceive", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        engTaskResultDic[task.Id].IsHidden = true;
+                        SendTaskResult(engTaskResultDic[task.Id]);
+                    }
+                    else if (task.Command.Equals("P2PFirstTimeCheckIn", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        engTaskResultDic[task.Id].IsHidden = true;
+                        SendTaskResult(engTaskResultDic[task.Id]);
+                    }
+                    else if (task.Command.Equals("CheckIn", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        engTaskResultDic[task.Id].IsHidden = true;
+                        SendTaskResult(engTaskResultDic[task.Id]);
+                    }
+                    else if (task.Command.Equals("rportsend", StringComparison.CurrentCultureIgnoreCase) || task.Command.Equals("rportRecieve", StringComparison.CurrentCultureIgnoreCase) || task.Command.Equals("rportforward", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        engTaskResultDic[task.Id].IsHidden = true;
+                        SendTaskResult(engTaskResultDic[task.Id]);
+                    }
+                    else if (task.Command.Equals("canceltask", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        engTaskResultDic[task.Id].IsHidden = false;
+                        SendTaskResult(engTaskResultDic[task.Id]);
+                    }
+                    else if (task.Command.Equals("UpdateTaskKey", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        engTaskResultDic[task.Id].IsHidden = true;
+                        SendTaskResult(engTaskResultDic[task.Id]);
                     }
                     else
                     {
                         SendTaskResult(engTaskResultDic[task.Id]);
                     }
+                    if (engTaskResultDic[task.Id].Status != EngTaskStatus.Running)
+                    {
+                        //if task is not running then remove it from the dictionary to save memory
+                        Thread.Sleep(100);
+                        engTaskResultDic.TryRemove(task.Id, out _);
+                        engTaskDic.TryRemove(task.Id, out _);
+                    }
                 }
-                //if Command name is ConnectSocks, SendSocks, ReceiveSocks send a true for ishidden
-                else if (task.Command.Equals("socksConnect", StringComparison.CurrentCultureIgnoreCase) || task.Command.Equals("socksSend", StringComparison.CurrentCultureIgnoreCase) || task.Command.Equals("socksReceive", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    engTaskResultDic[task.Id].IsHidden = true;
-                    SendTaskResult(engTaskResultDic[task.Id]);
-                }
-                else if (task.Command.Equals("P2PFirstTimeCheckIn", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    engTaskResultDic[task.Id].IsHidden = true;
-                    SendTaskResult(engTaskResultDic[task.Id]);
-                }
-                else if (task.Command.Equals("CheckIn", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    engTaskResultDic[task.Id].IsHidden = true;
-                    SendTaskResult(engTaskResultDic[task.Id]);
-                }
-                else if (task.Command.Equals("rportsend", StringComparison.CurrentCultureIgnoreCase) || task.Command.Equals("rportRecieve", StringComparison.CurrentCultureIgnoreCase) || task.Command.Equals("rportforward", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    engTaskResultDic[task.Id].IsHidden = true;
-                    SendTaskResult(engTaskResultDic[task.Id]);
-                }
-                else if(task.Command.Equals("canceltask",StringComparison.CurrentCultureIgnoreCase))
-                {
-                    engTaskResultDic[task.Id].IsHidden = false;
-                    SendTaskResult(engTaskResultDic[task.Id]);
-                }
-                else if (task.Command.Equals("UpdateTaskKey", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    engTaskResultDic[task.Id].IsHidden = true;
-                    SendTaskResult(engTaskResultDic[task.Id]);
-                }
-                else
-                {
-                    SendTaskResult(engTaskResultDic[task.Id]);
-                }
-
-                if(engTaskResultDic[task.Id].Status != EngTaskStatus.Running)
-                {
-                    //if task is not running then remove it from the dictionary to save memory
-                    engTaskResultDic.TryRemove(task.Id, out _);
-                    engTaskDic.TryRemove(task.Id, out _);
-                }
-
-                }
+                
+            }
             catch (Exception e)
             {
                 //Console.WriteLine(e.Message);
-               // Console.WriteLine(e.StackTrace);
+               //Console.WriteLine(e.StackTrace);
             }
         }
         

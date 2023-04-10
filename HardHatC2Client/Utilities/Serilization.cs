@@ -35,37 +35,72 @@ namespace HardHatC2Client.Utilities
         public static T Deserialize<T>(this byte[] data)
         {
             string json = null;
+            StringBuilder concatenatedMessages = new StringBuilder();
             try
             {
                 json = Encoding.UTF8.GetString(data);
                 if (data.Length > 0)
                 {
-                    if (IsValidJson(json))
+                    if (typeof(T) == typeof(MessageData))
                     {
-                        JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions();
-                        jsonSerializerOptions.AllowTrailingCommas = true;
-                        return JsonSerializer.Deserialize<T>(json, jsonSerializerOptions);
-                    }
-                    else if (typeof(T) == typeof(string))
-                    {
-                        json.Trim('"');
-                        return (T)(object)json;
+                        if (IsValidJson(json))
+                        {
+                            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions();
+                            jsonSerializerOptions.AllowTrailingCommas = true;
+                            var deserializedObject = JsonSerializer.Deserialize<T>(json, jsonSerializerOptions);
+                            return deserializedObject;
+                        }
+                        else
+                        {
+                            // Split the input string by '}'
+                            string[] jsonParts = json.Split(new[] { '}' }, StringSplitOptions.RemoveEmptyEntries);
+
+                            foreach (var part in jsonParts)
+                            {
+                                string cleanedJson = part.Trim() + "}";
+                                if (IsValidJson(cleanedJson))
+                                {
+                                    JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions();
+                                    jsonSerializerOptions.AllowTrailingCommas = true;
+                                    var deserializedObject = JsonSerializer.Deserialize<T>(cleanedJson, jsonSerializerOptions);
+                                    if (deserializedObject is MessageData messageData)
+                                    {
+                                        concatenatedMessages.Append(messageData.Message);
+                                    }
+                                }
+                                else if (typeof(T) == typeof(string))
+                                {
+                                    concatenatedMessages.Append(cleanedJson);
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Input data is not a valid JSON & is not a normal string, returning default value");
+                                    return default(T);
+                                }
+                            }
+                            return (T)(object)new MessageData() { Message = concatenatedMessages.ToString() };
+                        }
                     }
                     else
                     {
-                        Console.WriteLine("Input data is not a valid JSON & is not a normal string, returning default value");
-                        return default(T);
+                        if (IsValidJson(json))
+                        {
+                            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions();
+                            jsonSerializerOptions.AllowTrailingCommas = true;
+                            var deserializedObject = JsonSerializer.Deserialize<T>(json, jsonSerializerOptions);
+                            return deserializedObject;
+                        }
+                        else
+                        {
+                            return default(T);
+                        }
                     }
                 }
-                else
-                {
-                    return default(T);
-                }
-
+                return default(T);
             }
             catch (Exception ex)
             {
-                Console.WriteLine(json);
+                //Console.WriteLine(json);
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(ex.StackTrace);
                 return default(T);

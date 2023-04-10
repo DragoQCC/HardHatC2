@@ -1,15 +1,23 @@
 ﻿using Microsoft.AspNetCore.Routing.Constraints;
+using Microsoft.AspNetCore.Routing.Template;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Expressions;
+using Serilog.Formatting;
 using Serilog.Formatting.Json;
 using Serilog.Templates;
+using Serilog.Parsing;
 using System;
 using System.IO;
 using System.Reflection;
+using System.Text.Json;
 using TeamServer.Services.Extra;
+using System.Text;
+using Serilog.Sinks.File;
+using Microsoft.Extensions.Logging;
 
 namespace TeamServer.Services    
 {
@@ -38,12 +46,17 @@ namespace TeamServer.Services
                 logDirectory =  Directory.CreateDirectory(pathSplit[0] + "logs");
             }
             LogFolderPath = pathSplit[0] + "logs";
-            EventLogger = new LoggerConfiguration().WriteTo.File(new ExpressionTemplate(
-                "{ {Timestamp: ToUtc(@t), Message: @m, Level: @l, @x, ..@p} }\n", nameResolver: dateTimeFunctions ),$"{pathSplit[0] + "logs"}{allPlatformPathSeperator}Event_log.json").CreateLogger();
-            
-            
-            TaskLogger = new LoggerConfiguration().WriteTo.File(new ExpressionTemplate(
-                "{ {Timestamp: ToUtc(@t), Message: @m, Level: @l, @x, ..@p} }\n", nameResolver: dateTimeFunctions), $"{pathSplit[0] + "logs"}{allPlatformPathSeperator}Task_log.json").CreateLogger();
+            //EventLogger = new LoggerConfiguration().WriteTo.File(new ExpressionTemplate(
+            //    "{ {Timestamp: ToUtc(@t), Message: @m, Level: @l, @x, ..@p} }\n", nameResolver: dateTimeFunctions ),$"{pathSplit[0] + "logs"}{allPlatformPathSeperator}Event_log.json").CreateLogger();
+
+
+            //TaskLogger = new LoggerConfiguration().WriteTo.File(new ExpressionTemplate(
+            //    "{ {Timestamp: ToUtc(@t), Message: @m, Level: @l, @x, ..@p} }\n", nameResolver: dateTimeFunctions), $"{pathSplit[0] + "logs"}{allPlatformPathSeperator}Task_log.json").CreateLogger();
+
+            var expressionTemplate = new ExpressionTemplate("{ {Timestamp: ToUtc(@t), Message: @m, Level: @l, @x, ..@p} }\n", nameResolver: dateTimeFunctions);
+
+            EventLogger = new LoggerConfiguration().WriteTo.File(new IndentedJsonTextFormatter(expressionTemplate),$"{pathSplit[0] + "logs"}{allPlatformPathSeperator}Event_log.json").CreateLogger();
+            TaskLogger = new LoggerConfiguration().WriteTo.File(new IndentedJsonTextFormatter(expressionTemplate),$"{pathSplit[0] + "logs"}{allPlatformPathSeperator}Task_log.json").CreateLogger();
 
             EventLogger.Information("Logging Service Started");
             TaskLogger.Information("Logging Service Started");
@@ -80,8 +93,27 @@ namespace TeamServer.Services
                 File.WriteAllText($"{filename}_pretty.json", prettyJson);
             }
         }
-
-
-
     }
+
+
+    public class IndentedJsonTextFormatter : ITextFormatter
+    {
+        private readonly ExpressionTemplate _expressionTemplate;
+
+        public IndentedJsonTextFormatter(ExpressionTemplate expressionTemplate)
+        {
+            _expressionTemplate = expressionTemplate;
+        }
+
+        public void Format(LogEvent logEvent, TextWriter output)
+        {
+            using (var stringWriter = new StringWriter())
+            {
+                _expressionTemplate.Format(logEvent, stringWriter);
+                var json = JObject.Parse(stringWriter.ToString());
+                output.WriteLine(json.ToString(Formatting.Indented));
+            }
+        }
+    }
+
 }

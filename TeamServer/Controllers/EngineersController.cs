@@ -249,6 +249,8 @@ namespace TeamServer.Controllers
 
             file = file.Replace("{{REPLACE_UNIQUE_TASK_KEY}}", Encryption.UniversalTaskEncryptionKey);
 
+			file = file.Replace("{{REPLACE_KILL_DATE}}", request.KillDateTime.ToString());
+
             if(request.implantType == SpawnEngineerRequest.ImplantType.Engineer)
             {
 	            Console.WriteLine("Implant is an engineer");

@@ -8,11 +8,16 @@ namespace ApiModels.Requests
 {
     public class SpawnEngineerRequest
     {
+        public DateTime? selectedKillDate { get; set; }
+        public TimeSpan? selectedKillTime { get; set; }
+
         public string managerName { get; set; }
         public int ConnectionAttempts { get; set; }
         public int Sleep { get; set; }
         public string? WorkingHours { get; set; }
-        
+
+        public DateTime KillDateTime { get; set; }
+
         public bool EncodeShellcode { get; set; }
 
         public EngCompileType complieType { get; set; }

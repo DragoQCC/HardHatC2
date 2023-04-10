@@ -41,6 +41,7 @@ namespace Engineer
         public static SleepEnum.SleepTypes Sleeptype = Enum.TryParse("{{REPLACE_SLEEP_TYPE}}", out SleepEnum.SleepTypes sleeptype) ? sleeptype : SleepEnum.SleepTypes.None;
         public static DateTime LastP2PCheckIn = DateTime.Now;
         public static string ImplantType = "{{REPLACE_IMPLANT_TYPE}}";
+        public static DateTime killDate = DateTime.TryParse("{{REPLACE_KILL_DATE}}", out killDate) ? killDate : DateTime.MaxValue;
 
         public static async Task Main(string[] args)
         {
@@ -116,6 +117,11 @@ namespace Engineer
                 {
                     try
                     {
+                        if(DateTime.UtcNow > killDate)
+                        {
+                            _tokenSource.Cancel();
+                            break;
+                        }
                         if (ImpersonatedUserChanged)
                         {
                             ImpersonatedUser.Impersonate();

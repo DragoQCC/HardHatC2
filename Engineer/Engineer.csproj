@@ -183,6 +183,7 @@
     <Compile Include="Models\EngineerTaskResult.cs" />
     <Compile Include="Models\CommModule.cs" />
     <Compile Include="Models\HttpCommModule.cs" />
+    <Compile Include="Models\MessageData.cs" />
     <Compile Include="Models\SMBCommModule.cs" />
     <Compile Include="Models\TCPCommModule.cs" />
     <Compile Include="Program.cs" />

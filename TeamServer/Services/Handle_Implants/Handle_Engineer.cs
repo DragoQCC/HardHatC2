@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using TeamServer.Controllers;
 using TeamServer.Models;
 using TeamServer.Models.Dbstorage;
+using TeamServer.Models.Engineers.TaskResultTypes;
 using TeamServer.Models.Extras;
 using TeamServer.Utilities;
 using EngTaskStatus = TeamServer.Models.EngTaskStatus;
@@ -175,8 +176,9 @@ public class Handle_Engineer : ControllerBase
                         // we build a list of engineer ids because some tasks can be from P2P implants and should go to tright place later
                         List<string> engIds = new List<string>();
                         foreach (var result in results)
-                        {
-                            if (!engIds.Contains(result.EngineerId))
+                        {   
+
+                        if (!engIds.Contains(result.EngineerId))
                             {
                                 engIds.Add(result.EngineerId);
                             }
@@ -294,7 +296,7 @@ public class Handle_Engineer : ControllerBase
                             {
                                 DatabaseService.AsyncConnection.InsertAsync((EngineerTaskResult_DAO)result);
                                 HardHatHub.AlertEventHistory(new HistoryEvent() { Event = $"Got response for task {result.Id}", Status = "Success" });
-                                string ResultValue = result.Result.Deserialize<string>();
+                                string ResultValue = result.Result.Deserialize<MessageData>()?.Message ?? string.Empty;
                                 LoggingService.TaskLogger.ForContext("Task", result, true).ForContext("Task Result",ResultValue).Information($"Got response for task {result.Id}");
                             }
                         }

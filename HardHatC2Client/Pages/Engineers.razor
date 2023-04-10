@@ -131,7 +131,7 @@
                 </div>
             </div>
 
-
+            <br>
             <div class ="container-fluid">
                 <h3 class="text-center position-relative">Create New Engineer</h3>
                 <hr>
@@ -145,7 +145,11 @@
                     </MudSelect>
                     <MudTextField Class="mb-4 mt-4"  T="int" Label="Connection Attempts" Variant="Variant.Filled" Required="true" @bind-value="formData.ConnectionAttempts" RequiredError="callback address is required!"/>
                     <MudTextField Class="mb-4 mt-4" T="int" Label="sleep timer" Variant="Variant.Filled"  Required="true" @bind-value="formData.Sleep" RequiredError="port is required!"/>
-                    <MudTextField Class="mb-4 mt-4" T="string" Label="working hours format (01:00:00-23:00:00)" Variant="Variant.Filled"  @bind-value="formData.WorkingHours" RequiredError="port is required!" />
+                    <div class="d-flex">
+                                <MudDatePicker Required="true" Label="Pick a date" @bind-Date="formData.selectedKillDate"></MudDatePicker>
+                                <MudTimePicker Label="Pick a time in UTC" Required="true" @bind-Time="formData.selectedKillTime"></MudTimePicker>
+                    </div>
+                   @* <MudTextField Class="mb-4 mt-4" T="string" Label="working hours format (01:00:00-23:00:00)" Variant="Variant.Filled"  @bind-value="formData.WorkingHours" RequiredError="port is required!" />*@
                     <MudSelect Class="mb-4 mt-4"  T="SpawnEngineerRequest.EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
                         <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.exe)" />
                         <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.serviceexe)" />
@@ -309,11 +313,10 @@
     private static Stopwatch stopwatch = new Stopwatch();
     private static bool IsCurrentLocation { get; set; }
     public static bool HideOfflineEngineers { get; set; }
-    public delegate void OnStateChangeDelegate();
+    public delegate Task OnStateChangeDelegate();
     public static OnStateChangeDelegate OnStateChange;
     private static DateTime? LastRefresh { get; set; } = null;
     private string searchString1 = "";
-
     private bool OpenDialog { get; set; } = false;
     private Dictionary<string, bool> ColumnVisibility = new Dictionary<string, bool>
 {
@@ -384,7 +387,7 @@
             ColumnVisibility[columnName] = !ColumnVisibility[columnName];
         }
     }
-    
+
     private string GetCellStyle(string columnName)
     {
         if (ColumnVisibility.ContainsKey(columnName) && ColumnVisibility[columnName])
@@ -569,14 +572,16 @@
     {
         string resource = "/engineers";
         var createObject = new SpawnEngineerRequest
-		{
-			managerName = formData.managerName,
-            ConnectionAttempts = formData.ConnectionAttempts,
-            Sleep = formData.Sleep,
-            complieType = formData.complieType,
-            WorkingHours = formData.WorkingHours,
-            SleepType = formData.SleepType,
-		};
+            {
+                managerName = formData.managerName,
+                ConnectionAttempts = formData.ConnectionAttempts,
+                Sleep = formData.Sleep,
+                complieType = formData.complieType,
+                WorkingHours = formData.WorkingHours,
+                SleepType = formData.SleepType,
+                KillDateTime = (DateTime)(formData.selectedKillDate.Value.Date + formData.selectedKillTime),
+    };
+    
         var request = new RestRequest(resource,Method.Post);
         request.AddJsonBody(createObject);
         ShowInfoToast("Sending Request To Create Engineer");
@@ -590,8 +595,8 @@
             ShowSuccessToast(requestResponse);
         }
         //reset the form data object 
-        // formData = new SpawnEngineerRequest();
-        //  OnStateChange();
+         formData = new SpawnEngineerRequest();
+        await OnStateChange();
     }
 
     public static async Task GetAllEngineers()
@@ -781,7 +786,7 @@
     }
 
 
-    public void ImplementOnStateChangeEvent()
+    public async Task ImplementOnStateChangeEvent()
     {
         if (LastRefresh == null)
         {
@@ -794,7 +799,8 @@
             if (DateTime.Now.Subtract(LastRefresh.Value).TotalMilliseconds > 500)
             {
                 LastRefresh = DateTime.Now;
-                InvokeAsync(StateHasChanged);
+                await Task.Delay(100);
+                await InvokeAsync(StateHasChanged);
             }
         }
     }

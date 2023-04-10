@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using TeamServer.Models;
+using TeamServer.Models.Engineers.TaskResultTypes;
 using TeamServer.Models.Extras;
 using TeamServer.Services;
 using TeamServer.Services.Handle_Implants;
@@ -28,7 +29,7 @@ namespace TeamServer.Utilities
         {
             var CredsList = new List<Cred>();
             
-            var capturedCreds = CapturedCredential.ParseCredentials(result.Result.Deserialize<string>());
+            var capturedCreds = CapturedCredential.ParseCredentials(result.Result.Deserialize<MessageData>().Message);
             // for each credential in the list of captured credentials convert it to a Cred object, where CapturedCredential.Type is the Cred.Type and the Cred.Value is either the CapturedCredential Hash,Password, or ticket depending on type
             foreach (var cred in capturedCreds)
             {
@@ -68,7 +69,7 @@ namespace TeamServer.Utilities
             List<string> parts = new List<string>();
 
             //take result.Results, find each occureance of PARTS and everything before that until the next occurance of PARTS and add it to the parts list
-            var partTest = result.Result.Deserialize<string>();
+            var partTest = result.Result.Deserialize<MessageData>().Message;
             while (partTest.Contains("PARTS"))
             {
                 var partIndex = partTest.IndexOf("PARTS");
@@ -141,7 +142,7 @@ namespace TeamServer.Utilities
                 //if result.Id is socksConnected then split the incoming result string into an array and element 1 is the client unique string and we need to update the Proxy.SocksDestinationConnected
                 if (result.Command.Equals("SocksConnect", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    string resultString = result.Result.Deserialize<string>();
+                    string resultString = result.Result.Deserialize<MessageData>().Message;
                     var socksConnected = resultString.Split(new[] { "\n" }, StringSplitOptions.None);
                     //element 1 in the array matches a key in the SocksDestinationConnected dictionary update the value to true 
                     //find the Proxy item in the HttpmanagerController dictionary that matches the socksConnected[1] key
@@ -155,7 +156,7 @@ namespace TeamServer.Utilities
                 else if (result.Command.Equals("socksReceive", StringComparison.CurrentCultureIgnoreCase))
                 {
                     var socks_client_length = BitConverter.ToInt32(result.Result.Take(4).ToArray());
-                    var socks_client = result.Result.Skip(4).Take(socks_client_length).ToArray().Deserialize<string>();
+                    var socks_client = result.Result.Skip(4).Take(socks_client_length).ToArray().Deserialize<MessageData>().Message;
                     var socks_content = result.Result.Skip(4 + socks_client_length).Take(result.Result.Length - (4 + socks_client_length)).ToArray();
 
                     //Console.WriteLine($"teamserver received {socks_content.Length} bytes from {socks_client}");
@@ -176,7 +177,7 @@ namespace TeamServer.Utilities
             //if result.Id is rportsend take the result.Result and split it at the new line and element 0 is the data and element 1 is the guid
             if (result.Id.Equals("rportsend", StringComparison.CurrentCultureIgnoreCase))
             {
-                var split = result.Result.Deserialize<string>().Split(new[] { "\n" }, StringSplitOptions.None);
+                var split = result.Result.Deserialize<MessageData>().Message.Split(new[] { "\n" }, StringSplitOptions.None);
                 byte[] temp = Convert.FromBase64String(split[0]); //split 0 is the data split 1 is the guid
                 string client = split[1];
                 //Console.WriteLine($"teamserver received {temp.Length} bytes from {client}");
@@ -187,7 +188,7 @@ namespace TeamServer.Utilities
 
         public static async Task<string> PostProcess_P2PFirstCheckIn(EngineerTaskResult result, Engineer HttpEng)
         {
-            string[] resultArray = result.Result.Deserialize<string>().Split('\n');
+            string[] resultArray = result.Result.Deserialize<MessageData>().Message.Split('\n');
             //this is the metadata stored in the result string from the p2p implant
             string Base64Metadata = resultArray[0];
             string parentId = resultArray[1];

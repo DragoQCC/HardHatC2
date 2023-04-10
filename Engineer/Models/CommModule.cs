@@ -64,18 +64,18 @@ namespace Engineer.Models
 
 		public void SentData(EngineerTaskResult result)
 		{
-            //if the result is already in the Outbound queue then append the result to the existing result and update the status
-            if (Outbound.Any(t => t.Id == result.Id))
-            {
-                var existingResult = Outbound.FirstOrDefault(t => t.Id == result.Id);
-                existingResult.Result = existingResult.Result.Concat(result.Result).ToArray();
-                existingResult.Status = result.Status;
-            }
-            else
-            {
-                Outbound.Enqueue(result);
-            }
-		}
+			//if the result is already in the Outbound queue then append the result to the existing result and update the status
+			if (Outbound.Any(t => t.Id == result.Id))
+			{
+				var existingResult = Outbound.FirstOrDefault(t => t.Id == result.Id);
+				existingResult.Result = existingResult.Result.Concat(result.Result).ToArray();
+				existingResult.Status = result.Status;
+			}
+			else
+			{
+				Outbound.Enqueue(result);
+			}
+        }
 
         public async Task P2PSent(byte[] tcpData)
 		{

@@ -149,7 +149,12 @@ namespace TeamServer.Services
             {
                 DatabaseService.ConnectDb();
             }
-            ReconCenterEntity_DAO entityToUpdate = DatabaseService.AsyncConnection.Table<ReconCenterEntity_DAO>().Where(x => x.Name == entityName).ToListAsync().Result[0];
+            //var tempList = DatabaseService.AsyncConnection.Table<ReconCenterEntity_DAO>().Where(x => x.Name == entityName).ToListAsync();
+            //foreach (var item in tempList.Result)
+            //{
+            //    Console.WriteLine(item.Name);
+            //}
+            ReconCenterEntity_DAO entityToUpdate = DatabaseService.AsyncConnection.Table<ReconCenterEntity_DAO>().Where(x => x.Name == entityName).ToListAsync().Result.FirstOrDefault();
             //we do this so the list can grow otherwise we would only be able to store one property in the database
             List<ReconCenterEntity.ReconCenterEntityProperty> entitiesProperties = entityToUpdate.Properties.ProDeserializeForDatabase<List<ReconCenterEntity.ReconCenterEntityProperty>>();
             entitiesProperties.Add(reconCenterProperty);

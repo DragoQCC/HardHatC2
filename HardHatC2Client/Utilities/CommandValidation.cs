@@ -167,7 +167,7 @@ public class CommandValidation
         new CommandItem()
         {
             Name = "inlineAssembly",
-            Keys = {{"/file",true},{"/args",false},}
+            Keys = {{"/file",true},{"/args",false}, {"/execmethod",false }, {"/appdomain",false },}
         },
         new CommandItem()
         {
