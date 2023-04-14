@@ -49,12 +49,11 @@
                             <MudSlider  ValueLabel="true" @bind-Value="@InteractPanelHeight" Min="300"  Max="1200" Color="Color.Primary">Interact Window Height</MudSlider>
                     </div>
                     <MudTabPanel Text="Engineers" Icon="@Icons.Material.Filled.Build" >
-                        <XTabs Style="@setTabStyle(Settings.IsCheckedBox)" IsDraggable="true" NewTabSetActive="true" RenderMode="BlazorXTabs.Configuration.RenderMode.Partial" CloseTabs="true" OnTabRemoved="TabRemove">
+                        <XTabs Style="@setTabStyle(Settings.IsCheckedBox)" IsDraggable="true" NewTabSetActive="true" RenderMode="BlazorXTabs.Configuration.RenderMode.Partial" CloseTabs="true"  OnTabRemoved="TabRemove">
                             @foreach (Engineer engineer in InteractEngineers)
                             {
                                 string tabTitle = EngTabTitleDic[engineer.Id];
-                                <XTab Title=@tabTitle>
-                                        
+                                <XTab Title="@tabTitle">
                                         <MudCard Class="" Style="background:#111111; overflow-y:auto" Outlined="true">
                                             <!--This is the parent card  -->
                                         <MudPaper Style="background:#111111;" Height="@GetPanelHeight()">
@@ -208,11 +207,11 @@
                                         </MudCardContent>
                                             </MudPaper>
                                     </MudCard>
-                                        
-                                    <EditForm Context="EditFormContext" Model="engineer" OnValidSubmit="@Send">
-                                        <div class="d-flex mb-xl-5">
-                
-                                            <MudAutocomplete Strict="false" OnKeyUp="OnShowHistoryUp" @ref="mudauto" @bind-Value=@placeHolder T="string" ResetValueOnEmptyText="true" SearchFunc="@SearchCommand"
+                                    @if (Settings._InteractInputMode == Interact.InteractInputMode.Classic)
+                                    {
+                                        <EditForm Context="EditFormContext" Model="engineer" OnValidSubmit="@Send">
+                                                                                <div class="d-flex mb-xl-5">
+                                                <MudAutocomplete MaxItems="@((Interact.AutocompleteSearchShowAllItems) ? (int?)null : 10)" Strict="false" OnKeyUp="OnShowHistoryUp" @ref="mudauto" @bind-Value=@placeHolder T="string" ResetValueOnEmptyText="true" SearchFunc="@CommandSelection.SearchCommand"
                                                              Dense="true" Margin="Margin.Dense" SelectValueOnTab="true"  SelectOnClick="false" CoerceText="false" CoerceValue="true"
                                                              InputMode="InputMode.text" Variant="Variant.Text" Adornment="Adornment.Start" AdornmentText="[ENGINEER]> " Immediate="true" Clearable="true" KeyDownPreventDefault="true" KeyUpPreventDefault="true" TextUpdateSuppression="@TextSuppersion">
                                             </MudAutocomplete>
@@ -225,6 +224,23 @@
                                             }
                                         </div>
                                     </EditForm>
+                                    }
+                                    else
+                                    {
+                                    <EditForm Context="EditFormContext" Model="engineer" OnValidSubmit="@OnCommandSelectionEnterKeyDown">
+                                        <div class="d-flex mb-xl-5">
+                                            <CommandSelection @ref="commandSelector" Commands="@CommandValidation.CommandList" OnEnterKeyDown="OnCommandSelectionEnterKeyDown" />
+
+                                            <MudButton style="background:var(--font-color);color:var(--background)" OnClick=@OnCommandSelectionEnterKeyDown> <MudText>Send</MudText></MudButton>
+                                            @if (IsEnterkey)
+                                            {
+                                                Console.WriteLine("Enter key pressed");
+                                                Task.Run(async () => await SendTask(engineer, UserInput));
+                                                IsEnterkey = false;
+                                            }
+                                        </div>
+                                    </EditForm>
+                                    }
                                     <EngineerDataTable engineer="@engineer"></EngineerDataTable>
                                 </XTab>
                             }
@@ -241,7 +257,7 @@
         </Authorized>
     </AuthorizeView>
 <!--This is the Start of the GUEST READ ONLY section-->
-@*<AuthorizeView Roles="Guest">
+ @*<AuthorizeView Roles="Guest">
         <Authorized>
                     <h3 class="text-center">Interact</h3>
                     <MudContainer Fixed="true">
@@ -472,7 +488,7 @@
     private static int HistoryIndex = 1;
 
     private string icon = Icons.Material.Filled.CheckCircle;
-    private static bool TextSuppersion = true;
+    public static bool TextSuppersion = true;
     private static bool IsTableView = true;
     private static bool FirstRender = true;
     private static bool Initialized = false;
@@ -485,10 +501,23 @@
     //create a delegate that we can use to invoke statehaschanged 
     public delegate Task OnStateChangeDelegate();
     public static OnStateChangeDelegate OnStateChange;
+    public delegate Task OnWindowInteractSubmission();
+    public static OnWindowInteractSubmission _onWindowInteractSubmission;
     private static DateTime? LastRefresh { get; set; } = null;
     public static int InteractPanelHeight { get; set; } = 850;
     private static Dictionary<string,MudExpansionPanel> Interact_ExpansionPanels = new(); //key is the task id since those are unique per panel anyway.
     private static List<string>CancelTaskNumbersToWatch = new List<string>();
+    private static CommandItem SelectedCommandItem { get; set; }
+    private static List<string> CommandsOrOptions = new List<string>();
+    private CommandSelection commandSelector;
+    public static bool AutocompleteSearchShowAllItems { get; set; } = false;
+
+    public enum InteractInputMode
+    {
+        Classic,
+        Inline,
+        Modal_Window
+    }
 
     private string setTabStyle(bool IsDark)
     {
@@ -608,38 +637,92 @@
     }
 
 
-    private async Task<IEnumerable<string>> SearchCommand(string value)
+    // private async Task<IEnumerable<string>> SearchCommand(string value)
+    // {
+    //     //if input is blank or null give the whole list. 
+    //     //if (string.IsNullOrEmpty(value))
+    //     //{
+    //     //    var list = Help.menuItems.Select(x => x.Usage);
+    //     //    alpabatize the list by the Name before returning it 
+    //     //    return list.OrderBy(x => x);
+    //     //}
+    //     ////return the name of the Help.MenuItem that matches the search term
+    //     //var resultItem = await Task.FromResult(Help.menuItems.Where(x => x.Name.ToLower().Contains(value.ToLower())).ToList());
+    //     ////alphabetize and return the list
+    //     //var nameList = resultItem.Select(x => x.Usage);
+    //     //return nameList.OrderBy(x => x);
+    //
+    //     if(CommandsOrOptions.Count == 0)
+    //     {
+    //         CommandsOrOptions = CommandValidation.CommandList.Select(x => x.Name);
+    //     }
+    //     if (string.IsNullOrEmpty(value))
+    //     {
+    //         var list = CommandsOrOptions;
+    //         //alpabatize the list by the Name before returning it
+    //         return list.OrderBy(x => x);
+    //     }
+    //     //return the nae of the CommandList item that matches the search term
+    //     var resultItem = await Task.FromResult(CommandsOrOptions.Where(x => x.ToLower().Contains(value.ToLower())).ToList());
+    //     //alphabetize and return the list
+    //     var nameList = resultItem;
+    //     return nameList.OrderBy(x => x);
+    //
+    // }
+
+    // private void OnValueChanged(string value)
+    // {
+    //     if (CommandValidation.CommandList.Any(x => x.Name.Equals(value,StringComparison.CurrentCultureIgnoreCase)))
+    //     {
+    //         SelectedCommandItem = value;
+    //         CommandsOrOptions = CommandValidation.CommandList.Where(x => x.Name.Equals(value, StringComparison.CurrentCultureIgnoreCase)).Select(x => x.Keys).FirstOrDefault();
+    //     }
+    // }
+
+    private async Task UpdateUserInput()
     {
-        //if input is blank or null give the whole list. 
-        if (string.IsNullOrEmpty(value))
+        if (commandSelector.SelectedCommandItem != null)
         {
-            var list = Help.menuItems.Select(x => x.Usage);
-            //alpabatize the list by the Name before returning it 
-            return list.OrderBy(x => x);
+            var selectedCommand = commandSelector.SelectedCommandItem.Name;
+
+            // Filter out keys with empty values
+            var keyValuePairs = commandSelector.keyValue.Where(kvp => !string.IsNullOrEmpty(kvp.Value));
+
+            // Build the command string with key-value pairs
+            var commandString = selectedCommand + " " + string.Join(" ", keyValuePairs.Select(kvp => $"{kvp.Key} {kvp.Value}"));
+            placeHolder = commandString.Trim();
+            Console.WriteLine($"Command string should be {placeHolder}");
         }
-        //return the name of the Help.MenuItem that matches the search term
-        var resultItem = await Task.FromResult(Help.menuItems.Where(x => x.Name.ToLower().Contains(value.ToLower())).ToList());
-        //alphabetize and return the list
-        var nameList = resultItem.Select(x => x.Usage);
-        return nameList.OrderBy(x => x);
     }
 
+    private async Task OnCommandSelectionEnterKeyDown()
+    {
+        await UpdateUserInput();
+        await Send();
+    }
+
+    private void OnTextChanged(string text)
+    {
+        placeHolder = text;
+        // Update the list of content based on the selected command
+    }
 
     public async Task Send()
     {
-        if (!String.IsNullOrWhiteSpace(placeHolder) )
+        if (!String.IsNullOrWhiteSpace(placeHolder))
         {
             UserInput = placeHolder;
             TextSuppersion = false; //allows text box to be updated
             placeHolder = "";      // sets text back to empty
             IsEnterkey = true;
             await Task.Delay(2);
-            TextSuppersion = true; // reset so textbox can be typed in without autoclearing until submission 
-                                   //if any of the strings in PreviousCommands matches UserInput then do not add it
+            TextSuppersion = true; // reset so textbox can be typed in without autoclearing until submission
+
             if (OnStateChange is not null)
             {
                 await OnStateChange();
             }
+            //if any of the strings in PreviousCommands matches UserInput then do not add it
             if (!PreviousCommands.Contains(UserInput))
             {
                 PreviousCommands.Add(UserInput);
@@ -647,6 +730,7 @@
             HistoryIndex = 1;
         }
     }
+
 
 
 
@@ -706,6 +790,7 @@
     {
         try
         {
+            Console.WriteLine("Starting send Task");
             string currentTaskId = Guid.NewGuid().ToString();
             var createObject = new TaskEngineerRequest();
             createObject.Command = command.Split(' ')[0];
@@ -850,7 +935,7 @@
                     }
                     if (OnStateChange is not null)
                     {
-                       await OnStateChange();
+                        await OnStateChange();
                     }
                 }
                 else
@@ -890,6 +975,7 @@
         StateHasChanged();
         return Task.CompletedTask;
     }
+
 
     //called by signalR when a new task response comes in 
     public static async Task UpdateTaskResponse(string engineerid, List<string> returnedTaskids)
@@ -1043,7 +1129,7 @@
                             break;
                     }
 
-                   
+
 
                     if(!EngineerReturnedTaskIds.ContainsKey(engineerId))
                     {
@@ -1247,23 +1333,24 @@
     protected override async Task OnInitializedAsync()
     {
         OnStateChange = ImplementOnStateChangeEvent;
+        _onWindowInteractSubmission = OnCommandSelectionEnterKeyDown;
         Nav = navigationManagerDefault;
-        if (stopwatch.IsRunning == false)
-        {
-            stopwatch.Start();
-            Task.Run( async() =>
-            {
-                while (true)
-                {
-                    if (stopwatch.ElapsedMilliseconds > 500)
-                    {
-                        await OnStateChange();
-                        stopwatch.Restart();
-                    }
-                    await Task.Delay(100);
-                }
-            });
-        }
+        //if (stopwatch.IsRunning == false)
+        //{
+        //    stopwatch.Start();
+        //    Task.Run( async() =>
+        //    {
+        //        while (true)
+        //        {
+        //            if (stopwatch.ElapsedMilliseconds > 500)
+        //            {
+        //                await OnStateChange();
+        //                stopwatch.Restart();
+        //            }
+        //            await Task.Delay(100);
+        //        }
+        //    });
+        //}
     }
 }
   

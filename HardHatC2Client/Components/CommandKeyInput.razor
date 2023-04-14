@@ -1,0 +1,59 @@
+﻿@using MudBlazor
+@using HardHatC2Client.Utilities
+
+<div>
+    @if (CommandKey?.inputType == CommandKey.InputType.Text)
+    {
+        <MudTextField @bind-Value="@Value" />
+    }
+    else if (CommandKey?.inputType == CommandKey.InputType.DropDown)
+    {
+        <MudSelect T="string" @bind-Value="@Value">
+            @foreach (var item in CommandKey?.PreDefinedValues ?? new List<string>())
+            {
+                <MudSelectItem Value="@item" />
+            }
+        </MudSelect>
+    }
+    else if (CommandKey?.inputType == CommandKey.InputType.Manager)
+    {
+        //in this case the predefined list will be filled by a function call instead of a hardcoded list
+        <MudSelect T="string" @bind-Value="@Value">
+            @foreach (var item in CommandKey?.PreDefinedValues ?? new List<string>())
+            {
+                <MudSelectItem Value="@item" />
+            }
+        </MudSelect>
+    }
+    else if (CommandKey?.inputType == CommandKey.InputType.CheckBox)
+    {
+        <MudCheckBox T=bool Color="Color.Primary" CheckedChanged="(e) => UpdateCheckboxValue(e)"></MudCheckBox>
+    }
+</div>
+
+@code {
+    [Parameter] public CommandKey CommandKey { get; set; }
+    private string _value;
+
+    [Parameter]
+    public string Value
+    {
+        get => _value;
+        set
+        {
+            if (_value != value)
+            {
+                _value = value;
+                ValueChanged.InvokeAsync(value);
+            }
+        }
+    }
+
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+
+    private void UpdateCheckboxValue(bool isChecked)
+    {
+        Value = isChecked ? "true" : "";
+        ValueChanged.InvokeAsync(Value);
+    }
+}

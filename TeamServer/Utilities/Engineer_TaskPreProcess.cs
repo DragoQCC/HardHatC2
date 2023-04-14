@@ -89,6 +89,17 @@ namespace TeamServer.Utilities
             else if (currentTask.Command.Equals("inlineAssembly", StringComparison.CurrentCultureIgnoreCase))
             {
                 currentTask.Arguments.TryGetValue("/file", out string filepath);
+                //if filepath is not a real file path then use the default programs folder 
+                if(!File.Exists(filepath))
+                {
+                    // find the file in the base directory of the project named "engineer_{manager}" and save its filepath to a string
+                    char allPlatformPathSeperator = Path.DirectorySeparatorChar;
+                    string assemblyBasePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                    string[] pathSplit = assemblyBasePath.Split("bin"); // [0] is the main path HardHatC2\Teamserver\ 
+                    pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
+                    filepath = pathSplit[0] + "Programs" + allPlatformPathSeperator + "Users" + allPlatformPathSeperator + filepath;
+                }
+
                 filepath = filepath.TrimStart(' ');
                 var fileContent = System.IO.File.ReadAllBytes(filepath);
                 currentTask.File = fileContent;
@@ -98,6 +109,15 @@ namespace TeamServer.Utilities
                 //split the arguments into two strings at the first space
                 currentTask.Arguments.TryGetValue("/file", out string program);
                 currentTask.Arguments.TryGetValue("/args", out string arguments);
+                if (!File.Exists(program))
+                {
+                    // find the file in the base directory of the project named "engineer_{manager}" and save its filepath to a string
+                    char allPlatformPathSeperator = Path.DirectorySeparatorChar;
+                    string assemblyBasePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                    string[] pathSplit = assemblyBasePath.Split("bin"); // [0] is the main path HardHatC2\Teamserver\ 
+                    pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
+                    program = pathSplit[0] + "Programs" + allPlatformPathSeperator + "Users" + allPlatformPathSeperator + program;
+                }
                 var shellcode = Shellcode.AssemToShellcode(program, arguments);
                 currentTask.File = shellcode;
             }
@@ -205,7 +225,7 @@ namespace TeamServer.Utilities
                 // find the file in the base directory of the project named "engineer_{manager}" and save its filepath to a string
                 char allPlatformPathSeperator = Path.DirectorySeparatorChar;
                 string assemblyBasePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                string[] pathSplit = assemblyBasePath.Split("bin"); // [0] is the main path D:\my_Custom_code\HardHatC2\Teamserver\ 
+                string[] pathSplit = assemblyBasePath.Split("bin"); // [0] is the main path HardHatC2\Teamserver\ 
                 pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
                 string filepath = "";
 
@@ -237,18 +257,18 @@ namespace TeamServer.Utilities
                     if (method.Equals("psexec", StringComparison.CurrentCultureIgnoreCase))
                     {
                         JumpRequest.complieType = SpawnEngineerRequest.EngCompileType.serviceexe;
-                        filepath = pathSplit[0] + "temp" + $"{allPlatformPathSeperator}" + $"Engineer_{manager}_service.exe";
+                        filepath = pathSplit[0] + ".."  + $"{allPlatformPathSeperator}" + $"Engineer_{manager}_service.exe";
                     }
                     else
                     {
                         JumpRequest.complieType = SpawnEngineerRequest.EngCompileType.exe;
-                        filepath = pathSplit[0] + "temp" + $"{allPlatformPathSeperator}" + $"Engineer_{manager}.exe";
+                        filepath = pathSplit[0] + ".." + $"{allPlatformPathSeperator}" + $"Engineer_{manager}.exe";
                     }
                 }
                 else
                 {
                     JumpRequest.complieType = SpawnEngineerRequest.EngCompileType.exe;
-                    filepath = pathSplit[0] + "temp" + $"{allPlatformPathSeperator}" + $"Engineer_{manager}.exe";
+                    filepath = pathSplit[0] + ".." + $"{allPlatformPathSeperator}" + $"Engineer_{manager}.exe";
                 }
                 bool isCreated = EngineerService.CreateEngineers(JumpRequest);
                 if (isCreated)

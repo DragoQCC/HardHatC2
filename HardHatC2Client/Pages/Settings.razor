@@ -8,6 +8,13 @@
 		<Authorized>
 			<h4>Theme</h4> 
 			<MudSwitch @bind-Checked="@IsCheckedBox" ThumbIcon="@Icons.Material.Filled.LightMode" Color="Color.Success" Class="ma-4" T="bool" Label="Toggle Light/Dark Mode"/>
+			<MudSelect @bind-Value="_InteractInputMode" T="Interact.InteractInputMode" Label="Interact Input Mode" AnchorOrigin="Origin.BottomCenter">
+				@foreach (Interact.InteractInputMode value in Enum.GetValues(typeof(Interact.InteractInputMode)))
+                {
+                    <MudSelectItem Value="@value" />
+                }
+			</MudSelect>
+			<MudSwitch @bind-Checked="@Interact.AutocompleteSearchShowAllItems" Color="Color.Success" Class="ma-4" T="bool" Label="Interact Autocomplete ShowAll" />
 
 			@if (IsCheckedBox == false)
 			{
@@ -57,12 +64,13 @@
 
 @code{
 
-#region Settings
+	#region Settings
 
 	public static string selectedTheme = "Dark";
 	private static List<string> themes = new List<string> { "Light", "Dark" };
 	public static bool IsCheckedBox = true;
-	
+	public static Interact.InteractInputMode _InteractInputMode { get; set; } = Interact.InteractInputMode.Classic;
+
 	// public static string GetCssClass()
 	// {
 	// 	if(selectedTheme =="Light")
