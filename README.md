@@ -1,3 +1,10 @@
+![Discord](https://img.shields.io/discord/882642569207644200)
+![GitHub issues](https://img.shields.io/github/issues/DragoQCC/HardHatC2)
+![GitHub Repo stars](https://img.shields.io/github/stars/DragoQcc/HardHatC2?style=social)
+![GitHub forks](https://img.shields.io/github/forks/Dragoqcc/HardHatC2?style=social)
+![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/DragoQcc/HardHatc2)
+![GitHub last commit](https://img.shields.io/github/last-commit/dragoqcc/hardhatc2)
+
 # HardHat C2 
 ## A cross-platform, collaborative, Command & Control framework written in C#, designed for red teaming and ease of use.
 ![image](https://user-images.githubusercontent.com/15575425/228551034-e07df233-63f6-41a2-8b94-6eb840859e82.png)
