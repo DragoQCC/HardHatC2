@@ -157,7 +157,12 @@ namespace TeamServer.Controllers
 
 			manager.Stop();
 			_managers.Removemanager(manager);
-			HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"Manager {manager.Name} removed", Status = "warning" });
+            if (DatabaseService.AsyncConnection == null)
+            {
+                DatabaseService.ConnectDb();
+            }
+            DatabaseService.AsyncConnection.DeleteAsync((HttpManager_DAO)manager);
+            HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"Manager {manager.Name} removed", Status = "warning" });
             LoggingService.EventLogger.Warning("Manager {manager.Name} removed", manager.Name);
             return NoContent();
 		}
