@@ -225,7 +225,7 @@ namespace TeamServer.Models
 
             // Create password for certificate protection
             var passwordForCertificateProtection = new SecureString();
-            foreach (var @char in "p@ssw0rd")
+            foreach (var @char in CertificatePassword)
             {
                 passwordForCertificateProtection.AppendChar(@char);
             }
