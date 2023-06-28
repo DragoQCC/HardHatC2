@@ -62,7 +62,7 @@ namespace TeamServer.Models
                 if (IsSecure)
                 {
                     Type = ManagerType.https;
-                    await GeneerateCert();
+                    await GenerateCert();
 
                     var hostBuilder = new HostBuilder().ConfigureWebHostDefaults(host =>
                     {
@@ -168,7 +168,7 @@ namespace TeamServer.Models
             _tokenSource.Cancel();
         }
 
-        private async Task GeneerateCert()
+        private async Task GenerateCert()
         {
             // Generate private-public key pair
             var rsaKey = RSA.Create(2048);
@@ -225,7 +225,7 @@ namespace TeamServer.Models
 
             // Create password for certificate protection
             var passwordForCertificateProtection = new SecureString();
-            foreach (var @char in "p@ssw0rd")
+            foreach (var @char in CertificatePassword)
             {
                 passwordForCertificateProtection.AppendChar(@char);
             }
