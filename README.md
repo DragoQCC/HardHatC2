@@ -13,10 +13,11 @@ HardHat is a multiplayer C# .NET-based command and control framework. Designed t
 It contains three primary components, an ASP.NET teamserver, a blazor .NET client, and C# based implants.
 
 # Release Tracking 
-Alpha 0.2 Release - 7/6/23
- Change log : https://docs.hardhat-c2.net/changelog/alpha-0.2-update-july-6-2023 
-Alpha Release - 3/29/23
- NOTE: HardHat is in Alpha release; it will have bugs, missing features, and unexpected things will happen. Thank you for trying it, and please report back any issues or missing features so they can be addressed.
+- Alpha 0.2 Release - 7/6/23
+  - Change log: https://docs.hardhat-c2.net/changelog/alpha-0.2-update-july-6-2023 
+- Alpha Release - 3/29/23
+ 
+NOTE: HardHat is in Alpha release; it will have bugs, missing features, and unexpected things will happen. Thank you for trying it, and please report back any issues or missing features so they can be addressed.
 
 # Community 
 [Discord](https://discord.gg/npW2yy7JFK) 
