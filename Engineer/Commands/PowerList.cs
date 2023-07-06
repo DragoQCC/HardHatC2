@@ -1,11 +1,8 @@
-﻿using Engineer.Commands;
-using Engineer.Functions;
-using Engineer.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -23,11 +20,11 @@ namespace Engineer.Commands
                 {
                     output += item.Key.ToString() + " : " + item.Value + Environment.NewLine;
                 }
-                Tasking.FillTaskResults(output,task,EngTaskStatus.Complete,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(output,task,EngTaskStatus.Complete,TaskResponseType.String);
             }
             else
             {
-                Tasking.FillTaskResults("No scripts have been imported yet",task,EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("No scripts have been imported yet",task,EngTaskStatus.Failed,TaskResponseType.String);
             }
 
 

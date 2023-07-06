@@ -1,12 +1,8 @@
-﻿using Engineer.Commands;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 using System.IO;
-using Engineer.Functions;
+using System.Threading.Tasks;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -25,14 +21,14 @@ namespace Engineer.Commands
                 if (File.Exists(file))
                 {
                     File.Move(file, destination);
-                    Tasking.FillTaskResults("File moved", task, EngTaskStatus.Complete,TaskResponseType.String);
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("File moved", task, EngTaskStatus.Complete,TaskResponseType.String);
                     return;
                 }
-                Tasking.FillTaskResults("error: " + "file not found", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + "file not found", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
             }
             catch (Exception e)
             {
-                Tasking.FillTaskResults("error: " + e.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + e.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
             }
 
         }

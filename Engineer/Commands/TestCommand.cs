@@ -1,10 +1,6 @@
-﻿using Engineer.Functions;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -14,7 +10,7 @@ namespace Engineer.Commands
 
 		public override async Task Execute(EngineerTask task)
 		{
-			Tasking.FillTaskResults("Hello from test command", task, EngTaskStatus.Complete,TaskResponseType.String);
+			ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Hello from test command", task, EngTaskStatus.Complete,TaskResponseType.String);
 		}
 
 	}

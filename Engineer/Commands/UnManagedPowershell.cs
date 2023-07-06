@@ -1,20 +1,11 @@
-﻿using Engineer.Commands;
-using Engineer.Models;
-using Engineer.Extra;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Management.Automation;
-using System.Management.Automation.Host;
-using System.Management.Automation.Runspaces;
-using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using System.Globalization;
-using Microsoft.Win32;
-using Engineer.Functions;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -102,11 +93,11 @@ namespace Engineer.Commands
                 ps.Commands.Clear();
                 ps.Dispose();
 
-                Tasking.FillTaskResults(output, task, EngTaskStatus.Complete,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(output, task, EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception ex)
             {
-                Tasking.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
             }
             finally
             {

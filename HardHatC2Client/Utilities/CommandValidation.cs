@@ -1,19 +1,70 @@
-﻿namespace HardHatC2Client.Utilities;
+﻿using HardHatC2Client.Pages;
+using static HardHatC2Client.Utilities.CommandKey;
+using static HardHatC2Client.Utilities.Help;
+
+namespace HardHatC2Client.Utilities;
 
 public class CommandItem
 {
     public string  Name { get; set; }
-    public Dictionary<string,bool> Keys { get; set; } = new  Dictionary<string,bool>(); //string is key name bool is if its required or not 
+    public List<CommandKey>? Keys { get; set; } = new(); //string is key name bool is if its required or not 
+}
+
+public class CommandKey
+{
+    public string Name { get; set; }
+    public bool Required { get; set; }
+    public List<string>? PreDefinedValues { get; set; } = new List<string>();
+    public bool NeedsValues { get; set; }
+
+    public InputType inputType { get; set; }
+
+    public enum InputType
+    {
+        Text,
+        DropDown, //predefined values
+        Manager, //useful for commands like inject, jump where u make a new implant based on an existing manager 
+        CheckBox, // used for keys that have no values and are either present or not present 
+        File, // used for keys that require a file to be uploaded
+    }
+
+    public CommandKey()
+    {
+        
+    }
+    public CommandKey(string name, bool required, InputType inputType, List<string>? preDefinedValues, bool needsValues)
+    {
+        Name = name;
+        Required = required;
+        PreDefinedValues = preDefinedValues;
+        NeedsValues = needsValues;
+        this.inputType = inputType;
+    }   
 }
 
 public class CommandValidation
 {
+    public static List<string> ManagerNames
+    {
+        get { return Managers.managersList.Select(manager => manager.Name).ToList(); }
+    }
 
+    public static Dictionary<string,List<string>> ImplantLoadedCommands = new Dictionary<string, List<string>>();
+    
     public static bool ValidateCommand(string input, out Dictionary<string,string> args , out string error)
     {
         args = new Dictionary<string, string>();
         string command = input.Split(' ')[0];
         List<string> argsToParse = input.Split(' ').Skip(1).ToList();
+
+        //if argsToParse contains /SkipCheck then the command and key validations are skipped 
+        if (argsToParse.Contains("/SkipCheck"))
+        {
+            args = argsToParse.ToDictionary(x => x, x => "");
+            error = null;
+            return true;
+        }
+
 
         //if none of the command names in CommandList match the command name then return false
         if (!CommandList.Any(x => x.Name.Equals(command, StringComparison.OrdinalIgnoreCase)))
@@ -22,12 +73,14 @@ public class CommandValidation
             error = "Command not found";
             return false;
         }
+
+      
         
         //get the command item from the CommandList that matches the command name
         CommandItem commandItem = CommandList.First(x => x.Name.Equals(command, StringComparison.OrdinalIgnoreCase));
         
         //if the commandItem has no keys then return true
-        if (commandItem.Keys.Count == 0)
+        if (commandItem.Keys == null || commandItem.Keys.Count == 0)
         {
             error = null;
             return true;
@@ -43,7 +96,7 @@ public class CommandValidation
         //take the argsToParse list if the string starts with a / and add it to the argsToParseSplit list
         foreach (var arg in argsToParse)
         {
-            if (arg.StartsWith("/") && commandItem.Keys.ContainsKey(arg))
+            if (arg.StartsWith("/") && commandItem.Keys.Any(x => x.Name.Equals(arg,StringComparison.CurrentCultureIgnoreCase)) )
             {
                 argsToParseSplit.Add(arg);
             }
@@ -54,17 +107,17 @@ public class CommandValidation
         //if it is not then return false
         foreach (var key in commandItem.Keys)
         {
-            if (key.Value && !argsToParseSplit.Contains(key.Key))
+            if (key.Required && !argsToParseSplit.Contains(key.Name))
             {
                 args = null;
-                error = $"Required argument {key.Key} not found";
+                error = $"Required argument {key.Name} not found";
                 return false;
             }
         }
         //foreach key in the argsToParseSplit list check if the key is in the commandItem.Keys dictionary and that it has not already been added to the args dictionary if it has not then add it to the args dictionary
         foreach (string arg in argsToParseSplit)
         {
-            if (commandItem.Keys.ContainsKey(arg) && !args.ContainsKey(arg))
+            if (commandItem.Keys.Any(x=> x.Name ==arg) && !args.ContainsKey(arg))
             {
                 string value = "";
                 //take the argsToParse list find the entry that matches the current arg and get entries after that until the next entry is another value in the argsToParseSplit list
@@ -86,253 +139,545 @@ public class CommandValidation
         // },
         new CommandItem()
         {
+            Name = "Addcommand",
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey() {Name = "/command", Required = true, inputType = InputType.Text, PreDefinedValues = null, NeedsValues = true},
+                    }
+        },
+        new CommandItem()
+        {
+            Name = "Addmodule",
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey() {Name = "/module", Required = true, inputType = InputType.Text, PreDefinedValues = null, NeedsValues = true},
+                    }
+        },
+        new CommandItem()
+        {
             Name = "Add-MachineAccount",
-            Keys = {{"/username",false},{"/password",false},{"/domain",false},{"/name",true},{"/machinePassword",true}}
+            Keys = new List<CommandKey>()
+                    { 
+                        new CommandKey() {Name = "/username", Required = false, inputType = InputType.Text, PreDefinedValues = null, NeedsValues = true},
+                        new CommandKey("/password",false,InputType.Text, null, true),
+                        new CommandKey("/domain",false,InputType.Text, null, true),
+                        new CommandKey("/name",true,InputType.Text, null,  true),
+                        new CommandKey("/machinePassword",true,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "arp",
-            Keys = {}
+            Keys = null //no keys
         },
         new CommandItem()
         {
             Name = "cat",
-            Keys = {{"/file",true},}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/file",true,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "cd",
-            Keys = {{"/path",true},}
+            //Keys = {{"/path",true},}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/path",true,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "copy",
-            Keys = {{"/file",true},{"/dest",true},}
+           // Keys = {{"/file",true},{"/dest",true},}
+           Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/file",true,InputType.Text, null,  true),
+                        new CommandKey("/dest",true,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "connect",
-            Keys = {{"/ip",false},{"/port",true},{"/localhost",false},}
+            //Keys = {{"/ip",false},{"/port",true},{"/localhost",false},}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/ip",false,InputType.Text, null,  true),
+                        new CommandKey("/port",true,InputType.Text, null,  true),
+                        new CommandKey("/localhost",false,InputType.Text, null,  true)
+                    }
         },
+        //new CommandItem()
+        //{
+        //    Name = "cleanupinteractiveprofile",
+        //    Keys = new List<CommandKey>()
+        //    {
+        //                new CommandKey("/sid",true,InputType.Text, null,  true)
+        //    }
+        //},
+        //new CommandItem()
+        //{
+        //    Name = "createprocess_stolentoken",
+        //    Keys = new List<CommandKey>()
+        //    {
+        //        new CommandKey("/program",true,InputType.Text, null,  true),
+        //        new CommandKey("/args",false,InputType.Text, null,  true),
+        //        new CommandKey("/index",true,InputType.Text, null,  true)
+        //    }
+        //},
         new CommandItem()
         {
             Name = "delete",
-            Keys = {{"/file",true}}
+            //Keys = {{"/file",true}}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/file",true,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "download",
-            Keys = {{"/file",true}}
+           // Keys = {{"/file",true}}
+           Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/file",true,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "execute",
-            Keys = {{"/command",true},{"/args",false},}
+            //Keys = {{"/command",true},{"/args",false},}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/command",true,InputType.Text, null,  true),
+                        new CommandKey("/args",false,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "executeAssembly",
-            Keys = {{"/file",true},{"/args",false},}
+           // Keys = {{"/file",true},{"/args",false},}
+           Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/file",true,InputType.Text, null,  true),
+                        new CommandKey("/args",false,InputType.Text, null,  true),
+                        new CommandKey("/local",false,InputType.File, null,  true)
+                    }
+        },
+        new CommandItem()
+        {
+            Name = "execute_bof",
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/file",true,InputType.Text, null,  true),
+                        new CommandKey("/function",true,InputType.Text, null,  true),
+                        new CommandKey("/argtypes",false,InputType.Text, null,  true),
+                        new CommandKey("/args",false,InputType.Text, null,  true),
+                       // new CommandKey("/local",false,InputType.File, null,  true)
+                    }
+        },
+         new CommandItem()
+        {
+            Name = "execute_pe",
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/file",true,InputType.Text, null,  true),
+                        new CommandKey("/args",false,InputType.Text, null,  true),
+                       // new CommandKey("/local",false,InputType.File, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "exit",
-            Keys = {}
+            Keys = null
         },
         new CommandItem()
         {
-            Name = "getluid",
-            Keys = {}
+            Name = "GetCommands",
+            Keys = null
+        },
+        new CommandItem()
+        {
+            Name = "get_luid",
+            Keys = null
         },
         new CommandItem()
         {
             Name = "getprivs",
-            Keys = {}
+            Keys = null
         },
         new CommandItem()
         {
             Name = "GetMachineAccountQuota",
-            Keys = {{"/domain",false},{"/username",false},{"/password",false},}
+            //Keys = {{"/domain",false},{"/username",false},{"/password",false},}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/domain",false,InputType.Text, null,  true),
+                        new CommandKey("/username",false,InputType.Text, null,  true),
+                        new CommandKey("/password",false,InputType.Text, null,  true)
+                    }
+        },
+        new CommandItem()
+        {
+            Name = "getsystem",
+            Keys = new List<CommandKey>()
+            {
+                        new CommandKey("/elevate",false,InputType.Text, null,  false),
+                        new CommandKey("/command",false,InputType.Text, null,  false),
+                    }
         },
         new CommandItem()
         {
             Name = "help",
-            Keys = {{"/command",false}}
+            //Keys = {{"/command",false}}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/command",false,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "inject",
-            Keys = {{"/manager",true},{"/pid",true},}
+            //Keys = {{"/manager",true},{"/pid",true},}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/manager",true,InputType.Manager, ManagerNames,  true),
+                        new CommandKey("/pid",true,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "inlineAssembly",
-            Keys = {{"/file",true},{"/args",false}, {"/execmethod",false }, {"/appdomain",false },}
+            //Keys = {{"/file",true},{"/args",false}, {"/execmethod",false }, {"/appdomain",false },}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/file",true,InputType.Text, null,  true),
+                        new CommandKey("/args",false,InputType.Text, null,  true),
+                        new CommandKey("/execmethod",false,InputType.DropDown, new List<string>(){"UnloadDomain","Classic"},  true),
+                        new CommandKey("/appdomain",false,InputType.Text, null,  true),
+                        new CommandKey("/Patch_A",false,InputType.CheckBox,null,false),
+                        new CommandKey("/local",false,InputType.File, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "inlineDll",
-            Keys = {{"/dll",true},{"/function",true},{"/args",false}}
+            //Keys = {{"/dll",true},{"/function",true},{"/args",false}}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/dll",true,InputType.Text, null,  true),
+                        new CommandKey("/function",true,InputType.Text, null,  true),
+                        new CommandKey("/args",false,InputType.Text, null,  true),
+                        new CommandKey("/local",false,InputType.File, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "ipconfig",
-            Keys = {}
+            Keys = null
         },
         new CommandItem()
         {
             Name = "jump",
-            Keys = {{"/method",true},{"/target",true},{"/manager",true}}
+            //Keys = {{"/method",true},{"/target",true},{"/manager",true}}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/method",true,InputType.DropDown, new List<string>(){"psexec","wmi","wmi-ps","winrm","dcom"},  true),
+                        new CommandKey("/target",true,InputType.Text, null,  true),
+                        new CommandKey("/manager",true,InputType.Manager, ManagerNames,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "ldapSearch",
-            Keys = {{"/search",true},{"/domain",false},{"/username",false},{"/password",false},}
+            //Keys = {{"/search",true},{"/domain",false},{"/username",false},{"/password",false},}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/search",true,InputType.Text, null,  true),
+                        new CommandKey("/domain",false,InputType.Text, null,  true),
+                        new CommandKey("/username",false,InputType.Text, null,  true),
+                        new CommandKey("/password",false,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "link",
-            Keys = {{"/pipe",true},{"/ip",false},}
+            //Keys = {{"/pipe",true},{"/ip",false},}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/pipe",true,InputType.Text, null,  true),
+                        new CommandKey("/ip",false,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "loadAssembly",
-            Keys = {{"/file",true},{"/args",false},}
+           // Keys = {{"/file",true},{"/args",false},}
+              Keys = new List<CommandKey>()
+                      {
+                            new CommandKey("/file",true,InputType.Text, null,  true),
+                            new CommandKey("/args",false,InputType.Text, null,  true),
+                            new CommandKey("/local",false,InputType.File, null,  true)
+                      }
         },
         new CommandItem()
         {
             Name = "ls",
-            Keys = {{"/path",false},{"/getcount",false},{"/getacls",false},}
+            //Keys = {{"/path",false},{"/getcount",false},{"/getacls",false},}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/path",false,InputType.Text, null,  true),
+                        new CommandKey("/getcount",false,InputType.Text, null,  true),
+                        new CommandKey("/getacls",false,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "make_token",
-            Keys = {{"/username",true},{"/password",true},{"/domain",true},}
+            //Keys = {{"/username",true},{"/password",true},{"/domain",true},}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/username",true,InputType.Text, null,  true),
+                        new CommandKey("/password",true,InputType.Text, null,  true),
+                        new CommandKey("/domain",true,InputType.Text, null,  true),
+                        //new CommandKey("/localauth",false,InputType.Text, null,  false)
+                    }
+        },
+        new CommandItem()
+        {
+            Name = "mimikatz",
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/args",true,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "mkdir",
-            Keys = {{"/path",true},}
+            //Keys = {{"/path",true},}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/path",true,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "move",
-            Keys = {{"/file",true},{"/dest",true},}
+            //Keys = {{"/file",true},{"/dest",true},}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/file",true,InputType.Text, null,  true),
+                        new CommandKey("/dest",true,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "net-localgroup",
-            Keys = {}
+            Keys = null
         },
         new CommandItem()
         {
             Name = "net-localgroup-members",
-            Keys = {{"/group",false},}
+            //Keys = {{"/group",false},}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/group",false,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "net-Dclist",
-            Keys = {{"/domain",false},{"/username",false},{"/password",false},}
+            //Keys = {{"/domain",false},{"/username",false},{"/password",false},}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/domain",false,InputType.Text, null,  true),
+                        new CommandKey("/username",false,InputType.Text, null,  true),
+                        new CommandKey("/password",false,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "patch_amsi",
-            Keys = {}
+            Keys = null
         },
         new CommandItem()
         {
             Name = "patch_etw",
-            Keys = {}
+            Keys = null
         },
         new CommandItem()
         {
             Name = "powershell_import",
-            Keys = {{"/import",true},{"/remove",false},}
+            //Keys = {{"/import",true},{"/remove",false},}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/import",true,InputType.Text, null,  true),
+                        new CommandKey("/remove",false,InputType.Text, null,  true),
+                        new CommandKey("/local",false,InputType.File, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "powerlist",
-            Keys = {}
+            Keys = null
         },
         new CommandItem()
         {
             Name = "ps",
-            Keys = {}
+            Keys = null
         },
         new CommandItem()
         {
             Name = "print-env",
-            Keys = {}
+            Keys = null
         },
         new CommandItem()
         {
             Name = "pwd",
-            Keys = {}
+            Keys = null
         },
         new CommandItem()
         {
             Name = "rev2self",
-            Keys = {}
+            Keys = null
         },
         new CommandItem()
         {
             Name = "rportforward",
-            Keys = {{"/fwdport",true},{"/fwdhost",true},{"/bindport",true},}
+            //Keys = {{"/fwdport",true},{"/fwdhost",true},{"/bindport",true},}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/fwdport",true,InputType.Text, null,  true),
+                        new CommandKey("/fwdhost",true,InputType.Text, null,  true),
+                        new CommandKey("/bindport",true,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "run",
-            Keys = {{"/command",true},{"/args",false}, }
+            //Keys = {{"/command",true},{"/args",false}, }
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/command",true,InputType.Text, null,  true),
+                        new CommandKey("/args",false,InputType.Text, null,  true)
+                    }
+        },
+        new CommandItem()
+        {
+            Name = "runas",
+            Keys = new List<CommandKey>()
+            {
+                new CommandKey("/program",true,InputType.Text, null,  true),
+                new CommandKey("/args",false,InputType.Text, null,  true),
+                new CommandKey("/username",true,InputType.Text, null,  true),
+                new CommandKey("/password",true,InputType.Text, null,  true),
+                new CommandKey("/domain",true,InputType.Text, null,  true),
+            }
         },
         new CommandItem()
         {
             Name = "shell",
-            Keys = {{"/command",true},}
+            //Keys = {{"/command",true},}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/command",true,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "InlineShellcode",
-            Keys = {{"/program",true},{"/args",false},}
+            //Keys = {{"/program",true},{"/args",false},}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/program",true,InputType.Text, null,  true),
+                        new CommandKey("/args",false,InputType.Text, null,  true),
+                        new CommandKey("/local",false,InputType.File, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "sleep",
-            Keys = {{"/time",true},}
+            //Keys = {{"/time",true},}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/time",true,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "socks",
-            Keys = {{"/port",true}}
+            //Keys = {{"/port",true}}
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/port",true,InputType.Text, null,  true)
+                    }
         },
         new CommandItem()
         {
             Name = "spawn",
-            Keys = {{"/manager",true}}
+           // Keys = {{"/manager",true}}
+            Keys = new List<CommandKey>()
+            {
+                new CommandKey("/manager",true,InputType.Manager, ManagerNames,  true)
+            }
         },
         new CommandItem()
         {
             Name = "spawnto",
-            Keys = {{"/path",true}}
+            //Keys = {{"/path",true}}
+            Keys = new List<CommandKey>()
+            {
+                new CommandKey("/path",true,InputType.Text, null,  true)
+            }
         },
         new CommandItem()
         {
             Name = "steal_token",
-            Keys = {{"/pid",true}}
+           // Keys = {{"/pid",true}}
+            Keys = new List<CommandKey>()
+            {
+                new CommandKey("/pid",true,InputType.Text, null,  true)
+            }
+        },
+        new CommandItem()
+        {
+            Name = "token_store",
+            Keys = new List<CommandKey>()
+            {
+                new CommandKey("/remove",false,InputType.Text, null,  true),
+                new CommandKey("/view",false,InputType.Text, null,  false),
+                new CommandKey("/use",false,InputType.Text, null,  true),
+            }
         },
         new CommandItem()
         {
             Name = "unmanagedPowershell",
-            Keys = {{"/command",true}}
+            //Keys = {{"/command",true}}
+            Keys = new List<CommandKey>()
+            {
+                new CommandKey("/command",true,InputType.Text, null,  true)
+            }
         },
         new CommandItem()
         {
             Name = "upload",
-            Keys = {{"/file",true},{"/dest",true},}
+           // Keys = {{"/file",true},{"/dest",true},}
+            Keys = new List<CommandKey>()
+            {
+                new CommandKey("/file",true,InputType.Text, null,  true),
+                new CommandKey("/dest",true,InputType.Text, null,  true),
+                new CommandKey("/local",false,InputType.File, null,  true)
+            }
         },
         new CommandItem()
         {
             Name = "whoami",
-            Keys = {{"/groups",false},}
+            //Keys = {{"/groups",false},}
+            Keys = new List<CommandKey>()
+            {
+                new CommandKey("/groups",false,InputType.CheckBox, null,  false)
+            }
         },
     };
 }

@@ -1,13 +1,8 @@
-﻿using Engineer.Commands;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Threading;
 using System.Threading.Tasks;
-using System.IO;
-using System.IO.Pipes;
-using Engineer.Functions;
+using DynamicEngLoading;
+
+using Engineer.Models;
 
 namespace Engineer.Commands
 {
@@ -42,7 +37,7 @@ namespace Engineer.Commands
             if (ParentIsServer)
             {
                // Console.WriteLine("starting parent as server");
-                Tasking.FillTaskResults($"starting parent as server", task, EngTaskStatus.Running,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"starting parent as server", task, EngTaskStatus.Running,TaskResponseType.String);
                 ParentSMBcommModule = new EngSMBComm(namedPipe, true); // parent as server
                 Task.Run(async () => await ParentSMBcommModule.Start());
             }
@@ -50,15 +45,15 @@ namespace Engineer.Commands
             {
                 //Console.WriteLine("starting parent as client");
                 //Console.WriteLine($"trying to connect to named pipe {namedPipe} at {serverip}");
-                Tasking.FillTaskResults($"starting parent as client \n trying to connect to named pipe {namedPipe} at {serverip}", task, EngTaskStatus.Running,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"starting parent as client \n trying to connect to named pipe {namedPipe} at {serverip}", task, EngTaskStatus.Running,TaskResponseType.String);
                 ParentSMBcommModule = new EngSMBComm(namedPipe, serverip, true); // parent as client
                 Task.Run(async () => await ParentSMBcommModule.Start());
             }
             while (Output == null)
             {
-                System.Threading.Thread.Sleep(20);
+                Thread.Sleep(20);
             }
-            Tasking.FillTaskResults(Output,task,EngTaskStatus.Complete,TaskResponseType.String);
+            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(Output,task,EngTaskStatus.Complete,TaskResponseType.String);
         }
     }
 }

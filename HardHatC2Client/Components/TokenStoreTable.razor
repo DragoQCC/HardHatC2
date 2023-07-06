@@ -1,0 +1,55 @@
+﻿@using HardHatC2Client.Models
+@using HardHatC2Client.Models.TaskResultTypes;
+@using HardHatC2Client.Pages;
+@using MudBlazor
+
+<div class="container-fluid d-flex flex-grow-1" style="height:500px; overflow-y:scroll">
+    <MudTable Style="width:100%;" Height="400px" Class="flex-auto" Breakpoint="Breakpoint.None" Items="@currentEngTokens" HorizontalScrollbar="true" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Elevation="10" Outlined="true" Striped="true" T="TokenStoreItem" SortLabel="Sort By">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Token Store</MudText>
+            <MudSpacer />
+        </ToolBarContent>
+        <HeaderContent>
+            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<TokenStoreItem, object>(x=>x.Index)">#</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<TokenStoreItem, object>(x=>x.Username)">Username</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<TokenStoreItem, object>(x=>x.SID)">SID</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<TokenStoreItem, object>(x=>x.PID)">PID</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<TokenStoreItem, object>(x=>x.IsCurrent)">Current</MudTableSortLabel></MudTh>
+        </HeaderContent>
+        <RowTemplate Context="Rowcontext">
+            <MudTd>@Rowcontext.Index</MudTd>
+            <MudTd>@Rowcontext.Username</MudTd>
+            <MudTd>@Rowcontext.SID</MudTd>
+            <MudTd>@Rowcontext.PID</MudTd>
+            <MudTd>@Rowcontext.IsCurrent</MudTd>
+        </RowTemplate>
+    </MudTable>
+</div>
+
+@code {
+    //public static Dictionary<string, List<TokenStoreItem>> tokenStoreEntries = new Dictionary<string, List<TokenStoreItem>>();
+
+    [Parameter]
+    public List<TokenStoreItem> currentEngTokens { get; set; } = new();
+
+    public static void addtokentostore(TokenStoreItem tokenStoreitem)
+    {
+        //if (!tokenStoreEntries.ContainsKey(engid))
+        //{
+        //    //tokenStoreEntries.Add(engid, new List<TokenStoreItem>() { tokenStoreitem });
+        //}
+        //else
+        //{
+        //    tokenStoreEntries[engid].Add(tokenStoreitem);
+        //}
+    }
+
+    private string setStyle(bool IsDark)
+    {
+        if (IsDark)
+        {
+            return "background:white; color:black;";
+        }
+        return "background:#333333; color:white;";
+    }
+}

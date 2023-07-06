@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Engineer.Functions;
-using Engineer.Models;
+using DynamicEngLoading;
 
 
 namespace Engineer.Commands
@@ -28,7 +24,7 @@ namespace Engineer.Commands
 
             //set a timer to exit the program after 5 seconds
             stopwatch.Start();
-            Tasking.FillTaskResults($"Exiting Engineer in {sleepTime} seconds", task, EngTaskStatus.Complete,TaskResponseType.String);
+            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"Exiting Engineer in {sleepTime} seconds", task, EngTaskStatus.Complete,TaskResponseType.String);
             while (stopwatch.ElapsedMilliseconds < sleepTime * 1000)
             {
                 Thread.Sleep(100);

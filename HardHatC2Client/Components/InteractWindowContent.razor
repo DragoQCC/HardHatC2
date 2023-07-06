@@ -6,41 +6,61 @@
 @using HardHatC2Client.Services;
 @using HardHatC2Client.Utilities
 @using System.Diagnostics;
+@using static HardHatC2Client.Models.EngineerTaskResult;
+@using static HardHatC2Client.Pages.Interact;
+@inject IJSRuntime JSRuntime
 
-<MudExpansionPanel IsExpandedChanged="(e)=>ExpandedChanged(e,engineer.Id,EngTask.Id)" style="background:#32333d; color:white;">
-    @*<TitleContent>
-        @if (engTaskStatus == EngineerTaskResponse.EngTaskStatus.NONE)
+<MudExpansionPanel Style="background:#32333d; color:white;" IsExpandedChanged="(e)=>ExpandedChanged(e,engineer.Id,currenttask)">
+    <TitleContent>
+        @if (PickedUpTasks.Contains(currenttask) && !(EngineerReturnedTaskIds.Values.Any(x => x.Contains(currenttask))))
         {
             <div class="d-flex">
                 <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3" />
-                <MudIconButton Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() =>CancelTask(EngTask.Id,engineer.Id)"></MudIconButton>
-                <MudText>@HeaderContent</MudText>
+                <MudIconButton Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() => CancelTask(currenttask, engineer.Id)"></MudIconButton>
+                <MudText>@commandHeaderText</MudText>
             </div>
         }
-        else if (engTaskStatus != EngineerTaskResponse.EngTaskStatus.NONE)
+        else if (EngineerReturnedTaskIds.Values.Any(x => x.Contains(currenttask) && TaskStatusDic.ContainsKey(currenttask)))
         {
-            if (engTaskStatus == EngineerTaskResponse.EngTaskStatus.Running)
+            if (TaskStatusDic[currenttask] == EngTaskStatus.Running)
             {
                 <div class="d-flex">
-                    <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3" />
-                    <MudIconButton Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() =>CancelTask(EngTask.Id,engineer.Id)"></MudIconButton>
-                    <MudText>@HeaderContent</MudText>
+                    <MudProgressCircular Size="Size.Small" Color="Color.Success" Indeterminate="true" Class="mr-3" />
+                    <MudIconButton class="mx-5" Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() => CancelTask(currenttask, engineer.Id)"></MudIconButton>
+                    <MudText>@commandHeaderText</MudText>
 
                 </div>
             }
             else
             {
                 <div class="d-flex">
-                    <MudIcon Icon=@setIcon() Color=@SetColor() class="mr-3"></MudIcon>
-                    <MudText>@HeaderContent</MudText>
+                    @if (Interact.PanelExpandedOnce.ContainsKey(currenttask))
+                    {
+                        <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon>
+                    }
+                    else
+                    {
+                        <MudBadge Dot="true" Color="Color.Primary" Class="mr-3">
+                            <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon>
+                        </MudBadge>
+                    }
+                    <MudText>@commandHeaderText</MudText>
+                    <MudIconButton Class="mx-5" Icon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" Color="Color.Primary" OnClick="() => CopyTaskCommand(currenttask)"></MudIconButton>
                 </div>
             }
         }
         else
         {
             <div class="d-flex">
-                <MudIcon Icon=@setIcon() Color=@SetColor() class="mr-3"></MudIcon>
-                <MudText>@HeaderContent</MudText>
+                @if (Interact.PanelExpandedOnce.ContainsKey(currenttask))
+                {
+                    <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon>
+                }
+                else
+                {
+                        <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon>
+                }
+                <MudText>@commandHeaderText</MudText>
             </div>
         }
 
@@ -49,114 +69,159 @@
         <MudCard Class="" Style="background:var(--background);" Outlined="true">
             <!--This is the per input and output card-->
             <MudCardContent Style="background:#111111; color:white; white-space:pre-wrap;">
-                @if (CardContent is not null)
-                {
-                    @if (CardContent.Result != null)
-                    {
 
-                        @if (EngTask.Command == "ls" && CardContent.status == EngineerTaskResponse.EngTaskStatus.Complete)
+                @if (TaskOutputDic.ContainsKey(currenttask))
+                {
+                    if (TaskOutputDic[currenttask] != null)
+                    {
+                        if (TaskOutputDic[currenttask].ResultObject != null)
                         {
-                            EngTask.Arguments.TryGetValue("/path", out string pathValue);
-                            <HardHatC2Client.Components.DirectoryListingTable Outputs="@CardContent.Result" />
-                            if (pathValue != null)
+                            if (TaskOutputDic[currenttask].ResponseType == EngineerTaskResult.TaskResponseType.FileSystemItem)
                             {
-                                pathValue = pathValue.TrimStart(' ').TrimEnd(' ');
-                                FileBrowser.AddContent(engineer.Hostname, pathValue, CardContent.Result.Deserialize<List<FileSystemItem>>());
+                                TaskInputDic[currenttask].Arguments.TryGetValue("/path", out string pathValue);
+                                List<FileSystemItem> resultItems = (List<FileSystemItem>)TaskOutputDic[currenttask].ResultObject;
+                                <HardHatC2Client.Components.DirectoryListingTable Outputs="@resultItems" />
+                                if (pathValue != null)
+                                {
+                                    pathValue = pathValue.TrimStart(' ').TrimEnd(' ');
+                                    FileBrowser.AddContent(engineer.Hostname, pathValue, resultItems);
+                                }
                             }
-                        }
-                        else if (EngTask.Command == "ps" && CardContent.status == EngineerTaskResponse.EngTaskStatus.Complete)
-                        {
-                            var result = CardContent.Result.Deserialize<string>().Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
-                            <HardHatC2Client.Components.ProcessListingTable Outputs="@result" />
-                        }
-                        else if (EngTask.Command == "getprivs" && CardContent.status == EngineerTaskResponse.EngTaskStatus.Complete)
-                        {
-                            var result = CardContent.Result.Deserialize<string>().Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
-                            <HardHatC2Client.Components.GetPrivsTable Outputs="@result" />
-                        }
-                        else if (EngTask.Command == "print-env" && CardContent.status == EngineerTaskResponse.EngTaskStatus.Complete)
-                        {
-                            var result = CardContent.Result.Deserialize<string>().Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
-                            <HardHatC2Client.Components.PrintEnvTable Outputs="@result" />
-                        }
-                        else if (EngTask.Command.Equals("help", StringComparison.CurrentCultureIgnoreCase))
-                        {
-                            <HelpTable Outputs="CardContent.Result"></HelpTable>
-                        }
-                        else if (parsedCommand is not null && CardContent.status == EngineerTaskResponse.EngTaskStatus.Complete)
-                        {
-                            <MudSwitch @bind-Checked="@IsTableView" Label="Toggle Table View" Color="Color.Success" />
-                            if (IsTableView == true)
+                            else if (TaskOutputDic[currenttask].ResponseType == EngineerTaskResult.TaskResponseType.ProcessItem)
                             {
-                                <HardHatC2Client.Components.AutpParsedCommandTable Outputs="parsedCommand"></HardHatC2Client.Components.AutpParsedCommandTable>
+                                var result = TaskOutputDic[currenttask].ResultObject as List<ProcessItem>;
+                                <HardHatC2Client.Components.ProcessListingTable Outputs="@result" />
+                            }
+                            else if (TaskOutputDic[currenttask].ResponseType == EngineerTaskResult.TaskResponseType.HelpMenuItem)
+                            {
+                                var resultItem = TaskOutputDic[currenttask].ResultObject as List<Help.HelpMenuItem>;
+                                <HelpTable Outputs="@resultItem"></HelpTable>
+                            }
+                            else if (TaskOutputDic[currenttask].ResponseType == EngineerTaskResult.TaskResponseType.TokenStoreItem)
+                            {
+                                if (TaskOutputDic[currenttask].ResponseType == EngineerTaskResult.TaskResponseType.TokenStoreItem)
+                                {
+                                    var resultItem = TaskOutputDic[currenttask].ResultObject as List<TokenStoreItem>;
+                                    <TokenStoreTable currentEngTokens="resultItem"></TokenStoreTable>
+                                }
+                                else
+                                {
+                                    var output = TaskOutputDic[currenttask].ResultObject as string;
+                                    <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@output</MudText>
+                                }
+                            }
+                            else if (TaskInputDic[currenttask].Command.Equals("getprivs", StringComparison.CurrentCultureIgnoreCase) && TaskStatusDic[currenttask] == EngTaskStatus.Complete)
+                            {
+                                var result = ((TaskOutputDic[currenttask].ResultObject as string).Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)).ToList();
+                                <HardHatC2Client.Components.GetPrivsTable Outputs="@result" />
+                            }
+                            else if (TaskInputDic[currenttask].Command.Equals("print-env", StringComparison.CurrentCultureIgnoreCase) && TaskStatusDic[currenttask] == EngTaskStatus.Complete)
+                            {
+                                var result = ((TaskOutputDic[currenttask].ResultObject as string).Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)).ToList();
+                                <HardHatC2Client.Components.PrintEnvTable Outputs="@result" />
+                            }
+                            else if (TaskInputDic[currenttask].Command.Equals("GetCommands", StringComparison.CurrentCultureIgnoreCase) && TaskStatusDic[currenttask] == EngTaskStatus.Complete)
+                            {
+                                var resultItem = TaskOutputDic[currenttask].ResultObject as string;
+                                var resultList = resultItem.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
+                                if (CommandValidation.ImplantLoadedCommands.Keys.Contains(engineer.Id))
+                                {
+                                    foreach (string commandName in resultList)
+                                    {
+                                        if (!CommandValidation.ImplantLoadedCommands[engineer.Id].Contains(commandName))
+                                        {
+                                            CommandValidation.ImplantLoadedCommands[engineer.Id].Add(commandName);
+                                        }
+                                    }
+                                }
+                                //CommandValidation.ImplantLoadedCommands
+                            }   
+                            else if (ParsedCommandOutputDic.ContainsKey(currenttask) && TaskStatusDic[currenttask] == EngTaskStatus.Complete)
+                            {
+                                <MudSwitch @bind-Checked="@IsTableView" Label="Toggle Table View" Color="Color.Success" />
+                                if (IsTableView == true)
+                                {
+                                    <HardHatC2Client.Components.AutpParsedCommandTable Outputs="ParsedCommandOutputDic[currenttask]"></HardHatC2Client.Components.AutpParsedCommandTable>
+                                }
+                                else
+                                {
+                                    var output = TaskOutputDic[currenttask].ResultObject as string;
+                                    <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@output</MudText>
+                                }
                             }
                             else
                             {
-                                var output = CardContent.Result.Deserialize<string>();
+                                var output = TaskOutputDic[currenttask].ResultObject as string;
                                 <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@output</MudText>
                             }
                         }
                         else
                         {
-                            var output = CardContent.Result.Deserialize<string>();
-                            <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@output</MudText>
-                        }                    
+                            <MudText Typo="Typo.body2">No output yet</MudText>
+                        }
                     }
                 }
-                else if (CardContent is null)
+                else
                 {
                     <MudText Typo="Typo.body2">No output yet</MudText>
                 }
             </MudCardContent>
         </MudCard>
-    </ChildContent>*@
-</MudExpansionPanel>
+    </ChildContent>
+</MudExpansionPanel><!--This is the end of per input and output card -->
+
 
 @code {
 
     [Inject]
     private IDialogService DialogService { get; set; }
+
     [Parameter]
     public EngineerTaskResult? CardContent { get; set; } = null;
     [Parameter]
-    public string? HeaderContent { get; set; } = null;
+    public string? commandHeaderText { get; set; } = null;
     [Parameter]
-    public EngineerTask? EngTask { get; set; } = null;
-    [Parameter]
-    public List<string>? parsedCommand { get; set; } = null;
-    [Parameter]
-    public EngineerTaskResult.EngTaskStatus? engTaskStatus { get; set; } = null;
+    public string currenttask { get; set; } = "";
     [Parameter]
     public Engineer engineer { get; set; }
 
     public delegate void OnStateChangeDelegate();
     public static OnStateChangeDelegate OnStateChange;
-    private static DateTime? LastRefresh { get; set; } = null;
+    private DateTime? LastRefresh { get; set; } = null;
     private static bool IsTableView = true;
-    private static bool firstRender = true;
-    private static Stopwatch stopwatch = new Stopwatch();
+    //private static bool firstRender = true;
+    private Stopwatch stopwatch = new Stopwatch();
 
+    private async void TaskButtonTest()
+    {
+        bool? result = await DialogService.ShowMessageBox("Test","I was opened from a expansion panel header!", yesText: "yay!", cancelText: "Failure");
+        StateHasChanged();
+    }
 
     //set the icon and color for commands
-    private string setIcon()
+    private string setIcon(string currenttask)
     {
-        if (engTaskStatus is not null)
+        if (TaskStatusDic.ContainsKey(currenttask))
         {
-            if (engTaskStatus == EngineerTaskResult.EngTaskStatus.Complete)
+            if (TaskStatusDic[currenttask] == EngTaskStatus.Complete)
             {
                 return Icons.Filled.CheckCircle;
             }
-            else if (engTaskStatus == EngineerTaskResult.EngTaskStatus.Cancelled)
+            else if (TaskStatusDic[currenttask] == EngTaskStatus.Cancelled)
             {
                 return Icons.Filled.StopCircle;
             }
-            else if (engTaskStatus == EngineerTaskResult.EngTaskStatus.Failed)
+            else if (TaskStatusDic[currenttask] == EngTaskStatus.Failed)
             {
                 return Icons.Filled.SmsFailed;
             }
-            else if (engTaskStatus == EngineerTaskResult.EngTaskStatus.FailedWithWarnings)
+            else if (TaskStatusDic[currenttask] == EngTaskStatus.FailedWithWarnings)
             {
                 return Icons.Filled.Warning;
+            }
+            else if (TaskStatusDic[currenttask] == EngTaskStatus.CompleteWithErrors)
+            {
+                return Icons.Filled.CheckCircle;
             }
             else
             {
@@ -169,23 +234,27 @@
         }
     }
 
-    private Color SetColor()
+    private Color SetColor(string currenttask)
     {
-        if (engTaskStatus is not null)
+        if (TaskStatusDic.ContainsKey(currenttask))
         {
-            if (engTaskStatus == EngineerTaskResult.EngTaskStatus.Complete)
+            if (TaskStatusDic[currenttask] == EngTaskStatus.Complete)
             {
                 return Color.Success;
             }
-            else if (engTaskStatus == EngineerTaskResult.EngTaskStatus.Cancelled)
+            else if (TaskStatusDic[currenttask] == EngTaskStatus.Cancelled)
             {
                 return Color.Secondary;
             }
-            else if (engTaskStatus == EngineerTaskResult.EngTaskStatus.Failed)
+            else if (TaskStatusDic[currenttask] == EngTaskStatus.Failed)
             {
                 return Color.Error;
             }
-            else if (engTaskStatus == EngineerTaskResult.EngTaskStatus.FailedWithWarnings)
+            else if (TaskStatusDic[currenttask] == EngTaskStatus.FailedWithWarnings)
+            {
+                return Color.Warning;
+            }
+            else if (TaskStatusDic[currenttask] == EngTaskStatus.CompleteWithErrors)
             {
                 return Color.Warning;
             }
@@ -200,47 +269,11 @@
         }
     }
 
-    private async Task ExpandedChanged(bool IsChanged, string enhgineerId, string taskId)
+    public async Task CopyTaskCommand(string currenttask)
     {
-        try
-        {
-            //check if task command is help if so skip
-            if (EngTask.Command.Equals("help", StringComparison.CurrentCultureIgnoreCase))
-            {
-                return;
-            }
-
-            if (IsChanged)
-            {
-                if (CardContent is null)
-                {
-                    var taskInfo = await Interact.GetTaskResults(enhgineerId, taskId);
-                    CardContent = taskInfo;
-                }
-                if (OnStateChange is not null)
-                {
-                    OnStateChange();
-                }
-            }
-            else
-            {
-                CardContent = null;
-                Interact.TaskOutputDic.Remove(taskId);
-                if (OnStateChange is not null)
-                {
-                    OnStateChange();
-                }
-                GC.Collect();
-                //GC.WaitForPendingFinalizers();
-            }
-
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e.Message);
-            Console.WriteLine(e.StackTrace);
-        }
-
+        string Command = Interact.TaskInputDic[currenttask].Command;
+        //copy the command to the clipboard
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", Command);
     }
 
     public void ImplementOnStateChangeEvent()
@@ -282,27 +315,6 @@
 
     protected override Task OnParametersSetAsync()
     {
-        //if (stopwatch.IsRunning == false)
-        //{
-        //    stopwatch.Start();
-        //    Task.Run(() =>
-        //    {
-        //        while (engTaskStatus == EngineerTaskResponse.EngTaskStatus.Pending || engTaskStatus == EngineerTaskResponse.EngTaskStatus.Running)
-        //        {
-        //            if (stopwatch.ElapsedMilliseconds > 500)
-        //            {
-        //                //tries to ensure refresh on last seem timer
-        //                InvokeAsync(StateHasChanged);
-        //                stopwatch.Restart();
-        //            }
-        //            Thread.Sleep(100);
-        //        }
-        //    });
-        //}
-        if (engTaskStatus == EngineerTaskResult.EngTaskStatus.Complete)
-        {
-            Interact.RenderedFinalFormDic.Add(EngTask.Id);
-        }
         return base.OnParametersSetAsync();
     }
 

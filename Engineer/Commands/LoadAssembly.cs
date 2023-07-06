@@ -1,14 +1,7 @@
-﻿using Engineer.Commands;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System;
 using System.Threading.Tasks;
-using Engineer.Extra;
-using System.IO;
-using static Engineer.Extra.WinApiDynamicDelegate;
-using Engineer.Functions;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -26,20 +19,20 @@ namespace Engineer.Commands
                 args = args.TrimEnd('\"');
 
                 var bytesToload = task.File;
-                var mappedModule = reprobate.MapModuleToMemory(bytesToload);
+                var mappedModule = DynInv.MapModuleToMemory(bytesToload);
 
                 object[] parameters = new object[] { args.Split(' ') };
 
-                IntPtr address =  reprobate.GetExportAddress(mappedModule.ModuleBase, "Main");
+                IntPtr address =  DynInv.GetExportAddress(mappedModule.ModuleBase, "Main");
 
-                string output = ((string)reprobate.DynamicFunctionInvoke(address, typeof(GenericDelegate),ref parameters));
-                Tasking.FillTaskResults(output, task, EngTaskStatus.Complete,TaskResponseType.String);
-                // reprobate.CallMappedPEModule(mappedModule.PEINFO, mappedModule.ModuleBase);
+                string output = ((string)DynInv.DynamicFunctionInvoke(address, typeof(h_DynInv.CUSTOM_DELEGATES.GenericDelegate),ref parameters));
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(output, task, EngTaskStatus.Complete,TaskResponseType.String);
+                // DynInv.CallMappedPEModule(mappedModule.PEINFO, mappedModule.ModuleBase);
 
             }
             catch(Exception ex)
             {
-                Tasking.FillTaskResults("error: " +ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " +ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
                 
             }
         }

@@ -1,11 +1,9 @@
-﻿using Engineer.Commands;
-using Engineer.Functions;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
+using System.DirectoryServices.AccountManagement;
 using System.Text;
 using System.Threading.Tasks;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -23,7 +21,7 @@ namespace Engineer.Commands
                 var output = new StringBuilder();
                 if (groupName != null)
                 {
-                    foreach (var member in System.DirectoryServices.AccountManagement.GroupPrincipal.FindByIdentity(new System.DirectoryServices.AccountManagement.PrincipalContext(System.DirectoryServices.AccountManagement.ContextType.Machine), System.DirectoryServices.AccountManagement.IdentityType.SamAccountName, groupName).GetMembers())
+                    foreach (var member in GroupPrincipal.FindByIdentity(new PrincipalContext(ContextType.Machine), IdentityType.SamAccountName, groupName).GetMembers())
                     {
                         output.AppendLine(member.Name);
                     }
@@ -31,21 +29,21 @@ namespace Engineer.Commands
                 else
                 {
                     //get each localgroup on the current computer and get the members of each group
-                    foreach (var group in System.DirectoryServices.AccountManagement.GroupPrincipal.FindByIdentity(new System.DirectoryServices.AccountManagement.PrincipalContext(System.DirectoryServices.AccountManagement.ContextType.Machine), System.DirectoryServices.AccountManagement.IdentityType.SamAccountName, System.Environment.MachineName + "$").GetGroups())
+                    foreach (var group in GroupPrincipal.FindByIdentity(new PrincipalContext(ContextType.Machine), IdentityType.SamAccountName, Environment.MachineName + "$").GetGroups())
                     {
                         output.AppendLine(group.Name);
-                        foreach (var member in System.DirectoryServices.AccountManagement.GroupPrincipal.FindByIdentity(new System.DirectoryServices.AccountManagement.PrincipalContext(System.DirectoryServices.AccountManagement.ContextType.Machine), System.DirectoryServices.AccountManagement.IdentityType.SamAccountName, group.Name).GetMembers())
+                        foreach (var member in GroupPrincipal.FindByIdentity(new PrincipalContext(ContextType.Machine), IdentityType.SamAccountName, group.Name).GetMembers())
                         {
                             output.AppendLine(member.Name);
                         }
                     }
 
                 }
-                Tasking.FillTaskResults(output.ToString(), task, EngTaskStatus.Complete,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(output.ToString(), task, EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception ex)
             {
-                Tasking.FillTaskResults(ex.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(ex.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
     }

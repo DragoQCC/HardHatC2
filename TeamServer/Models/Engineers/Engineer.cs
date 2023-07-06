@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using TeamServer.Services;
+//using DynamicEngLoading;
 
 // Model for Engineer defines class, constructors, and other needed functions 
 namespace TeamServer.Models
@@ -13,6 +14,7 @@ namespace TeamServer.Models
 		//class memeber properties and varables 
 		public EngineerMetadata engineerMetadata { get; set; }  //added metadata from class loads all properties from there , having no setter makes this read only so it can only be set in this line nad the constructor and not changed anywhere else.
         public int Number { get; set; }
+		public string Note { get; set; }
         public string ConnectionType { get; set;}
 		public string ManagerName { get; set;}
 		public string ExternalAddress { get; set; }
@@ -21,7 +23,7 @@ namespace TeamServer.Models
         public string Status { get; set; }
 
         public readonly ConcurrentQueue<EngineerTask> _pendingTasks = new();
-        private readonly List<EngineerTaskResult> _taskResults = new();
+        public List<EngineerTaskResult> _taskResults = new();
 		public static Dictionary<string, List<EngineerTask>> previousTasks = new();
         public static Dictionary<string, ConcurrentQueue<EngineerTaskResult>> taskQueueDic = new();
 

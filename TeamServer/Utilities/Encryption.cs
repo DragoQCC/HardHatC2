@@ -14,13 +14,7 @@ using TeamServer.Services;
         public static string UniversialMetadataKey = ""; // used to encrypt the metadata used in a header, which then can let you find the key for that implants metadata
         public static string UniversialMessagePathKey = ""; // used to encrypt / decrypt path message info for C2 tasks
         public static string UniversalTaskEncryptionKey = ""; // used to encrypt / decrypt the task encryption key for C2 tasks, only for the first task/ check-in
-        //public static string UniqueTeamServerVerificationKey = ""; // value is the key used on the verification message for the teamserver
-        //public static string UniqueTeamServerVerificationMessage = ""; // value is the decrypted verfication message for the teamserver
 
-
-       // public static Dictionary<string, string> UniqueMetadataKey = new Dictionary<string, string>(); // key is implant id, value is the key used to read the metadata
-       // public static Dictionary<string, string> UniqueImplantVerificationKeys = new Dictionary<string, string>(); // key is the implant id, value is the key used on the verification message
-        //public static Dictionary<string, string> UniqueImplantVerificationMessage = new Dictionary<string, string>(); // key is the implant id, value is the decrypted verfication message
         public static Dictionary<string, string> UniqueTaskEncryptionKey = new Dictionary<string, string>(); // key is the implant id, value is the encrypted task encryption key
 
         public static List<string> FirstTimeEncryptionKeys = new List<string>(); // list of keys that have been used to encrypt the first time message
@@ -127,18 +121,29 @@ using TeamServer.Services;
         //a function to get the implant type from the encrypted string
         public static string DecryptImplantName(string base64Encrypted)
         {
-            //Console.WriteLine($"Decrypting implant name string with metadata key {UniversialMetadataKey}");
-
-            // Decode the Base64 encoded string
-            byte[] encryptedBytes = Convert.FromBase64String(base64Encrypted);
-            string encrypted_implant_type = Encoding.UTF8.GetString(encryptedBytes);
-
-            string implant_type = "";
-            for (int i = 0; i < encrypted_implant_type.Length; i++)
+            try
             {
-                implant_type += (char)(encrypted_implant_type[i] ^ UniversialMetadataKey[i % UniversialMetadataKey.Length]);
+                //Console.WriteLine($"Decrypting implant name string with metadata key {UniversialMetadataKey}");
+                if (UniversialMetadataKey.Length == 0)
+                {
+                    Console.WriteLine("Error: Metadata key is empty");
+                    return "";
+                }
+                // Decode the Base64 encoded string
+                byte[] encryptedBytes = Convert.FromBase64String(base64Encrypted);
+                string encrypted_implant_type = Encoding.UTF8.GetString(encryptedBytes);
+
+                string implant_type = "";
+                for (int i = 0; i < encrypted_implant_type.Length; i++)
+                {
+                    implant_type += (char)(encrypted_implant_type[i] ^ UniversialMetadataKey[i % UniversialMetadataKey.Length]);
+                }
+                return implant_type;
             }
-            return implant_type;
+            catch (Exception e)
+            {
+                return "";
+            }
         }
 
         public static byte[] GeneratePasswordBytes(string password)

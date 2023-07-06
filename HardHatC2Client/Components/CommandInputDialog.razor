@@ -1,0 +1,45 @@
+﻿@using MudBlazor
+@using HardHatC2Client.Utilities
+
+
+<MudDialog MaxWidth="MaxWidth.Medium" FullWidth="true">
+    <DialogContent>
+        <MudGrid>
+            @if (SelectedCommandItem != null)
+            {
+                foreach (var key in SelectedCommandItem.Keys)
+                {
+                    <MudItem xs="12" sm="6" md="4" lg="3">
+                        <div class="m-2">
+                            <label>@key.Name</label>
+                            <CommandKeyInput CommandKey="@key" Value="@keyValue[key.Name]" ValueChanged="@(value => OnValueChanged(key.Name, value))" />
+                        </div>
+                    </MudItem>
+                }
+            }
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@Submit">Submit</MudButton>
+        <MudButton OnClick="@Cancel">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter] public CommandItem SelectedCommandItem { get; set; }
+    [Parameter] public Dictionary<string, string> keyValue { get; set; }
+    [Parameter] public Func<string, string, Task> UpdateKeyValue { get; set; }
+    [Parameter] public EventCallback OnSubmit { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+   void Submit() => MudDialog.Close(DialogResult.Ok(true));
+    void Cancel() => MudDialog.Cancel();
+    
+    private async void OnValueChanged(string keyName, string value)
+    {
+        await UpdateKeyValue?.Invoke(keyName, value);
+    }
+
+    
+}

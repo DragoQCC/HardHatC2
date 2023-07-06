@@ -1,13 +1,10 @@
-﻿using Engineer.Commands;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
+using System.DirectoryServices;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
-using System.DirectoryServices;
-using System.Security.Principal;
-using Engineer.Functions;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -24,7 +21,7 @@ namespace Engineer.Commands
                 //if searchFilter is null return telling the user to supply an ldap search flter
                 if (searchFilter == null)
                 {
-                    Tasking.FillTaskResults("Please supply an ldap search filter with /search argument",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Please supply an ldap search filter with /search argument",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
                 //check for arguments for /domain /username and /password
@@ -35,7 +32,7 @@ namespace Engineer.Commands
                 // if domain is null geet the current domain
                 if (targetDomain == null)
                 {
-                    targetDomain = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().DomainName;
+                    targetDomain = IPGlobalProperties.GetIPGlobalProperties().DomainName;
                 }
                 //create a directory entry for the target domain, if username and password are not null then use those as well
                 DirectoryEntry domain;
@@ -83,14 +80,14 @@ namespace Engineer.Commands
 
                 }
                 //return the string builder
-                Tasking.FillTaskResults(sb.ToString(),task,EngTaskStatus.Complete,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(sb.ToString(),task,EngTaskStatus.Complete,TaskResponseType.String);
 
             }
             catch (Exception ex)
             {
                 //Console.WriteLine(ex.Message);
                // Console.WriteLine(ex.StackTrace);
-                Tasking.FillTaskResults(ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
            
         }

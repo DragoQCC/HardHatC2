@@ -1,0 +1,26 @@
+﻿@using HardHatC2Client.Models;
+@using HardHatC2Client.Pages;
+@using MudBlazor
+@using System.Collections.Generic
+@using HardHatC2Client.Services
+@using MudBlazor.Extensions
+@using MudBlazor.Extensions.Components
+@using MudExtensions.Utilities
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField Label="Note" @bind-Value="Note" Immediate="true" Clearable="true" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Ok</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    private string Note { get; set; } = "";
+
+    void Submit() => MudDialog.Close(DialogResult.Ok(Note));
+    void Cancel() => MudDialog.Cancel();
+}

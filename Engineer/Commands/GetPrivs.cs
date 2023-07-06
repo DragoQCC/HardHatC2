@@ -1,17 +1,10 @@
-﻿using Engineer.Commands;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
+using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
-using Engineer.Extra;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
-using static Engineer.Extra.h_reprobate.Win32.WinNT;
-using System.Security.AccessControl;
-using Engineer.Functions;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -24,27 +17,27 @@ namespace Engineer.Commands
             string output ="";
             try
             {
-                var TokenInfLength = 0;
+                int TokenInfLength = 0;
                 var ThisHandle = WindowsIdentity.GetCurrent().Token;
-                WinAPIs.Advapi.GetTokenInformation(ThisHandle, WinAPIs.Advapi.TOKEN_INFORMATION_CLASS.TokenPrivileges, IntPtr.Zero, TokenInfLength, out TokenInfLength);
+                h_DynInv_Methods.AdvApi32FuncWrapper.GetTokenInformation(ThisHandle, h_DynInv.Win32.WinNT._TOKEN_INFORMATION_CLASS.TokenPrivileges, IntPtr.Zero, TokenInfLength, out TokenInfLength);
                 var TokenInformation = Marshal.AllocHGlobal(TokenInfLength);
-                if (WinAPIs.Advapi.GetTokenInformation(WindowsIdentity.GetCurrent().Token, WinAPIs.Advapi.TOKEN_INFORMATION_CLASS.TokenPrivileges, TokenInformation, TokenInfLength, out TokenInfLength))
+                if (h_DynInv_Methods.AdvApi32FuncWrapper.GetTokenInformation(WindowsIdentity.GetCurrent().Token, h_DynInv.Win32.WinNT._TOKEN_INFORMATION_CLASS.TokenPrivileges, TokenInformation, TokenInfLength, out TokenInfLength))
                 {
-                    var ThisPrivilegeSet = (WinAPIs.WinNT._TOKEN_PRIVILEGES)Marshal.PtrToStructure(TokenInformation, typeof(WinAPIs.WinNT._TOKEN_PRIVILEGES));
+                    var ThisPrivilegeSet = (h_DynInv.Win32.WinNT._TOKEN_PRIVILEGES)Marshal.PtrToStructure(TokenInformation, typeof(h_DynInv.Win32.WinNT._TOKEN_PRIVILEGES));
                     for (var index = 0; index < ThisPrivilegeSet.PrivilegeCount; index++)
                     {
                         var laa = ThisPrivilegeSet.Privileges[index];
-                        var StrBuilder = new System.Text.StringBuilder();
-                        var luidNameLen = 0;
-                        var luidPointer = Marshal.AllocHGlobal(Marshal.SizeOf(laa.Luid));
-                        Marshal.StructureToPtr(laa.Luid, luidPointer, true);
-                        WinAPIs.Advapi.LookupPrivilegeName(null, luidPointer, null, ref luidNameLen);
+                        var StrBuilder = new StringBuilder();
+                        int luidNameLen = 0;
+                        //var luidPointer = Marshal.AllocHGlobal(Marshal.SizeOf(laa.Luid));
+                        //Marshal.StructureToPtr(laa.Luid, luidPointer, true);
+                        h_DynInv_Methods.AdvApi32FuncWrapper.LookupPrivilegeName(null, ref laa.Luid, null, ref luidNameLen);
                         StrBuilder.EnsureCapacity(luidNameLen + 1);
-                        if (WinAPIs.Advapi.LookupPrivilegeName(null, luidPointer, StrBuilder, ref luidNameLen))
+                        if (h_DynInv_Methods.AdvApi32FuncWrapper.LookupPrivilegeName(null, ref laa.Luid, StrBuilder, ref luidNameLen))
                         {
                             var strPrivilege = StrBuilder.ToString();
-                            var strAttributes = String.Format("{0}", (WinAPIs.Advapi.LuidAttributes)laa.Attributes);
-                            Marshal.FreeHGlobal(luidPointer);
+                            var strAttributes = String.Format("{0}", (h_DynInv.Win32.WinNT.LuidAttributes)laa.Attributes);
+                            //Marshal.FreeHGlobal(luidPointer);
                             //check that strPrivilege is not null or empty
                             if (!string.IsNullOrEmpty(strPrivilege))
                             {
@@ -54,11 +47,11 @@ namespace Engineer.Commands
                     }
                 }
 
-                Tasking.FillTaskResults(output,task,EngTaskStatus.Complete,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(output,task,EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch(Exception ex)
             {
-                Tasking.FillTaskResults("error: " + ex.Message + "\n"+ ex.StackTrace,task,EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + ex.Message + "\n"+ ex.StackTrace,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
 
         }

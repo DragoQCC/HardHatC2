@@ -8,7 +8,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using TeamServer.Utilities;
 
 namespace TeamServer
 {
@@ -23,8 +25,17 @@ namespace TeamServer
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder =>
+                .ConfigureWebHostDefaults(async webBuilder =>
                 {
+                    await CertGen.GeneerateCert();
+                    webBuilder.ConfigureKestrel(serverOptions =>
+                    {
+                        serverOptions.ConfigureEndpointDefaults(listenOptions =>
+                        {
+                            listenOptions.UseHttps(new X509Certificate2(CertGen.CertificatePath, CertGen.CertificatePassword));
+
+                        });
+                    });
                     webBuilder.UseStartup<Startup>();
                 });
     }

@@ -1,14 +1,18 @@
 ﻿using SQLite;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using TeamServer.Models;
+using TeamServer.Utilities;
+//using DynamicEngLoading;
 namespace TeamServer.Models.Dbstorage
 {
     [Table("EngineerTaskResult")]
     public class EngineerTaskResult_DAO
     {
-        [PrimaryKey, AutoIncrement]
-        public int Id { get; set; }
+        //, AutoIncrement]
+        //public int Id { get; set; }
 
+        [PrimaryKey]
         [Column("TaskId")]
         public string TaskId { get; set; } //Task ID
 
@@ -30,6 +34,9 @@ namespace TeamServer.Models.Dbstorage
         [Column("ResultType")]
         public TaskResponseType ResponseType { get; set; }
 
+        [Column("SeenTaskList")]
+        public byte[] UsersThatHaveReadResult { get; set; } //list of usernames that have read this result for client ui tracking of notifications
+
         //create an implcit operator to convert from model to dao
         public static implicit operator EngineerTaskResult_DAO(EngineerTaskResult model)
         {
@@ -41,7 +48,8 @@ namespace TeamServer.Models.Dbstorage
                 IsHidden = model.IsHidden,
                 EngineerId = model.EngineerId,
                 Status = (EngTaskStatus)model.Status,
-                ResponseType = (TaskResponseType)model.ResponseType
+                ResponseType = (TaskResponseType)model.ResponseType,
+                UsersThatHaveReadResult = model.UsersThatHaveReadResult.Serialize()
             };
         }
        
@@ -55,27 +63,28 @@ namespace TeamServer.Models.Dbstorage
                 Result = dao.Result,
                 IsHidden = dao.IsHidden,
                 EngineerId = dao.EngineerId,
-                Status = (Models.EngTaskStatus)dao.Status,
-                ResponseType = (Models.TaskResponseType)dao.ResponseType
+                Status = (EngTaskStatus)dao.Status,
+                ResponseType = (TaskResponseType)dao.ResponseType,
+                UsersThatHaveReadResult = dao.UsersThatHaveReadResult.Deserialize<List<string>>()
             };
         }
 
     }
-    public enum EngTaskStatus
-    {
-        Running = 2,
-        Complete = 3,
-        FailedWithWarnings = 4,
-        CompleteWithErrors = 5,
-        Failed = 6,
-        Cancelled = 7
-    }
+    //public enum EngTaskStatus
+    //{
+    //    Running = 2,
+    //    Complete = 3,
+    //    FailedWithWarnings = 4,
+    //    CompleteWithErrors = 5,
+    //    Failed = 6,
+    //    Cancelled = 7
+    //}
 
-    public enum TaskResponseType
-    {
-        None,
-        String,
-        FileSystemItem,
-        ProcessItem,
-    }
+    //public enum TaskResponseType
+    //{
+    //    None,
+    //    String,
+    //    FileSystemItem,
+    //    ProcessItem,
+    //}
 }

@@ -13,6 +13,8 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using RestSharp.Authenticators;
+using MudExtensions.Services;
+using MudBlazor.Extensions;
 
 internal class Program
 {
@@ -37,6 +39,8 @@ internal class Program
         builder.Services.AddBlazoredLocalStorage();
         builder.Services.AddSignalR();
         builder.Services.AddMudServices();
+        builder.Services.AddMudExtensions();
+        //builder.Services.AddMudServicesWithExtensions();
 
         options.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
         builder.Services.AddSingleton(new RestClient(new HttpClient(new HttpClientHandler { ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true }), options));

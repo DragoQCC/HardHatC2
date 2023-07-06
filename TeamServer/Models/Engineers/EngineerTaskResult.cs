@@ -9,17 +9,19 @@ namespace TeamServer.Models
 
     [Serializable]
     public class EngineerTaskResult
-    { 
+    {
+        public List<string> UsersThatHaveReadResult { get; set; } = new(); //key is username, value is a list of ids of tasks that have been seen
+
         public string Id { get; set; } //Task ID
 
         public string Command { get; set; } //Command that was run
 
         public byte[] Result { get; set; }
-        
+
         public bool IsHidden { get; set; }
 
         public string EngineerId { get; set; }
-      
+
         public EngTaskStatus Status { get; set; }
         public TaskResponseType ResponseType { get; set; }
     }
@@ -35,8 +37,9 @@ namespace TeamServer.Models
     public enum TaskResponseType
     {
         None,
-        String, 
+        String,
         FileSystemItem,
         ProcessItem,
+        TokenStoreItem,
     }
 }

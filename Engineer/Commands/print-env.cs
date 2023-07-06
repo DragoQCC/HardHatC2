@@ -1,11 +1,8 @@
-﻿using Engineer.Commands;
-using Engineer.Functions;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
 using System.Text;
 using System.Threading.Tasks;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -17,11 +14,11 @@ namespace Engineer.Commands
         {
             //get all of the enviornment variables and return them one entry per line
             var output = new StringBuilder();
-            foreach (var env in System.Environment.GetEnvironmentVariables().Keys)
+            foreach (var env in Environment.GetEnvironmentVariables().Keys)
             {
-                output.AppendLine(env.ToString() + "|" + System.Environment.GetEnvironmentVariable(env.ToString()));
+                output.AppendLine(env.ToString() + "|" + Environment.GetEnvironmentVariable(env.ToString()));
             }
-            Tasking.FillTaskResults(output.ToString(),task,EngTaskStatus.Complete,TaskResponseType.String);
+            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(output.ToString(),task,EngTaskStatus.Complete,TaskResponseType.String);
 
         }
     }

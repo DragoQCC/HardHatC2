@@ -63,11 +63,31 @@
                 //},
                 new HelpMenuItem()
                 {
+                    Name = "addcommand",
+                    Description = "takes a .cs file from the engineer/Commands , compiles it, and then sends it to the engineer to be loaded as new commmand.",
+                    Usage = "addcommand /command value",
+                    NeedsAdmin = false,
+                    Opsec = OpsecStatus.NotSet,
+                    Details = "takes a .cs file from the engineer/Commands  , compiles it, and then sends it to the engineer to be loaded as new commmand.",
+                    Keys = "/command - name of the c# file to compile and send to the engineer"
+                },
+                 new HelpMenuItem()
+                {
+                    Name = "addmodule",
+                    Description = "takes a .cs file from the engineer where the class has the Module Attribute , compiles it, and then sends it to the engineer to be loaded as new module.",
+                    Usage = "addmodule /module value",
+                    NeedsAdmin = false,
+                    Opsec = OpsecStatus.NotSet,
+                    Details = "takes a .cs file from the engineer where the class has the Module Attribute, compiles it, and then sends it to the engineer to be loaded as new module.",
+                    Keys = "/module - name of the c# file to compile and send to the engineer"
+                },
+                new HelpMenuItem()
+                {
                     Name = "Add-MachineAccount",
                     Description = "adds a machine account to the domain, can provide optional username and password to authenticate to the domain / other domains",
                     Usage = "Add-MachineAccount /name value /machinePassword value /domain value /username value /password value",
                     NeedsAdmin = false,
-                    Opsec = OpsecStatus.Blocked,
+                    Opsec = OpsecStatus.NotSet,
                     MitreTechnique = "T1136",
                     Details = "more details about what it does",
                     Keys = "/name - the name of the machine account to create \n/machinePassword - the password to assign the new account \n/domain - the domain to add the machine account to \n/username - the user account to auth with to the target domain \n/password - password for the user account you are authing with"
@@ -78,7 +98,7 @@
                     Description = "executes the built in arp tool to return arp table",
                     Usage = "arp",
                     NeedsAdmin = false,
-                    Opsec = OpsecStatus.Low,
+                    Opsec = OpsecStatus.NotSet,
                     MitreTechnique = "T1049",
                     Details = "executes the arp -a command and returns the output",
                     Keys = ""
@@ -89,7 +109,7 @@
                     Description = "reads the target file ",
                     Usage = "cat /file value",
                     NeedsAdmin = false,
-                    Opsec = OpsecStatus.Moderate,
+                    Opsec = OpsecStatus.NotSet,
                     MitreTechnique = "T1083",
                     Details = "read a file as a string",
                     Keys = "/file - the location of the file to read , eg. c:\\test.txt"
@@ -100,18 +120,29 @@
                     Description = "changes the current working directory",
                     Usage = "cd /path value",
                     NeedsAdmin = false,
-                    Opsec = OpsecStatus.High,
+                    Opsec = OpsecStatus.NotSet,
                     MitreTechnique = "T1083",
                     Details = "changes the current working directory to the input path",
                     Keys = "/path - the path to change to"
                 },
+                // new HelpMenuItem()
+                //{
+                //    Name = "cleanupinteractiveprofile",
+                //    Description = "removes a profile from the local computer, intended user is for after make_token with the /local flag with uses an interactive logon which makes a profile if one did not exist before",
+                //    Usage = "cleanupinteractiveprofile /sid value",
+                //    NeedsAdmin = false,
+                //    Opsec = OpsecStatus.NotSet,
+                //    MitreTechnique = "T1083",
+                //    Details = "removes a profile from the local computer, intended user is for after make_token with the /local flag with uses an interactive logon which makes a profile if one did not exist before, performs a revert to self to profile can be deleted.",
+                //    Keys = "/sid - SID of user to delete profile for"
+                //},
                 new HelpMenuItem()
                 {
                     Name = "copy",
                     Description = "copy a file from one location to another",
                     Usage = "copy /file value /dest value",
                     NeedsAdmin = false,
-                    Opsec = OpsecStatus.RequiresLeadAuthorization,
+                    Opsec = OpsecStatus.NotSet,
                     MitreTechnique = "T1105",
                     Details = "copy source file to destination",
                     Keys = "/file - the source file to copy \n /dest - where you want the file to be copied to"
@@ -127,6 +158,17 @@
                     Details = "can start a tcp server for enginers to connect into or connect into an existing tcp server, to start a server you use the localhost key and the port key, to connect to an existing tcp server you use the ip and port keys",
                     Keys = "/ip - the ip address to connect into for TCP p2p implants \n/port - the port to connect to or listen on for TCP p2p Engineers \n/localhost - true or false, starts the tcp server on the current Engineer if true it will listen only on localhost, if false it will listen on all interfaces"
                 },
+                //new HelpMenuItem()
+                //{
+                //    Name = "createprocess_stolentoken",
+                //    Description = "creates a process with a stolen token from the token store",
+                //    Usage = "createprocess_stolentoken /program value /args value /index value",
+                //    NeedsAdmin = false,
+                //    Opsec = OpsecStatus.NotSet,
+                //    MitreTechnique = "T1134",
+                //    Details = "creates a process with a stolen token from the token store",
+                //    Keys = "/program - the program to execute \n/args - the arguments to pass to the program \n/index - the index of the token to steal from the token store"
+                //},
                 new HelpMenuItem()
                 {
                     Name = "delete",
@@ -173,6 +215,28 @@
                 },
                 new HelpMenuItem()
                 {
+                    Name = "execute_bof",
+                    Description = "executes the provided COFF/BOF file inline on the engineer",
+                    Usage = "execute_bof /file value /function value /argtypes value /args value",
+                    NeedsAdmin = false,
+                    Opsec = OpsecStatus.NotSet,
+                    MitreTechnique = "T1055",
+                    Details = "executes a bof/coff file on engineer",
+                    Keys = "/file - location on teamserver to the bof to execute in memory \n/function - the entrypoint function to call on the bof \n/argtypes - the type for the arguments in order based on normal bof convention (b,i,s,z,Z) \n/args - the arguments to pass to the bof"
+                },
+                new HelpMenuItem()
+                {
+                    Name = "execute_pe",
+                    Description = "executes the provided PE file inline on the engineer",
+                    Usage = "execute_pe /file value /args value",
+                    NeedsAdmin = false,
+                    Opsec = OpsecStatus.NotSet,
+                    MitreTechnique = "T1055",
+                    Details = "executes a bof/coff file on engineer",
+                    Keys = "/file - location on teamserver to the executable to execute in memory \n/args - the arguments to pass to the bof"
+                },
+                new HelpMenuItem()
+                {
                     Name = "exit",
                     Description = "Exits the program",
                     Usage = "exit",
@@ -182,13 +246,24 @@
                     Details = "Exits the program",
                     Keys = ""
                 },
+                 new HelpMenuItem()
+                {
+                    Name = "GetCommands",
+                    Description = "returns the current engineers loaded commands",
+                    Usage = "GetCommands",
+                    NeedsAdmin = false,
+                    Opsec = OpsecStatus.NotSet,
+                    MitreTechnique = "",
+                    Details = "returns the current engineers loaded commands, new commands can be added with AddCommand",
+                    Keys = ""
+                },
                 new HelpMenuItem()
                 {
-                    Name = "getLuid",
+                    Name = "get_luid",
                     Description = "returns the current luid for the user",
                     Usage = "get_luid",
                     NeedsAdmin = false,
-                    Opsec = OpsecStatus.NotSet,
+                    Opsec = OpsecStatus.High,
                     MitreTechnique = "",
                     Details = "get the current user luid",
                     Keys = ""
@@ -215,6 +290,17 @@
                     Details = "gets the machine account quota for the domain / other domains, this is the number of machine accounts that can be created in the domain, operator can provide an optional domain name, username, and password to other domains",
                     Keys = "/domain - optional domain name to get the machine account quota from \n/username - username to authenticate to the target domain with  \n/password - password for the username to authenticate to the target domain with"
                 },
+                 new HelpMenuItem()
+                 {
+                     Name = "getSystem",
+                     Description = "Elevates current process to SYSTEM or executes command as SYSTEM",
+                     Usage = "getSystem /elevate /command value",
+                     NeedsAdmin = true,
+                     Opsec = OpsecStatus.NotSet,
+                     MitreTechnique = "T1134",
+                     Details = "Elevates current process to SYSTEM or executes command as SYSTEM",
+                     Keys = "/elevate - elevates the current process to SYSTEM, /command - executes the command as SYSTEM"
+                 },
                 new HelpMenuItem()
                 {
                     Name = "help",
@@ -329,12 +415,23 @@
                 {
                     Name = "make_token",
                     Description = "creates a new token with the provided creds good for remote access",
-                    Usage = "make_token /username value /password value /domain value",
+                    Usage = "make_token /username value /password value /domain value", ///localauth
                     NeedsAdmin = false,
                     Opsec = OpsecStatus.NotSet,
                     MitreTechnique = "T1134",
                     Details = "creates a token with the given name and password",
-                    Keys = "/username - user to make token for \n /password - users password or garbage if using as sacrifical \n /domain - domain the user belongs to"
+                    Keys = "/username - user to make token for \n /password - users password or garbage if using as sacrifical \n /domain - domain the user belongs to \n" ///localauth - if enabled uses interactive logon type to enable local and remote access
+                },
+                new HelpMenuItem()
+                {
+                    Name = "mimikatz",
+                    Description = "injects mimikatz dll into the local process using d/invoke which will perform module overload to try and hide it.",
+                    Usage = "mimikatz /args Value",
+                    NeedsAdmin = false,
+                    Opsec = OpsecStatus.NotSet,
+                    MitreTechnique = "",
+                    Details = "uses the inline dll command to run the powerkatz dll in memory and then runs the provided arguments",
+                    Keys = "/args - the arguments to pass to mimikatz"
                 },
                 new HelpMenuItem()
                 {
@@ -470,7 +567,7 @@
                 },
                 new HelpMenuItem()
                 {
-                    Name = "rev2sef",
+                    Name = "rev2self",
                     Description = "reverts the current token back to the orginal",
                     Usage = "rev2self",
                     NeedsAdmin = false,
@@ -500,6 +597,17 @@
                     MitreTechnique = "T1059",
                     Details = "executes the target program/command with the supplied arguments and returns the output to the C2",
                     Keys = "/command - the program to spawn \n /args - the arguments to pass the program"
+                },
+                new HelpMenuItem()
+                {
+                    Name = "runas",
+                    Description = "executes the target program with the supplied arguments and returns the output to the C2, using the supplied credentials",
+                    Usage = "runas /program value /args value /username value /password value /domain value",
+                    NeedsAdmin = false,
+                    Opsec = OpsecStatus.NotSet,
+                    MitreTechnique = "T1059",
+                    Details = "executes the target program/command with the supplied arguments and returns the output to the C2, using the supplied credentials, if using local creds set the domain to a .",
+                    Keys = "/program - the program to spawn \n /args - the arguments to pass the program \n /username - the username to use \n /password - the password to use \n /domain - the domain to use"
                 },
                 new HelpMenuItem()
                 {
@@ -578,6 +686,17 @@
                     Details = "impersonates a token of a user on the system running the given pid, needs admin to impersonate another logged on users token",
                     Keys = "/pid - the process id of the process to impersonate"
                 },
+                 new HelpMenuItem()
+                 { 
+                     Name = "token_store",
+                     Description = "stores a token for later use",
+                     Usage = "token_store /view /use value",
+                     NeedsAdmin = false,
+                     Opsec = OpsecStatus.NotSet,
+                     MitreTechnique = "T1134",
+                     Details = "impersonates a token of a user on the system running the given pid, needs admin to impersonate another logged on users token",
+                    Keys = "/view - loads the token store table \n/use - loads a token to use based off its index"
+                 },
                 new HelpMenuItem()
                 {
                     Name = "unmanagedPowershell",

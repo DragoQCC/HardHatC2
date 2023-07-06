@@ -1,4 +1,5 @@
 ﻿@page "/Downloads"
+@using HardHatC2Client.Components;
 @using HardHatC2Client.Models
 @using HardHatC2Client.Services
 @using System.Reflection
@@ -33,6 +34,8 @@
                                 <MudTh Style="@setStyle(Settings.IsCheckedBox)">Original Path </MudTh>
                                 <MudTh Style="@setStyle(Settings.IsCheckedBox)">Saved Location</MudTh>
                                 <MudTh Style="@setStyle(Settings.IsCheckedBox)">Download Time</MudTh>
+                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Download</MudTh>
+                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">View</MudTh>
                             </HeaderContent>
                             <RowTemplate Context="Rowcontext">
                                 <MudTd>@Rowcontext.Name</MudTd>
@@ -40,13 +43,17 @@
                                 <MudTd>@Rowcontext.OrginalPath</MudTd>
                                 <MudTd>@Rowcontext.SavedPath</MudTd>
                                 <MudTd>@Rowcontext.downloadedTime</MudTd>
+                                <MudTd>
+                                    <MudIconButton Icon="@Icons.Material.Filled.Save" Color="Color.Primary" Size="Size.Small" @onclick="@HandleDownload"></MudIconButton>
+                                </MudTd>
+                                <MudTd>
+                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility"Color="Color.Primary" Size="Size.Small" @onclick="() => HandleView(Rowcontext.SavedPath,Rowcontext.Name)"></MudIconButton>
+                                </MudTd>
                             </RowTemplate>
                         </MudTable>
                     </div>
                 </div>
             </div>
-
-            <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Save" Color="Color.Info"  Size="Size.Small" @onclick="@HandleSubmit" >Save</MudButton>
 
             @if (showSuccessCallAlert)
             {
@@ -109,6 +116,9 @@
 </CascadingAuthenticationState>
 
 @code {
+
+    [Inject]
+    private IDialogService DialogService { get; set; }
     public static List<DownloadFile> DownloadedFiles = new List<DownloadFile>();
     private MudTable<DownloadFile> mudTable;
     private int selectedRowNumber = -1;
@@ -153,7 +163,7 @@
     {
     }
 
-    private async Task HandleSubmit()
+    private async Task HandleDownload()
     {
         try
         {
@@ -183,5 +193,106 @@
             Console.WriteLine(ex.Message);
             showWarningCallAlert = true;
         }
+    }
+    public static async Task HandleDownload(string path, string name)
+    {
+        try
+        {
+            //cause a file browser popup to save the file
+            var fileContentString = await HardHatHubClient._hub.TriggerDownload(path);
+            var fileContent = Convert.FromBase64String(fileContentString);
+
+            char allPlatformPathSeperator = Path.DirectorySeparatorChar;
+            // find the Engineer cs file and load it to a string so we can update it and then run the compiler function on it
+            string dirpath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            //split path at bin keyword
+            string[] pathSplit = dirpath.Split("bin"); //[0] is the parent folder [1] is the bin folder
+                                                       //update each string in the array to replace \\ with the correct path seperator
+            pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
+
+            System.IO.File.WriteAllBytes(pathSplit[0] + "Downloads" + $"{allPlatformPathSeperator}{name}", fileContent);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    public async Task HandleView(string path, string name)
+    {
+        try
+        {
+            //cause a file browser popup to save the file
+            var fileContentString = await HardHatHubClient._hub.TriggerDownload(path);
+            var fileContent = Convert.FromBase64String(fileContentString);
+            if (fileContent != null && fileContent.Length > 0)
+            {
+                string contentType = await DetermineFileContentType(name);
+                //create a new MemoryStream object and pass the byte array to the constructor
+                MemoryStream ms = new MemoryStream(fileContent);
+                var dataUrl = $"data:{contentType};base64,{Convert.ToBase64String(fileContent)}";
+                if (contentType.Equals("application/zip"))
+                {
+                    var dialogParameters = new DialogParameters
+                        {
+                            ["fileName"] = name,
+                            ["dataUrl"] = dataUrl,
+                            ["fileData"] = ms
+                        };
+                    var dialogOptions = new DialogOptions
+                        {
+                            MaxWidth = MaxWidth.ExtraLarge,
+                            FullWidth = true,
+
+                        };
+                    DialogService.Show<ViewDownloadedZipFile>("Zip File", dialogParameters, dialogOptions);
+                    return;
+                }
+                await MudExFileDisplayDialog.Show(DialogService, dataUrl, name, contentType, ex => ex.JsRuntime = JS);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Console.WriteLine(ex.StackTrace);
+            Engineers.ShowErrorToast(ex.Message);
+        }
+    }
+
+
+    private async Task<string> DetermineFileContentType(string fileName)
+    {
+        string fileExtension = fileName.Split('.').Last();
+        //based on the file extension return the correct content type
+        switch (fileExtension)
+                {
+                    case "txt":
+                        return "text/plain";
+                    case "pdf":
+                        return "application/pdf";
+                    case "doc":
+                        return "application/vnd.ms-word";
+                    case "docx":
+                        return "application/vnd.ms-word";
+                    case "xls":
+                        return "application/vnd.ms-excel";
+                    case "xlsx":
+                        return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                    case "png":
+                        return "image/png";
+                    case "jpg":
+                        return "image/jpeg";
+                    case "jpeg":
+                        return "image/jpeg";
+                    case "gif":
+                        return "image/gif";
+                    case "csv":
+                        return "text/csv";
+                    case "zip":
+                        return "application/zip";
+                    default:
+                        break;
+                }
+        return "";
     }
 }

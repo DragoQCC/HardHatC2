@@ -1,6 +1,7 @@
-﻿@using HardHatC2Client.Pages;
+﻿@using HardHatC2Client.Models.TaskResultTypes;
+@using HardHatC2Client.Pages;
 
-<MudTable T="string[]" @ref=@_table Items="BodyContent.Values" HorizontalScrollbar="false" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Outlined="true" Striped="true" Filter="new Func<string[],bool>(FilterFunc1)" SortLabel="Sort By">
+<MudTable T="ProcessItem" @ref=@_table Items="Outputs" HorizontalScrollbar="false" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Outlined="true" Striped="true" Filter="new Func<ProcessItem,bool>(FilterFunc1)" SortLabel="Sort By">
     <ToolBarContent>
         <MudText Typo="Typo.h6">Process Listing</MudText>
         <MudSpacer />
@@ -8,22 +9,22 @@
         
     </ToolBarContent>
     <HeaderContent>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(0))">Process Name</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(1))">Process Path</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(2))">Owner</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(3))">PID</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(4))">PPID</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(5))">SessionID</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(6))">Arch</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(0))">Process Name</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(1))">Process Path</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(2))">Owner</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(3))">PID</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(4))">PPID</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(5))">SessionID</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(6))">Arch</MudTableSortLabel></MudTh>
     </HeaderContent>
     <RowTemplate>
-        <MudTd>@context[0]</MudTd>
-        <MudTd>@context[1]</MudTd>
-        <MudTd>@context[2]</MudTd>
-        <MudTd>@context[3]</MudTd>
-        <MudTd>@context[4]</MudTd>
-        <MudTd>@context[5]</MudTd>
-        <MudTd>@context[6]</MudTd>
+        <MudTd>@context.ProcessName</MudTd>
+        <MudTd>@context.ProcessPath</MudTd>
+        <MudTd>@context.Owner</MudTd>
+        <MudTd>@context.ProcessId</MudTd>
+        <MudTd>@context.ProcessParentId</MudTd>
+        <MudTd>@context.SessionId</MudTd>
+        <MudTd>@context.Arch</MudTd>
     </RowTemplate>
     <PagerContent>
         <MudTablePager HorizontalAlignment="HorizontalAlignment.Left" HidePageNumber="true" HidePagination="true"/>
@@ -35,9 +36,8 @@
 @code {
 
     [Parameter]
-    public List<string> Outputs {get; set;}
-    public Dictionary<string, string[]> BodyContent = new Dictionary<string, string[]>();
-    private MudTable<string[]> _table;
+    public List<ProcessItem> Outputs {get; set;}
+    private MudTable<ProcessItem> _table;
     private string searchString1 = "";
 
     private string setStyle(bool IsDark)
@@ -52,41 +52,43 @@
     
     public void FillContents()
     {
-        // for each string in outputs if BodyContent Dictionary does not contain the string as a key then add it, and set the value to the key broken apart on anything larger then 1 space (this is to account for file names with spaces in them)
-        foreach (string output in Outputs)
-        {
-            if (!BodyContent.ContainsKey(output))
-            {
-                //add a check so when splitting the strings on double spaces that if the next element is a letter then add it to the current element 
-                string[] split = output.Split(new string[] {"|"}, StringSplitOptions.RemoveEmptyEntries);
-
-                BodyContent.Add(output, split);
-                //clean up the Dictonary so its values do not have any leading or trailing spaces 
-                for (int i = 0; i < BodyContent[output].Length; i++)
-                {
-                    BodyContent[output][i] = BodyContent[output][i].Trim();
-                }
-            }
-        }
-        //remove the first 2 entries from BodyContent , this is the pre made header and lines that we dont need anymore
-        if (BodyContent.Count > 0)
-        {
-            BodyContent.Remove(BodyContent.Keys.First());
-            BodyContent.Remove(BodyContent.Keys.First());
-        }
+        
     }
 
-    private bool FilterFunc1(string[] search) => FilterFunc(search, searchString1);
+    private bool FilterFunc1(ProcessItem search) => FilterFunc(search, searchString1);
 
-    private bool FilterFunc(string[] search, string searchString)
+    private bool FilterFunc(ProcessItem search, string searchString)
     {
         if (string.IsNullOrWhiteSpace(searchString))
             return true;
         //for each element in the array if it contains searchString then return true
-        foreach (string s in search)
+        if (search.ProcessName.ToLower().Contains(searchString.ToLower()))
         {
-            if (s.Contains(searchString, StringComparison.OrdinalIgnoreCase))
-                return true;
+            return true;
+        }
+        if (search.ProcessPath.ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.Owner.ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.ProcessId.ToString().ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.ProcessParentId.ToString().ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.SessionId.ToString().ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.Arch.ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
         }
         return false;
     }

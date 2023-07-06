@@ -13,7 +13,7 @@ using TeamServer.Models.Dbstorage;
 using TeamServer.Models.Engineers.TaskResultTypes;
 using TeamServer.Models.Extras;
 using TeamServer.Utilities;
-using EngTaskStatus = TeamServer.Models.EngTaskStatus;
+//using DynamicEngLoading;
 
 namespace TeamServer.Services.Handle_Implants;
 
@@ -294,7 +294,7 @@ public class Handle_Engineer : ControllerBase
                             }
                             if (result.IsHidden == false)
                             {
-                                DatabaseService.AsyncConnection.InsertAsync((EngineerTaskResult_DAO)result);
+                                Task.Run( async() => await DatabaseService.AsyncConnection.InsertAsync((EngineerTaskResult_DAO)result));
                                 HardHatHub.AlertEventHistory(new HistoryEvent() { Event = $"Got response for task {result.Id}", Status = "Success" });
                                 string ResultValue = result.Result.Deserialize<MessageData>()?.Message ?? string.Empty;
                                 LoggingService.TaskLogger.ForContext("Task", result, true).ForContext("Task Result",ResultValue).Information($"Got response for task {result.Id}");

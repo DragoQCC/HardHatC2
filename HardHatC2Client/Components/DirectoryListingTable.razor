@@ -7,15 +7,22 @@
     <ToolBarContent>
         @if (Path != null)
         {
-            <MudText Typo="Typo.h6">Directory Content of @Path</MudText>
+            if(IsFileBrowser)
+            {
+                <MudTextField AdornmentColor="Color.Primary" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Folder" Class="mb-4 mt-4" @ref=FileBrowser.pathTextFiled TextChanged="@((s) =>FileBrowser.OnPathChanged(s))" @bind-Value="FileBrowser.targetPath" Label="@Path" Variant="Variant.Filled" />
+            }
+            else
+            {
+                <MudText Typo="Typo.h6">Directory Content of @Path</MudText>
+            }
         }
         else
         {
             <MudText Typo="Typo.h6">Directory Content</MudText>
         }
         <MudSpacer/>
-        <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
-
+        <MudTextField Variant="Variant.Filled" @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        
     </ToolBarContent>
     <HeaderContent>
         <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(0))">Name</MudTableSortLabel></MudTh>
@@ -75,10 +82,12 @@
 
 @code {
 
-        [Parameter]
-        public List<FileSystemItem> Outputs {get; set;}
-        [Parameter]
-        public string Path {get; set;}
+    [Parameter]
+    public List<FileSystemItem> Outputs {get; set;}
+    [Parameter]
+    public string Path {get; set;}
+    [Parameter]
+    public bool IsFileBrowser { get; set; } = false;
     public Dictionary<string, FileSystemItem> BodyContent = new Dictionary<string, FileSystemItem>();
     private MudTable<FileSystemItem>? _table;
     private MudTable<ACL>? _child_table;

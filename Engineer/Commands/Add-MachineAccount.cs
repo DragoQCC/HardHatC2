@@ -1,16 +1,11 @@
-﻿using Engineer.Commands;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
-using System.DirectoryServices;
+﻿using System;
 using System.DirectoryServices.ActiveDirectory;
-using System.Linq;
+using System.DirectoryServices.Protocols;
+using System.Net;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
-using System.DirectoryServices.AccountManagement;
-using System.Net;
-using System.DirectoryServices.Protocols;
-using Engineer.Functions;
+using DynamicEngLoading;
 
 namespace Engineer.Commands
 {
@@ -32,18 +27,18 @@ namespace Engineer.Commands
             //if domain is null get the current domain
             if (domain == null)
             {
-                domain = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().DomainName;
+                domain = IPGlobalProperties.GetIPGlobalProperties().DomainName;
             }
             //if name is null return an error
             if (name == null)
             {
-                Tasking.FillTaskResults("[-] Name is required",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("[-] Name is required",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 return;
             }
             //if password is null return an error
             if (Machinepassword == null)
             {
-                Tasking.FillTaskResults("[-] Machine Account Password is required",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("[-] Machine Account Password is required",task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 return;
             }
             //create the machine account
@@ -94,17 +89,17 @@ namespace Engineer.Commands
                 oLDAPReq.Attributes.Add(new DirectoryAttribute("ServicePrincipalName", new string[] { "HOST/" + name + "." + domain, "RestrictedKrbHost/" + name + "." + domain, "HOST/" + name, "RestrictedKrbHost/" + name }));
 
                 // Set machine password
-                oLDAPReq.Attributes.Add(new DirectoryAttribute("unicodePwd", System.Text.Encoding.Unicode.GetBytes('"' + Machinepassword + '"')));
+                oLDAPReq.Attributes.Add(new DirectoryAttribute("unicodePwd", Encoding.Unicode.GetBytes('"' + Machinepassword + '"')));
 
                 // Send request
                 oConObject.SendRequest(oLDAPReq);
-                Tasking.FillTaskResults("[+] Machine Account Created: " + name,task,EngTaskStatus.Complete,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("[+] Machine Account Created: " + name,task,EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception e)
             {
                // Console.WriteLine(e.Message);
                 //Console.WriteLine(e.StackTrace);
-                Tasking.FillTaskResults("[-] Error Creating Machine Account: " + e.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("[-] Error Creating Machine Account: " + e.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
     }
