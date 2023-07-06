@@ -1,12 +1,8 @@
-﻿using Engineer.Commands;
-using Engineer.Functions;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
+using DynamicEngLoading;
+using Engineer.Functions;
+
 
 namespace Engineer.Commands
 {
@@ -27,12 +23,12 @@ namespace Engineer.Commands
             }
             else
             {
-                Tasking.FillTaskResults($"Failed to find CancellationTokenSource for task {canceltaskId}", task, EngTaskStatus.Failed, TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"Failed to find CancellationTokenSource for task {canceltaskId}", task, EngTaskStatus.Failed, TaskResponseType.String);
                 return;
             }
 
             // Call FillTaskResult saying we cancelled the task
-            Tasking.FillTaskResults($"Cancelled task {canceltaskId}", task, EngTaskStatus.Complete, TaskResponseType.String);
+            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"Cancelled task {canceltaskId}", task, EngTaskStatus.Complete, TaskResponseType.String);
         }
     }
 }

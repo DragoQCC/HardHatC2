@@ -1,0 +1,223 @@
+﻿@using HardHatC2Client.Models;
+@using HardHatC2Client.Pages;
+@using MudBlazor
+@using System.Collections.Generic
+@using HardHatC2Client.Services
+@using System.Collections.ObjectModel
+@using System.Linq
+@using System.Diagnostics
+@using RestSharp.Authenticators
+@using Blazored.LocalStorage
+@using MudBlazor.Extensions
+@using MudBlazor.Extensions.Components
+@using MudExtensions.Utilities
+@using MudExtensions.Enums
+@using Bromix.MudBlazor.MaterialDesignIcons
+@using HardHatC2Client.Utilities
+@using System.Reflection;
+
+<div class="container-fluid d-flex flex-grow-1" style="height:500px; overflow-y:scroll">
+    <MudTable Style="width:100%;" Height="400px" Class="flex-auto" Breakpoint="Breakpoint.None" Items="@CompiledImplantList" HorizontalScrollbar="true" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Elevation="10" Outlined="true" Striped="true" T="CompiledImplant" Filter="new Func<CompiledImplant,bool>(FilterFunc1)" SortLabel="Sort By">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6"> Compiled Implants</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        </ToolBarContent>
+        <HeaderContent>
+            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.Id)">Id</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.ImplantType)">Implant Type</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.Name)">Name</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.ManagerName)">Manager Name</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.CompileDateTime)">Compile DateTime</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.KillDateTime)">KillDateTime</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.ConnectionAttempts)">ConnectionAttempts</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.IncludedCommands)">Included Commands</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.IncludedModules)">Included Modules</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.Sleep)">Sleep</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.SleepType)">Sleep Type</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(Settings.IsCheckedBox)">Download</MudTh>
+        </HeaderContent>
+        <RowTemplate Context="Rowcontext">
+            <MudTd>@Rowcontext.Id</MudTd>
+            <MudTd><MudIcon Size="Size.Small" Class="mb-2 ms-2" Icon=@Icons.Material.Filled.Build Color=Color.Primary></MudIcon></MudTd>
+            <MudTd>@Rowcontext.Name.@Rowcontext.CompileType</MudTd>
+            <MudTd>@Rowcontext.ManagerName</MudTd>
+            <MudTd>@Rowcontext.CompileDateTime</MudTd>
+            <MudTd>@Rowcontext.KillDateTime </MudTd>
+            <MudTd>@Rowcontext.ConnectionAttempts</MudTd>
+            <MudTd>
+                <MudIconButton OnClick="() => OnShowIncCommandButtonClicked()" Icon="@Icons.Material.Filled.Visibility" Color="@Color.Primary" aria-label="view included commands" />
+                <MudMessageBox @ref="incCommand_mbox" Title="Included Commands" CancelText="Close">
+                    <MessageContent>
+                        @if (true)
+                        {
+                            foreach (string command in Rowcontext.IncludedCommands)
+                            {
+                                <p>@command</p>
+                            }
+                        }
+                    </MessageContent>
+                </MudMessageBox>
+            </MudTd>
+            <MudTd>
+                <MudIconButton OnClick="() => OnShowIncModuleButtonClicked()" Icon="@Icons.Material.Filled.Visibility" Color="@Color.Primary" aria-label="view included modules" />
+                <MudMessageBox @ref="incModule_mbox" Title="Included Modules" CancelText="Close">
+                    <MessageContent>
+                        @if (true)
+                        {
+                            foreach (string module in Rowcontext.IncludedModules)
+                            {
+                                <p>@module</p>
+                            }
+                        }
+                    </MessageContent>
+                </MudMessageBox>
+            </MudTd>
+            <MudTd>@Rowcontext.Sleep sec</MudTd>
+            <MudTd>@Rowcontext.SleepType</MudTd>
+            <MudTd><MudIconButton OnClick="() => DownloadImplant(Rowcontext.SavedPath)" Icon="@Icons.Material.Filled.Download" Color="@Color.Primary" aria-label="download implant" /></MudTd>
+        </RowTemplate>
+    </MudTable>
+</div>
+
+@if (showSuccessCallAlert)
+{
+    <MudAlert Class="mt-16" Severity="Severity.Success" Variant="Variant.Outlined" ContentAlignment="HorizontalAlignment.Center" ShowCloseIcon="true" CloseIconClicked="(() => CloseMe(true))">Implant downloaded, check downloads dir inside the client folder.</MudAlert>
+}
+@if (showWarningCallAlert)
+{
+    <MudAlert Class="mt-16" Severity="Severity.Warning" Variant="Variant.Outlined" ContentAlignment="HorizontalAlignment.Center" ShowCloseIcon="true" CloseIconClicked="(() => CloseMe(false))">Failed to download file or no file selected. Check terminal for errors.</MudAlert>
+}
+
+@code {
+    public static List<CompiledImplant> CompiledImplantList = new();
+    public static string searchString1 { get; set; }
+
+    MudMessageBox incCommand_mbox;
+    MudMessageBox incModule_mbox;
+    bool showSuccessCallAlert = false;
+    bool showWarningCallAlert = false;
+
+    public void OnShowIncCommandButtonClicked()
+    {
+        incCommand_mbox.Show();
+    }
+
+    public void OnShowIncModuleButtonClicked()
+    {
+        incModule_mbox.Show();
+    }
+
+    public async Task DownloadImplant(string path)
+    {
+        try
+        {
+           
+                //cause a file browser popup to save the file
+                var fileContentString = await HardHatHubClient._hub.TriggerDownload(path);
+                var fileContent = Convert.FromBase64String(fileContentString);
+
+                char allPlatformPathSeperator = Path.DirectorySeparatorChar;
+                // find the Engineer cs file and load it to a string so we can update it and then run the compiler function on it
+                string dirpath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                //split path at bin keyword
+                string[] pathSplit = dirpath.Split("bin"); //[0] is the parent folder [1] is the bin folder
+                                                           //update each string in the array to replace \\ with the correct path seperator
+                pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
+                string filename = Path.GetFileName(path);
+
+                System.IO.File.WriteAllBytes(pathSplit[0] + "Downloads" + $"{allPlatformPathSeperator}{filename}", fileContent);
+                showSuccessCallAlert = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            showWarningCallAlert = true;
+        }
+    }
+
+    private void CloseMe(bool value)
+    {
+        if (value)
+        {
+            showSuccessCallAlert = false;
+        }
+        else
+        {
+            showWarningCallAlert = false;
+        }
+    }
+
+    private bool FilterFunc1(CompiledImplant search) => FilterFunc(search, searchString1);
+
+    private bool FilterFunc(CompiledImplant search, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        //for each element in the array if it contains searchString then return true
+        if (search.Id.ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.Sleep.ToString().ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.CompileDateTime.ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.SleepType.ToString().ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.Name.ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.CompileType.ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.ConnectionAttempts.ToString().ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.ManagerName.ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.ImplantType.ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.KillDateTime.ToString().ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.IncludedCommands.Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        if (search.IncludedModules.Contains(searchString.ToLower()))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private string setStyle(bool IsDark)
+    {
+        if (IsDark)
+        {
+            return "background:white; color:black;";
+        }
+        return "background:#333333; color:white;";
+    }
+
+    public static void AddCompiledImplant(CompiledImplant compiledImplant)
+    {
+        CompiledImplantList.Add(compiledImplant);
+    }
+
+}

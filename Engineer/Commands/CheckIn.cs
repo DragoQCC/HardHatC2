@@ -1,11 +1,6 @@
-﻿using Engineer.Commands;
-using Engineer.Functions;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -17,7 +12,7 @@ namespace Engineer.Commands
         {
             //Console.WriteLine("Checking In");
             task.Arguments.TryGetValue("/parentid", out string parentId);
-            Tasking.FillTaskResults(Program._metadata.Id+"\n" + parentId,task,EngTaskStatus.Complete,TaskResponseType.String); //gives back the engineers metadata and the parent so the teamserver can make the path
+            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(Program._metadata.Id+"\n" + parentId,task,EngTaskStatus.Complete,TaskResponseType.String); //gives back the engineers metadata and the parent so the teamserver can make the path
         }
     }
 }

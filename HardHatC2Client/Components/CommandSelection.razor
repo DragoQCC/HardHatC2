@@ -9,7 +9,7 @@
 {
 <MudGrid>
     <MudItem xs="12" sm="12" md="12" lg="12">
-        <MudAutocomplete Strict="true" T="string" ResetValueOnEmptyText="true" SearchFunc="@SearchCommand" ValueChanged="(e) => OnCommandSelected(e)"
+        <MudAutocomplete style="background:#111111; color:white;" Strict="true" T="string" ResetValueOnEmptyText="true" SearchFunc="@SearchCommand" ValueChanged="(e) => OnCommandSelected(e)"
                          Dense="true" Margin="Margin.Dense" SelectValueOnTab="true" SelectOnClick="false" CoerceText="false" CoerceValue="true"
                          InputMode="InputMode.text" Variant="Variant.Text" Adornment="Adornment.Start" AdornmentText="[COMMAND]> " Immediate="true" Clearable="true" KeyDownPreventDefault="true" KeyUpPreventDefault="true" TextUpdateSuppression="@TextSuppersion">
         </MudAutocomplete>
@@ -69,7 +69,7 @@ else if(Settings._InteractInputMode == Interact.InteractInputMode.Modal_Window)
 
     public static async Task<IEnumerable<string>> SearchCommand(string searchText)
     {
-        if(Settings._InteractInputMode == Interact.InteractInputMode.Classic)
+        if(Settings._InteractInputMode == Interact.InteractInputMode.Classic || Settings._InteractInputMode == Interact.InteractInputMode.NoAutoComplete)
         {
             if (Interact.AutocompleteSearchShowAllItems)
             {
@@ -172,9 +172,12 @@ else if(Settings._InteractInputMode == Interact.InteractInputMode.Modal_Window)
         keyValue.Clear();
         if (SelectedCommandItem != null)
         {
-            foreach (var key in SelectedCommandItem.Keys)
+            if (SelectedCommandItem.Keys != null)
             {
-                keyValue[key.Name] = "";
+                foreach (var key in SelectedCommandItem.Keys)
+                {
+                    keyValue[key.Name] = "";
+                }
             }
         }
     }

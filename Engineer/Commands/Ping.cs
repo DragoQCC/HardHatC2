@@ -2,7 +2,7 @@
 // using System.IO;
 // using System.Management;
 // using System.Threading.Tasks;
-// using Engineer.Functions;
+// 
 // using Engineer.Models;
 //
 // namespace Engineer.Commands;
@@ -16,7 +16,7 @@
 //         //check if address is null or empty 
 //         if (String.IsNullOrEmpty(address))
 //         {
-//             Tasking.FillTaskResults("Address is null or empty", task,EngTaskStatus.FailedWithWarnings);
+//             ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Address is null or empty", task,EngTaskStatus.FailedWithWarnings);
 //         }
 //         else
 //         {
@@ -32,11 +32,11 @@
 //             ManagementBaseObject outParams = processClass.InvokeMethod("Create", inParams, null);
 //             if (pingReply.Status == IPStatus.Success)
 //             {
-//                 Tasking.FillTaskResults("Ping successful", task,EngTaskStatus.Complete);
+//                 ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Ping successful", task,EngTaskStatus.Complete);
 //             }
 //             else
 //             {
-//                 Tasking.FillTaskResults("Ping failed", task,EngTaskStatus.FailedWithWarnings);
+//                 ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Ping failed", task,EngTaskStatus.FailedWithWarnings);
 //             }
 //         }
 //         

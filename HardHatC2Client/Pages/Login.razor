@@ -2,9 +2,11 @@
 @using HardHatC2Client.Models;
 @using HardHatC2Client.Services;
 @using HardHatC2Client.Utilities;
+@using Microsoft.IdentityModel.Tokens;
 @using RestSharp;
 @using Blazored.LocalStorage;
 @using Microsoft.AspNetCore.SignalR.Client
+@using System.IdentityModel.Tokens.Jwt;
 @inject IToastService toastService
 @inject RestClient _restClient
 
@@ -15,20 +17,18 @@
 <br>
 <br>
  <MudContainer MaxWidth="MaxWidth.Medium">
-    @if (FormSubmitted)
+@*    @if (FormSubmitted)
     {
-        <MudOverlay Visible="isVisible" DarkBackground="true" Absolute="true">
-            <MudProgressCircular Color="Color.Secondary" Indeterminate="true" />
-        </MudOverlay>
-    }
+
+    }*@
     <MudPaper Height="300px" Width="100%" Square="true" Class="pa-4">
-        <MudTabs @ref="tabs" Elevation="5" Rounded="true" PanelClass="pa-6" Centered="true" Color="@Color.Primary">
+        <MudTabs @ref="tabs" Elevation="0" Rounded="true" PanelClass="pa-6" Centered="true" Color="@Color.Primary">
             <MudTabPanel Text="Login">
                 <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
-                    <MudTextField T="string" @bind-Value="UserName" Label="Username" Required="true" RequiredError="User name is required!" />
-                    <MudTextField T="string" @bind-Value="Password" Label="Password" HelperText="Choose a strong password" @ref="pwField1" InputType="InputType.Password" Required="true" RequiredError="Password is required!" />
+                    <MudTextField Variant="Variant.Outlined" T="string" @bind-Value="UserName" Label="Username" Required="true" RequiredError="User name is required!" />
+                    <MudTextField Variant="Variant.Outlined" T="string" @bind-Value="Password" Label="Password" HelperText="Choose a strong password" @ref="pwField1" InputType="InputType.Password" Required="true" RequiredError="Password is required!" />
                     <div class="d-flex align-center justify-space-between">
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" Class="ml-auto" @onclick="@handleValidLogin">Login</MudButton>
+                        <MudButton DisableElevation="true" Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" Class="ml-auto" @onclick="@handleValidLogin">Login</MudButton>
                     </div>
                 </MudForm>
             </MudTabPanel>
@@ -55,7 +55,7 @@
     private MudTabs tabs;
     public static bool IsLoggedIn { get; set; } = false;
     public static string SignedInUser { get; private set; }
-    private bool isVisible;
+    public static bool isVisible = false;
     private bool FormSubmitted;
 
     private string PasswordMatch(string value)
@@ -98,15 +98,13 @@
                 localStorage.SetItemAsync("UserName", UserName);
                 SignedInUser = UserName;
                 IsLoggedIn = true;
-                FormSubmitted = false;
-                isVisible = false;
+                HardHatHubClient._hub.RegisterHardHatUserAfterSignin(SignedInUser);
                 StateHasChanged();
                 ShowSuccessToast("Logging in!");
                 Nav.NavigateTo("/Index");
             }
             else
             {
-                FormSubmitted = false;
                 isVisible = false;
                 StateHasChanged();
                 ShowErrorToast("Login Failed!");
@@ -114,17 +112,16 @@
         }
         catch (Exception ex)
         {
-                UserName = "";
-                Password = "";
-                FormSubmitted = false;
-                isVisible = false;
-                StateHasChanged();
+            UserName = "";
+            Password = "";
+            isVisible = false;
+            StateHasChanged();
             ShowErrorToast($"Login Failed! {ex.Message}");
-                Console.WriteLine(ex.Message);
+            Console.WriteLine(ex.Message);
         }
-        
+
     }
-    
+
     public static async Task HandleSignOut()
     {
         _localStorage.RemoveItemAsync("bearerToken");
@@ -132,8 +129,9 @@
         _Nav.NavigateTo(_Nav.BaseUri);
         SignedInUser = "";
         IsLoggedIn = false;
+        Interact.FirstRender = true;
     }
-    
+
 
 
     public static void ShowSuccessToast(string successMessage)
@@ -147,28 +145,48 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        try
         {
-            string token = await localStorage.GetItemAsync<string>("bearerToken");
-            if (token != null)
+            if (firstRender)
             {
-                SignedInUser = await localStorage.GetItemAsync<string>("UserName");
-                bool userExistsInDB = await HardHatHubClient._hub.VerifyTokenUsernameExists(SignedInUser);
-                if (userExistsInDB)
+                string token = await localStorage.GetItemAsync<string>("bearerToken");
+
+
+                if (token != null)
                 {
-                    FormSubmitted = false;
-                    isVisible = false;
-                    IsLoggedIn = true;
-                    StateHasChanged();
-                    ShowSuccessToast("Logging in!");
-                    Nav.NavigateTo("/Index");
-                }
-                else
-                {
-                    await HandleSignOut();
+                    //validate token and check it is not expired
+                    bool isStillValid = await HardHatHubClient._hub.CheckJWTExpiration(token);
+                    if(!isStillValid)
+                    {
+                        Console.WriteLine("JWT is expired signing out, please log back in to get a new session");
+                        await HandleSignOut();
+                        return;
+                    }
+
+                    SignedInUser = await localStorage.GetItemAsync<string>("UserName");
+                    bool userExistsInDB = await HardHatHubClient._hub.VerifyTokenUsernameExists(SignedInUser);
+                    if (userExistsInDB)
+                    {
+                        isVisible = true;
+                        IsLoggedIn = true;
+                        HardHatHubClient._hub.RegisterHardHatUserAfterSignin(SignedInUser);
+                        StateHasChanged();
+                        ShowSuccessToast("Logging in!");
+                        Nav.NavigateTo("/Index");
+                    }
+                    else
+                    {
+                        await HandleSignOut();
+                    }
                 }
             }
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Console.WriteLine(ex.StackTrace);
+        }
+        
     }
 
     protected override async Task OnInitializedAsync()

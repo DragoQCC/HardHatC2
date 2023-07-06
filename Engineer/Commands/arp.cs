@@ -1,11 +1,8 @@
-﻿using Engineer.Commands;
-using Engineer.Functions;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -18,7 +15,7 @@ namespace Engineer.Commands
             try
             {
                 //spawn the arp process and return the output
-                var arpProcess = new System.Diagnostics.Process();
+                var arpProcess = new Process();
                 arpProcess.StartInfo.FileName = "arp.exe";
                 arpProcess.StartInfo.Arguments = "-a";
                 arpProcess.StartInfo.UseShellExecute = false;
@@ -26,11 +23,11 @@ namespace Engineer.Commands
                 arpProcess.Start();
                 var output = arpProcess.StandardOutput.ReadToEnd();
                 arpProcess.WaitForExit();
-                Tasking.FillTaskResults(output, task, EngTaskStatus.Complete,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(output, task, EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception e)
             {
-                Tasking.FillTaskResults(e.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(e.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
     }

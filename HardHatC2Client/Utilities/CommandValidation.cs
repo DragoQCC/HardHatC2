@@ -1,5 +1,6 @@
 ﻿using HardHatC2Client.Pages;
 using static HardHatC2Client.Utilities.CommandKey;
+using static HardHatC2Client.Utilities.Help;
 
 namespace HardHatC2Client.Utilities;
 
@@ -24,6 +25,7 @@ public class CommandKey
         DropDown, //predefined values
         Manager, //useful for commands like inject, jump where u make a new implant based on an existing manager 
         CheckBox, // used for keys that have no values and are either present or not present 
+        File, // used for keys that require a file to be uploaded
     }
 
     public CommandKey()
@@ -42,17 +44,27 @@ public class CommandKey
 
 public class CommandValidation
 {
-
     public static List<string> ManagerNames
     {
         get { return Managers.managersList.Select(manager => manager.Name).ToList(); }
     }
+
+    public static Dictionary<string,List<string>> ImplantLoadedCommands = new Dictionary<string, List<string>>();
     
     public static bool ValidateCommand(string input, out Dictionary<string,string> args , out string error)
     {
         args = new Dictionary<string, string>();
         string command = input.Split(' ')[0];
         List<string> argsToParse = input.Split(' ').Skip(1).ToList();
+
+        //if argsToParse contains /SkipCheck then the command and key validations are skipped 
+        if (argsToParse.Contains("/SkipCheck"))
+        {
+            args = argsToParse.ToDictionary(x => x, x => "");
+            error = null;
+            return true;
+        }
+
 
         //if none of the command names in CommandList match the command name then return false
         if (!CommandList.Any(x => x.Name.Equals(command, StringComparison.OrdinalIgnoreCase)))
@@ -61,12 +73,14 @@ public class CommandValidation
             error = "Command not found";
             return false;
         }
+
+      
         
         //get the command item from the CommandList that matches the command name
         CommandItem commandItem = CommandList.First(x => x.Name.Equals(command, StringComparison.OrdinalIgnoreCase));
         
         //if the commandItem has no keys then return true
-        if (commandItem.Keys.Count == 0)
+        if (commandItem.Keys == null || commandItem.Keys.Count == 0)
         {
             error = null;
             return true;
@@ -125,6 +139,22 @@ public class CommandValidation
         // },
         new CommandItem()
         {
+            Name = "Addcommand",
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey() {Name = "/command", Required = true, inputType = InputType.Text, PreDefinedValues = null, NeedsValues = true},
+                    }
+        },
+        new CommandItem()
+        {
+            Name = "Addmodule",
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey() {Name = "/module", Required = true, inputType = InputType.Text, PreDefinedValues = null, NeedsValues = true},
+                    }
+        },
+        new CommandItem()
+        {
             Name = "Add-MachineAccount",
             Keys = new List<CommandKey>()
                     { 
@@ -178,6 +208,24 @@ public class CommandValidation
                         new CommandKey("/localhost",false,InputType.Text, null,  true)
                     }
         },
+        //new CommandItem()
+        //{
+        //    Name = "cleanupinteractiveprofile",
+        //    Keys = new List<CommandKey>()
+        //    {
+        //                new CommandKey("/sid",true,InputType.Text, null,  true)
+        //    }
+        //},
+        //new CommandItem()
+        //{
+        //    Name = "createprocess_stolentoken",
+        //    Keys = new List<CommandKey>()
+        //    {
+        //        new CommandKey("/program",true,InputType.Text, null,  true),
+        //        new CommandKey("/args",false,InputType.Text, null,  true),
+        //        new CommandKey("/index",true,InputType.Text, null,  true)
+        //    }
+        //},
         new CommandItem()
         {
             Name = "delete",
@@ -213,7 +261,30 @@ public class CommandValidation
            Keys = new List<CommandKey>()
                     {
                         new CommandKey("/file",true,InputType.Text, null,  true),
-                        new CommandKey("/args",false,InputType.Text, null,  true)
+                        new CommandKey("/args",false,InputType.Text, null,  true),
+                        new CommandKey("/local",false,InputType.File, null,  true)
+                    }
+        },
+        new CommandItem()
+        {
+            Name = "execute_bof",
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/file",true,InputType.Text, null,  true),
+                        new CommandKey("/function",true,InputType.Text, null,  true),
+                        new CommandKey("/argtypes",false,InputType.Text, null,  true),
+                        new CommandKey("/args",false,InputType.Text, null,  true),
+                       // new CommandKey("/local",false,InputType.File, null,  true)
+                    }
+        },
+         new CommandItem()
+        {
+            Name = "execute_pe",
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/file",true,InputType.Text, null,  true),
+                        new CommandKey("/args",false,InputType.Text, null,  true),
+                       // new CommandKey("/local",false,InputType.File, null,  true)
                     }
         },
         new CommandItem()
@@ -223,7 +294,12 @@ public class CommandValidation
         },
         new CommandItem()
         {
-            Name = "getluid",
+            Name = "GetCommands",
+            Keys = null
+        },
+        new CommandItem()
+        {
+            Name = "get_luid",
             Keys = null
         },
         new CommandItem()
@@ -240,6 +316,15 @@ public class CommandValidation
                         new CommandKey("/domain",false,InputType.Text, null,  true),
                         new CommandKey("/username",false,InputType.Text, null,  true),
                         new CommandKey("/password",false,InputType.Text, null,  true)
+                    }
+        },
+        new CommandItem()
+        {
+            Name = "getsystem",
+            Keys = new List<CommandKey>()
+            {
+                        new CommandKey("/elevate",false,InputType.Text, null,  false),
+                        new CommandKey("/command",false,InputType.Text, null,  false),
                     }
         },
         new CommandItem()
@@ -271,7 +356,8 @@ public class CommandValidation
                         new CommandKey("/args",false,InputType.Text, null,  true),
                         new CommandKey("/execmethod",false,InputType.DropDown, new List<string>(){"UnloadDomain","Classic"},  true),
                         new CommandKey("/appdomain",false,InputType.Text, null,  true),
-                        new CommandKey("/Patch_A",false,InputType.CheckBox,null,false)
+                        new CommandKey("/Patch_A",false,InputType.CheckBox,null,false),
+                        new CommandKey("/local",false,InputType.File, null,  true)
                     }
         },
         new CommandItem()
@@ -282,7 +368,8 @@ public class CommandValidation
                     {
                         new CommandKey("/dll",true,InputType.Text, null,  true),
                         new CommandKey("/function",true,InputType.Text, null,  true),
-                        new CommandKey("/args",false,InputType.Text, null,  true)
+                        new CommandKey("/args",false,InputType.Text, null,  true),
+                        new CommandKey("/local",false,InputType.File, null,  true)
                     }
         },
         new CommandItem()
@@ -330,7 +417,8 @@ public class CommandValidation
               Keys = new List<CommandKey>()
                       {
                             new CommandKey("/file",true,InputType.Text, null,  true),
-                            new CommandKey("/args",false,InputType.Text, null,  true)
+                            new CommandKey("/args",false,InputType.Text, null,  true),
+                            new CommandKey("/local",false,InputType.File, null,  true)
                       }
         },
         new CommandItem()
@@ -352,7 +440,16 @@ public class CommandValidation
                     {
                         new CommandKey("/username",true,InputType.Text, null,  true),
                         new CommandKey("/password",true,InputType.Text, null,  true),
-                        new CommandKey("/domain",true,InputType.Text, null,  true)
+                        new CommandKey("/domain",true,InputType.Text, null,  true),
+                        //new CommandKey("/localauth",false,InputType.Text, null,  false)
+                    }
+        },
+        new CommandItem()
+        {
+            Name = "mimikatz",
+            Keys = new List<CommandKey>()
+                    {
+                        new CommandKey("/args",true,InputType.Text, null,  true)
                     }
         },
         new CommandItem()
@@ -416,7 +513,8 @@ public class CommandValidation
             Keys = new List<CommandKey>()
                     {
                         new CommandKey("/import",true,InputType.Text, null,  true),
-                        new CommandKey("/remove",false,InputType.Text, null,  true)
+                        new CommandKey("/remove",false,InputType.Text, null,  true),
+                        new CommandKey("/local",false,InputType.File, null,  true)
                     }
         },
         new CommandItem()
@@ -467,6 +565,18 @@ public class CommandValidation
         },
         new CommandItem()
         {
+            Name = "runas",
+            Keys = new List<CommandKey>()
+            {
+                new CommandKey("/program",true,InputType.Text, null,  true),
+                new CommandKey("/args",false,InputType.Text, null,  true),
+                new CommandKey("/username",true,InputType.Text, null,  true),
+                new CommandKey("/password",true,InputType.Text, null,  true),
+                new CommandKey("/domain",true,InputType.Text, null,  true),
+            }
+        },
+        new CommandItem()
+        {
             Name = "shell",
             //Keys = {{"/command",true},}
             Keys = new List<CommandKey>()
@@ -481,7 +591,8 @@ public class CommandValidation
             Keys = new List<CommandKey>()
                     {
                         new CommandKey("/program",true,InputType.Text, null,  true),
-                        new CommandKey("/args",false,InputType.Text, null,  true)
+                        new CommandKey("/args",false,InputType.Text, null,  true),
+                        new CommandKey("/local",false,InputType.File, null,  true)
                     }
         },
         new CommandItem()
@@ -531,6 +642,16 @@ public class CommandValidation
         },
         new CommandItem()
         {
+            Name = "token_store",
+            Keys = new List<CommandKey>()
+            {
+                new CommandKey("/remove",false,InputType.Text, null,  true),
+                new CommandKey("/view",false,InputType.Text, null,  false),
+                new CommandKey("/use",false,InputType.Text, null,  true),
+            }
+        },
+        new CommandItem()
+        {
             Name = "unmanagedPowershell",
             //Keys = {{"/command",true}}
             Keys = new List<CommandKey>()
@@ -545,7 +666,8 @@ public class CommandValidation
             Keys = new List<CommandKey>()
             {
                 new CommandKey("/file",true,InputType.Text, null,  true),
-                new CommandKey("/dest",true,InputType.Text, null,  true)
+                new CommandKey("/dest",true,InputType.Text, null,  true),
+                new CommandKey("/local",false,InputType.File, null,  true)
             }
         },
         new CommandItem()

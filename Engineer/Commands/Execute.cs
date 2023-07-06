@@ -1,13 +1,10 @@
-﻿using Engineer.Commands;
-using Engineer.Functions;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -24,12 +21,12 @@ namespace Engineer.Commands
                 task.Arguments.TryGetValue("/args", out string argument);
                 if (String.IsNullOrWhiteSpace(command) || String.IsNullOrWhiteSpace(command))
                 {
-                    Tasking.FillTaskResults("Command not specified", task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Command not specified", task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
                 if (String.IsNullOrEmpty(argument))
                 {
-                    Tasking.FillTaskResults("Arguments not specified", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Arguments not specified", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
 
@@ -49,11 +46,11 @@ namespace Engineer.Commands
                 };
 
                 process.Start();
-                Tasking.FillTaskResults($"{command} executed",task,EngTaskStatus.Complete,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"{command} executed",task,EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception e)
             {
-                Tasking.FillTaskResults(e.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(e.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
     }

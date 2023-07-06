@@ -8,8 +8,10 @@ using System;
 using System.Linq;
 using System.Diagnostics;
 using System.CodeDom.Compiler;
+using System.Reflection.PortableExecutable;
 using ApiModels.Requests;
 using Microsoft.CSharp;
+using System.Security.Cryptography.Xml;
 
 namespace TeamServer.Utilities
 {
@@ -18,7 +20,7 @@ namespace TeamServer.Utilities
 
         public bool Confuse { get; set;}
         
-        public static byte[] GenerateCode(string source,SpawnEngineerRequest.EngCompileType compileType, SpawnEngineerRequest.SleepTypes sleepType)
+        public static byte[] GenerateEngCode(string source,SpawnEngineerRequest.EngCompileType compileType, SpawnEngineerRequest.SleepTypes sleepType, List<string> nonIncCommandList, List<string> nonIncModuleList)
         {
             string assemblyName = Path.GetRandomFileName();
 
@@ -26,13 +28,21 @@ namespace TeamServer.Utilities
 
             char allPlatformPathSeperator = Path.DirectorySeparatorChar;
             string assemblyBasePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string[] pathSplit = assemblyBasePath.Split("bin"); // [0] is the main path D:\my_Custom_code\HardHatC2\Teamserver\ 
+            string[] pathSplit = assemblyBasePath.Split("bin"); // [0] is the main path HardHatC2\Teamserver\ 
             pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
             pathSplit[1] = pathSplit[1].Replace("\\", allPlatformPathSeperator.ToString());
             string dataFolderPath = pathSplit[0] + "Data";
 
             //return the filenames from the dataFolderPath directory
             string[] assemblyRefList = Directory.GetFiles(dataFolderPath);
+
+            //get the shared library location 
+            string TopLevelFolder = pathSplit[0] + $"..{allPlatformPathSeperator}";
+            string DynamicLoadingDllPath = TopLevelFolder + "DynamicEngLoading" + allPlatformPathSeperator + "bin" + allPlatformPathSeperator + "Debug";
+            //in the TopLeelFolder should be files in the format Engineer_randomStrings.exe, we need one of those file paths 
+            string[] DynamicLoadingLibrary = Directory.GetFiles(DynamicLoadingDllPath, "DynamicEngLoading.dll");
+            
+
 
             EnumerationOptions enumOptions = new EnumerationOptions() { RecurseSubdirectories = true  }; // enables searching sub dirs to get all the cs files.
             string[] otherCsFileList = Directory.GetFiles(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}", "*.cs",enumOptions);
@@ -44,8 +54,25 @@ namespace TeamServer.Utilities
             {
                 csFileList = csFileList.Where(x => x != pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Extra{allPlatformPathSeperator}ServiceExeMode.cs").ToArray();
             }
-            
 
+            //if a csFileList item has the DynamicCommands folder in it then remove it from the list
+            csFileList = csFileList.Where(x => !x.Contains("DynamicCommands")).ToArray();
+            
+           //List<string> commandList = Directory.GetFiles(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Commands{allPlatformPathSeperator}", "*.cs").ToList();
+           //remove each entry from the commandNames list until we have only the files we want to remove from the csFileList
+           //remove all entries from the commandList where it is not in the commandNames list
+           //commandList.RemoveAll(x => commandNames.Contains(Path.GetFileNameWithoutExtension(x),StringComparer.CurrentCultureIgnoreCase));
+
+            //List<string> moduleList = Directory.GetFiles(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Modules{allPlatformPathSeperator}", "*.cs").ToList();
+            //remove each entry from the moduleNames list until we have only the files we want to remove from the csFileList
+            //remove all entries from the moduleList where it is not in the moduleNames list
+            //moduleList.RemoveAll(x => moduleNames.Contains(Path.GetFileNameWithoutExtension(x), StringComparer.CurrentCultureIgnoreCase));
+
+            //remove the non included command files from the csFileList
+            csFileList = csFileList.Where(x => !nonIncCommandList.Contains(x)).ToArray();
+            //remove the module files from the csFileList
+            csFileList = csFileList.Where(x => !nonIncModuleList.Contains(x)).ToArray();
+           
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source);            
             List<SyntaxTree> trees = new List<SyntaxTree>(); //gets the other needed .cs files besides the main program.cs from Engineers folder.
             foreach (string csFile in  csFileList)
@@ -55,6 +82,8 @@ namespace TeamServer.Utilities
             trees.Add(syntaxTree);
             //get Refrences from the assembly
             List<MetadataReference> references = new List<MetadataReference> { };
+            Console.WriteLine("DynamicLoadingLibrary file path: " + DynamicLoadingLibrary[0]);
+            references.Add(MetadataReference.CreateFromFile($"{DynamicLoadingLibrary[0]}"));
             // get MetadataRefrence CreateFromFile for each string in assemblyRefList
             foreach (string assembly in assemblyRefList)
             {
@@ -124,53 +153,86 @@ namespace TeamServer.Utilities
         public static byte[] CompileCommands(string source)
         {
             string assemblyName = Path.GetRandomFileName();
-            SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source);
-            
             char allPlatformPathSeperator = Path.DirectorySeparatorChar;
             string assemblyBasePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string[] pathSplit = assemblyBasePath.Split("bin"); // [0] is the main path
+            string[] pathSplit = assemblyBasePath.Split("bin"); // [0] is the main path HardHatC2\Teamserver\ 
             pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
             pathSplit[1] = pathSplit[1].Replace("\\", allPlatformPathSeperator.ToString());
-            string dataFolderPath = pathSplit[0] + "Data";
+            //string dataFolderPath = pathSplit[0] + "Data";
+            string TopLevelFolder = pathSplit[0] + $"..{allPlatformPathSeperator}";
+            string DynamicLoadingDllPath = TopLevelFolder + "DynamicEngLoading" +allPlatformPathSeperator + "bin" + allPlatformPathSeperator+"Debug";
+            //in the TopLeelFolder should be files in the format Engineer_randomStrings.exe, we need one of those file paths 
+           string[] DynamicLoadingLibrary = Directory.GetFiles(DynamicLoadingDllPath, "DynamicEngLoading.dll");
+
+            string dataFolderPath = pathSplit[0] + "Data" + allPlatformPathSeperator + "NewCommandStandard";
 
             //return the filenames from the dataFolderPath directory
             string[] assemblyRefList = Directory.GetFiles(dataFolderPath);
-            
-            //get Refrences from the assembly
-            List<MetadataReference> references = new List<MetadataReference> { };
+
+            List<MetadataReference> referencedAssemblies = new List<MetadataReference>
+            {
+                MetadataReference.CreateFromFile($"{DynamicLoadingLibrary[0]}")
+            };
             foreach (string assembly in assemblyRefList)
             {
                 MetadataReference assemblyRefrence = MetadataReference.CreateFromFile(assembly);
-                references.Add(assemblyRefrence);
+                referencedAssemblies.Add(assemblyRefrence);
             }
+
+            //EnumerationOptions enumOptions = new EnumerationOptions() { RecurseSubdirectories = true }; // enables searching sub dirs to get all the cs files.
+            //string[] csFileList = otherCsFileList.Where(x => x != pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}*_CommModule.cs").ToArray();
+
+            // Create the syntax tree
+            SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source);
+            List<SyntaxTree> trees = new List<SyntaxTree>(); //gets the other needed .cs files besides the main program.cs from Engineers folder.
+            //foreach (string csFile in otherCsFileList)
+            //{
+            //    trees.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(csFile)));
+            //}
+            trees.Add(syntaxTree);
+
+            // Set up the compilation options
+            CSharpCompilationOptions options = new CSharpCompilationOptions(outputKind: OutputKind.DynamicallyLinkedLibrary, optimizationLevel: OptimizationLevel.Release, platform: Platform.X64, allowUnsafe: true);
+
             
-            
-            //use the roslyn compiler to read the source code
-            CSharpCompilation compilation = CSharpCompilation.Create(assemblyName, syntaxTrees: new[] { syntaxTree }, references:references,
-                options: new CSharpCompilationOptions(outputKind: OutputKind.NetModule, optimizationLevel: OptimizationLevel.Release, platform: Platform.X64, allowUnsafe: true));
+            // Create the compilation
+            CSharpCompilation compilation = CSharpCompilation.Create("GeneratedAssembly.dll", trees, referencedAssemblies, options);
+
             
             using (var ms = new MemoryStream())
             {
                 EmitResult result = compilation.Emit(ms);
-            
-                // if (!result.Success)
-                // {
-                //     IEnumerable<Diagnostic> failures = result.Diagnostics.Where(diagnostic =>
-                //         diagnostic.IsWarningAsError ||
-                //         diagnostic.Severity == DiagnosticSeverity.Error);
-                //     Console.WriteLine(" Roslyn Compilation failed");
-                //     foreach (Diagnostic diagnostic in failures)
-                //     {
-                //         Console.Error.WriteLine("{0}: {1}", diagnostic.Id, diagnostic.GetMessage());
-                //     }
-                //     return null;
-                // }
-                // else
-                // {
+
+                if (!result.Success)
+                {
+                    IEnumerable<Diagnostic> failures = result.Diagnostics.Where(diagnostic =>
+                        diagnostic.IsWarningAsError ||
+                        diagnostic.Severity == DiagnosticSeverity.Error);
+                    Console.WriteLine(" Roslyn Compilation failed");
+                    foreach (Diagnostic diagnostic in failures)
+                    {
+                        Console.Error.WriteLine("{0}: {1}", diagnostic.Id, diagnostic.GetMessage());
+
+                        // Print the code that caused the error
+                        var lineSpan = diagnostic.Location.GetLineSpan();
+                        var startLine = lineSpan.StartLinePosition.Line;
+                        var endLine = lineSpan.EndLinePosition.Line;
+                        var sourceText = lineSpan.Path == "" ? source : File.ReadAllText(lineSpan.Path);
+                        var sourceLines = sourceText.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+
+                        for (int i = startLine; i <= endLine; i++)
+                        {
+                            Console.Error.WriteLine("Line {0}: {1}", i + 1, sourceLines[i]);
+                        }
+                    }
+                    return null;
+                }
+                else
+                {
                     ms.Seek(0, SeekOrigin.Begin);
                     byte[] assemblyBytes = ms.ToArray();
                     return assemblyBytes;
-                //}
+                }
             }
         }
 

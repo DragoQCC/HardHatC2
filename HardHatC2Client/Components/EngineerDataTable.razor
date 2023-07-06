@@ -11,6 +11,7 @@
                     <th>Address</th>
                     <th>hostname</th>
                     <th>username</th>
+                    <th>note</th>
                     <th>process</th>
                     <th>pid</th>
                     <th>Integrity</th>
@@ -28,6 +29,7 @@
                     <td>@engineer.Address</td>
                     <td>@engineer.Hostname</td>
                     <td>@engineer.Username</td>
+                    <td>@engineer.Note</td>
                     <td>@engineer.ProcessName</td>
                     <td>@engineer.ProcessId</td>
                     <td>@engineer.Integrity</td>
@@ -56,7 +58,7 @@
             {
                 while (true)
                 {
-                    if (stopwatch.ElapsedMilliseconds > 500)
+                    if (stopwatch.ElapsedMilliseconds > 250)
                     {
                         //tries to ensure refresh on last seem timer
                         InvokeAsync(StateHasChanged);

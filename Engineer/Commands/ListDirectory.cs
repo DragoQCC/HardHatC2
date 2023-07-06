@@ -1,13 +1,13 @@
-﻿using Engineer.Functions;
-using Engineer.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
-using System.Security.Principal;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -69,11 +69,11 @@ namespace Engineer.Commands
             {
 				//check that the path is valid
 				path.Trim();
-                if (!Directory.Exists(path))
-                {
-                    Tasking.FillTaskResults("error: invalid path", task, EngTaskStatus.Failed,TaskResponseType.String);
-                    return;
-                }
+                //if (!Directory.Exists(path))
+                //{
+                //    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: invalid path", task, EngTaskStatus.Failed,TaskResponseType.String);
+                //    return;
+                //}
 
                 var Items  = GetDirectoryListing(path);
                 StringBuilder output = new StringBuilder();
@@ -82,13 +82,13 @@ namespace Engineer.Commands
 				// 	//take each items properties and seperate make them into a string seperated by a | 
 				// 	output.AppendLine($"{item.Name}|{item.Length}|{item.Owner}|{item.ChildItemCount}|{item.CreationTimeUtc}|{item.LastAccessTimeUtc}|{item.LastWriteTimeUtc}|{item.DirACL}|{item.FileACL}");
 				// }
-                Tasking.FillTaskResults(Items, task,EngTaskStatus.Complete,TaskResponseType.FileSystemItem);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(Items, task,EngTaskStatus.Complete,TaskResponseType.FileSystemItem);
             }
             catch (Exception ex)
             {
 	           // Console.WriteLine(ex.Message);
 	            //Console.WriteLine(ex.StackTrace);
-                Tasking.FillTaskResults("error: " + ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
         
@@ -276,25 +276,5 @@ namespace Engineer.Commands
 	}
 	
 	
-	[Serializable]
-	public class FileSystemItem
-	{
-		public string Name { get; set; } = "";
-		public long Length { get; set; } = 0;
-		public string Owner { get; set; } = "";
-		public long ChildItemCount { get; set; } = 0;
-		public DateTime CreationTimeUtc { get; set; } = new DateTime();
-		public DateTime LastAccessTimeUtc { get; set; } = new DateTime();
-		public DateTime LastWriteTimeUtc { get; set; } = new DateTime();
-		public List<ACL> ACLs { get; set; } = new List<ACL>();
-	}
-
-	[Serializable]
-	public class ACL
-	{
-		public string IdentityRef { get; set; } = "";
-		public string AccessControlType { get; set; } = "";
-		public string FileSystemRights { get; set; } = "";
-		public bool IsInherited { get; set; }
-	}
+	
 }

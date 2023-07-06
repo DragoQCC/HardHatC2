@@ -1,0 +1,132 @@
+﻿@using ApiModels.Requests;
+@using HardHatC2Client.Pages;
+@using HardHatC2Client.Services;
+
+<MudDialog>
+    <DialogContent>
+        <MudTable Style="width:100%;" Height="400px" Class="flex-auto" Breakpoint="Breakpoint.None" Items="@inputAlises" HorizontalScrollbar="true" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Elevation="10"
+                  Outlined="true" Striped="true" T="Alias" CanCancelEdit="true" RowEditPreview="BackupItem" RowEditCancel="ResetItemToOriginalValues" IsEditRowSwitchingBlocked="true" EditTrigger="TableEditTrigger.EditButton">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Input Alisas</MudText>
+                <MudTooltip ShowOnHover="true" Arrow="true" Placement="Placement.Right">
+                    <ChildContent>
+                        <MudIconButton Class="mx-2" Icon="@Icons.Material.Outlined.Info" />
+                    </ChildContent>
+                    <TooltipContent>
+                        <MudText>
+                            Aliases are shorthand for any text that you want to reuse in a command.
+                        </MudText>
+                        <MudText>
+                            This might be full commands, or specific arguments. Aliases can be nested.
+                        </MudText>
+                        <MudText>
+                            For example an alias called "$hh_myalias" that contains the text "inlineassembly /program rubeus.exe /args $hh_rubeusargs" can be used as follows:
+                        </MudText>
+                        <MudText>
+                            if $hh_rubeusargs is set to "/service:krbtgt" then $hh_myalias will be expanded to "inlineassembly /program rubeus.exe /args /service:krbtgt" when used on the interact panel
+                        </MudText>
+                        <MudText>
+                            aliases must start with "$hh_", this ensures that users can still pass in env variables or powershell variables without them being expanded
+                        </MudText>
+                    </TooltipContent>
+                </MudTooltip>
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh>Alias Name</MudTh>
+                <MudTh>Alias Value</MudTh>
+            </HeaderContent>
+            <RowTemplate Context="Rowcontext">
+                <MudTd>@Rowcontext.Name</MudTd>
+                <MudTd>@Rowcontext.Value</MudTd>           
+            </RowTemplate>
+            <RowEditingTemplate>
+                <MudTd DataLabel="Name">
+                    <MudTextField @bind-Value="@context.Name" Required/>
+                </MudTd>
+                <MudTd DataLabel="Value">
+                    <MudTextField @bind-Value="@context.Value" Required/>
+                </MudTd>
+            </RowEditingTemplate>
+            <EditButtonContent Context="button">
+                <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Outlined.Edit" Class="pa-0" OnClick="@button.ButtonAction" Disabled="@button.ButtonDisabled" />
+            </EditButtonContent>
+        </MudTable>
+        <br/>
+    <MudTextField @bind-Value="submitNewAlias.Name" Label="Name" />
+    <MudTextField @bind-Value="submitNewAlias.Value" Label="Value" />
+    <MudButton OnClick="@HandleAliasSubmit">Add</MudButton>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@Submit">Ok</MudButton>
+        <MudButton OnClick="@Cancel">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    public class Alias 
+    {
+        public string id { get; set; } = Guid.NewGuid().ToString();
+        public string Name { get; set; }
+        public string Value { get; set; }
+    }
+
+    //this is a dialog version of the ImplantCreation component it is used for commands that need new implants
+    //ex. spawn, inject, jump, etc.
+    [CascadingParameter] MudDialogInstance Dialog { get; set; }
+    public static List<Alias> inputAlises = new List<Alias>();
+    private Alias submitNewAlias = new Alias();
+    private Alias backupEditItem = new Alias();
+
+    public async Task HandleAliasSubmit()
+    {
+        if(!submitNewAlias.Name.StartsWith("$hh_"))
+        {
+            submitNewAlias.Name = "$hh_" + submitNewAlias.Name;
+        }
+        inputAlises.Add(submitNewAlias);
+        await HardHatHubClient._hub.CreateorUpdateAlias(Login.SignedInUser, submitNewAlias);
+        submitNewAlias = new Alias();
+        StateHasChanged();
+    }
+
+    public async Task RemoveAlias(Alias alias)
+    {
+        inputAlises.Remove(alias);
+    }
+
+    private void BackupItem(object itemtobackup)
+    {
+        backupEditItem = new()
+            {
+                Value = ((Alias)itemtobackup).Value,
+                Name = ((Alias)itemtobackup).Name,
+            };
+    }
+
+    private void ItemHasBeenCommitted(object element)
+    {
+
+    }
+
+    private void ResetItemToOriginalValues(object itemtorestore)
+    {
+        ((Alias)itemtorestore).Value = backupEditItem.Value;
+        ((Alias)itemtorestore).Name = backupEditItem.Name;
+    }
+
+
+    void Submit() => Dialog.Close(DialogResult.Ok(true));
+    void Cancel() => Dialog.Cancel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        //if input aliases is empty call the hub to check for stored values 
+        if (inputAlises.Count == 0)
+        {
+            //call the hub to get the stored aliases
+            inputAlises = await HardHatHubClient._hub.GetExistingAliases(Login.SignedInUser);
+        }
+    }
+
+}

@@ -13,5 +13,6 @@ namespace ApiModels.Requests
         public byte[]? File { get; set; }
         public string? taskID { get; set; }
 		public bool IsBlocking { get; set; }
+		public Dictionary<string, byte[]>? TaskingExtras { get; set; } = new Dictionary<string, byte[]>(); // string is the name of the extra, object is the seralized value of the extra
 	}
 }

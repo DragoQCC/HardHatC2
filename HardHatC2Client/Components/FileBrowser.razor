@@ -11,8 +11,12 @@
      {
          <MudTabPanel Tag="@tab.TabId" Text="@tab.Name" Icon="@Icons.Material.Outlined.DesktopWindows">
              <!-- a dropdown menu of all the engineers on the host who can list content  -->
-             <MudSwitch @bind-Checked="@HideOfflineEngineers" Label="Hide Offline Engineers" Color="Color.Primary" />
-             <MudSwitch @bind-Checked="@HostOnlyEngineers" Label="Host Only Engineers" Color="Color.Primary" />
+             <div class="d-flex">
+             @*<MudSwitch @bind-Checked="@HideOfflineEngineers" Label="Hide Offline Engineers" Color="Color.Primary" />*@
+             <MudToggleIconButton @bind-Toggled="@HideOfflineEngineers" Color="Color.Primary" Icon="@Icons.Material.Filled.Visibility" ToggledIcon="@Icons.Material.Filled.VisibilityOff" Title="Hide Offline Engineers"  ToggledTitle="Hide Offline Engineers" />
+             <MudToggleIconButton @bind-Toggled="@HostOnlyEngineers" Color="Color.Primary" Icon="@Icons.Material.Filled.FilterAlt" ToggledColor="@Color.Error" ToggledIcon="@Icons.Material.Filled.FilterAltOff" Title="Host Only Implants"  ToggledTitle="Host Only Implants" />
+             @*<MudSwitch @bind-Checked="@HostOnlyEngineers" Label="Host Only Engineers" Color="Color.Primary" />*@
+             </div>
              <div class="d-flex mb-xl-2">
                  <MudSelect Class="mb-4 mt-4" T="Engineer" Label="Engineer To Browse With" Variant="Variant.Filled" Required="true" @bind-value="selectedEngineer" RequiredError="Engineer is required!">
                      @if (HostOnlyEngineers)
@@ -66,7 +70,7 @@
 
                      }
                  </MudSelect>
-                 <MudTextField Class="mb-4 mt-4" @ref=pathTextFiled TextChanged="OnPathChanged" @bind-Value="targetPath" Label="Path To Browse" Variant="Variant.Filled" />
+                @* <MudTextField Class="mb-4 mt-4" @ref=pathTextFiled TextChanged="OnPathChanged" @bind-Value="targetPath" Label="Path To Browse" Variant="Variant.Filled" />*@
                  <MudCheckBox @bind-Checked="@GetACLs" Label="Get ACLs?" Color="Color.Primary"></MudCheckBox>
                  <MudCheckBox @bind-Checked="@GetItemCount" Label="Get Item Count?" Color="Color.Primary"></MudCheckBox>
             </div>
@@ -108,7 +112,7 @@
                          </MudTreeView>
                      </MudCardContent>
                  </MudCard>
-                 <MudCard Class="" Style="overflow-y:auto" Outlined="true">
+                 <MudCard Class="" Style="overflow-y:auto; Width:100%" Outlined="true">
                      <MudCardContent Style="height:900px; Width:100%">
 
                          @if (SelectedValue != null)
@@ -142,7 +146,7 @@
                                     ShowSuccessToast($"Got back content for {SelectedValue.FullPath}");
                                     OnStateChange();
                                 }
-                                 <DirectoryListingTable Outputs="@outputs" Path="@SelectedValue.FullPath"></DirectoryListingTable>
+                                 <DirectoryListingTable IsFileBrowser="true" Outputs="@outputs" Path="@SelectedValue.FullPath"></DirectoryListingTable>
                              }
                              else
                              {
@@ -178,16 +182,16 @@
     public static int UserIndex = 0;
     private bool _updateIndex = false;
     private static TreeItemData SelectedValue { get; set; }
-    public Engineer selectedEngineer = null;
+    public static Engineer selectedEngineer = null;
     private static ObservableCollection<string> LocationsToBrowse = new ObservableCollection<string>();
-    public string? targetPath = null;
-    public bool GetItemCount = false;
-    public bool GetACLs = false;
+    public static string? targetPath = null;
+    public static bool GetItemCount = false;
+    public static bool GetACLs = false;
     public bool HostOnlyEngineers = true;
     public bool HideOfflineEngineers = false;
     public delegate void OnStateChangeDelegate();
     public static OnStateChangeDelegate OnStateChange;
-    private MudTextField<string> pathTextFiled; 
+    public static MudTextField<string> pathTextFiled; 
 
     public class TabView
     {
@@ -370,7 +374,7 @@
     }
 
     //add a function that takes in a engineer object and a path string and issues a command to the engineer to get the files in that path
-    private async Task GetFiles(Engineer engineer, string path)
+    private static async Task GetFiles(Engineer engineer, string path)
     {
         if(engineer == null)
         {
@@ -386,12 +390,13 @@
             command += " /getcount true";
         }
         ShowInfoToast($"getting content of {path}");
-        await Interact.SendTask(engineer, command);
+        var testInt = new Interact();
+        await testInt.SendTask(engineer, command);
     }
 
 
     //make a function to handle the MudTextField ValueChanged event
-    private async Task OnPathChanged()
+    public static async Task OnPathChanged(string s)
     {
         if(selectedEngineer == null)
         {
@@ -405,6 +410,7 @@
         path = path.Trim();
         string command = "ls /path " + path;
         await GetFiles(selectedEngineer, path);
+        targetPath = null;
     }
 
     public static void ShowSuccessToast(string successMessage)

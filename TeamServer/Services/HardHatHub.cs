@@ -20,19 +20,33 @@ using TeamServer.Utilities;
 using TeamServer.Models.InteractiveTerminal;
 using Microsoft.AspNet.SignalR.Messaging;
 using TeamServer.Models.Managers;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+//using DynamicEngLoading;
 
 namespace TeamServer.Services
 {
+    public class HardHatUser
+    {
+        public string SignalRClientId { get; set; } //track machine to send notifs to 
+        public string Username { get; set; } //track user to send notifs to
+        public List<string> Roles { get; set; } //track if the user is an admin or not
+    }
+
     public class HardHatHub : Hub
     {
 
         //make a list of hub clients and add them on connect
         public static List<string> _clients = new List<string>();
 
+        // public static List<string> TeamLeadIds = new List<string>();
+        public static Dictionary<string, HardHatUser> SignalRUsers = new();
+
         public override Task OnConnectedAsync()
         {
             if (!_clients.Contains(Context.ConnectionId))
             {
+
                 _clients.Add(Context.ConnectionId);
                 //for a new connected client call the GetExistingManagerList function passing in the clients connection id
                 var ManagerList = managerService._managers.Where(h => h.Type == manager.ManagerType.http || h.Type == manager.ManagerType.https).ToList();
@@ -72,12 +86,13 @@ namespace TeamServer.Services
                 GetExistingDownloadedFiles(Context.ConnectionId);
                 GetExistingUploadedFile(Context.ConnectionId);
                 GetExistingPivotProxies(Context.ConnectionId);
-
+                
             }
             return base.OnConnectedAsync();
         }
 
         //hub client invokable methods 
+        #region ClientInvokableMethods
         public async Task<string> TriggerDownload(string OrginalPath)
         {
             var result = System.IO.File.ReadAllBytes(OrginalPath);
@@ -225,6 +240,44 @@ namespace TeamServer.Services
             }
         }
 
+        public async Task<bool> CheckJWTExpiration(string token)
+        {
+            try
+            {
+                var handler = new JwtSecurityTokenHandler();
+                // Check if readable token (string is in a JWT format)
+                var readableToken = handler.CanReadToken(token);
+                if (!readableToken)
+                {
+                    Console.WriteLine("The token doesn't seem to be in a proper JWT format. Signing Out...");
+                    return false;
+                }
+                var claimsPrincipal = handler.ValidateToken(token, new TokenValidationParameters
+                {
+                    IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(Authentication.Configuration["Jwt:Key"])),
+                    ValidIssuer = Authentication.Configuration["Jwt:Issuer"],
+                    ValidAudience = Authentication.Configuration["Jwt:Issuer"],
+                    ValidateLifetime = true, // check that the token is not expired
+                    ClockSkew = TimeSpan.FromMinutes(5) // tolerance for the expiration date
+                }, out var validatedToken);
+
+                var jwtToken = validatedToken as JwtSecurityToken;
+                var expiration = jwtToken.ValidTo; // Returns the expiration date
+                if (expiration < DateTime.UtcNow)
+                {
+                    Console.WriteLine("The token is expired!  Signing Out...");
+                    return false;
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
+                return false;
+            }
+        }
+
         public async Task<byte[]> GetUserPasswordSalt(string username)
         {
             return await UserStore.GetUserPasswordSalt(username);
@@ -291,10 +344,100 @@ namespace TeamServer.Services
             await hubContext.Clients.All.SendAsync("UpdateCommandOpsecLevelAndMitre", commandName, opsecStatus,mitreTechnique);
             
         }
-        
+
+        public async Task AddNoteToImplant(string implantId, string note)
+        {
+              //find the implant in the list of implants 
+            Engineer implant = EngineerService._engineers.Where(x => x.engineerMetadata.Id == implantId).ToList()[0];
+            implant.Note = note;
+            //update the implant in the database 
+            await DatabaseService.AsyncConnection.UpdateAsync((Engineer_DAO)implant);
+            //send the updated implant to the client 
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
+            await hubContext.Clients.All.SendAsync("UpdateImplantNote", implantId,note);
+        }
+
+        public async Task RegisterHardHatUserAfterSignin(string username)
+        {
+            //get the current signalr connection id
+            string connectionId = Context.ConnectionId;
+            //get the users current role 
+            //first get the user object 
+            UserStore userStore = new UserStore();
+            var user = await userStore.FindByNameAsync(username, new CancellationToken());
+            //get the users role
+            List<string> roles = userStore.GetRolesAsync(user, new CancellationToken()).Result.ToList();
+            
+            HardHatUser newuser =  new HardHatUser { Username = username, SignalRClientId = connectionId, Roles = roles };
+            if(SignalRUsers.ContainsKey(newuser.Username))
+            {
+                //update incase roles or connection id changed
+                SignalRUsers[newuser.Username] = newuser;
+            }
+            else
+            {
+                SignalRUsers.Add(newuser.Username, newuser);
+            }
+        }
+
+        public async Task UpdateTaskResponseSeenNotif(string username, string taskid, string engineerId)
+        {
+            //find the task in the list of tasks and add the username to the list of users who have seen the response
+            //find the engineer in the list of engineers
+            Engineer engineer = EngineerService._engineers.Where(x => x.engineerMetadata.Id == engineerId).ToList()[0];
+            //find the task result in the list of task results
+            EngineerTaskResult taskResult = engineer._taskResults.Where(x => x.Id == taskid).ToList()[0];
+            if (!taskResult.UsersThatHaveReadResult.Contains(username))
+            {
+                taskResult.UsersThatHaveReadResult.Add(username);
+
+                //make sure database connection is not null
+                if (DatabaseService.AsyncConnection == null)
+                {
+                    DatabaseService.ConnectDb();
+                }
+
+                //update the task result in the database
+                int updated = await DatabaseService.AsyncConnection.UpdateAsync((EngineerTaskResult_DAO)taskResult);
+            }
+        }
+
+        public async Task CreateorUpdateAlias(string username, Alias alias)
+        {
+            alias.Username = username;
+            //check if the alias already exists using its id 
+            if (Alias.savedAliases.Where(x => x.id == alias.id).ToList().Count > 0)
+            {
+                //update the alias 
+                Alias.savedAliases.Where(x => x.id == alias.id).ToList()[0] = alias;
+            }
+            else
+            {
+                //add the alias to the list of aliases 
+                Alias.savedAliases.Add(alias);
+            }
+            //make sure database connection is not null
+            if (DatabaseService.AsyncConnection == null)
+            {
+                DatabaseService.ConnectDb();
+            }
+            //save the alias to the database
+            await DatabaseService.AsyncConnection.InsertAsync((Alias_DAO)alias);
+        }
+
+        public async Task<List<Alias>> GetExistingAliases(string username)
+        {
+            //get the HardHatUser object with that id 
+            List<Alias> aliasesToSend = new List<Alias>();
+            aliasesToSend = Alias.savedAliases.Where(x => x.Username == username).ToList();
+            return aliasesToSend;
+        }
+
         //end of hub client invokable methods 
+        #endregion
 
         //teamserver side invokable methods 
+        #region teamserver_side_invoke_Methods
         public static async Task StoreTaskHeader(EngineerTask storeHeaderTask)
         {
             if(DatabaseService.AsyncConnection == null)
@@ -487,6 +630,20 @@ namespace TeamServer.Services
             LoggingService.EventLogger.ForContext("IOC_File", iocFile,true).Information($"Uploaded File to target: {iocFile.Name} on host {iocFile.UploadedHost} to {iocFile.UploadedPath} @ {iocFile.Uploadtime} ");
             await hubContext.Clients.All.SendAsync("AddIOCFile", iocFile);
         }
+
+        public static async Task AddCompiledImplant(CompiledImplant compImp)
+        {
+            if (DatabaseService.AsyncConnection == null)
+            {
+                DatabaseService.ConnectDb();
+            }
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
+
+            await hubContext.Clients.All.SendAsync("AddCompiledImplant", compImp);
+            DatabaseService.AsyncConnection.InsertAsync((CompiledImplant_DAO)compImp);
+            return;
+        }
         //end of teamserver side invokable methods 
+        #endregion
     }
 }

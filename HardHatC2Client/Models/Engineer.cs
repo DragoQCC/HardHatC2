@@ -8,9 +8,9 @@ namespace HardHatC2Client.Models
 {
     public class Engineer
     {
-        public EngineerMetadata engineerMetadata { get; set;}       
-        
+        public EngineerMetadata engineerMetadata { get; set;}           
         public int Number { get; set; }
+        public string Note { get; set; }
         public string Id { get; set; }
         public string Address { get; set; }
         public string Hostname { get; set; }
@@ -21,13 +21,10 @@ namespace HardHatC2Client.Models
         public string Arch { get; set; }
         public DateTime LastSeen { get; set; }
         public string LastSeenTimer { get; set; }
-
         public DateTime FirstSeen { get; set; }
-
         public string ExternalAddress { get; set; }
         public string ConnectionType { get; set; }
         public string ManagerName { get; set; }
-
         public int Sleep { get; set; }
         public string Status { get; set; }
 

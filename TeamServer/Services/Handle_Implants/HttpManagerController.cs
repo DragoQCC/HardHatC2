@@ -102,6 +102,10 @@ namespace TeamServer.Services.Handle_Implants
                 int length = BitConverter.ToInt32(Convert.FromBase64String(encryptedencodedMetadata).Take(4).ToArray(), 0);
                 string XORED_implantName = Encoding.UTF8.GetString(Convert.FromBase64String(encryptedencodedMetadata).Skip(4).Take(length).ToArray());
                 string implant_name = Encryption.DecryptImplantName(XORED_implantName);
+                if(implant_name == "")
+                {
+                    implant_name = "Engineer";
+                }
                 return implant_name;
 
             }

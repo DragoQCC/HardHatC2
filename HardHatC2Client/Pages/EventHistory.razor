@@ -4,9 +4,9 @@
 <CascadingAuthenticationState>
 <AuthorizeView Roles="Operator,TeamLead,Administrator,Guest">
     <Authorized>
-        
+<br>
 <h3 class="text-center">EventHistory</h3>
-
+<br>
 <MudGrid>
     <MudItem xs="12" sm="5">
         <MudSelect T="TimelineOrientation" ValueChanged="OnOrientationChange" Label="TimelineOrientation" Dense="true" Variant="Variant.Outlined">
@@ -36,7 +36,7 @@
         <MudSwitch Label="Reverse" @bind-Checked="@_reverse" Disabled="IsSwitchDisabled()" Color="Color.Primary" />
     </MudItem>
 </MudGrid>
-
+<hr>
 <MudTimeline TimelineOrientation="_orientation" TimelinePosition="_position" Reverse="_reverse">
    @foreach(var item in TimelineEvents)
    {

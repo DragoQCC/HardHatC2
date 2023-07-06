@@ -1,18 +1,15 @@
-﻿using Engineer.Commands;
-using Engineer.Models;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net.Sockets;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
-using System.Net.Security;
-using System.Security.Authentication;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
+using DynamicEngLoading;
 using Engineer.Functions;
+
 
 namespace Engineer.Commands
 {
@@ -30,12 +27,12 @@ namespace Engineer.Commands
             //if task.arguments holds key /stop return saying the socks proxy won /port was stopped
             if (task.Arguments.ContainsKey("/stop"))
             {
-                Tasking.FillTaskResults($"Socks proxy on port {port} stopped", task, EngTaskStatus.Complete,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"Socks proxy on port {port} stopped", task, EngTaskStatus.Complete,TaskResponseType.String);
                 _tokenSource.Cancel();
                 return;
             }
 
-            Tasking.FillTaskResults($"socks started on team server at port {port}", task, EngTaskStatus.Running,TaskResponseType.String);
+            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"socks started on team server at port {port}", task, EngTaskStatus.Running,TaskResponseType.String);
         }
     }
     internal class socksConnect : EngineerCommand
@@ -55,14 +52,14 @@ namespace Engineer.Commands
                 //Console.WriteLine($"Connecting to {address}:{port}");
 
                 Task.Run(async () => await ConnectSocks(address, port, client));
-                Tasking.FillTaskResults($"Connecting to {address}:{port}" + $"\n{client}", task, EngTaskStatus.Complete,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"Connecting to {address}:{port}" + $"\n{client}", task, EngTaskStatus.Complete,TaskResponseType.String);
             }
             
             catch(Exception e)
             {
                 //Console.WriteLine(e.Message);
                 //Console.WriteLine(e.StackTrace);
-                Tasking.FillTaskResults("error with socks connect", task, EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error with socks connect", task, EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
         
@@ -156,7 +153,7 @@ namespace Engineer.Commands
             task.File = null;
             byte[] finalSocksRec_content = socks_client_length.Concat(sockClient).Concat(sockContent).ToArray();
 
-           Tasking.FillTaskResults(finalSocksRec_content, task, EngTaskStatus.Complete, TaskResponseType.None);
+           ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(finalSocksRec_content, task, EngTaskStatus.Complete, TaskResponseType.None);
         }
     }
 

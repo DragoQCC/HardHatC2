@@ -1,11 +1,8 @@
-﻿using Engineer.Commands;
-using Engineer.Functions;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Threading;
 using System.Threading.Tasks;
+using DynamicEngLoading;
+
+using Engineer.Models;
 
 namespace Engineer.Commands
 {
@@ -43,22 +40,22 @@ namespace Engineer.Commands
 
             if (ParentIsServer)
             {
-                Tasking.FillTaskResults($"starting parent as server", task, EngTaskStatus.Running,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"starting parent as server", task, EngTaskStatus.Running,TaskResponseType.String);
                 ParentTCPcommModule = new EngTCPComm(int.Parse(serverport), bool.Parse(isLocalHost), true); // parent as server
                 Task.Run(async()=> await ParentTCPcommModule.Start());                                                                                            
             }
             else if (!ParentIsServer)
             {
 
-               //Tasking.FillTaskResults($"starting parent as client\ntrying to connect to {serverip}:{serverport}", task, EngTaskStatus.Running,TaskResponseType.String);
+               //ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"starting parent as client\ntrying to connect to {serverip}:{serverport}", task, EngTaskStatus.Running,TaskResponseType.String);
                 ParentTCPcommModule = new EngTCPComm(int.Parse(serverport), serverip, true); // parent as client
                 Task.Run(async () => await ParentTCPcommModule.Start());
             }
             while (Output == null)
             {
-                System.Threading.Thread.Sleep(20);
+                Thread.Sleep(20);
             }
-            Tasking.FillTaskResults(Output, task, EngTaskStatus.Complete,TaskResponseType.String);
+            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(Output, task, EngTaskStatus.Complete,TaskResponseType.String);
             Output = null;
         }
     }

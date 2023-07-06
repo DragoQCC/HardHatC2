@@ -1,11 +1,8 @@
-﻿using Engineer.Functions;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -22,11 +19,11 @@ namespace Engineer.Commands
 					path = Directory.GetCurrentDirectory();
 				}
 				Directory.SetCurrentDirectory(path);
-                Tasking.FillTaskResults(Directory.GetCurrentDirectory(),task,EngTaskStatus.Complete,TaskResponseType.String); // needs a return since string should print updated dir.
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(Directory.GetCurrentDirectory(),task,EngTaskStatus.Complete,TaskResponseType.String); // needs a return since string should print updated dir.
 			}
 			catch (Exception ex)
 			{
-               Tasking.FillTaskResults("error: " + ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
+               ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
 			}
 		}
 	}

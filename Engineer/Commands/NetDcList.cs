@@ -1,18 +1,10 @@
-﻿using Engineer.Commands;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
+using System.DirectoryServices;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
-using System.Security.Principal;
-using System.DirectoryServices;
-using System.Security.AccessControl;
-using System.IdentityModel.Selectors;
-using System.IdentityModel.Tokens;
-using System.Text.RegularExpressions;
-using System.DirectoryServices.AccountManagement;
-using Engineer.Functions;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -33,10 +25,10 @@ namespace Engineer.Commands
                 //if domain is null get the current domain and find all the domain controllers
                 if (targetDomain == null)
                 {
-                    targetDomain = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().DomainName;
+                    targetDomain = IPGlobalProperties.GetIPGlobalProperties().DomainName;
                 }
                 //Console.WriteLine($"target domain is {targetDomain}");
-                Tasking.FillTaskResults($"target domain is {targetDomain}", task, EngTaskStatus.Running,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"target domain is {targetDomain}", task, EngTaskStatus.Running,TaskResponseType.String);
                 //search the targetDomain for all domain controllers
                 //if username and password are not null then use them to authenticate
                 DirectoryEntry domain;
@@ -75,13 +67,13 @@ namespace Engineer.Commands
                     sb.AppendLine($"DNS: {dns}");
                 }
                 //return the results
-                Tasking.FillTaskResults(sb.ToString(),task,EngTaskStatus.Complete,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(sb.ToString(),task,EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception ex)
             {
                 //Console.WriteLine(ex.Message);
                 //Console.WriteLine(ex.StackTrace);
-                Tasking.FillTaskResults(ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
     }

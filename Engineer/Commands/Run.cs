@@ -1,14 +1,11 @@
-﻿using Engineer.Commands;
-using Engineer.Functions;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -56,7 +53,7 @@ namespace Engineer.Commands
                 var outputResetEvent = new ManualResetEvent(false);
                 var errorResetEvent = new ManualResetEvent(false);
 
-                int lineTimeout = System.Threading.Timeout.Infinite; // No timeout by default but can be passed in
+                int lineTimeout = Timeout.Infinite; // No timeout by default but can be passed in
                 if(!String.IsNullOrEmpty(timeout))
                 {
                     int.TryParse(timeout,out int timeout_result);
@@ -92,7 +89,7 @@ namespace Engineer.Commands
                         if (output.Length > lastSentPosition)
                         {
                             string newContent = output.ToString(lastSentPosition, output.Length - lastSentPosition);
-                            Tasking.FillTaskResults(newContent, task, EngTaskStatus.Running, TaskResponseType.String);
+                            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(newContent, task, EngTaskStatus.Running, TaskResponseType.String);
                             lastSentPosition = output.Length;
                         }
                     }
@@ -100,7 +97,7 @@ namespace Engineer.Commands
 
                 if (task.cancelToken.IsCancellationRequested)
                 {
-                    Tasking.FillTaskResults("[-]Task Cancelled", task, EngTaskStatus.Cancelled, TaskResponseType.String);
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("[-]Task Cancelled", task, EngTaskStatus.Cancelled, TaskResponseType.String);
                     outputThread.Abort();
                     errorThread.Abort();
                     process.Kill(); // Terminate the underlying process
@@ -119,11 +116,11 @@ namespace Engineer.Commands
                             if (output.Length > lastSentPosition)
                             {
                                 string newContent = output.ToString(lastSentPosition, output.Length - lastSentPosition);
-                                Tasking.FillTaskResults(newContent, task, EngTaskStatus.Running, TaskResponseType.String);
+                                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(newContent, task, EngTaskStatus.Running, TaskResponseType.String);
                             }
                         }
 
-                        Tasking.FillTaskResults("[-]Task Cancelled", task, EngTaskStatus.Cancelled, TaskResponseType.String);
+                        ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("[-]Task Cancelled", task, EngTaskStatus.Cancelled, TaskResponseType.String);
                         break;
                     }
                     if (outputResetEvent.WaitOne(0) || errorResetEvent.WaitOne(0))
@@ -147,11 +144,11 @@ namespace Engineer.Commands
                     output.AppendLine(error.ToString());
                 }
 
-                Tasking.FillTaskResults(output.ToString(), task, EngTaskStatus.Complete, TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(output.ToString(), task, EngTaskStatus.Complete, TaskResponseType.String);
             }
             catch (Exception ex)
             {
-                Tasking.FillTaskResults(ex.Message, task, EngTaskStatus.Failed, TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(ex.Message, task, EngTaskStatus.Failed, TaskResponseType.String);
             }
         }
     }

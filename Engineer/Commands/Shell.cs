@@ -1,13 +1,10 @@
-﻿using Engineer.Commands;
-using Engineer.Functions;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -23,7 +20,7 @@ namespace Engineer.Commands
                 task.Arguments.TryGetValue("/command", out string command);
                 if (command == null)
                 {
-                    Tasking.FillTaskResults("No command specified", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("No command specified", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;
                 }
                 command = command.TrimStart(' ');
@@ -71,11 +68,11 @@ namespace Engineer.Commands
                     output.AppendLine(error.ToString());
                 }
 
-                Tasking.FillTaskResults(output.ToString(), task, EngTaskStatus.Complete, TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(output.ToString(), task, EngTaskStatus.Complete, TaskResponseType.String);
             }
             catch (Exception ex)
             {
-                Tasking.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
     }

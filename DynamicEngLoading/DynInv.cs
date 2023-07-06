@@ -1,5 +1,4 @@
-﻿using Engineer.Extra;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -8,11 +7,12 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using static DynamicEngLoading.h_DynInv;
 
-namespace Engineer.Extra
+
+namespace DynamicEngLoading;
+public class DynInv
 {
-    class reprobate
-    {
         /// <summary>
         /// Dynamically invoke an arbitrary function from a DLL, providing its name, function prototype, and arguments.
         /// </summary>
@@ -50,12 +50,12 @@ namespace Engineer.Extra
         /// <returns>IntPtr base address of the loaded module or IntPtr.Zero if the module was not loaded successfully.</returns>
         public static IntPtr LoadModuleFromDisk(string DLLPath)
         {
-            h_reprobate.UNICODE_STRING uModuleName = new h_reprobate.UNICODE_STRING();
-            h_reprobate.RtlInitUnicodeString(ref uModuleName, DLLPath);
+            h_DynInv.UNICODE_STRING uModuleName = new h_DynInv.UNICODE_STRING();
+            h_DynInv_Methods.NtFuncWrapper.RtlInitUnicodeString(ref uModuleName, DLLPath);
 
             IntPtr hModule = IntPtr.Zero;
-            h_reprobate.NTSTATUS CallResult = h_reprobate.LdrLoadDll(IntPtr.Zero, 0, ref uModuleName, ref hModule);
-            if (CallResult != h_reprobate.NTSTATUS.Success || hModule == IntPtr.Zero)
+            NTSTATUS CallResult = h_DynInv_Methods.NtFuncWrapper.LdrLoadDll(IntPtr.Zero, 0, ref uModuleName, ref hModule);
+            if (CallResult != NTSTATUS.Success || hModule == IntPtr.Zero)
             {
                 return IntPtr.Zero;
             }
@@ -177,7 +177,7 @@ namespace Engineer.Extra
         public static IntPtr GetPebLdrModuleEntry(string DLLName)
         {
             // Get _PEB pointer
-            h_reprobate.PROCESS_BASIC_INFORMATION pbi = h_reprobate.NtQueryInformationProcessBasicInformation((IntPtr)(-1));
+            PROCESS_BASIC_INFORMATION pbi = h_DynInv_Methods.NtFuncWrapper.NtQueryInformationProcessBasicInformation((IntPtr)(-1));
 
             // Set function variables
             bool Is32Bit = false;
@@ -198,12 +198,12 @@ namespace Engineer.Extra
             // Get module InLoadOrderModuleList -> _LIST_ENTRY
             IntPtr PEB_LDR_DATA = Marshal.ReadIntPtr((IntPtr)((UInt64)pbi.PebBaseAddress + LdrDataOffset));
             IntPtr pInLoadOrderModuleList = (IntPtr)((UInt64)PEB_LDR_DATA + InLoadOrderModuleListOffset);
-            h_reprobate.LIST_ENTRY le = (h_reprobate.LIST_ENTRY)Marshal.PtrToStructure(pInLoadOrderModuleList, typeof(h_reprobate.LIST_ENTRY));
+            LIST_ENTRY le = (LIST_ENTRY)Marshal.PtrToStructure(pInLoadOrderModuleList, typeof(LIST_ENTRY));
 
             // Loop entries
             IntPtr flink = le.Flink;
             IntPtr hModule = IntPtr.Zero;
-            h_reprobate.PE.LDR_DATA_TABLE_ENTRY dte = (h_reprobate.PE.LDR_DATA_TABLE_ENTRY)Marshal.PtrToStructure(flink, typeof(h_reprobate.PE.LDR_DATA_TABLE_ENTRY));
+            PE.LDR_DATA_TABLE_ENTRY dte = (PE.LDR_DATA_TABLE_ENTRY)Marshal.PtrToStructure(flink, typeof(PE.LDR_DATA_TABLE_ENTRY));
             while (dte.InLoadOrderLinks.Flink != le.Blink)
             {
                 // Match module name
@@ -214,7 +214,7 @@ namespace Engineer.Extra
 
                 // Move Ptr
                 flink = dte.InLoadOrderLinks.Flink;
-                dte = (h_reprobate.PE.LDR_DATA_TABLE_ENTRY)Marshal.PtrToStructure(flink, typeof(h_reprobate.PE.LDR_DATA_TABLE_ENTRY));
+                dte = (PE.LDR_DATA_TABLE_ENTRY)Marshal.PtrToStructure(flink, typeof(PE.LDR_DATA_TABLE_ENTRY));
             }
 
             return hModule;
@@ -437,7 +437,7 @@ namespace Engineer.Extra
         /// <returns>IntPtr for the desired function.</returns>
         public static IntPtr GetNativeExportAddress(IntPtr ModuleBase, string ExportName)
         {
-            h_reprobate.ANSI_STRING aFunc = new h_reprobate.ANSI_STRING
+            ANSI_STRING aFunc = new ANSI_STRING
             {
                 Length = (ushort)ExportName.Length,
                 MaximumLength = (ushort)(ExportName.Length + 2),
@@ -448,7 +448,7 @@ namespace Engineer.Extra
             Marshal.StructureToPtr(aFunc, pAFunc, true);
 
             IntPtr pFuncAddr = IntPtr.Zero;
-            h_reprobate.LdrGetProcedureAddress(ModuleBase, pAFunc, IntPtr.Zero, ref pFuncAddr);
+            h_DynInv_Methods.NtFuncWrapper.LdrGetProcedureAddress(ModuleBase, pAFunc, IntPtr.Zero, ref pFuncAddr);
 
             Marshal.FreeHGlobal(pAFunc);
 
@@ -467,7 +467,7 @@ namespace Engineer.Extra
             IntPtr pFuncAddr = IntPtr.Zero;
             IntPtr pOrd = (IntPtr)Ordinal;
 
-            h_reprobate.LdrGetProcedureAddress(ModuleBase, IntPtr.Zero, pOrd, ref pFuncAddr);
+            h_DynInv_Methods.NtFuncWrapper.LdrGetProcedureAddress(ModuleBase, IntPtr.Zero, pOrd, ref pFuncAddr);
 
             return pFuncAddr;
         }
@@ -477,10 +477,10 @@ namespace Engineer.Extra
         /// </summary>
         /// <author>Ruben Boonen (@FuzzySec)</author>
         /// <param name="pModule">Pointer to the module base.</param>
-        /// <returns>h_reprobate.PE.PE_META_DATA</returns>
-        public static h_reprobate.PE.PE_META_DATA GetPeMetaData(IntPtr pModule)
+        /// <returns>h_DynInv_Methods.PE.PE_META_DATA</returns>
+        public static PE.PE_META_DATA GetPeMetaData(IntPtr pModule)
         {
-            h_reprobate.PE.PE_META_DATA PeMetaData = new h_reprobate.PE.PE_META_DATA();
+            PE.PE_META_DATA PeMetaData = new PE.PE_META_DATA();
             try
             {
                 UInt32 e_lfanew = (UInt32)Marshal.ReadInt32((IntPtr)((UInt64)pModule + 0x3c));
@@ -490,30 +490,30 @@ namespace Engineer.Extra
                 {
                     throw new InvalidOperationException("Invalid PE signature.");
                 }
-                PeMetaData.ImageFileHeader = (h_reprobate.PE.IMAGE_FILE_HEADER)Marshal.PtrToStructure((IntPtr)((UInt64)pModule + e_lfanew + 0x4), typeof(h_reprobate.PE.IMAGE_FILE_HEADER));
+                PeMetaData.ImageFileHeader = (PE.IMAGE_FILE_HEADER)Marshal.PtrToStructure((IntPtr)((UInt64)pModule + e_lfanew + 0x4), typeof(PE.IMAGE_FILE_HEADER));
                 IntPtr OptHeader = (IntPtr)((UInt64)pModule + e_lfanew + 0x18);
                 UInt16 PEArch = (UInt16)Marshal.ReadInt16(OptHeader);
                 // Validate PE arch
                 if (PEArch == 0x010b) // Image is x32
                 {
                     PeMetaData.Is32Bit = true;
-                    PeMetaData.OptHeader32 = (h_reprobate.PE.IMAGE_OPTIONAL_HEADER32)Marshal.PtrToStructure(OptHeader, typeof(h_reprobate.PE.IMAGE_OPTIONAL_HEADER32));
+                    PeMetaData.OptHeader32 = (PE.IMAGE_OPTIONAL_HEADER32)Marshal.PtrToStructure(OptHeader, typeof(PE.IMAGE_OPTIONAL_HEADER32));
                 }
                 else if (PEArch == 0x020b) // Image is x64
                 {
                     PeMetaData.Is32Bit = false;
-                    PeMetaData.OptHeader64 = (h_reprobate.PE.IMAGE_OPTIONAL_HEADER64)Marshal.PtrToStructure(OptHeader, typeof(h_reprobate.PE.IMAGE_OPTIONAL_HEADER64));
+                    PeMetaData.OptHeader64 = (PE.IMAGE_OPTIONAL_HEADER64)Marshal.PtrToStructure(OptHeader, typeof(PE.IMAGE_OPTIONAL_HEADER64));
                 }
                 else
                 {
                     throw new InvalidOperationException("Invalid magic value (PE32/PE32+).");
                 }
                 // Read sections
-                h_reprobate.PE.IMAGE_SECTION_HEADER[] SectionArray = new h_reprobate.PE.IMAGE_SECTION_HEADER[PeMetaData.ImageFileHeader.NumberOfSections];
+                PE.IMAGE_SECTION_HEADER[] SectionArray = new PE.IMAGE_SECTION_HEADER[PeMetaData.ImageFileHeader.NumberOfSections];
                 for (int i = 0; i < PeMetaData.ImageFileHeader.NumberOfSections; i++)
                 {
                     IntPtr SectionPtr = (IntPtr)((UInt64)OptHeader + PeMetaData.ImageFileHeader.SizeOfOptionalHeader + (UInt32)(i * 0x28));
-                    SectionArray[i] = (h_reprobate.PE.IMAGE_SECTION_HEADER)Marshal.PtrToStructure(SectionPtr, typeof(h_reprobate.PE.IMAGE_SECTION_HEADER));
+                    SectionArray[i] = (PE.IMAGE_SECTION_HEADER)Marshal.PtrToStructure(SectionPtr, typeof(PE.IMAGE_SECTION_HEADER));
                 }
                 PeMetaData.Sections = SectionArray;
             }
@@ -531,22 +531,22 @@ namespace Engineer.Extra
         /// <returns>Dictionary, a combination of Key:APISetDLL and Val:HostDLL.</returns>
         public static Dictionary<string, string> GetApiSetMapping()
         {
-            h_reprobate.PROCESS_BASIC_INFORMATION pbi = h_reprobate.NtQueryInformationProcessBasicInformation((IntPtr)(-1));
+            PROCESS_BASIC_INFORMATION pbi = h_DynInv_Methods.NtFuncWrapper.NtQueryInformationProcessBasicInformation((IntPtr)(-1));
             UInt32 ApiSetMapOffset = IntPtr.Size == 4 ? (UInt32)0x38 : 0x68;
 
             // Create mapping dictionary
             Dictionary<string, string> ApiSetDict = new Dictionary<string, string>();
 
             IntPtr pApiSetNamespace = Marshal.ReadIntPtr((IntPtr)((UInt64)pbi.PebBaseAddress + ApiSetMapOffset));
-            h_reprobate.PE.ApiSetNamespace Namespace = (h_reprobate.PE.ApiSetNamespace)Marshal.PtrToStructure(pApiSetNamespace, typeof(h_reprobate.PE.ApiSetNamespace));
+            PE.ApiSetNamespace Namespace = (PE.ApiSetNamespace)Marshal.PtrToStructure(pApiSetNamespace, typeof(PE.ApiSetNamespace));
             for (var i = 0; i < Namespace.Count; i++)
             {
-                h_reprobate.PE.ApiSetNamespaceEntry SetEntry = new h_reprobate.PE.ApiSetNamespaceEntry();
-                SetEntry = (h_reprobate.PE.ApiSetNamespaceEntry)Marshal.PtrToStructure((IntPtr)((UInt64)pApiSetNamespace + (UInt64)Namespace.EntryOffset + (UInt64)(i * Marshal.SizeOf(SetEntry))), typeof(h_reprobate.PE.ApiSetNamespaceEntry));
+                PE.ApiSetNamespaceEntry SetEntry = new PE.ApiSetNamespaceEntry();
+                SetEntry = (PE.ApiSetNamespaceEntry)Marshal.PtrToStructure((IntPtr)((UInt64)pApiSetNamespace + (UInt64)Namespace.EntryOffset + (UInt64)(i * Marshal.SizeOf(SetEntry))), typeof(PE.ApiSetNamespaceEntry));
                 string ApiSetEntryName = Marshal.PtrToStringUni((IntPtr)((UInt64)pApiSetNamespace + (UInt64)SetEntry.NameOffset), SetEntry.NameLength / 2) + ".dll";
 
-                h_reprobate.PE.ApiSetValueEntry SetValue = new h_reprobate.PE.ApiSetValueEntry();
-                SetValue = (h_reprobate.PE.ApiSetValueEntry)Marshal.PtrToStructure((IntPtr)((UInt64)pApiSetNamespace + (UInt64)SetEntry.ValueOffset), typeof(h_reprobate.PE.ApiSetValueEntry));
+                PE.ApiSetValueEntry SetValue = new PE.ApiSetValueEntry();
+                SetValue = (PE.ApiSetValueEntry)Marshal.PtrToStructure((IntPtr)((UInt64)pApiSetNamespace + (UInt64)SetEntry.ValueOffset), typeof(PE.ApiSetValueEntry));
                 string ApiSetValue = string.Empty;
                 if (SetValue.ValueCount != 0)
                 {
@@ -565,19 +565,19 @@ namespace Engineer.Extra
         /// Call a manually mapped PE by its EntryPoint.
         /// </summary>
         /// <author>Ruben Boonen (@FuzzySec)</author>
-        /// <param name="PEINFO">Module meta data struct (h_reprobate.PE.PE_META_DATA).</param>
+        /// <param name="PEINFO">Module meta data struct (h_DynInv_Methods.PE.PE_META_DATA).</param>
         /// <param name="ModuleMemoryBase">Base address of the module in memory.</param>
         /// <returns>void</returns>
-        public static void CallMappedPEModule(h_reprobate.PE.PE_META_DATA PEINFO, IntPtr ModuleMemoryBase)
+        public static void CallMappedPEModule(PE.PE_META_DATA PEINFO, IntPtr ModuleMemoryBase)
         {
             // Call module by EntryPoint (eg Mimikatz.exe)
             IntPtr hRemoteThread = IntPtr.Zero;
             IntPtr lpStartAddress = PEINFO.Is32Bit ? (IntPtr)((UInt64)ModuleMemoryBase + PEINFO.OptHeader32.AddressOfEntryPoint) :
                                                      (IntPtr)((UInt64)ModuleMemoryBase + PEINFO.OptHeader64.AddressOfEntryPoint);
 
-            h_reprobate.NtCreateThreadEx(
+            h_DynInv_Methods.NtFuncWrapper.NtCreateThreadEx(
                 ref hRemoteThread,
-                h_reprobate.Win32.WinNT.ACCESS_MASK.STANDARD_RIGHTS_ALL,
+                Win32.WinNT.ACCESS_MASK.STANDARD_RIGHTS_ALL,
                 IntPtr.Zero, (IntPtr)(-1),
                 lpStartAddress, IntPtr.Zero,
                 false, 0, 0, 0, IntPtr.Zero
@@ -588,16 +588,16 @@ namespace Engineer.Extra
         /// Call a manually mapped DLL by DllMain -> DLL_PROCESS_ATTACH.
         /// </summary>
         /// <author>Ruben Boonen (@FuzzySec)</author>
-        /// <param name="PEINFO">Module meta data struct (h_reprobate.PE.PE_META_DATA).</param>
+        /// <param name="PEINFO">Module meta data struct (h_DynInv_Methods.PE.PE_META_DATA).</param>
         /// <param name="ModuleMemoryBase">Base address of the module in memory.</param>
         /// <returns>void</returns>
-        public static void CallMappedDLLModule(h_reprobate.PE.PE_META_DATA PEINFO, IntPtr ModuleMemoryBase)
+        public static void CallMappedDLLModule(PE.PE_META_DATA PEINFO, IntPtr ModuleMemoryBase)
         {
             IntPtr lpEntryPoint = PEINFO.Is32Bit ? (IntPtr)((UInt64)ModuleMemoryBase + PEINFO.OptHeader32.AddressOfEntryPoint) :
                                                    (IntPtr)((UInt64)ModuleMemoryBase + PEINFO.OptHeader64.AddressOfEntryPoint);
 
-            h_reprobate.PE.DllMain fDllMain = (h_reprobate.PE.DllMain)Marshal.GetDelegateForFunctionPointer(lpEntryPoint, typeof(h_reprobate.PE.DllMain));
-            bool CallRes = fDllMain(ModuleMemoryBase, h_reprobate.PE.DLL_PROCESS_ATTACH, IntPtr.Zero);
+            PE.DllMain fDllMain = (PE.DllMain)Marshal.GetDelegateForFunctionPointer(lpEntryPoint, typeof(PE.DllMain));
+            bool CallRes = fDllMain(ModuleMemoryBase, PE.DLL_PROCESS_ATTACH, IntPtr.Zero);
             if (!CallRes)
             {
                 throw new InvalidOperationException("Failed to call DllMain -> DLL_PROCESS_ATTACH");
@@ -608,14 +608,14 @@ namespace Engineer.Extra
         /// Call a manually mapped DLL by Export.
         /// </summary>
         /// <author>Ruben Boonen (@FuzzySec)</author>
-        /// <param name="PEINFO">Module meta data struct (h_reprobate.PE.PE_META_DATA).</param>
+        /// <param name="PEINFO">Module meta data struct (h_DynInv_Methods.PE.PE_META_DATA).</param>
         /// <param name="ModuleMemoryBase">Base address of the module in memory.</param>
         /// <param name="ExportName">The name of the export to search for (e.g. "NtAlertResumeThread").</param>
         /// <param name="FunctionDelegateType">Prototype for the function, represented as a Delegate object.</param>
         /// <param name="Parameters">Arbitrary set of parameters to pass to the function. Can be modified if function uses call by reference.</param>
         /// <param name="CallEntry">Specify whether to invoke the module's entry point.</param>
         /// <returns>void</returns>
-        public static object CallMappedDLLModuleExport(h_reprobate.PE.PE_META_DATA PEINFO, IntPtr ModuleMemoryBase, string ExportName, Type FunctionDelegateType, object[] Parameters, bool CallEntry = true)
+        public static object CallMappedDLLModuleExport(PE.PE_META_DATA PEINFO, IntPtr ModuleMemoryBase, string ExportName, Type FunctionDelegateType, object[] Parameters, bool CallEntry = true)
         {
             // Call entry point if user has specified
             if (CallEntry)
@@ -639,7 +639,7 @@ namespace Engineer.Extra
         public static IntPtr GetSyscallStub(string FunctionName)
         {
             // Verify process & architecture
-            bool isWOW64 = h_reprobate.NtQueryInformationProcessWow64Information((IntPtr)(-1));
+            bool isWOW64 = h_DynInv_Methods.NtFuncWrapper.NtQueryInformationProcessWow64Information((IntPtr)(-1));
             if (IntPtr.Size == 4 && isWOW64)
             {
                 throw new InvalidOperationException("Generating Syscall stubs is not supported for WOW64.");
@@ -660,31 +660,27 @@ namespace Engineer.Extra
             IntPtr pModule = AllocateFileToMemory(NtdllPath);
 
             // Fetch PE meta data
-            h_reprobate.PE.PE_META_DATA PEINFO = GetPeMetaData(pModule);
+            PE.PE_META_DATA PEINFO = GetPeMetaData(pModule);
 
             // Alloc PE image memory -> RW
             IntPtr BaseAddress = IntPtr.Zero;
-            IntPtr RegionSize = PEINFO.Is32Bit ? (IntPtr)PEINFO.OptHeader32.SizeOfImage : (IntPtr)PEINFO.OptHeader64.SizeOfImage;
+            uint RegionSize = PEINFO.Is32Bit ? PEINFO.OptHeader32.SizeOfImage : PEINFO.OptHeader64.SizeOfImage;
             UInt32 SizeOfHeaders = PEINFO.Is32Bit ? PEINFO.OptHeader32.SizeOfHeaders : PEINFO.OptHeader64.SizeOfHeaders;
 
-            IntPtr pImage = h_reprobate.NtAllocateVirtualMemory(
-                (IntPtr)(-1), ref BaseAddress, IntPtr.Zero, ref RegionSize,
-                h_reprobate.Win32.Kernel32.AllocationType.Commit | h_reprobate.Win32.Kernel32.AllocationType.Reserve,
-                h_reprobate.Win32.WinNT.PAGE_READWRITE
-            );
+            IntPtr pImage = h_DynInv_Methods.NtFuncWrapper.NtAllocateVirtualMemory((IntPtr)(-1), (int)RegionSize, Win32.Kernel32.AllocationType.Commit | Win32.Kernel32.AllocationType.Reserve, Win32.WinNT.PAGE_READWRITE);
 
             // Write PE header to memory
-            UInt32 BytesWritten = h_reprobate.NtWriteVirtualMemory((IntPtr)(-1), pImage, pModule, SizeOfHeaders);
+            UInt32 BytesWritten = h_DynInv_Methods.NtFuncWrapper.NtWriteVirtualMemory((IntPtr)(-1), pImage, pModule, SizeOfHeaders);
 
             // Write sections to memory
-            foreach (h_reprobate.PE.IMAGE_SECTION_HEADER ish in PEINFO.Sections)
+            foreach (PE.IMAGE_SECTION_HEADER ish in PEINFO.Sections)
             {
                 // Calculate offsets
                 IntPtr pVirtualSectionBase = (IntPtr)((UInt64)pImage + ish.VirtualAddress);
                 IntPtr pRawSectionBase = (IntPtr)((UInt64)pModule + ish.PointerToRawData);
 
                 // Write data
-                BytesWritten = h_reprobate.NtWriteVirtualMemory((IntPtr)(-1), pVirtualSectionBase, pRawSectionBase, ish.SizeOfRawData);
+                BytesWritten = h_DynInv_Methods.NtFuncWrapper.NtWriteVirtualMemory((IntPtr)(-1), pVirtualSectionBase, pRawSectionBase, ish.SizeOfRawData);
                 if (BytesWritten != ish.SizeOfRawData)
                 {
                     throw new InvalidOperationException("Failed to write to memory.");
@@ -699,29 +695,24 @@ namespace Engineer.Extra
             }
 
             // Alloc memory for call stub
-            BaseAddress = IntPtr.Zero;
-            RegionSize = (IntPtr)0x50;
-            IntPtr pCallStub = h_reprobate.NtAllocateVirtualMemory(
-                (IntPtr)(-1), ref BaseAddress, IntPtr.Zero, ref RegionSize,
-                h_reprobate.Win32.Kernel32.AllocationType.Commit | h_reprobate.Win32.Kernel32.AllocationType.Reserve,
-                h_reprobate.Win32.WinNT.PAGE_READWRITE
-            );
+            RegionSize = 0x50;
+            IntPtr pCallStub = h_DynInv_Methods.NtFuncWrapper.NtAllocateVirtualMemory((IntPtr)(-1), (int)RegionSize, Win32.Kernel32.AllocationType.Commit | Win32.Kernel32.AllocationType.Reserve,Win32.WinNT.PAGE_READWRITE);
 
             // Write call stub
-            BytesWritten = h_reprobate.NtWriteVirtualMemory((IntPtr)(-1), pCallStub, pFunc, 0x50);
+            BytesWritten = h_DynInv_Methods.NtFuncWrapper.NtWriteVirtualMemory((IntPtr)(-1), pCallStub, pFunc, 0x50);
             if (BytesWritten != 0x50)
             {
                 throw new InvalidOperationException("Failed to write to memory.");
             }
 
             // Change call stub permissions
-            h_reprobate.NtProtectVirtualMemory((IntPtr)(-1), ref pCallStub, ref RegionSize, h_reprobate.Win32.WinNT.PAGE_EXECUTE_READ);
+            h_DynInv_Methods.NtFuncWrapper.NtProtectVirtualMemory((IntPtr)(-1), ref pCallStub, (int)RegionSize, Win32.WinNT.PAGE_EXECUTE_READ);
 
             // Free temporary allocations
             Marshal.FreeHGlobal(pModule);
-            RegionSize = PEINFO.Is32Bit ? (IntPtr)PEINFO.OptHeader32.SizeOfImage : (IntPtr)PEINFO.OptHeader64.SizeOfImage;
+            RegionSize = PEINFO.Is32Bit ? PEINFO.OptHeader32.SizeOfImage : PEINFO.OptHeader64.SizeOfImage;
 
-            h_reprobate.NtFreeVirtualMemory((IntPtr)(-1), ref pImage, ref RegionSize, h_reprobate.Win32.Kernel32.AllocationType.Reserve);
+            h_DynInv_Methods.NtFuncWrapper.NtFreeVirtualMemory((IntPtr)(-1), ref pImage, (int)RegionSize, Win32.Kernel32.AllocationType.Reserve);
 
             return pCallStub;
         }
@@ -731,8 +722,8 @@ namespace Engineer.Extra
         /// </summary>
         /// <author>The Wover (@TheRealWover), Ruben Boonen (@FuzzySec)</author>
         /// <param name="DLLPath">Full path fo the DLL on disk.</param>
-        /// <returns>h_reprobate.PE.PE_MANUAL_MAP</returns>
-        public static h_reprobate.PE.PE_MANUAL_MAP MapModuleFromDisk(string DLLPath)
+        /// <returns>h_DynInv_Methods.PE.PE_MANUAL_MAP</returns>
+        public static PE.PE_MANUAL_MAP MapModuleFromDisk(string DLLPath)
         {
             // Check file exists
             if (!File.Exists(DLLPath))
@@ -741,56 +732,56 @@ namespace Engineer.Extra
             }
 
             // Open file handle
-            h_reprobate.UNICODE_STRING ObjectName = new h_reprobate.UNICODE_STRING();
-            h_reprobate.RtlInitUnicodeString(ref ObjectName, (@"\??\" + DLLPath));
+            UNICODE_STRING ObjectName = new UNICODE_STRING();
+            h_DynInv_Methods.NtFuncWrapper.RtlInitUnicodeString(ref ObjectName, (@"\??\" + DLLPath));
             IntPtr pObjectName = Marshal.AllocHGlobal(Marshal.SizeOf(ObjectName));
             Marshal.StructureToPtr(ObjectName, pObjectName, true);
 
-            h_reprobate.OBJECT_ATTRIBUTES objectAttributes = new h_reprobate.OBJECT_ATTRIBUTES();
+            OBJECT_ATTRIBUTES objectAttributes = new OBJECT_ATTRIBUTES();
             objectAttributes.Length = Marshal.SizeOf(objectAttributes);
             objectAttributes.ObjectName = pObjectName;
             objectAttributes.Attributes = 0x40; // OBJ_CASE_INSENSITIVE
 
-            h_reprobate.IO_STATUS_BLOCK ioStatusBlock = new h_reprobate.IO_STATUS_BLOCK();
+            IO_STATUS_BLOCK ioStatusBlock = new IO_STATUS_BLOCK();
 
             IntPtr hFile = IntPtr.Zero;
-            h_reprobate.NtOpenFile(
+            h_DynInv_Methods.NtFuncWrapper.NtOpenFile(
                 ref hFile,
-                h_reprobate.Win32.Kernel32.FileAccessFlags.FILE_READ_DATA |
-                h_reprobate.Win32.Kernel32.FileAccessFlags.FILE_EXECUTE |
-                h_reprobate.Win32.Kernel32.FileAccessFlags.FILE_READ_ATTRIBUTES |
-                h_reprobate.Win32.Kernel32.FileAccessFlags.SYNCHRONIZE,
+                Win32.Kernel32.FileAccessFlags.FILE_READ_DATA |
+                Win32.Kernel32.FileAccessFlags.FILE_EXECUTE |
+                Win32.Kernel32.FileAccessFlags.FILE_READ_ATTRIBUTES |
+                Win32.Kernel32.FileAccessFlags.SYNCHRONIZE,
                 ref objectAttributes, ref ioStatusBlock,
-                h_reprobate.Win32.Kernel32.FileShareFlags.FILE_SHARE_READ |
-                h_reprobate.Win32.Kernel32.FileShareFlags.FILE_SHARE_DELETE,
-                h_reprobate.Win32.Kernel32.FileOpenFlags.FILE_SYNCHRONOUS_IO_NONALERT |
-                h_reprobate.Win32.Kernel32.FileOpenFlags.FILE_NON_DIRECTORY_FILE
+                Win32.Kernel32.FileShareFlags.FILE_SHARE_READ |
+               Win32.Kernel32.FileShareFlags.FILE_SHARE_DELETE,
+                Win32.Kernel32.FileOpenFlags.FILE_SYNCHRONOUS_IO_NONALERT |
+                Win32.Kernel32.FileOpenFlags.FILE_NON_DIRECTORY_FILE
             );
 
             // Create section from hFile
             IntPtr hSection = IntPtr.Zero;
             ulong MaxSize = 0;
-            h_reprobate.NTSTATUS ret = h_reprobate.NtCreateSection(
+            NTSTATUS ret = h_DynInv_Methods.NtFuncWrapper.NtCreateSection(
                 ref hSection,
-                (UInt32)h_reprobate.Win32.WinNT.ACCESS_MASK.SECTION_ALL_ACCESS,
+                (UInt32)Win32.WinNT.ACCESS_MASK.SECTION_ALL_ACCESS,
                 IntPtr.Zero,
                 ref MaxSize,
-                h_reprobate.Win32.WinNT.PAGE_READONLY,
-                h_reprobate.Win32.WinNT.SEC_IMAGE,
+                Win32.WinNT.PAGE_READONLY,
+                Win32.WinNT.SEC_IMAGE,
                 hFile
             );
 
             // Map view of file
             IntPtr pBaseAddress = IntPtr.Zero;
-            h_reprobate.NtMapViewOfSection(
+            h_DynInv_Methods.NtFuncWrapper.NtMapViewOfSection(
                 hSection, (IntPtr)(-1), ref pBaseAddress,
                 IntPtr.Zero, IntPtr.Zero, IntPtr.Zero,
                 ref MaxSize, 0x2, 0x0,
-                h_reprobate.Win32.WinNT.PAGE_READWRITE
+                Win32.WinNT.PAGE_READWRITE
             );
 
             // Prepare return object
-            h_reprobate.PE.PE_MANUAL_MAP SecMapObject = new h_reprobate.PE.PE_MANUAL_MAP
+            PE.PE_MANUAL_MAP SecMapObject = new PE.PE_MANUAL_MAP
             {
                 PEINFO = GetPeMetaData(pBaseAddress),
                 ModuleBase = pBaseAddress
@@ -833,12 +824,12 @@ namespace Engineer.Extra
         /// Relocates a module in memory.
         /// </summary>
         /// <author>Ruben Boonen (@FuzzySec)</author>
-        /// <param name="PEINFO">Module meta data struct (h_reprobate.PE.PE_META_DATA).</param>
+        /// <param name="PEINFO">Module meta data struct (h_DynInv_Methods.PE.PE_META_DATA).</param>
         /// <param name="ModuleMemoryBase">Base address of the module in memory.</param>
         /// <returns>void</returns>
-        public static void RelocateModule(h_reprobate.PE.PE_META_DATA PEINFO, IntPtr ModuleMemoryBase)
+        public static void RelocateModule(PE.PE_META_DATA PEINFO, IntPtr ModuleMemoryBase)
         {
-            h_reprobate.PE.IMAGE_DATA_DIRECTORY idd = PEINFO.Is32Bit ? PEINFO.OptHeader32.BaseRelocationTable : PEINFO.OptHeader64.BaseRelocationTable;
+            PE.IMAGE_DATA_DIRECTORY idd = PEINFO.Is32Bit ? PEINFO.OptHeader32.BaseRelocationTable : PEINFO.OptHeader64.BaseRelocationTable;
             Int64 ImageDelta = PEINFO.Is32Bit ? (Int64)((UInt64)ModuleMemoryBase - PEINFO.OptHeader32.ImageBase) :
                                                 (Int64)((UInt64)ModuleMemoryBase - PEINFO.OptHeader64.ImageBase);
 
@@ -848,8 +839,8 @@ namespace Engineer.Extra
             // Loop reloc blocks
             while (nextRelocTableBlock != 0)
             {
-                h_reprobate.PE.IMAGE_BASE_RELOCATION ibr = new h_reprobate.PE.IMAGE_BASE_RELOCATION();
-                ibr = (h_reprobate.PE.IMAGE_BASE_RELOCATION)Marshal.PtrToStructure(pRelocTable, typeof(h_reprobate.PE.IMAGE_BASE_RELOCATION));
+                PE.IMAGE_BASE_RELOCATION ibr = new PE.IMAGE_BASE_RELOCATION();
+                ibr = (PE.IMAGE_BASE_RELOCATION)Marshal.PtrToStructure(pRelocTable, typeof(PE.IMAGE_BASE_RELOCATION));
 
                 Int64 RelocCount = ((ibr.SizeOfBlock - Marshal.SizeOf(ibr)) / 2);
                 for (int i = 0; i < RelocCount; i++)
@@ -898,12 +889,12 @@ namespace Engineer.Extra
         /// Rewrite IAT for manually mapped module.
         /// </summary>
         /// <author>Ruben Boonen (@FuzzySec)</author>
-        /// <param name="PEINFO">Module meta data struct (h_reprobate.PE.PE_META_DATA).</param>
+        /// <param name="PEINFO">Module meta data struct (h_DynInv_Methods.PE.PE_META_DATA).</param>
         /// <param name="ModuleMemoryBase">Base address of the module in memory.</param>
         /// <returns>void</returns>
-        public static void RewriteModuleIAT(h_reprobate.PE.PE_META_DATA PEINFO, IntPtr ModuleMemoryBase)
+        public static void RewriteModuleIAT(PE.PE_META_DATA PEINFO, IntPtr ModuleMemoryBase)
         {
-            h_reprobate.PE.IMAGE_DATA_DIRECTORY idd = PEINFO.Is32Bit ? PEINFO.OptHeader32.ImportTable : PEINFO.OptHeader64.ImportTable;
+            PE.IMAGE_DATA_DIRECTORY idd = PEINFO.Is32Bit ? PEINFO.OptHeader32.ImportTable : PEINFO.OptHeader64.ImportTable;
 
             // Check if there is no import table
             if (idd.VirtualAddress == 0)
@@ -916,8 +907,8 @@ namespace Engineer.Extra
             IntPtr pImportTable = (IntPtr)((UInt64)ModuleMemoryBase + idd.VirtualAddress);
 
             // Get API Set mapping dictionary if on Win10+
-            h_reprobate.OSVERSIONINFOEX OSVersion = new h_reprobate.OSVERSIONINFOEX();
-            h_reprobate.RtlGetVersion(ref OSVersion);
+            OSVERSIONINFOEX OSVersion = new OSVERSIONINFOEX();
+            h_DynInv_Methods.NtFuncWrapper.RtlGetVersion(ref OSVersion);
             Dictionary<string, string> ApiSetDict = new Dictionary<string, string>();
             if (OSVersion.MajorVersion >= 10)
             {
@@ -926,10 +917,10 @@ namespace Engineer.Extra
 
             // Loop IID's
             int counter = 0;
-            h_reprobate.Win32.Kernel32.IMAGE_IMPORT_DESCRIPTOR iid = new h_reprobate.Win32.Kernel32.IMAGE_IMPORT_DESCRIPTOR();
-            iid = (h_reprobate.Win32.Kernel32.IMAGE_IMPORT_DESCRIPTOR)Marshal.PtrToStructure(
+            Win32.Kernel32.IMAGE_IMPORT_DESCRIPTOR iid = new Win32.Kernel32.IMAGE_IMPORT_DESCRIPTOR();
+            iid = (Win32.Kernel32.IMAGE_IMPORT_DESCRIPTOR)Marshal.PtrToStructure(
                 (IntPtr)((UInt64)pImportTable + (uint)(Marshal.SizeOf(iid) * counter)),
-                typeof(h_reprobate.Win32.Kernel32.IMAGE_IMPORT_DESCRIPTOR)
+                typeof(Win32.Kernel32.IMAGE_IMPORT_DESCRIPTOR)
             );
             while (iid.Name != 0)
             {
@@ -970,10 +961,10 @@ namespace Engineer.Extra
                     // Loop thunks
                     if (PEINFO.Is32Bit)
                     {
-                        h_reprobate.PE.IMAGE_THUNK_DATA32 oft_itd = new h_reprobate.PE.IMAGE_THUNK_DATA32();
+                        PE.IMAGE_THUNK_DATA32 oft_itd = new PE.IMAGE_THUNK_DATA32();
                         for (int i = 0; true; i++)
                         {
-                            oft_itd = (h_reprobate.PE.IMAGE_THUNK_DATA32)Marshal.PtrToStructure((IntPtr)((UInt64)ModuleMemoryBase + iid.OriginalFirstThunk + (UInt32)(i * (sizeof(UInt32)))), typeof(h_reprobate.PE.IMAGE_THUNK_DATA32));
+                            oft_itd = (PE.IMAGE_THUNK_DATA32)Marshal.PtrToStructure((IntPtr)((UInt64)ModuleMemoryBase + iid.OriginalFirstThunk + (UInt32)(i * (sizeof(UInt32)))), typeof(PE.IMAGE_THUNK_DATA32));
                             IntPtr ft_itd = (IntPtr)((UInt64)ModuleMemoryBase + iid.FirstThunk + (UInt64)(i * (sizeof(UInt32))));
                             if (oft_itd.AddressOfData == 0)
                             {
@@ -1002,10 +993,10 @@ namespace Engineer.Extra
                     }
                     else
                     {
-                        h_reprobate.PE.IMAGE_THUNK_DATA64 oft_itd = new h_reprobate.PE.IMAGE_THUNK_DATA64();
+                        PE.IMAGE_THUNK_DATA64 oft_itd = new PE.IMAGE_THUNK_DATA64();
                         for (int i = 0; true; i++)
                         {
-                            oft_itd = (h_reprobate.PE.IMAGE_THUNK_DATA64)Marshal.PtrToStructure((IntPtr)((UInt64)ModuleMemoryBase + iid.OriginalFirstThunk + (UInt64)(i * (sizeof(UInt64)))), typeof(h_reprobate.PE.IMAGE_THUNK_DATA64));
+                            oft_itd = (PE.IMAGE_THUNK_DATA64)Marshal.PtrToStructure((IntPtr)((UInt64)ModuleMemoryBase + iid.OriginalFirstThunk + (UInt64)(i * (sizeof(UInt64)))), typeof(PE.IMAGE_THUNK_DATA64));
                             IntPtr ft_itd = (IntPtr)((UInt64)ModuleMemoryBase + iid.FirstThunk + (UInt64)(i * (sizeof(UInt64))));
                             if (oft_itd.AddressOfData == 0)
                             {
@@ -1033,9 +1024,9 @@ namespace Engineer.Extra
                         }
                     }
                     counter++;
-                    iid = (h_reprobate.Win32.Kernel32.IMAGE_IMPORT_DESCRIPTOR)Marshal.PtrToStructure(
+                    iid = (Win32.Kernel32.IMAGE_IMPORT_DESCRIPTOR)Marshal.PtrToStructure(
                         (IntPtr)((UInt64)pImportTable + (uint)(Marshal.SizeOf(iid) * counter)),
-                        typeof(h_reprobate.Win32.Kernel32.IMAGE_IMPORT_DESCRIPTOR)
+                        typeof(Win32.Kernel32.IMAGE_IMPORT_DESCRIPTOR)
                     );
                 }
             }
@@ -1045,41 +1036,41 @@ namespace Engineer.Extra
         /// Set correct module section permissions.
         /// </summary>
         /// <author>Ruben Boonen (@FuzzySec)</author>
-        /// <param name="PEINFO">Module meta data struct (h_reprobate.PE.PE_META_DATA).</param>
+        /// <param name="PEINFO">Module meta data struct (h_DynInv_Methods.PE.PE_META_DATA).</param>
         /// <param name="ModuleMemoryBase">Base address of the module in memory.</param>
         /// <returns>void</returns>
-        public static void SetModuleSectionPermissions(h_reprobate.PE.PE_META_DATA PEINFO, IntPtr ModuleMemoryBase)
+        public static void SetModuleSectionPermissions(PE.PE_META_DATA PEINFO, IntPtr ModuleMemoryBase)
         {
             // Apply RO to the module header
-            IntPtr BaseOfCode = PEINFO.Is32Bit ? (IntPtr)PEINFO.OptHeader32.BaseOfCode : (IntPtr)PEINFO.OptHeader64.BaseOfCode;
-            h_reprobate.NtProtectVirtualMemory((IntPtr)(-1), ref ModuleMemoryBase, ref BaseOfCode, h_reprobate.Win32.WinNT.PAGE_READONLY);
+            int BaseOfCode = PEINFO.Is32Bit ? (int)PEINFO.OptHeader32.BaseOfCode : (int)PEINFO.OptHeader64.BaseOfCode;
+            h_DynInv_Methods.NtFuncWrapper.NtProtectVirtualMemory((IntPtr)(-1), ref ModuleMemoryBase,BaseOfCode, Win32.WinNT.PAGE_READONLY);
 
             // Apply section permissions
-            foreach (h_reprobate.PE.IMAGE_SECTION_HEADER ish in PEINFO.Sections)
+            foreach (PE.IMAGE_SECTION_HEADER ish in PEINFO.Sections)
             {
-                bool isRead = (ish.Characteristics & h_reprobate.PE.DataSectionFlags.MEM_READ) != 0;
-                bool isWrite = (ish.Characteristics & h_reprobate.PE.DataSectionFlags.MEM_WRITE) != 0;
-                bool isExecute = (ish.Characteristics & h_reprobate.PE.DataSectionFlags.MEM_EXECUTE) != 0;
+                bool isRead = ((uint)ish.Characteristics & PE.IMAGE_SCN_MEM_READ) != 0;
+                bool isWrite = ((uint)ish.Characteristics & PE.IMAGE_SCN_MEM_WRITE) != 0;
+                bool isExecute = ((uint)ish.Characteristics & PE.IMAGE_SCN_MEM_EXECUTE) != 0;
                 uint flNewProtect = 0;
                 if (isRead & !isWrite & !isExecute)
                 {
-                    flNewProtect = h_reprobate.Win32.WinNT.PAGE_READONLY;
+                    flNewProtect = Win32.WinNT.PAGE_READONLY;
                 }
                 else if (isRead & isWrite & !isExecute)
                 {
-                    flNewProtect = h_reprobate.Win32.WinNT.PAGE_READWRITE;
+                    flNewProtect = Win32.WinNT.PAGE_READWRITE;
                 }
                 else if (isRead & isWrite & isExecute)
                 {
-                    flNewProtect = h_reprobate.Win32.WinNT.PAGE_EXECUTE_READWRITE;
+                    flNewProtect = Win32.WinNT.PAGE_EXECUTE_READWRITE;
                 }
                 else if (isRead & !isWrite & isExecute)
                 {
-                    flNewProtect = h_reprobate.Win32.WinNT.PAGE_EXECUTE_READ;
+                    flNewProtect = Win32.WinNT.PAGE_EXECUTE_READ;
                 }
                 else if (!isRead & !isWrite & isExecute)
                 {
-                    flNewProtect = h_reprobate.Win32.WinNT.PAGE_EXECUTE;
+                    flNewProtect = Win32.WinNT.PAGE_EXECUTE;
                 }
                 else
                 {
@@ -1088,10 +1079,9 @@ namespace Engineer.Extra
 
                 // Calculate base
                 IntPtr pVirtualSectionBase = (IntPtr)((UInt64)ModuleMemoryBase + ish.VirtualAddress);
-                IntPtr ProtectSize = (IntPtr)ish.VirtualSize;
 
                 // Set protection
-                h_reprobate.NtProtectVirtualMemory((IntPtr)(-1), ref pVirtualSectionBase, ref ProtectSize, flNewProtect);
+                h_DynInv_Methods.NtFuncWrapper.NtProtectVirtualMemory((IntPtr)(-1), ref pVirtualSectionBase, (int)ish.VirtualSize, flNewProtect);
             }
         }
 
@@ -1101,10 +1091,10 @@ namespace Engineer.Extra
         /// <author>Ruben Boonen (@FuzzySec)</author>
         /// <param name="ModulePath">Full path to the module on disk.</param>
         /// <returns>PE_MANUAL_MAP object</returns>
-        public static h_reprobate.PE.PE_MANUAL_MAP MapModuleToMemory(string ModulePath)
+        public static PE.PE_MANUAL_MAP MapModuleToMemory(string ModulePath)
         {
             // Verify process & architecture
-            bool isWOW64 = h_reprobate.NtQueryInformationProcessWow64Information((IntPtr)(-1));
+            bool isWOW64 = h_DynInv_Methods.NtFuncWrapper.NtQueryInformationProcessWow64Information((IntPtr)(-1));
             if (IntPtr.Size == 4 && isWOW64)
             {
                 throw new InvalidOperationException("Manual mapping in WOW64 is not supported.");
@@ -1121,10 +1111,10 @@ namespace Engineer.Extra
         /// <author>Ruben Boonen (@FuzzySec)</author>
         /// <param name="Module">Full byte array of the module.</param>
         /// <returns>PE_MANUAL_MAP object</returns>
-        public static h_reprobate.PE.PE_MANUAL_MAP MapModuleToMemory(byte[] Module)
+        public static PE.PE_MANUAL_MAP MapModuleToMemory(byte[] Module)
         {
             // Verify process & architecture
-            bool isWOW64 = h_reprobate.NtQueryInformationProcessWow64Information((IntPtr)(-1));
+            bool isWOW64 = h_DynInv_Methods.NtFuncWrapper.NtQueryInformationProcessWow64Information((IntPtr)(-1));
             if (IntPtr.Size == 4 && isWOW64)
             {
                 throw new InvalidOperationException("Manual mapping in WOW64 is not supported.");
@@ -1142,10 +1132,10 @@ namespace Engineer.Extra
         /// <param name="Module">Full byte array of the module.</param>
         /// <param name="pImage">Address in memory to map module to.</param>
         /// <returns>PE_MANUAL_MAP object</returns>
-        public static h_reprobate.PE.PE_MANUAL_MAP MapModuleToMemory(byte[] Module, IntPtr pImage)
+        public static PE.PE_MANUAL_MAP MapModuleToMemory(byte[] Module, IntPtr pImage)
         {
             // Verify process & architecture
-            Boolean isWOW64 = h_reprobate.NtQueryInformationProcessWow64Information((IntPtr)(-1));
+            Boolean isWOW64 = h_DynInv_Methods.NtFuncWrapper.NtQueryInformationProcessWow64Information((IntPtr)(-1));
             if (IntPtr.Size == 4 && isWOW64)
             {
                 throw new InvalidOperationException("Manual mapping in WOW64 is not supported.");
@@ -1163,10 +1153,10 @@ namespace Engineer.Extra
         /// <author>Ruben Boonen (@FuzzySec)</author>
         /// <param name="pModule">Pointer to the module base.</param>
         /// <returns>PE_MANUAL_MAP object</returns>
-        public static h_reprobate.PE.PE_MANUAL_MAP MapModuleToMemory(IntPtr pModule)
+        public static PE.PE_MANUAL_MAP MapModuleToMemory(IntPtr pModule)
         {
             // Fetch PE meta data
-            h_reprobate.PE.PE_META_DATA PEINFO = GetPeMetaData(pModule);
+            PE.PE_META_DATA PEINFO = GetPeMetaData(pModule);
 
             // Check module matches the process architecture
             if ((PEINFO.Is32Bit && IntPtr.Size == 8) || (!PEINFO.Is32Bit && IntPtr.Size == 4))
@@ -1176,12 +1166,8 @@ namespace Engineer.Extra
             }
 
             // Alloc PE image memory -> RW
-            IntPtr BaseAddress = IntPtr.Zero;
-            IntPtr RegionSize = PEINFO.Is32Bit ? (IntPtr)PEINFO.OptHeader32.SizeOfImage : (IntPtr)PEINFO.OptHeader64.SizeOfImage;
-            IntPtr pImage = h_reprobate.NtAllocateVirtualMemory(
-                (IntPtr)(-1), ref BaseAddress, IntPtr.Zero, ref RegionSize,
-                h_reprobate.Win32.Kernel32.AllocationType.Commit | h_reprobate.Win32.Kernel32.AllocationType.Reserve,
-                h_reprobate.Win32.WinNT.PAGE_READWRITE
+            int RegionSize = PEINFO.Is32Bit ? (int)PEINFO.OptHeader32.SizeOfImage : (int)PEINFO.OptHeader64.SizeOfImage;
+            IntPtr pImage = h_DynInv_Methods.NtFuncWrapper.NtAllocateVirtualMemory( (IntPtr)(-1),RegionSize,Win32.Kernel32.AllocationType.Commit | Win32.Kernel32.AllocationType.Reserve,Win32.WinNT.PAGE_READWRITE
             );
             return MapModuleToMemory(pModule, pImage, PEINFO);
         }
@@ -1193,9 +1179,9 @@ namespace Engineer.Extra
         /// <param name="pModule">Pointer to the module base.</param>
         /// <param name="pImage">Pointer to the PEINFO image.</param>
         /// <returns>PE_MANUAL_MAP object</returns>
-        public static h_reprobate.PE.PE_MANUAL_MAP MapModuleToMemory(IntPtr pModule, IntPtr pImage)
+        public static PE.PE_MANUAL_MAP MapModuleToMemory(IntPtr pModule, IntPtr pImage)
         {
-            h_reprobate.PE.PE_META_DATA PEINFO = GetPeMetaData(pModule);
+            PE.PE_META_DATA PEINFO = GetPeMetaData(pModule);
             return MapModuleToMemory(pModule, pImage, PEINFO);
         }
 
@@ -1207,7 +1193,7 @@ namespace Engineer.Extra
         /// <param name="pImage">Pointer to the PEINFO image.</param>
         /// <param name="PEINFO">PE_META_DATA of the module being mapped.</param>
         /// <returns>PE_MANUAL_MAP object</returns>
-        public static h_reprobate.PE.PE_MANUAL_MAP MapModuleToMemory(IntPtr pModule, IntPtr pImage, h_reprobate.PE.PE_META_DATA PEINFO)
+        public static PE.PE_MANUAL_MAP MapModuleToMemory(IntPtr pModule, IntPtr pImage, PE.PE_META_DATA PEINFO)
         {
             // Check module matches the process architecture
             if ((PEINFO.Is32Bit && IntPtr.Size == 8) || (!PEINFO.Is32Bit && IntPtr.Size == 4))
@@ -1218,17 +1204,17 @@ namespace Engineer.Extra
 
             // Write PE header to memory
             UInt32 SizeOfHeaders = PEINFO.Is32Bit ? PEINFO.OptHeader32.SizeOfHeaders : PEINFO.OptHeader64.SizeOfHeaders;
-            UInt32 BytesWritten = h_reprobate.NtWriteVirtualMemory((IntPtr)(-1), pImage, pModule, SizeOfHeaders);
+            UInt32 BytesWritten = h_DynInv_Methods.NtFuncWrapper.NtWriteVirtualMemory((IntPtr)(-1), pImage, pModule, SizeOfHeaders);
 
             // Write sections to memory
-            foreach (h_reprobate.PE.IMAGE_SECTION_HEADER ish in PEINFO.Sections)
+            foreach (PE.IMAGE_SECTION_HEADER ish in PEINFO.Sections)
             {
                 // Calculate offsets
                 IntPtr pVirtualSectionBase = (IntPtr)((UInt64)pImage + ish.VirtualAddress);
                 IntPtr pRawSectionBase = (IntPtr)((UInt64)pModule + ish.PointerToRawData);
 
                 // Write data
-                BytesWritten = h_reprobate.NtWriteVirtualMemory((IntPtr)(-1), pVirtualSectionBase, pRawSectionBase, ish.SizeOfRawData);
+                BytesWritten = h_DynInv_Methods.NtFuncWrapper.NtWriteVirtualMemory((IntPtr)(-1), pVirtualSectionBase, pRawSectionBase, ish.SizeOfRawData);
                 if (BytesWritten != ish.SizeOfRawData)
                 {
                     throw new InvalidOperationException("Failed to write to memory.");
@@ -1248,7 +1234,7 @@ namespace Engineer.Extra
             Marshal.FreeHGlobal(pModule);
 
             // Prepare return object
-            h_reprobate.PE.PE_MANUAL_MAP ManMapObject = new h_reprobate.PE.PE_MANUAL_MAP
+            PE.PE_MANUAL_MAP ManMapObject = new PE.PE_MANUAL_MAP
             {
                 ModuleBase = pImage,
                 PEINFO = PEINFO
@@ -1262,23 +1248,23 @@ namespace Engineer.Extra
         /// </summary>
         /// <author>The Wover (@TheRealWover)</author>
         /// <param name="PEMapped">The metadata of the manually mapped module.</param>
-        public static void FreeModule(h_reprobate.PE.PE_MANUAL_MAP PEMapped)
+        public static void FreeModule(PE.PE_MANUAL_MAP PEMapped)
         {
             // Check if PE was mapped via module overloading
             if (!string.IsNullOrEmpty(PEMapped.DecoyModule))
             {
-                h_reprobate.NtUnmapViewOfSection((IntPtr)(-1), PEMapped.ModuleBase);
+                h_DynInv_Methods.NtFuncWrapper.NtUnmapViewOfSection((IntPtr)(-1), PEMapped.ModuleBase);
             }
             // If PE not mapped via module overloading, free the memory.
             else
             {
-                h_reprobate.PE.PE_META_DATA PEINFO = PEMapped.PEINFO;
+                PE.PE_META_DATA PEINFO = PEMapped.PEINFO;
 
                 // Get the size of the module in memory
-                IntPtr size = PEINFO.Is32Bit ? (IntPtr)PEINFO.OptHeader32.SizeOfImage : (IntPtr)PEINFO.OptHeader64.SizeOfImage;
+                int size = PEINFO.Is32Bit ? (int)PEINFO.OptHeader32.SizeOfImage : (int)PEINFO.OptHeader64.SizeOfImage;
                 IntPtr pModule = PEMapped.ModuleBase;
 
-                h_reprobate.NtFreeVirtualMemory((IntPtr)(-1), ref pModule, ref size, h_reprobate.Win32.Kernel32.AllocationType.Release);
+                h_DynInv_Methods.NtFuncWrapper.NtFreeVirtualMemory((IntPtr)(-1), ref pModule, size, Win32.Kernel32.AllocationType.Release);
             }
         }
 
@@ -1347,10 +1333,10 @@ namespace Engineer.Extra
         /// <param name="PayloadPath">Full path to the payload module on disk.</param>
         /// <param name="DecoyModulePath">Optional, full path the decoy module to overload in memory.</param>
         /// <returns>PE.PE_MANUAL_MAP</returns>
-        public static h_reprobate.PE.PE_MANUAL_MAP OverloadModule(string PayloadPath, string DecoyModulePath = null)
+        public static PE.PE_MANUAL_MAP OverloadModule(string PayloadPath, string DecoyModulePath = null)
         {
             // Verify process & architecture
-            bool isWOW64 = h_reprobate.NtQueryInformationProcessWow64Information((IntPtr)(-1));
+            bool isWOW64 = h_DynInv_Methods.NtFuncWrapper.NtQueryInformationProcessWow64Information((IntPtr)(-1));
             if (IntPtr.Size == 4 && isWOW64)
             {
                 throw new InvalidOperationException("Module overloading in WOW64 is not supported.");
@@ -1374,10 +1360,10 @@ namespace Engineer.Extra
         /// <param name="Payload">Full byte array for the payload module.</param>
         /// <param name="DecoyModulePath">Optional, full path the decoy module to overload in memory.</param>
         /// <returns>PE.PE_MANUAL_MAP</returns>
-        public static h_reprobate.PE.PE_MANUAL_MAP OverloadModule(byte[] Payload, string DecoyModulePath = null)
+        public static PE.PE_MANUAL_MAP OverloadModule(byte[] Payload, string DecoyModulePath = null)
         {
             // Verify process & architecture
-            bool isWOW64 = h_reprobate.NtQueryInformationProcessWow64Information((IntPtr)(-1));
+            bool isWOW64 = h_DynInv_Methods.NtFuncWrapper.NtQueryInformationProcessWow64Information((IntPtr)(-1));
             if (IntPtr.Size == 4 && isWOW64)
             {
                 throw new InvalidOperationException("Module overloading in WOW64 is not supported.");
@@ -1406,17 +1392,17 @@ namespace Engineer.Extra
             }
 
             // Map decoy from disk
-            h_reprobate.PE.PE_MANUAL_MAP DecoyMetaData = MapModuleFromDisk(DecoyModulePath);
-            IntPtr RegionSize = DecoyMetaData.PEINFO.Is32Bit ? (IntPtr)DecoyMetaData.PEINFO.OptHeader32.SizeOfImage : (IntPtr)DecoyMetaData.PEINFO.OptHeader64.SizeOfImage;
+            PE.PE_MANUAL_MAP DecoyMetaData = MapModuleFromDisk(DecoyModulePath);
+            int RegionSize = DecoyMetaData.PEINFO.Is32Bit ? (int)DecoyMetaData.PEINFO.OptHeader32.SizeOfImage : (int)DecoyMetaData.PEINFO.OptHeader64.SizeOfImage;
 
             // Change permissions to RW
-            h_reprobate.NtProtectVirtualMemory((IntPtr)(-1), ref DecoyMetaData.ModuleBase, ref RegionSize, h_reprobate.Win32.WinNT.PAGE_READWRITE);
+            h_DynInv_Methods.NtFuncWrapper.NtProtectVirtualMemory((IntPtr)(-1), ref DecoyMetaData.ModuleBase, RegionSize, Win32.WinNT.PAGE_READWRITE);
 
             // Zero out memory
-            h_reprobate.RtlZeroMemory(DecoyMetaData.ModuleBase, (int)RegionSize);
+            h_DynInv_Methods.NtFuncWrapper.RtlZeroMemory(DecoyMetaData.ModuleBase, (int)RegionSize);
 
             // Overload module in memory
-            h_reprobate.PE.PE_MANUAL_MAP OverloadedModuleMetaData = MapModuleToMemory(Payload, DecoyMetaData.ModuleBase);
+            PE.PE_MANUAL_MAP OverloadedModuleMetaData = MapModuleToMemory(Payload, DecoyMetaData.ModuleBase);
             OverloadedModuleMetaData.DecoyModule = DecoyModulePath;
 
             return OverloadedModuleMetaData;
@@ -1442,5 +1428,52 @@ namespace Engineer.Extra
 
             return CertificateChain.Build(FileCertificate);
         }
+        
+        //get pointer to peb 
+        public static IntPtr GetPEBPointer()
+        {
+            // Get _PEB pointer
+            PROCESS_BASIC_INFORMATION pbi = h_DynInv_Methods.NtFuncWrapper.NtQueryInformationProcessBasicInformation((IntPtr)(-1));
+            return pbi.PebBaseAddress;
+        }
+
+
+    // write new value to the memory address of a function inside the specified dll
+    public static byte[] PatchFunction(string dllName, string funcName, byte[] patchBytes)
+    {
+        if (!dllName.EndsWith(".dll"))
+        {
+            dllName = $"{dllName}.dll";
+        }
+        var pFunc = GetLibraryAddress(dllName, funcName);
+        var originalBytes = new byte[patchBytes.Length];
+        Marshal.Copy(pFunc, originalBytes, 0, patchBytes.Length);
+
+        var oldProtect = h_DynInv_Methods.NtFuncWrapper.NtProtectVirtualMemory(  new IntPtr(-1), ref pFunc, patchBytes.Length, (uint)h_DynInv.Win32.Kernel32.MemoryProtection.ExecuteReadWrite);
+
+        Marshal.Copy(patchBytes, 0, pFunc, patchBytes.Length);
+        h_DynInv_Methods.NtFuncWrapper.NtProtectVirtualMemory( new IntPtr(-1), ref pFunc, patchBytes.Length, oldProtect);
+        return originalBytes;
     }
+
+    //write new value to a memory address and restore the memory protection
+    public static bool PatchAddress(IntPtr pAddress, IntPtr newValue)
+    {
+        try
+        {
+            var intptr_size = IntPtr.Size;
+            var oldProtect = h_DynInv_Methods.NtFuncWrapper.NtProtectVirtualMemory(new IntPtr(-1), ref pAddress, intptr_size, (uint)h_DynInv.Win32.Kernel32.MemoryProtection.ExecuteReadWrite);
+            Marshal.WriteIntPtr(pAddress, newValue);
+            h_DynInv_Methods.NtFuncWrapper.NtProtectVirtualMemory(new IntPtr(-1), ref pAddress, intptr_size, oldProtect);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            //Console.WriteLine(ex.Message);
+            return false;
+        }
+
+    }
+
 }
+

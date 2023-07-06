@@ -16,7 +16,7 @@ namespace ApiModels.Requests
         public int Sleep { get; set; }
         public string? WorkingHours { get; set; }
 
-        public DateTime KillDateTime { get; set; }
+        public DateTime? KillDateTime { get; set; }
 
         public bool EncodeShellcode { get; set; }
 
@@ -25,6 +25,12 @@ namespace ApiModels.Requests
         public SleepTypes SleepType { get; set; }
 
         public ImplantType implantType { get; set; } = ImplantType.Engineer; // default to engineer
+        
+        public List<string> IncludedCommands { get; set; } = new List<string>();
+
+        public List<string> IncludedModules { get; set; } = new List<string>();
+
+        public bool IsPostEx { get; set; } = false;
 
         public enum EngCompileType
         {
@@ -39,13 +45,15 @@ namespace ApiModels.Requests
         {
             None,
             Custom_RC4,
-            // Ekko,
+            //Ekko,
+            //Foliage,
         }
         
         public enum ImplantType
         {
             Engineer,
             Constructor,
+            Rustineer,
         }
     }
 }

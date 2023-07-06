@@ -2,14 +2,9 @@
 using System.IO;
 using System.Text.Json;
 using NetSerializer;
-using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.Serialization.Json;
-using TeamServer.Models;
 using TeamServer.Models.Extras;
 using ApiModels.Requests;
-using TeamServer.Models.Engineers;
-using TeamServer.Models.Engineers.TaskResultTypes;
 using System.Text;
 
 namespace TeamServer.Utilities
@@ -91,6 +86,11 @@ namespace TeamServer.Utilities
                     }
                     else
                     {
+                        string? fixedJson =  TryToFixJson(json);
+                        if (fixedJson != null)
+                        {
+                            return JsonSerializer.Deserialize<T>(fixedJson);
+                        }
                         Console.WriteLine("Input data is not a valid JSON & is not a normal string, returning default value");
                         return default(T);
                     }
@@ -137,6 +137,24 @@ namespace TeamServer.Utilities
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(ex.StackTrace);
                 return default;
+            }
+        }
+
+        private static string TryToFixJson(string brokenJson)
+        {
+            try
+            {
+                //this assumes the json data is a list of objects that is currently structured like {"type":"data"}{"type":"data"} instead of [{"type":"data"},{"type":"data"}]
+                //this will fix the json by adding a comma between the objects and wrapping the whole thing in square brackets
+                string fixedJson = brokenJson.Replace("}{", "},{");
+                fixedJson = $"[{fixedJson}]";
+                return fixedJson;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
+                return null;
             }
         }
     }

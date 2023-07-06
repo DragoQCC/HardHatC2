@@ -1,6 +1,7 @@
 ﻿@page "/Engineers"
 @using ApiModels.Requests
 @using ApiModels.Responses
+@using HardHatC2Client.Components;
 @using Models
 @using RestSharp
 @using MudBlazor
@@ -8,25 +9,33 @@
 @using HardHatC2Client.Services
 @using System.Collections.ObjectModel
 @using System.Linq
-@using System.Diagnostics;
-@using RestSharp.Authenticators;
-@using Blazored.LocalStorage;
+@using System.Diagnostics
+@using RestSharp.Authenticators
+@using Blazored.LocalStorage
+@using MudBlazor.Extensions
+@using MudBlazor.Extensions.Components
+@using MudExtensions.Utilities
+@using MudExtensions.Enums
+@using Bromix.MudBlazor.MaterialDesignIcons
+@using HardHatC2Client.Utilities
 @inject RestClient restClientDefault
 @inject IToastService toastDefault
 @inject NavigationManager navigationManagerDefault
+@inject IDialogService dialogServiceDefault
 
 <CascadingAuthenticationState>
     <AuthorizeView Roles="Operator,TeamLead">
         <Authorized>
-        <h3 class="text-center">Engineers</h3>
+            <br>
+        <h3>Engineers</h3>
             <MudTabs>
                 <MudTabPanel Text="Table View / Creation">
             <br>
             <div oncontextmenu="return false;" @onclick="HandleClick" @onmouseup="HandleMouseUp">
-                <div class="container-fluid" style="height:500px; overflow-y:scroll">
-                    <div class="row">
-                        <div class="col-md-12">
-                            <style>
+                        <div class="container-fluid d-flex flex-grow-1" style="height:500px; overflow-y:scroll">
+                   @* <div class="row">
+                        <div class="col-md-12">*@
+           <style>
             .selected 
             {
                 background-color: #1E88E5 !important;
@@ -39,8 +48,12 @@
             {
                 color: white !important;
             }
+
+            .dialog-blur-class {
+                backdrop-filter: blur(10px);
+            }
             </style>
-                            <MudSwitch @bind-Checked="@HideOfflineEngineers" Label="Hide Offline Engineers" Color="Color.Primary" />
+                           
                             @if (HideOfflineEngineers)
                             {
                                 EngineerDisplayList = EngineerList.Where(x => x.Status == "Active").ToList();
@@ -49,7 +62,7 @@
                             {
                                 EngineerDisplayList = EngineerList.ToList();
                             }
-                            <MudButton OnClick="@(() => OpenDialog = true)">Show/Hide fields</MudButton>
+                            
                             <MudDialog IsVisible="@OpenDialog">
                                 <DialogContent>
                                             <MudCheckBox Label="Implant Number" Checked="@ColumnVisibility["Number"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => ToggleColumnVisibility("Number"))"></MudCheckBox>
@@ -60,6 +73,7 @@
                                             <MudCheckBox Label="Address" Checked="@ColumnVisibility["Address"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("Address"))"></MudCheckBox>
                                             <MudCheckBox Label="Hostname" Checked="@ColumnVisibility["Hostname"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("Hostname"))"></MudCheckBox>
                                     <MudCheckBox Label="Username" Checked="@ColumnVisibility["Username"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("Username"))"></MudCheckBox>
+                                    <MudCheckBox Label="Note" Checked="@ColumnVisibility["Note"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("Note"))"></MudCheckBox>
                                             <MudCheckBox Label="Process Name" Checked="@ColumnVisibility["ProcessName"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("ProcessName"))"></MudCheckBox>
                                             <MudCheckBox Label="Process Id" Checked="@ColumnVisibility["ProcessId"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("ProcessId"))"></MudCheckBox>
                                             <MudCheckBox Label="Integrity" Checked="@ColumnVisibility["Integrity"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("Integrity"))"></MudCheckBox>
@@ -72,10 +86,12 @@
                                     <MudButton OnClick="@(() => OpenDialog = false)">Close</MudButton>
                                 </DialogActions>
                             </MudDialog>
-                            <MudTable Items="@EngineerDisplayList" HorizontalScrollbar="true" Virtualize="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Elevation="10" Outlined="true" Striped="true" RowClassFunc="@SelectedRowClassFunc" OnRowClick="RowClickEvent" @ref="mudTable" T="Engineer" Filter="new Func<Engineer,bool>(FilterFunc1)" SortLabel="Sort By">
+                            <MudTable Style="width:100%;" Height="400px" Class="flex-auto" Breakpoint="Breakpoint.None" Items="@EngineerDisplayList" HorizontalScrollbar="true" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Elevation="10" Outlined="true" Striped="true" RowClassFunc="@SelectedRowClassFunc" OnRowClick="RowClickEvent" @ref="mudTable" T="Engineer" Filter="new Func<Engineer,bool>(FilterFunc1)" SortLabel="Sort By">
                                <ToolBarContent>
                                        <MudText Typo="Typo.h6">Implants</MudText>
                                        <MudSpacer />
+                                        <MudToggleIconButton @bind-Toggled="@HideOfflineEngineers" Color="Color.Primary" Icon="@Icons.Material.Filled.Visibility" ToggledIcon="@Icons.Material.Filled.VisibilityOff" Title="Hide Offline Engineers"  ToggledTitle="Hide Offline Engineers" />
+                                        <MudIconButton Title="Show/Hide Fields" Icon="@Icons.Material.Filled.FilterAlt" Color="Color.Primary" OnClick="@(() => OpenDialog = true)"></MudIconButton>
                                        <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
                                    </ToolBarContent>
                                 <HeaderContent>
@@ -88,6 +104,7 @@
                                     <MudTh Style="@setStyle(Settings.IsCheckedBox,"Address")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Address)">Address</MudTableSortLabel></MudTh>
                                     <MudTh Style="@setStyle(Settings.IsCheckedBox,"Hostname")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Hostname)">hostname</MudTableSortLabel></MudTh>
                                     <MudTh Style="@setStyle(Settings.IsCheckedBox,"Username")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Username)">username</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"Note")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Note)">note</MudTableSortLabel></MudTh>
                                     <MudTh Style="@setStyle(Settings.IsCheckedBox,"ProcessName")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.ProcessName)">process</MudTableSortLabel></MudTh>
                                     <MudTh Style="@setStyle(Settings.IsCheckedBox,"ProcessId")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.ProcessId)">pid</MudTableSortLabel></MudTh>
                                     <MudTh Style="@setStyle(Settings.IsCheckedBox,"Integrity")"><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Integrity)">Integrity</MudTableSortLabel></MudTh>
@@ -99,7 +116,11 @@
                                 </HeaderContent>
                                 <RowTemplate Context="Rowcontext">
                                             <MudTd Style="@GetCellStyle("Number")">@Rowcontext.Number</MudTd>
-                                    <MudTd><MudIcon Size="Size.Small" Class="mb-2 ms-2" Icon=@Icons.Material.Outlined.DesktopWindows Color=@SetColor(Rowcontext.Integrity)></MudIcon></MudTd>
+                                    <MudTd>
+                                        <MudBadge Bordered="true" Overlap="true" Content=@Interact.SetPanelBadgeCount(Rowcontext) Color="Color.Primary">
+                                        <MudIcon Size="Size.Small" Class="mb-2 ms-2" Icon=@Icons.Material.Outlined.DesktopWindows Color=@SetColor(Rowcontext.Integrity)></MudIcon>
+                                        </MudBadge>
+                                    </MudTd>
                                     <MudTd Style="@GetEngineerStatus(Rowcontext)">@Rowcontext.Status</MudTd>
                                             <MudTd Style="@GetCellStyle("ExternalAddress")">@Rowcontext.ExternalAddress</MudTd>
                                             <MudTd Style="@GetCellStyle("ManagerName")">@Rowcontext.ManagerName</MudTd>
@@ -107,6 +128,7 @@
                                             <MudTd Style="@GetCellStyle("Address")">@Rowcontext.Address</MudTd>
                                             <MudTd Style="@GetCellStyle("Hostname")">@Rowcontext.Hostname</MudTd>
                                             <MudTd Style="@GetCellStyle("Username")">@Rowcontext.Username</MudTd>
+                                            <MudTd Style="@GetCellStyle("Note")">@Rowcontext.Note</MudTd>
                                             <MudTd Style="@GetCellStyle("ProcessName")">@Rowcontext.ProcessName</MudTd>
                                             <MudTd Style="@GetCellStyle("ProcessId")">@Rowcontext.ProcessId</MudTd>
                                             <MudTd Style="@GetCellStyle("Integrity")">@Rowcontext.Integrity</MudTd>
@@ -127,54 +149,22 @@
                                 </RowTemplate>
                             </MudTable>
                         </div>
-                    </div>
-                </div>
+                 @*   </div>
+                </div>*@
             </div>
 
             <br>
-            <div class ="container-fluid">
-                <h3 class="text-center position-relative">Create New Engineer</h3>
-                <hr>
-
-                <MudForm @bind-IsValid="@success" @bind-Errors="@errors">
-                    <MudSelect Class="mb-4 mt-4"  T="string" Label="Manager Name" Variant="Variant.Filled" Required="true" @bind-value="formData.managerName" RequiredError="Type is required!">
-                        @foreach (Manager manager in @Managers.managersList)
-                        {
-                            <MudSelectItem Value="@manager.Name"/>
-                        }
-                    </MudSelect>
-                    <MudTextField Class="mb-4 mt-4"  T="int" Label="Connection Attempts" Variant="Variant.Filled" Required="true" @bind-value="formData.ConnectionAttempts" RequiredError="callback address is required!"/>
-                    <MudTextField Class="mb-4 mt-4" T="int" Label="sleep timer" Variant="Variant.Filled"  Required="true" @bind-value="formData.Sleep" RequiredError="port is required!"/>
-                    <div class="d-flex">
-                                <MudDatePicker Required="true" Label="Pick a date" @bind-Date="formData.selectedKillDate"></MudDatePicker>
-                                <MudTimePicker Label="Pick a time in UTC" Required="true" @bind-Time="formData.selectedKillTime"></MudTimePicker>
-                    </div>
-                   @* <MudTextField Class="mb-4 mt-4" T="string" Label="working hours format (01:00:00-23:00:00)" Variant="Variant.Filled"  @bind-value="formData.WorkingHours" RequiredError="port is required!" />*@
-                    <MudSelect Class="mb-4 mt-4"  T="SpawnEngineerRequest.EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
-                        <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.exe)" />
-                        <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.serviceexe)" />
-                        <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.shellcode)" />
-                        <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.dll)" />
-                        <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.powershellcmd)" />
-                    </MudSelect>
-                    <MudSelect Class="mb-4 mt-4" T="SpawnEngineerRequest.SleepTypes" Label="Sleep Encryption Type" Variant="Variant.Filled" Required="true" @bind-value="formData.SleepType" RequiredError="Type is required!">
-                        <MudSelectItem Value="@(SpawnEngineerRequest.SleepTypes.None)" />
-                        <MudSelectItem Value="@(SpawnEngineerRequest.SleepTypes.Custom_RC4)" />
-                    </MudSelect>
-                    <MudCheckBox @bind-Checked="@formData.EncodeShellcode" Label="Encode Shellcode with SGN ?" Color="Color.Primary"></MudCheckBox>
-                    <MudButton StartIcon="@Icons.Filled.Bolt" Variant="Variant.Filled" Color="Color.Success"  Disabled="@(!success)" @onclick="@validSubmit"> Create</MudButton>
-                </MudForm>
-            </div>
-            <br>
-            <br>
-            <div>
-                <MudTextField @bind-Value="PsCmd" Label="Powershell Commmand" ReadOnly="true" Variant="Variant.Outlined"/>
-            </div>
+            <ImplantCreation></ImplantCreation>
                 </MudTabPanel>
+                <br>
                 <MudTabPanel Text="Graph View">
                     <MudPaper Height="1100px" Width="100%">
                         <HardHatC2Client.Components.ImplantGraph></HardHatC2Client.Components.ImplantGraph>
                     </MudPaper>
+                </MudTabPanel>
+                <br>
+                <MudTabPanel Text="Compiled Implants">
+                    <HardHatC2Client.Components.CompiledImplantTable></HardHatC2Client.Components.CompiledImplantTable>
                 </MudTabPanel>
             </MudTabs>
         </Authorized>
@@ -190,7 +180,7 @@
                         <div class="container-fluid" style="height:500px; overflow-y:scroll">
                             <div class="row">
                                 <div class="col-md-12">
-                                    <style>
+                    <style>
                     .selected 
                     {
                         background-color: #1E88E5 !important;
@@ -202,6 +192,11 @@
                     .selected > td .mud-input 
                     {
                         color: white !important;
+                    }
+
+                    .dialog-blur-class 
+                    {
+                        backdrop-filter: blur(10px);
                     }
                     </style>
                                     <MudSwitch @bind-Checked="@HideOfflineEngineers" Label="Hide Offline Engineers" Color="Color.Primary" />
@@ -286,6 +281,8 @@
 
 @code {
     [Inject]
+    private IDialogService dialogService { get; set; }
+    [Inject]
     private static RestClient _restClient { get; set; }
     [Inject]
     private static IToastService toastService { get; set; }
@@ -299,14 +296,14 @@
     private static Dictionary<string, int> EngineerNumbers = new();
     private static Dictionary<string, DateTime> EngineerFirstSeenDict = new();
     protected internal static List<Engineer> EngineerDisplayList = new List<Engineer>();
-    private static SpawnEngineerRequest formData = new SpawnEngineerRequest();
+    //private static SpawnEngineerRequest formData = new SpawnEngineerRequest();
     private string EngineerTestID { get; set; }
     public Double OpacityValue { get; set; }
     public static bool FirstRender = true;
     private static bool Initialized = false;
     private bool success;
     private string[] errors = { };
-    private MudTable<Engineer> mudTable;
+    public MudTable<Engineer> mudTable;
     private int selectedRowNumber = -1;
     public static string PsCmd { get; set; }
     private static string opacitySetting {get; set;}
@@ -319,24 +316,25 @@
     private string searchString1 = "";
     private bool OpenDialog { get; set; } = false;
     private Dictionary<string, bool> ColumnVisibility = new Dictionary<string, bool>
-{
-    { "Number", true},
-    {"ImplantId",true },
-    { "Status", true },
-    { "ExternalAddress", true },
-    { "ManagerName", true },
-    { "ConnectionType", true },
-    { "Address", true },
-    { "Hostname", true },
-    { "Username", true },
-    { "ProcessName", true },
-    { "ProcessId", true },
-    { "Integrity", true },
-    { "Arch", true },
-    { "Sleep", true },
-    { "LastSeen", true },
-    {"FirstSeen",true },
-};
+    {
+        { "Number", true},
+        {"ImplantId",true },
+        { "Status", true },
+        { "ExternalAddress", true },
+        { "ManagerName", true },
+        { "ConnectionType", true },
+        { "Address", true },
+        { "Hostname", true },
+        { "Username", true },
+        { "Note",true},
+        { "ProcessName", true },
+        { "ProcessId", true },
+        { "Integrity", true },
+        { "Arch", true },
+        { "Sleep", true },
+        { "LastSeen", true },
+        {"FirstSeen",true },
+    };
 
     public static async Task SetPsCommand(string command)
     {
@@ -359,7 +357,7 @@
         return "background:#333333; color:white;"; 
     }
 
-    private static Color SetColor(string integrity)
+    public static Color SetColor(string integrity)
     {
         if (integrity.Equals("high",StringComparison.CurrentCultureIgnoreCase))
         {
@@ -388,7 +386,7 @@
         }
     }
 
-    private string GetCellStyle(string columnName)
+    public string GetCellStyle(string columnName)
     {
         if (ColumnVisibility.ContainsKey(columnName) && ColumnVisibility[columnName])
         {
@@ -400,13 +398,6 @@
         }
     }
 
-    public async Task validSubmit()
-    {
-        if (formData.managerName != null)
-        {
-            await CreateEngineer();
-        }
-    }
 
     void HandleClick(MouseEventArgs args)
     {
@@ -508,48 +499,85 @@
         return false;
     }
 
-    public static void ContextMenuItems(int options, Engineer engineer)
+    public async Task ContextMenuItems(int options, Engineer engineer)
     {
         switch(options)
         {
             case 0:
                 //Interact
-                Interact.InteractEngineers.Add(engineer);
-                //compare the eng.ProcessId@eng.Address to the values in the Interact.EngTabTitleDic dictionary, if it matches any of the values, then add it to the dictionary but its value is ng.ProcessId@eng.Address + a number that is equal to the number of values it matched in the dictionary
-
-                if (Interact.EngTabTitleDic.ContainsValue(engineer.ProcessId + "@" + engineer.Address) && Interact.EngTabTitleDic.ContainsKey(engineer.Id) == false)
-                {
-                    int count = 0;
-                    foreach (string key in Interact.EngTabTitleDic.Keys)
-                    {
-                        if (Interact.EngTabTitleDic[key] == engineer.ProcessId + "@" + engineer.Address)
-                        {
-                            count++;
-                        }
-                        else if (Interact.EngTabTitleDic[key] == engineer.ProcessId + "@" + engineer.Address + "(" + count + ")")
-                        {
-                            count++;
-                        }
-                    }
-                    Interact.EngTabTitleDic.Add(engineer.Id, engineer.ProcessId + "@" + engineer.Address + "(" + count + ")");
-                }
-                else if(!Interact.EngTabTitleDic.ContainsKey(engineer.Id))
-                {
-                    Interact.EngTabTitleDic.Add(engineer.Id, engineer.ProcessId + "@" + engineer.Address);
-                }
-
-                Nav.NavigateTo("/Interact");
+                AddImplantToInteract(engineer);
                 break;
             case 1:
                 //note    
+                //cause a mud popup where the user can select to add engineers from the engineer table that are not yet interacted with
+                var diag_options = new DialogOptions { ClassBackground = "dialog-blur-class", MaxWidth = MaxWidth.Medium, FullWidth = true, DisableBackdropClick = true };
+                var dialog = dialogService.Show<ImplantNoteDiag>("Add Note to Implant", diag_options);
+
+                var result = await dialog.Result;
+                if (!result.Canceled)
+                {
+                    string noteString = result.Data as string;
+                    //result.Data should be a string, would need to call a hub fdunction to replicate to note to all clients 
+                    if(!String.IsNullOrEmpty(noteString))
+                    {
+                       await  HardHatHubClient._hub.AddNoteToImplant(engineer.Id,noteString);
+                    }
+                }
                 break;
             case 2:
-                //color     
+                //color 
+                ShowInfoToast("Color is not implemented yet");
                 break;
             case 3:
                 //exit     
                 break;
         }
+    }
+
+    public static void AddImplantToInteract(Engineer engineer)
+    {
+        if (!Interact.InteractEngineers.Contains(engineer))
+        {
+            Interact.InteractEngineers.Add(engineer);
+        }
+        //compare the eng.ProcessId@eng.Address to the values in the Interact.EngTabTitleDic dictionary, if it matches any of the values, then add it to the dictionary but its value is ng.ProcessId@eng.Address + a number that is equal to the number of values it matched in the dictionary
+
+        if (Interact.EngTabTitleDic.ContainsValue(engineer.ProcessId + "@" + engineer.Address) && Interact.EngTabTitleDic.ContainsKey(engineer.Id) == false)
+        {
+            int count = 0;
+            foreach (string key in Interact.EngTabTitleDic.Keys)
+            {
+                if (Interact.EngTabTitleDic[key] == engineer.ProcessId + "@" + engineer.Address)
+                {
+                    count++;
+                }
+                else if (Interact.EngTabTitleDic[key] == engineer.ProcessId + "@" + engineer.Address + "(" + count + ")")
+                {
+                    count++;
+                }
+            }
+            Interact.EngTabTitleDic.Add(engineer.Id, engineer.ProcessId + "@" + engineer.Address + "(" + count + ")");
+        }
+        else if (!Interact.EngTabTitleDic.ContainsKey(engineer.Id))
+        {
+            Interact.EngTabTitleDic.Add(engineer.Id, engineer.ProcessId + "@" + engineer.Address);
+        }
+        Interact.interactedEngineerId = engineer.Id;
+        Interact.interactedEngIdUpdated = true;
+        Nav.NavigateTo("/Interact");
+    }
+
+    public static async Task UpdateImplantNote(string id, string note)
+    {
+        foreach(var eng in EngineerList)
+        {
+            if(eng.Id == id)
+            {
+                eng.Note = note;
+            }
+        }
+        await Task.Delay(500);
+        await OnStateChange();
     }
 
     public static string FindManager(Engineer currenteng,string managerName)
@@ -568,7 +596,7 @@
         return "";
     }
 
-    public static async Task CreateEngineer()
+    public static async Task CreateEngineer(SpawnEngineerRequest formData,List<string> selectedEngCommandList, List<string> selectedEngModuleList)
     {
         string resource = "/engineers";
         var createObject = new SpawnEngineerRequest
@@ -580,14 +608,17 @@
                 WorkingHours = formData.WorkingHours,
                 SleepType = formData.SleepType,
                 KillDateTime = (DateTime)(formData.selectedKillDate.Value.Date + formData.selectedKillTime),
+                IncludedCommands = selectedEngCommandList.ToList(),
+                IncludedModules = selectedEngModuleList.ToList(),
     };
     
         var request = new RestRequest(resource,Method.Post);
         request.AddJsonBody(createObject);
         ShowInfoToast("Sending Request To Create Engineer");
+        await OnStateChange();
         request.OnBeforeDeserialization = resp =>
         {
-            Console.WriteLine(resp.Content);
+            //Console.WriteLine(resp.Content);
         };
         var requestResponse = await _restClient.PostAsync<string>(request);
         if (requestResponse != null)

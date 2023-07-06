@@ -1,16 +1,13 @@
 ﻿using System;
 using System.Threading.Tasks;
 
+
 namespace TeamServer.Models.Engineers;
 
 [Serializable]
-public class EngineerCommand
+public abstract class EngineerCommand 
 {
-    public virtual string Name { get; }
+    public abstract string Name { get; }
 
-
-    public virtual async Task Execute(EngineerTask task)
-    {
-        
-    }
+    public abstract Task Execute(EngineerTask task);
 }

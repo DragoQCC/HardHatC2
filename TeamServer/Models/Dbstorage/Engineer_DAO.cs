@@ -13,6 +13,9 @@ namespace TeamServer.Models.Dbstorage
         [Column("number")]
         public int number { get; set; }
 
+        [Column("note")]
+        public string note { get; set; }
+
         [Column("engineerMetadata")]
         public byte[] engineerMetadata { get; set; }
 
@@ -42,6 +45,7 @@ namespace TeamServer.Models.Dbstorage
 
                 id = model.engineerMetadata.Id,
                 number = model.Number,
+                note = model.Note,
                 engineerMetadata = model.engineerMetadata.Serialize(),
                 ConnectionType = model.ConnectionType,
                 ManagerName = model.ManagerName,
@@ -59,6 +63,7 @@ namespace TeamServer.Models.Dbstorage
             {
                 engineerMetadata = dao.engineerMetadata.Deserialize<EngineerMetadata>(),
                 Number = dao.number,
+                Note = dao.note,
                 ConnectionType = dao.ConnectionType,
                 ManagerName = dao.ManagerName,
                 ExternalAddress = dao.ExternalAddress,

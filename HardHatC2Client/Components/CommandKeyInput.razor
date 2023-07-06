@@ -29,6 +29,14 @@
     {
         <MudCheckBox T=bool Color="Color.Primary" CheckedChanged="(e) => UpdateCheckboxValue(e)"></MudCheckBox>
     }
+    else if (CommandKey?.inputType == CommandKey.InputType.File)
+    {
+        <MudFileUpload T="IBrowserFile" FilesChanged="UploadFiles">
+            <ButtonTemplate>
+                <MudButton HtmlTag="label" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.CloudUpload" for="@context"> Upload Files</MudButton>
+            </ButtonTemplate>
+        </MudFileUpload>
+    }
 </div>
 
 @code {
@@ -49,11 +57,19 @@
         }
     }
 
+    IList<IBrowserFile> files = new List<IBrowserFile>();
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
 
-    private void UpdateCheckboxValue(bool isChecked)
+
+
+    private void UpdateCheckboxValue(bool? isChecked)
     {
-        Value = isChecked ? "true" : "";
+        Value = (bool)isChecked ? "true" : "";
         ValueChanged.InvokeAsync(Value);
+    }
+
+    private void UploadFiles(IBrowserFile file)
+    {
+        Value = file.Name;
     }
 }

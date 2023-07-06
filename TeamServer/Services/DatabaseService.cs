@@ -1,9 +1,6 @@
-﻿using Microsoft.AspNet.SignalR.Infrastructure;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using SQLite;
+﻿using SQLite;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -13,13 +10,9 @@ using TeamServer.Models.Database;
 using TeamServer.Models.Dbstorage;
 using TeamServer.Models.Extras;
 using TeamServer.Models.Managers;
-using TeamServer.Models.Engineers;
-using TeamServer.Controllers;
-using RestSharp;
-using ApiModels.Responses;
-using Microsoft.AspNetCore.Mvc;
 using System.Threading;
 using TeamServer.Utilities;
+//using DynamicEngLoading;
 
 namespace TeamServer.Services
 {
@@ -29,7 +22,8 @@ namespace TeamServer.Services
         public static SQLiteAsyncConnection AsyncConnection = null;
         public static SQLiteConnection Connection = null;
         private static List<Type> dbItemTypes = new List<Type> { typeof(Cred_DAO), typeof(DownloadFile_DAO), typeof(EncryptionKeys_DAO), typeof(Engineer_DAO), typeof(EngineerTaskResult_DAO), typeof(HistoryEvent_DAO),
-                                                        typeof(HttpManager_DAO), typeof(PivotProxy_DAO),typeof(ReconCenterEntity_DAO), typeof(SMBManager_DAO), typeof(TCPManager_DAO), typeof(UploadedFile_DAO),typeof(EngineerTask_DAO),typeof(IOCFIle_DAO) };
+                                                        typeof(HttpManager_DAO), typeof(PivotProxy_DAO),typeof(ReconCenterEntity_DAO), typeof(SMBManager_DAO), typeof(TCPManager_DAO), typeof(UploadedFile_DAO),typeof(EngineerTask_DAO),
+                                                typeof(IOCFIle_DAO),typeof(CompiledImplant_DAO),typeof(Alias_DAO) };
 
 
         //create a function to init the database file, location string, and setup tables 
@@ -183,6 +177,7 @@ namespace TeamServer.Services
                 PivotProxy.PivotProxyList = await GetPivotProxies();
                 ReconCenterEntity.ReconCenterEntityList = await GetReconCenterEntities();
                 IOCFile.IOCFiles = await GetIOCFiles();
+                Alias.savedAliases = await GetAliases();
                 foreach (var iocFile in IOCFile.IOCFiles)
                 {
                     await HardHatHub.AddIOCFile(iocFile);
@@ -483,6 +478,48 @@ namespace TeamServer.Services
                 var storedIOCFiles = AsyncConnection.Table<IOCFIle_DAO>().ToListAsync().Result.Select(x => (IOCFile)x);
                 List<IOCFile> iocFileList = new List<IOCFile>(storedIOCFiles);
                 return iocFileList;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
+                return null;
+            }
+        }
+
+        //a function to return all of the Alias objects from the database
+        public static async Task<List<Alias>> GetAliases()
+        {
+            try
+            {
+                if (AsyncConnection == null)
+                {
+                    ConnectDb();
+                }
+                var storedAliases = AsyncConnection.Table<Alias_DAO>().ToListAsync().Result.Select(x => (Alias)x);
+                List<Alias> aliasList = new List<Alias>(storedAliases);
+                return aliasList;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
+                return null;
+            }
+        }
+
+        //a function to return all the CompiledImplant objects from the database
+        public static async Task<List<CompiledImplant>> GetCompiledImplants()
+        {
+            try
+            {
+                if (AsyncConnection == null)
+                {
+                    ConnectDb();
+                }
+                var storedCompiledImplants = AsyncConnection.Table<CompiledImplant_DAO>().ToListAsync().Result.Select(x => (CompiledImplant)x);
+                List<CompiledImplant> compiledImplantList = new List<CompiledImplant>(storedCompiledImplants);
+                return compiledImplantList;
             }
             catch (Exception ex)
             {

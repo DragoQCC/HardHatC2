@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DynamicEngLoading;
 
 namespace Engineer.Models
 {
@@ -62,10 +63,15 @@ namespace Engineer.Models
 
 		}
 
-		public void SentData(EngineerTaskResult result)
+		public void SentData(EngineerTaskResult result, bool isDataChunked)
 		{
-			//if the result is already in the Outbound queue then append the result to the existing result and update the status
-			if (Outbound.Any(t => t.Id == result.Id))
+            if (isDataChunked)
+            {
+				Outbound.Enqueue(result);
+				return;
+            }
+            //if the result is already in the Outbound queue then append the result to the existing result and update the status
+            if (Outbound.Any(t => t.Id == result.Id))
 			{
 				var existingResult = Outbound.FirstOrDefault(t => t.Id == result.Id);
 				existingResult.Result = existingResult.Result.Concat(result.Result).ToArray();

@@ -2,6 +2,8 @@
 @using HardHatC2Client.Pages
 @using HardHatC2Client.Services
 @using System.Net;
+@using Bromix.MudBlazor.MaterialDesignIcons
+@using MudBlazor.Extensions.Helper;
 @inherits LayoutComponentBase
 @inject IJSRuntime js
 
@@ -23,45 +25,53 @@
 <MudDialogProvider/>
 <MudSnackbarProvider/>
    
+@if(Login.isVisible)
+{
+    @if(Login.IsLoggedIn)
+    {
+        Login.isVisible = false;
+    }
+    <MudOverlay Visible="Login.isVisible" DarkBackground="true" Absolute="true">
+        <MudProgressCircular Color="Color.Secondary" Indeterminate="true" />
+    </MudOverlay>
+}
 
 @if(Login.IsLoggedIn)
 {
 <MudLayout>
     <MudAppBar Color="MudBlazor.Color.Dark" Dense="true" Elevation="5">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
-        <MudSpacer />
+        <MudSpacer/>
         @if (TeamServerStatus.Equals("online", StringComparison.CurrentCultureIgnoreCase))
         {
-            <MudAlert Variant="Variant.Filled" Dense="true"  Severity="Severity.Success">Status: teamserver is @TeamServerStatus</MudAlert>
+                <MudIcon Class="mx-2" Title="Teamserver Status" Icon="@Icons.Material.Outlined.CheckCircle" Color="Color.Success"></MudIcon>
         }
         else if(TeamServerStatus.Equals("offline", StringComparison.CurrentCultureIgnoreCase))
         {
-            <MudAlert Variant="Variant.Filled" Dense="true" Severity="Severity.Error">Status: teamserver is @TeamServerStatus</MudAlert>
+                <MudIcon Class="mx-2" Title="Teamserver Status" Icon="@Icons.Material.Filled.ErrorOutline" Color="Color.Error"></MudIcon>
         }
         else
         {
-            <MudAlert Variant="Variant.Filled" Dense="true" Severity="Severity.Warning">Status: teamserver is @TeamServerStatus</MudAlert>
+                <MudIcon Class="mx-2" Title="Teamserver Status" Icon="@Icons.Material.Filled.ErrorOutline" Color="Color.Warning"></MudIcon>
         }
-        <MudSpacer />
-        <MudButton Class="mx-lg-4" Href="https://github.com/DragoQCC/HardHatC2"
+
+        <MudIconButton Title="Github" Class="mx-2" Href="https://github.com/DragoQCC/HardHatC2"
                    Target="_blank"
                    Variant="Variant.Filled"
-                   EndIcon="@Icons.Custom.Brands.GitHub"
+                   Icon="@Icons.Custom.Brands.GitHub"
                    Color="Color.Primary">
-            GitHub
-        </MudButton>
+        </MudIconButton>
         
-        <MudButton Class="mx-lg-4" Href="https://discord.gg/npW2yy7JFK"
+        <MudIconButton Title="Discord Community" Class="mx-2" Href="https://discord.gg/npW2yy7JFK"
                    Target="_blank"
                    Variant="Variant.Filled"
-                   EndIcon="@Icons.Custom.Brands.Discord"
+                   Icon="@Icons.Custom.Brands.Discord"
                    Color="Color.Primary">
-                   Discord Community
-        </MudButton>
-        <MudMenu ActivationEvent="@MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopRight">
+        </MudIconButton>
+            <MudMenu Class="mx-2" ActivationEvent="@MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopRight">
             <ActivatorContent>
                 <MudAvatar>
-                    <MudIcon Icon="@Icons.Material.Outlined.AccountCircle" />
+                    <MudIcon Icon="@MaterialDesignIcons.Normal.AccountHardHat" />
                 </MudAvatar>
             </ActivatorContent>
             <ChildContent>
@@ -152,6 +162,12 @@ else
         }
     }
     
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await js.InitializeMudBlazorExtensionsAsync();
+        await base.OnAfterRenderAsync(firstRender);
+    }
 
     protected override async Task OnInitializedAsync()
     {

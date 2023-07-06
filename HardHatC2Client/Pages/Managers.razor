@@ -7,18 +7,28 @@
 @using System.Net
 @using System.Text.RegularExpressions
 @using BlazorXTabs
-@using System.Diagnostics;
-@using RestSharp.Authenticators;
-@using Blazored.LocalStorage;
+@using System.Diagnostics
+@using RestSharp.Authenticators
+@using Blazored.LocalStorage
+@using MudBlazor.Extensions
+@using MudBlazor.Extensions.Components
+@using MudExtensions.Utilities
+@using MudExtensions.Enums
+@using Bromix.MudBlazor.MaterialDesignIcons
+@using System.Text;
+@using System.Reflection;
 @inject RestClient _restClient
 @inject IToastService toastService
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+
 
 <CascadingAuthenticationState>
     <AuthorizeView Roles="Operator,TeamLead">
         <Authorized>
-        
             <!-- top half of page being a table of the current managers in the managersList with headers such as Name, type, ConnectionAddress, ConnectionPort, CreationTime, Active -->
-            <h3 class="text-center">Managers</h3>
+            <br>
+            <h3>Managers</h3>
             <br>
 
             <MudTable Items="@managersList" Virtualize="true" HorizontalScrollbar="true" FixedHeader="true" Height="30vh" Hover="true" Dense="true" Outlined="true" Striped="true">
@@ -31,6 +41,7 @@
                     <MudTh Style="@setStyle(Settings.IsCheckedBox)">Bind Port</MudTh>
                     <MudTh Style="@setStyle(Settings.IsCheckedBox)">Created Time</MudTh>
                     <MudTh Style="@setStyle(Settings.IsCheckedBox)">Active</MudTh>
+                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">C2 Profile</MudTh>
                     <MudTh Style="@setStyle(Settings.IsCheckedBox)">Options</MudTh>
                 </HeaderContent>
                 <RowTemplate Context="rowContext">
@@ -42,6 +53,23 @@
                     <MudTd>@rowContext.BindPort</MudTd>
                     <MudTd>@rowContext.CreationTime</MudTd>
                     <MudTd>@rowContext.Active</MudTd>
+                    <MudTd>
+                        <MudIconButton OnClick="() => OnC2ProfileButtonClicked(rowContext.C2profile)" Icon="@Icons.Material.Filled.Visibility" Color="@Color.Primary" aria-label="view C2 Profile Info" />
+                        <MudMessageBox @ref="C2mbox" Title="C2 Profile Info" CancelText="Close">
+                            <MessageContent>
+                                @if (true)
+                                {
+                                    //create a new profile object and set it to the profile object of the rowContext
+                                    var profile = rowContext.C2profile;
+                                    //for each item in the profile objects properties add a line that is the property name and the value of the property
+                                    foreach (PropertyInfo prop in profile.GetType().GetProperties())
+                                    {
+                                        <p>@prop.Name : @prop.GetValue(profile, null)</p>
+                                    }
+                                }
+                            </MessageContent>
+                        </MudMessageBox>
+                    </MudTd>
                     <MudTd>
                         <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
                             <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown">
@@ -59,7 +87,7 @@
             <br>
             <br>
             <div class ="container-fluid">
-                <h3 class="text-center position-relative">Create New Managers</h3>
+                <h3>Create New Managers</h3>
                 <br>
 
                 @if(formSubmitManager.Type == Manager.ManagerType.smb)
@@ -80,28 +108,31 @@
                     IsHttpSelected = true;
                     IsTcpSelected = false;
                 }
-
-                <MudForm @bind-IsValid="@success" @bind-Errors="@errors">
-                    <XTabs Style="@setTabStyle(Settings.IsCheckedBox)" RenderMode="BlazorXTabs.Configuration.RenderMode.Steps">
-                        @if (String.IsNullOrEmpty(formSubmitManager.Name))
-                        {
-                            <XTab  Title="Step1">
-                                <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Name" Required="true" @bind-value="formSubmitManager.Name" RequiredError="manager name is required!" />
-                                <MudSelect Class="mb-4" T="Manager.ManagerType" Variant="Variant.Filled" Clearable="true" Label="Manager Type" Required="true" @bind-value="formSubmitManager.Type" RequiredError="Type is required!">
+                
+                    <MudStepper @ref="_stepper" Class="mud-width-full" HeaderSize="Size.Large" Color="Color.Primary" Variant="Variant.Filled" HeaderTextView="MudExtensions.Enums.HeaderTextView.All" PreventStepChangeAsync="new Func<StepChangeDirection, Task<bool>>(CheckChange)"  >
+                    <ChildContent>
+                        <MudStep Icon="@Icons.Material.Filled.Headphones" Title="Name & type">
+                            <ChildContent>
+                                <MudForm @ref="_form" @bind-IsValid="@success">
+                                <MudTextField @ref="managerNameFormEntry" Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Name" Required="true" @bind-value="formSubmitManager.Name" RequiredError="manager name is required!" />
+                                <MudSelect @ref="managerTypeFormSelect" Class="mb-4" T="Manager.ManagerType" Variant="Variant.Filled" Clearable="true" Label="Manager Type" Required="true" @bind-value="formSubmitManager.Type" RequiredError="Type is required!">
                                     <MudSelectItem Value="@(Manager.ManagerType.http)" />
                                     <MudSelectItem Value="@(Manager.ManagerType.https)" />
                                     <MudSelectItem Value="@(Manager.ManagerType.tcp)" />
                                     <MudSelectItem Value="@(Manager.ManagerType.smb)" />
                                 </MudSelect>
-                            </XTab>
-                        }
-                        <XTab Title="Step2">
+                                </MudForm>
+                            </ChildContent>
+                        </MudStep>          
+                        <MudStep Icon="@MaterialDesignIcons.Normal.Plus" Title="Advanced Info">
+                            <ChildContent>
+                                <MudForm @ref="_form2">
                             @if (formSubmitManager.Type == Manager.ManagerType.http && !String.IsNullOrEmpty(formSubmitManager.Name) || formSubmitManager.Type == Manager.ManagerType.https && !String.IsNullOrEmpty(formSubmitManager.Name))
                             {
                                 <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Connection Address" Required=@IsHttpSelected @bind-value="formSubmitManager.ConnectionAddress" RequiredError="callback address is required!" />
-                                <MudTextField Class="mb-4 mt-4" T="int"  Variant="Variant.Filled" Clearable="true" Label="Connection Port" Required=@IsHttpSelected @bind-value="formSubmitManager.ConnectionPort" RequiredError="port is required!" />
-                                <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Bind Address" Required=@IsHttpSelected @bind-value="formSubmitManager.BindAddress" RequiredError="bind address is required!" />
-                                <MudTextField Class="mb-4 mt-4" T="int"  Variant="Variant.Filled" Clearable="true" Label="Bind Port" Required=@IsHttpSelected @bind-value="formSubmitManager.BindPort" RequiredError="bind port is required!" />
+                                <MudTextField Class="mb-4 mt-4" T="int?"  Variant="Variant.Filled" Clearable="true" Label="Connection Port" Required=@IsHttpSelected @bind-value="formSubmitManager.ConnectionPort" RequiredError="port is required!" />
+                                        <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Bind Address" Required=@IsHttpSelected @bind-value="formSubmitManager.BindAddress" RequiredError="bind address is required!" />
+                                <MudTextField Class="mb-4 mt-4" T="int?"  Variant="Variant.Filled" Clearable="true" Label="Bind Port" Required=@IsHttpSelected @bind-value="formSubmitManager.BindPort" RequiredError="bind port is required!" />
                                 <div class="d-flex align-center justify-space-between">
                                     <MudSelect Class="mb-4" T="ApiModels.Requests.C2Profile" Variant="Variant.Filled" Clearable="true" Label="C2 Profile" Required="true" @bind-value="formSubmitManager.C2profile" RequiredError="C2 Profile required!">
                                         @foreach(ApiModels.Requests.C2Profile profile in C2profiles)
@@ -158,11 +189,21 @@
                                     <MudSelectItem Value="@(Manager.ConnectionMode.reverse)" />
                                 </MudSelect>
                             }
-                        </XTab>
-                    </XTabs>
-                    <br>
-                    <MudButton StartIcon="@Icons.Filled.Bolt" Variant="Variant.Filled" Color="Color.Success" Disabled="@(!success)" @onclick="@handleValidSubmit"> Create</MudButton>
-                </MudForm>
+                        </MudForm>
+                        </ChildContent>
+                        </MudStep>
+                    </ChildContent>
+                    <ActionContent>
+                        @if (_stepper.IsAllStepsCompleted() && success)
+                        {
+                            handleValidSubmit();
+                            _stepper.Reset();
+                            managerNameFormEntry.Clear();
+                            managerTypeFormSelect.Clear();
+                        }
+                        <MudSpacer/>
+                    </ActionContent>
+                    </MudStepper>                                     
             </div>
         </Authorized>
     </AuthorizeView>
@@ -228,6 +269,13 @@
     private bool IsTcpSelected = false;
     private static bool firstRender = true;
     public static List<ApiModels.Requests.C2Profile> C2profiles = new();
+    MudStepper _stepper;
+    MudForm _form;
+    MudTextField<string> managerNameFormEntry;
+    MudSelect<Manager.ManagerType>? managerTypeFormSelect;
+    MudForm _form2;
+    bool _loading;
+    MudMessageBox C2mbox;
 
     [Inject] 
     private IDialogService DialogService { get; set; }
@@ -255,6 +303,15 @@
         return "background:white; color:black;";
     }
 
+    private async void OnC2ProfileButtonClicked(C2Profile profile)
+    {
+
+
+        bool? result = await C2mbox.Show();
+        state = result == null ? "Closed" : "Ok";
+        StateHasChanged();
+    }
+
     public async Task handleValidSubmit()
     {
         if (formSubmitManager.Type == Manager.ManagerType.http)
@@ -275,6 +332,40 @@
             await CreateTCPManager();
         }
     }
+
+    private async Task<bool> CheckChange(StepChangeDirection direction)
+    {
+        // Always allow stepping backwards, even if forms are invalid
+        if (direction == StepChangeDirection.Backward)
+        {
+            return false;
+        }
+        if (_stepper.GetActiveIndex() == 0)
+        {
+            _loading = true;
+            StateHasChanged();
+            await Task.Delay(1000);
+            await _form.Validate();
+            _loading = false;
+            StateHasChanged();
+            return !_form.IsValid;
+        }
+        else if (_stepper.GetActiveIndex() == 1)
+        {
+            _loading = true;
+            StateHasChanged();
+            await Task.Delay(1000);
+            await _form2.Validate();
+            _loading = false;
+            StateHasChanged();
+            return !_form2.IsValid;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
 
     private async void ContextMenuItems(int options, Manager selectedManager)
     {
@@ -422,9 +513,9 @@
         var createObject = new StartHttpmanagerRequest 
         {
             Name = formSubmitManager.Name,
-            ConnectionPort = formSubmitManager.ConnectionPort,
+            ConnectionPort = (int)formSubmitManager.ConnectionPort,
             ConnectionAddress = formSubmitManager.ConnectionAddress,
-            BindPort = formSubmitManager.BindPort,
+            BindPort = (int)formSubmitManager.BindPort,
             BindAddress = formSubmitManager.BindAddress,
             IsSecure = false,
             C2profile = formSubmitManager.C2profile,
@@ -472,9 +563,9 @@
         var createObject = new StartHttpmanagerRequest 
         {
             Name = formSubmitManager.Name,
-            ConnectionPort = formSubmitManager.ConnectionPort,
+            ConnectionPort = (int)formSubmitManager.ConnectionPort,
             ConnectionAddress = formSubmitManager.ConnectionAddress,
-            BindPort = formSubmitManager.BindPort,
+            BindPort = (int)formSubmitManager.BindPort,
             BindAddress = formSubmitManager.BindAddress,
             IsSecure = true,
             C2profile = formSubmitManager.C2profile
@@ -542,15 +633,15 @@
         createObject.Name = formSubmitManager.Name;
         if(formSubmitManager.connectionMode == Manager.ConnectionMode.bind)
         {
-            createObject.ListenPort = formSubmitManager.ListenPort;
-            createObject.IsLocalHost = formSubmitManager.IsLocalHost;
+            createObject.ListenPort = (int)formSubmitManager.ListenPort;
+            createObject.IsLocalHost = (bool)formSubmitManager.IsLocalHost;
             createObject.connectionMode = StartTCPManagerRequest.ConnectionMode.bind;
             createObject.managertype = StartTCPManagerRequest.ManagerType.tcp;
         }
         else
         {
             createObject.ConnectionAddress = formSubmitManager.ConnectionAddress;
-            createObject.BindPort = formSubmitManager.BindPort;
+            createObject.BindPort = (int)formSubmitManager.BindPort;
             createObject.connectionMode = StartTCPManagerRequest.ConnectionMode.reverse;
             createObject.managertype = StartTCPManagerRequest.ManagerType.tcp;
         }
@@ -626,7 +717,7 @@
 
         if (timer is null)
         {
-            timer = new Timer(new TimerCallback(_ => { InvokeAsync(StateHasChanged); }), null, 100, 1000);
+            timer = new Timer(new TimerCallback(_ => { InvokeAsync(StateHasChanged); }), null, 100, 100);
         }
     }
 

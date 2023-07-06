@@ -61,6 +61,12 @@ namespace Engineer
             try
             {
                 string json = Encoding.UTF8.GetString(data);
+                //if data type is string, return the message data
+                if (typeof(T) == typeof(string))
+                {
+                    MessageData messageData = JSON.ToObject<MessageData>(json);
+                    return (T)(object)messageData.Message;
+                }
                 return JSON.ToObject<T>(json);
             }
             catch (Exception e)

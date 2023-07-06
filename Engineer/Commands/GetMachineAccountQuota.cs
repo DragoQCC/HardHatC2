@@ -1,12 +1,9 @@
-﻿using Engineer.Commands;
-using Engineer.Functions;
-using Engineer.Models;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.DirectoryServices;
-using System.Linq;
-using System.Text;
+using System.Net.NetworkInformation;
 using System.Threading.Tasks;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -29,9 +26,9 @@ namespace Engineer.Commands
                 //if domain is null get the current domain and find all the domain controllers
                 if (targetDomain == null)
                 {
-                    targetDomain = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().DomainName;
+                    targetDomain = IPGlobalProperties.GetIPGlobalProperties().DomainName;
                 }
-                Tasking.FillTaskResults($"target domain is {targetDomain}" ,task,EngTaskStatus.Running,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"target domain is {targetDomain}" ,task,EngTaskStatus.Running,TaskResponseType.String);
                 //search the targetDomain for all domain controllers
                 //if username and password are not null then use them to authenticate
                 DirectoryEntry domain;
@@ -54,13 +51,13 @@ namespace Engineer.Commands
                 var result = searcher.FindOne();
                 var machineAccountQuota = result.Properties["ms-DS-MachineAccountQuota"][0].ToString();
                 //return the machine account quota value
-                Tasking.FillTaskResults("[+] Machine Account Quota: " + machineAccountQuota,task,EngTaskStatus.Complete,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("[+] Machine Account Quota: " + machineAccountQuota,task,EngTaskStatus.Complete,TaskResponseType.String);
             }
             catch (Exception e)
             {
                 //Console.WriteLine(e.Message);
                 //Console.WriteLine(e.StackTrace);
-                Tasking.FillTaskResults("[-] Error Getting Machine Account Quota: " + e.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("[-] Error Getting Machine Account Quota: " + e.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }
 
 

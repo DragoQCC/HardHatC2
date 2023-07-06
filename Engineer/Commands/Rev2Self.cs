@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
+﻿using System.Diagnostics;
 using System.Threading.Tasks;
-using Engineer.Extra;
-using Engineer.Functions;
-using Engineer.Models;
+using DynamicEngLoading;
+
 
 namespace Engineer.Commands
 {
@@ -17,15 +12,15 @@ namespace Engineer.Commands
         public override async Task Execute(EngineerTask task)
         {
             {
-                if (WinAPIs.Advapi.RevertToSelf())
+                if (h_DynInv_Methods.AdvApi32FuncWrapper.RevertToSelf())
                 {
-                    WinAPIs.Advapi.OpenProcessToken(Process.GetCurrentProcess().Handle, WinAPIs.Advapi.TOKEN_ALL_ACCESS, out var htest);
+                    h_DynInv_Methods.AdvApi32FuncWrapper.OpenProcessToken(Process.GetCurrentProcess().Handle, h_DynInv.Win32.Advapi32.TOKEN_ALL_ACCESS, out var htest);
                     string result = $" process handle is: {htest}\n" + "Dropped impersonation, reverted to previous user";
 
-                    Tasking.FillTaskResults(result,task,EngTaskStatus.Complete,TaskResponseType.String);
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(result,task,EngTaskStatus.Complete,TaskResponseType.String);
                     return;
                 }
-                Tasking.FillTaskResults("error: " + "Failed to drop token", task, EngTaskStatus.Failed,TaskResponseType.String);
+                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + "Failed to drop token", task, EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
     }
