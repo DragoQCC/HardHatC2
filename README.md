@@ -1,3 +1,10 @@
+![Discord](https://img.shields.io/discord/882642569207644200)
+![GitHub issues](https://img.shields.io/github/issues/DragoQCC/HardHatC2)
+![GitHub Repo stars](https://img.shields.io/github/stars/DragoQcc/HardHatC2?style=social)
+![GitHub forks](https://img.shields.io/github/forks/Dragoqcc/HardHatC2?style=social)
+![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/DragoQcc/HardHatc2)
+![GitHub last commit](https://img.shields.io/github/last-commit/dragoqcc/hardhatc2)
+
 # HardHat C2 
 ## A cross-platform, collaborative, Command & Control framework written in C#, designed for red teaming and ease of use.
 ![image](https://user-images.githubusercontent.com/15575425/228551034-e07df233-63f6-41a2-8b94-6eb840859e82.png)
@@ -6,8 +13,11 @@ HardHat is a multiplayer C# .NET-based command and control framework. Designed t
 It contains three primary components, an ASP.NET teamserver, a blazor .NET client, and C# based implants.
 
 # Release Tracking 
-Alpha Release - 3/29/23
- NOTE: HardHat is in Alpha release; it will have bugs, missing features, and unexpected things will happen. Thank you for trying it, and please report back any issues or missing features so they can be addressed.
+- Alpha 0.2 Release - 7/6/23
+  - Change log: https://docs.hardhat-c2.net/changelog/alpha-0.2-update-july-6-2023 
+- Alpha Release - 3/29/23
+ 
+NOTE: HardHat is in Alpha release; it will have bugs, missing features, and unexpected things will happen. Thank you for trying it, and please report back any issues or missing features so they can be addressed.
 
 # Community 
 [Discord](https://discord.gg/npW2yy7JFK) 
