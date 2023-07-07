@@ -38,9 +38,9 @@ namespace TeamServer.Utilities
 
             //get the shared library location 
             string TopLevelFolder = pathSplit[0] + $"..{allPlatformPathSeperator}";
-            string DynamicLoadingDllPath = TopLevelFolder + "DynamicEngLoading" + allPlatformPathSeperator + "bin" + allPlatformPathSeperator + "Debug";
+           // string DynamicLoadingDllPath = TopLevelFolder + "DynamicEngLoading" + allPlatformPathSeperator + "bin" + allPlatformPathSeperator + "Debug";
             //in the TopLeelFolder should be files in the format Engineer_randomStrings.exe, we need one of those file paths 
-            string[] DynamicLoadingLibrary = Directory.GetFiles(DynamicLoadingDllPath, "DynamicEngLoading.dll");
+           // string[] DynamicLoadingLibrary = Directory.GetFiles(DynamicLoadingDllPath, "DynamicEngLoading.dll");
             
 
 
@@ -82,8 +82,8 @@ namespace TeamServer.Utilities
             trees.Add(syntaxTree);
             //get Refrences from the assembly
             List<MetadataReference> references = new List<MetadataReference> { };
-            Console.WriteLine("DynamicLoadingLibrary file path: " + DynamicLoadingLibrary[0]);
-            references.Add(MetadataReference.CreateFromFile($"{DynamicLoadingLibrary[0]}"));
+            //Console.WriteLine("DynamicLoadingLibrary file path: " + DynamicLoadingLibrary[0]);
+            //references.Add(MetadataReference.CreateFromFile($"{DynamicLoadingLibrary[0]}"));
             // get MetadataRefrence CreateFromFile for each string in assemblyRefList
             foreach (string assembly in assemblyRefList)
             {
@@ -160,9 +160,9 @@ namespace TeamServer.Utilities
             pathSplit[1] = pathSplit[1].Replace("\\", allPlatformPathSeperator.ToString());
             //string dataFolderPath = pathSplit[0] + "Data";
             string TopLevelFolder = pathSplit[0] + $"..{allPlatformPathSeperator}";
-            string DynamicLoadingDllPath = TopLevelFolder + "DynamicEngLoading" +allPlatformPathSeperator + "bin" + allPlatformPathSeperator+"Debug";
+           // string DynamicLoadingDllPath = TopLevelFolder + "DynamicEngLoading" +allPlatformPathSeperator + "bin" + allPlatformPathSeperator+"Debug";
             //in the TopLeelFolder should be files in the format Engineer_randomStrings.exe, we need one of those file paths 
-           string[] DynamicLoadingLibrary = Directory.GetFiles(DynamicLoadingDllPath, "DynamicEngLoading.dll");
+          // string[] DynamicLoadingLibrary = Directory.GetFiles(DynamicLoadingDllPath, "DynamicEngLoading.dll");
 
             string dataFolderPath = pathSplit[0] + "Data" + allPlatformPathSeperator + "NewCommandStandard";
 
@@ -171,7 +171,7 @@ namespace TeamServer.Utilities
 
             List<MetadataReference> referencedAssemblies = new List<MetadataReference>
             {
-                MetadataReference.CreateFromFile($"{DynamicLoadingLibrary[0]}")
+               // MetadataReference.CreateFromFile($"{DynamicLoadingLibrary[0]}")
             };
             foreach (string assembly in assemblyRefList)
             {
