@@ -13,7 +13,8 @@
 @code {
     //this is a dialog version of the ImplantCreation component it is used for commands that need new implants
     //ex. spawn, inject, jump, etc.
-    [CascadingParameter] MudDialogInstance Dialog { get; set; }
+    [CascadingParameter] 
+    public MudDialogInstance Dialog { get; set; }
     public static SpawnEngineerRequest PostExSpawnRequest { get; set; } = new SpawnEngineerRequest();
 
     void Submit() =>  Dialog.Close(DialogResult.Ok(true));

@@ -62,7 +62,7 @@
     [Inject]
     public NavigationManager Nav { get; set; }
 
-    private static bool FirstRender = true;
+    public static bool FirstRender = true;
 
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

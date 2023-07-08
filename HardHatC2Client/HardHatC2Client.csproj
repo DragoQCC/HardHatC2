@@ -16,6 +16,8 @@
     <Folder Include="Data\" />
     <Folder Include="Downloads\" />
     <Folder Include="GraphSource" />
+    <Folder Include="JSON Templates\BOF\" />
+    <Folder Include="JSON Templates\Webhooks\TargetTemplates\" />
     <Folder Include="wwwroot\Images\" />
   </ItemGroup>
 

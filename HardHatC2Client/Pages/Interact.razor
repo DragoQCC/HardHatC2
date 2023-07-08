@@ -1426,23 +1426,19 @@
             string jwtToken = await LocalStorage.GetItemAsync<string>("bearerToken");
             options.Authenticator = new JwtAuthenticator(jwtToken);
             _restClient = new RestClient(options);
-
-            if (FirstRender)
+            foreach (KeyValuePair<string, List<string>> kvp in EngineerOutboundTaskIds)
             {
-                foreach (KeyValuePair<string, List<string>> kvp in EngineerOutboundTaskIds)
-                {
-                    UpdateTaskResponse(kvp.Key, kvp.Value);
-                }
-                FirstRender = false;
-                Login.isVisible = false;
-                if (Login.SignedInUser.Equals("hardhat_admin",StringComparison.CurrentCultureIgnoreCase))
-                {
-                    Nav.NavigateTo("Settings");
-                }
-                else
-                {
-                    Nav.NavigateTo("Index");
-                }
+                UpdateTaskResponse(kvp.Key, kvp.Value);
+            }
+            FirstRender = false;
+            Login.isVisible = false;
+            if (Login.SignedInUser.Equals("hardhat_admin",StringComparison.CurrentCultureIgnoreCase))
+            {
+                Nav.NavigateTo("Settings");
+            }
+            else
+            {
+                Nav.NavigateTo("Index");
             }
         }
         else

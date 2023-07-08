@@ -17,10 +17,6 @@
 <br>
 <br>
  <MudContainer MaxWidth="MaxWidth.Medium">
-@*    @if (FormSubmitted)
-    {
-
-    }*@
     <MudPaper Height="300px" Width="100%" Square="true" Class="pa-4">
         <MudTabs @ref="tabs" Elevation="0" Rounded="true" PanelClass="pa-6" Centered="true" Color="@Color.Primary">
             <MudTabPanel Text="Login">
@@ -124,12 +120,14 @@
 
     public static async Task HandleSignOut()
     {
-        _localStorage.RemoveItemAsync("bearerToken");
-        _localStorage.RemoveItemAsync("UserName");
-        _Nav.NavigateTo(_Nav.BaseUri);
+        await _localStorage.RemoveItemAsync("bearerToken");
+        await _localStorage.RemoveItemAsync("UserName");
         SignedInUser = "";
         IsLoggedIn = false;
         Interact.FirstRender = true;
+        Engineers.FirstRender = true;
+        Index.FirstRender = true;
+        _Nav.NavigateTo(_Nav.BaseUri);
     }
 
 
