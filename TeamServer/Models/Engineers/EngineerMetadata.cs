@@ -1,10 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Transactions;
-using NetSerializer;
-
 
 // amde to keep Engineer clean just holds list of proerties every Engineer will have.
 namespace TeamServer.Models

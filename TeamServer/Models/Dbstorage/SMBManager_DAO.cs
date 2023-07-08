@@ -1,6 +1,6 @@
-﻿using System.Threading;
-using SQLite;
-using TeamServer.Models;
+﻿using SQLite;
+using ApiModels.Shared;
+
 namespace TeamServer.Models.Dbstorage
 {
     [Table("SMBManager")]
@@ -20,12 +20,6 @@ namespace TeamServer.Models.Dbstorage
         
         [Column("ConnectionMode")]
         public ConnectionMode connectionMode { get; set; } // always means direction of parent -> child
-
-        public enum ConnectionMode
-        {
-            bind,
-            reverse
-        }
 
         //make a static implicit operator to convert from the manager object to the db object
         public static implicit operator SMBManager_DAO(SMBmanager manager)
@@ -47,9 +41,8 @@ namespace TeamServer.Models.Dbstorage
                 Name = dao.Name,
                 NamedPipe = dao.NamedPipe,
                 ConnectionAddress = dao.ConnectionAddress,
-                connectionMode = (SMBmanager.ConnectionMode)dao.connectionMode
+                connectionMode = (ConnectionMode)dao.connectionMode
             };
         }
-
     }
 }

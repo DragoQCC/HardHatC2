@@ -198,7 +198,6 @@ using TeamServer.Services;
                 DatabaseService.ConnectDb();
             }
             DatabaseService.AsyncConnection.InsertAsync(new EncryptionKeys_DAO(){ItemID = implantId, Key = taskEncryptionKey});
-            
         }
     }
 }

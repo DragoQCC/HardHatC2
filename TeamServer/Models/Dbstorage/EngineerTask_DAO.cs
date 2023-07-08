@@ -40,7 +40,4 @@ namespace TeamServer.Models.Dbstorage
             };
         }
     }
-
-
-
 }

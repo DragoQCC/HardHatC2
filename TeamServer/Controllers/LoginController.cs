@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System;
 using System.Threading;
 using TeamServer.Models.Database;
 using TeamServer.Services.Extra;

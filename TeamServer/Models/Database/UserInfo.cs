@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-using SQLite;
+﻿using SQLite;
 
 namespace TeamServer.Models.Database
 {
@@ -19,7 +18,5 @@ namespace TeamServer.Models.Database
         //password
         [Column("PasswordHash")]
         public string PasswordHash { get; set;}
-
-        
     }
 }

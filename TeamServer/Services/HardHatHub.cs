@@ -22,6 +22,7 @@ using Microsoft.AspNet.SignalR.Messaging;
 using TeamServer.Models.Managers;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using ApiModels.Shared;
 //using DynamicEngLoading;
 
 namespace TeamServer.Services
@@ -49,7 +50,7 @@ namespace TeamServer.Services
 
                 _clients.Add(Context.ConnectionId);
                 //for a new connected client call the GetExistingManagerList function passing in the clients connection id
-                var ManagerList = managerService._managers.Where(h => h.Type == manager.ManagerType.http || h.Type == manager.ManagerType.https).ToList();
+                var ManagerList = managerService._managers.Where(h => h.Type == ManagerType.http || h.Type == ManagerType.https).ToList();
                 List<Httpmanager> httpManagersList = new();
                 if (ManagerList != null)
                 {
@@ -58,7 +59,7 @@ namespace TeamServer.Services
                         httpManagersList.Add((Httpmanager)m);
                     }
                 }
-                var ManagerList2 = managerService._managers.Where(h => h.Type == manager.ManagerType.smb).ToList();
+                var ManagerList2 = managerService._managers.Where(h => h.Type == ManagerType.smb).ToList();
                 List<SMBmanager> smbManagersList = new();
                 if (ManagerList2 != null)
                 {
@@ -67,7 +68,7 @@ namespace TeamServer.Services
                         smbManagersList.Add((SMBmanager)m);
                     }
                 }
-                var ManagerList3 = managerService._managers.Where(h => h.Type == manager.ManagerType.tcp).ToList();
+                var ManagerList3 = managerService._managers.Where(h => h.Type == ManagerType.tcp).ToList();
                 List<TCPManager> tcpManagersList = new();
                 if (ManagerList3 != null)
                 {

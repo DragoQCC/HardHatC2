@@ -1,5 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using ApiModels.Shared;
 
 namespace TeamServer.Models.Managers
 {
@@ -15,12 +16,7 @@ namespace TeamServer.Models.Managers
         private CancellationTokenSource _tokenSource = new CancellationTokenSource();
         public override ManagerType Type { get; set; } = ManagerType.tcp;
         public ConnectionMode connectionMode { get; set; } // always means direction of parent -> child
-
-        public enum ConnectionMode
-        {
-            bind,
-            reverse
-        }
+        
 
         public TCPManager(string name, int listenPort, bool isLocalHost ) //bind 
         {
