@@ -14,9 +14,9 @@
                         <MudStep Icon="@MaterialDesignIcons.Normal.Wrench" Title="Implant Type">
                             <ChildContent>
                                 <MudForm @ref="_form" @bind-IsValid="@success">
-                                    <MudSelect Clearable="true" Class="mb-4 mt-4" T="SpawnEngineerRequest.ImplantType" Label="Implant Type" Variant="Variant.Filled" Required="true" @bind-value="formData.implantType" RequiredError="Type is required!">
-                                            <MudSelectItem Value="@SpawnEngineerRequest.ImplantType.Engineer"/>
-                                    </MudSelect>
+                                    <MudSelectExtended Clearable="true" Class="mb-4 mt-4" T="SpawnEngineerRequest.ImplantType" Label="Implant Type" Variant="Variant.Filled" Required="true" @bind-value="formData.implantType" RequiredError="Type is required!">
+                                            <MudSelectItemExtended Value="@SpawnEngineerRequest.ImplantType.Engineer"/>
+                                    </MudSelectExtended>
                                 </MudForm>
                             </ChildContent>
                         </MudStep>
@@ -128,23 +128,20 @@
                             </div>
                             @if (IsPostEx)
                         {
-                            <MudSelect Clearable="true" Class="mb-4 mt-4" T="SpawnEngineerRequest.EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
-                                <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.exe)" />
-                                <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.serviceexe)" />
-                                <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.shellcode)" />
-                                <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.dll)" />
-                                <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.powershellcmd)" />
-                            </MudSelect>
+                            <MudSelectExtended Clearable="true" Class="mb-4 mt-4" T="SpawnEngineerRequest.EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
+                                <MudSelectItemExtended Value="@(SpawnEngineerRequest.EngCompileType.exe)" />
+                                <MudSelectItemExtended Value="@(SpawnEngineerRequest.EngCompileType.serviceexe)" />
+                            </MudSelectExtended>
                         }
                         else
                         {
-                                <MudSelect Clearable="true" Class="mb-4 mt-4" T="SpawnEngineerRequest.EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
-                                    <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.exe)" />
-                                    <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.serviceexe)" />
-                                    <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.shellcode)" />
-                                    <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.dll)" />
-                                    <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.powershellcmd)" />
-                                </MudSelect>
+                                <MudSelectExtended Clearable="true" Class="mb-4 mt-4" T="SpawnEngineerRequest.EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
+                                    <MudSelectItemExtended Value="@(SpawnEngineerRequest.EngCompileType.exe)" />
+                                    <MudSelectItemExtended Value="@(SpawnEngineerRequest.EngCompileType.serviceexe)" />
+                                    <MudSelectItemExtended Value="@(SpawnEngineerRequest.EngCompileType.shellcode)" />
+                                    <MudSelectItemExtended Value="@(SpawnEngineerRequest.EngCompileType.dll)" />
+                                    <MudSelectItemExtended Value="@(SpawnEngineerRequest.EngCompileType.powershellcmd)" />
+                                </MudSelectExtended>
                             }
                             @if(formData.complieType == SpawnEngineerRequest.EngCompileType.shellcode)
                             {

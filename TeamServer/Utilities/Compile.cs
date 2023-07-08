@@ -12,6 +12,7 @@ using System.Reflection.PortableExecutable;
 using ApiModels.Requests;
 using Microsoft.CSharp;
 using System.Security.Cryptography.Xml;
+using Mono.Cecil;
 
 namespace TeamServer.Utilities
 {
@@ -22,6 +23,15 @@ namespace TeamServer.Utilities
         
         public static byte[] GenerateEngCode(string source,SpawnEngineerRequest.EngCompileType compileType, SpawnEngineerRequest.SleepTypes sleepType, List<string> nonIncCommandList, List<string> nonIncModuleList)
         {
+            bool IsEngDynLibCompiled = CompileEngDynamicLibrary();
+            if (IsEngDynLibCompiled)
+            {
+                Console.WriteLine("Successfully compiled the DynamicEngLoading.dll");
+            }
+            else
+            {
+                Console.WriteLine("Failed to compile the DynamicEngLoading.dll");
+            }
             string assemblyName = Path.GetRandomFileName();
 
             //replace  @"{{REPLACE_PROGRAM_NAME}}" with the name of the program you want to compile
@@ -58,16 +68,6 @@ namespace TeamServer.Utilities
             //if a csFileList item has the DynamicCommands folder in it then remove it from the list
             csFileList = csFileList.Where(x => !x.Contains("DynamicCommands")).ToArray();
             
-           //List<string> commandList = Directory.GetFiles(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Commands{allPlatformPathSeperator}", "*.cs").ToList();
-           //remove each entry from the commandNames list until we have only the files we want to remove from the csFileList
-           //remove all entries from the commandList where it is not in the commandNames list
-           //commandList.RemoveAll(x => commandNames.Contains(Path.GetFileNameWithoutExtension(x),StringComparer.CurrentCultureIgnoreCase));
-
-            //List<string> moduleList = Directory.GetFiles(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Modules{allPlatformPathSeperator}", "*.cs").ToList();
-            //remove each entry from the moduleNames list until we have only the files we want to remove from the csFileList
-            //remove all entries from the moduleList where it is not in the moduleNames list
-            //moduleList.RemoveAll(x => moduleNames.Contains(Path.GetFileNameWithoutExtension(x), StringComparer.CurrentCultureIgnoreCase));
-
             //remove the non included command files from the csFileList
             csFileList = csFileList.Where(x => !nonIncCommandList.Contains(x)).ToArray();
             //remove the module files from the csFileList
@@ -82,8 +82,6 @@ namespace TeamServer.Utilities
             trees.Add(syntaxTree);
             //get Refrences from the assembly
             List<MetadataReference> references = new List<MetadataReference> { };
-            //Console.WriteLine("DynamicLoadingLibrary file path: " + DynamicLoadingLibrary[0]);
-            //references.Add(MetadataReference.CreateFromFile($"{DynamicLoadingLibrary[0]}"));
             // get MetadataRefrence CreateFromFile for each string in assemblyRefList
             foreach (string assembly in assemblyRefList)
             {
@@ -256,6 +254,71 @@ namespace TeamServer.Utilities
            // P.StartInfo.ArgumentList.Add($"{projectPath}");
           //  P.StartInfo.ArgumentList.Add("-n");
            // P.Start();
+        }
+
+        public static bool CompileEngDynamicLibrary()
+        {
+            char allPlatformPathSeperator = Path.DirectorySeparatorChar;
+            string assemblyBasePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string[] pathSplit = assemblyBasePath.Split("bin"); // [0] is the main path
+            pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
+            string dynamicEngFolderLocation = pathSplit[0] + $"..{allPlatformPathSeperator}DynamicEngLoading{allPlatformPathSeperator}";
+            List<string> dynamicEngFilesLocation  = Directory.GetFiles(dynamicEngFolderLocation, "*.cs", new EnumerationOptions() { MatchCasing = MatchCasing.CaseInsensitive}).ToList();
+
+            List<SyntaxTree> syntaxTrees = new List<SyntaxTree>();
+            foreach (string file in dynamicEngFilesLocation)
+            {
+                syntaxTrees.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(file)));
+            }
+            //get Refrences from the assembly
+            List<MetadataReference> references = new List<MetadataReference> { };
+
+            string[] assemblyRefList = Directory.GetFiles(pathSplit[0]+"Data"+allPlatformPathSeperator+"DynamicEngDll");
+
+            foreach (string assembly in assemblyRefList)
+            {
+                MetadataReference assemblyRefrence = MetadataReference.CreateFromFile(assembly);
+                references.Add(assemblyRefrence);
+            }
+
+            CSharpCompilation compilation = CSharpCompilation.Create(Path.GetRandomFileName(), syntaxTrees: syntaxTrees,
+                references: references,
+                options: new CSharpCompilationOptions(outputKind: OutputKind.DynamicallyLinkedLibrary, optimizationLevel: OptimizationLevel.Release, platform: Platform.X64, allowUnsafe: true));
+
+            using (var ms = new MemoryStream())
+            {
+                EmitResult result = compilation.Emit(ms);
+
+                if (!result.Success)
+                {
+                    IEnumerable<Diagnostic> failures = result.Diagnostics.Where(diagnostic =>
+                        diagnostic.IsWarningAsError ||
+                        diagnostic.Severity == DiagnosticSeverity.Error);
+                    Console.WriteLine(" Roslyn Compilation failed");
+                    foreach (Diagnostic diagnostic in failures)
+                    {
+                        Console.Error.WriteLine("{0}: {1}", diagnostic.Id, diagnostic.GetMessage());
+
+                        // Print the code that caused the error
+                        var lineSpan = diagnostic.Location.GetLineSpan();
+                        var startLine = lineSpan.StartLinePosition.Line;
+                        var endLine = lineSpan.EndLinePosition.Line;
+
+                        for (int i = startLine; i <= endLine; i++)
+                        {
+                            //Console.Error.WriteLine("Line {0}: {1}", i + 1, sourceLines[i]);
+                        }
+                    }
+                    return false;
+                }
+                else
+                {
+                    ms.Seek(0, SeekOrigin.Begin);
+                    byte[] assemblyBytes = ms.ToArray();
+                    File.WriteAllBytes(pathSplit[0] + allPlatformPathSeperator + "Data" + allPlatformPathSeperator+"loading.dll", assemblyBytes);
+                    return true;
+                }
+            }
         }
     }
 }
