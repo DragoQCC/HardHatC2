@@ -36,27 +36,36 @@
 			<h3 class="text-center">Admin Dashboard</h3>
 			<hr>
 			<MudContainer MaxWidth="MaxWidth.Medium">
-			<h4>Create User Form</h4>
-			<MudPaper Height="500px" Width="100%" Square="true" Class="pa-4">
-				<MudTabs Elevation="5" Rounded="true" PanelClass="pa-6" Centered="true" Color="@Color.Primary">
-					<MudTabPanel Text="Create User">
-                    <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
-	                    <MudTextField T="string" @bind-Value="UserName" Label="Username" Required="true" RequiredError="User name is required!"/>
-	                    <MudTextField T="string" @bind-Value="Password" Label="Password" HelperText="Choose a strong password" @ref="pwField1" InputType="InputType.Password" Required="true"RequiredError="Password is required!"/>
-	                    <MudTextField T="string" Label="Confirm Password" HelperText="Repeat the password" InputType="InputType.Password" Validation="@(new Func<string, string>(PasswordMatch))"/>
-	                    <MudSelect  Class="mb-4 mt-4"  T="string" Label="Role" Required="true" @bind-value="Role" RequiredError="Role is required!">
-		                    <MudSelectItem Value=@("Operator")>Operator</MudSelectItem>
-		                    <MudSelectItem Value=@("TeamLead")>TeamLead</MudSelectItem>
-		                    <MudSelectItem Value=@("Guest")>Guest</MudSelectItem>
-	                    </MudSelect>
-	                    <div class="d-flex align-center justify-space-between">
-		                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" Class="ml-auto" @onclick="@handleValidCreateUser">Create</MudButton>
-	                    </div>
-                    </MudForm>
-                    </MudTabPanel>
-                </MudTabs>
-            </MudPaper>
+				<MudTabs>
+
+				<MudPaper Height="500px" Width="100%" Square="true" Class="pa-4">
+					<MudTabPanel Text="User Management">
+					<MudTabs Elevation="5" Rounded="true" PanelClass="pa-6" Centered="true" Color="@Color.Primary">
+						<MudTabPanel Text="Create User">
+						<h4>Create User Form</h4>
+						<MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+							<MudTextField T="string" @bind-Value="UserName" Label="Username" Required="true" RequiredError="User name is required!"/>
+							<MudTextField T="string" @bind-Value="Password" Label="Password" HelperText="Choose a strong password" @ref="pwField1" InputType="InputType.Password" Required="true"RequiredError="Password is required!"/>
+							<MudTextField T="string" Label="Confirm Password" HelperText="Repeat the password" InputType="InputType.Password" Validation="@(new Func<string, string>(PasswordMatch))"/>
+							<MudSelect  Class="mb-4 mt-4"  T="string" Label="Role" Required="true" @bind-value="Role" RequiredError="Role is required!">
+								<MudSelectItem Value=@("Operator")>Operator</MudSelectItem>
+								<MudSelectItem Value=@("TeamLead")>TeamLead</MudSelectItem>
+								<MudSelectItem Value=@("Guest")>Guest</MudSelectItem>
+							</MudSelect>
+							<div class="d-flex align-center justify-space-between">
+								<MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" Class="ml-auto" @onclick="@handleValidCreateUser">Create</MudButton>
+							</div>
+						</MudForm>
+						</MudTabPanel>
+					</MudTabs>
+				</MudTabPanel>
+				<MudTabPanel Text="Webhooks">
+					<HardHatC2Client.Components.Webhooks></HardHatC2Client.Components.Webhooks>
+				</MudTabPanel>
+				</MudPaper>
+				</MudTabs>
             </MudContainer>
+
 		</Authorized>
     </AuthorizeView>
 </CascadingAuthenticationState>

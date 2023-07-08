@@ -190,6 +190,11 @@ namespace TeamServer.Services
                     file = file.Replace("{{REPLACE_IMPLANT_TYPE}}", Encryption.EncryptImplantName("Constructor"));
                 }
 
+                //TESTING OF DATACHUNKING 
+                file = file.Replace("{{REPLACE_CHUNK_SIZE}}", "50");
+                file = file.Replace("{{REPLACE_CHUNK_DATA}}", "true");
+                //END OF TESING CODE
+
                 //generate code for the implant
                 List<string> nonIncCommands = Directory.GetFiles(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Commands{allPlatformPathSeperator}", "*.cs").ToList().Where(x => !request.IncludedCommands.Contains(Path.GetFileNameWithoutExtension(x), StringComparer.CurrentCultureIgnoreCase)).ToList();
                 List<string> nonIncModules = Directory.GetFiles(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Modules{allPlatformPathSeperator}", "*.cs").ToList().Where(x => !request.IncludedModules.Contains(Path.GetFileNameWithoutExtension(x), StringComparer.CurrentCultureIgnoreCase)).ToList();
@@ -242,13 +247,14 @@ namespace TeamServer.Services
                     }
 
                     string TopLevelFolder = pathSplit[0] + $"..{allPlatformPathSeperator}"; //Main HardHat folder 
-                    string DynamicLoadingDllPath = TopLevelFolder + "DynamicEngLoading" + allPlatformPathSeperator + "bin" + allPlatformPathSeperator + "Debug" + allPlatformPathSeperator + "DynamicEngLoading.dll";
+                    //string DynamicLoadingDllPath = TopLevelFolder + "DynamicEngLoading" + allPlatformPathSeperator + "bin" + allPlatformPathSeperator + "Debug" + allPlatformPathSeperator + "DynamicEngLoading.dll";
                     //string DynamicLoadingDllPath = pathSplit[0] + "Data" + allPlatformPathSeperator + "DynamicEngLoading.dll";
                     var jsonFastLocation = pathSplit[0] + "Data" + $"{allPlatformPathSeperator}fastJSON.dll";
+                    var dynLoadingLocation = pathSplit[0] + "Data" + $"{allPlatformPathSeperator}loading.dll";
 
                     var searchDir = $"{pathSplit[0]}Data{allPlatformPathSeperator}";
 
-                    string[] assemblyArray = { sourceAssemblyLocation, jsonFastLocation, DynamicLoadingDllPath };
+                    string[] assemblyArray = { sourceAssemblyLocation, jsonFastLocation,dynLoadingLocation};
                     if(request.IsPostEx)
                     {
                         outputLocation = outputLocation.Replace("Engineer", "PostExEngineer");

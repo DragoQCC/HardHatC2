@@ -116,12 +116,12 @@
                             <ChildContent>
                                 <MudForm @ref="_form" @bind-IsValid="@success">
                                 <MudTextField @ref="managerNameFormEntry" Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Name" Required="true" @bind-value="formSubmitManager.Name" RequiredError="manager name is required!" />
-                                <MudSelect @ref="managerTypeFormSelect" Class="mb-4" T="ManagerType" Variant="Variant.Filled" Clearable="true" Label="Manager Type" Required="true" @bind-value="formSubmitManager.Type" RequiredError="Type is required!">
-                                    <MudSelectItem Value="@(ManagerType.http)" />
-                                    <MudSelectItem Value="@(ManagerType.https)" />
-                                    <MudSelectItem Value="@(ManagerType.tcp)" />
-                                    <MudSelectItem Value="@(ManagerType.smb)" />
-                                </MudSelect>
+                                <MudSelectExtended @ref="managerTypeFormSelect" Class="mb-4" T="ManagerType" Variant="Variant.Filled" Clearable="true" Label="Manager Type" Required="true" @bind-value="formSubmitManager.Type" RequiredError="Type is required!">
+                                    <MudSelectItemExtended Value="@(ManagerType.http)" />
+                                    <MudSelectItemExtended Value="@(ManagerType.https)" />
+                                    <MudSelectItemExtended Value="@(ManagerType.tcp)" />
+                                    <MudSelectItemExtended Value="@(ManagerType.smb)" />
+                                </MudSelectExtended>
                                 </MudForm>
                             </ChildContent>
                         </MudStep>          
@@ -135,12 +135,12 @@
                                 <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Bind Address" Required=@IsHttpSelected @bind-value="formSubmitManager.BindAddress" RequiredError="bind address is required!" />
                                 <MudTextField Class="mb-4 mt-4" T="int?"  Variant="Variant.Filled" Clearable="true" Label="Bind Port" Required=@IsHttpSelected @bind-value="formSubmitManager.BindPort" RequiredError="bind port is required!" />
                                 <div class="d-flex align-center justify-space-between">
-                                    <MudSelect Class="mb-4" T="C2Profile" Variant="Variant.Filled" Clearable="true" Label="C2 Profile" Required="true" @bind-value="formSubmitManager.C2profile" RequiredError="C2 Profile required!">
+                                    <MudSelectExtended Class="mb-4" T="C2Profile" Variant="Variant.Filled" Clearable="true" Label="C2 Profile" Required="true" @bind-value="formSubmitManager.C2profile" RequiredError="C2 Profile required!">
                                         @foreach(C2Profile profile in C2profiles)
                                         {
-                                            <MudSelectItem Value="@(profile)">@profile.Name</MudSelectItem>
+                                            <MudSelectItemExtended Value="@(profile)">@profile.Name</MudSelectItemExtended>
                                         }
-                                    </MudSelect>
+                                    </MudSelectExtended>
                                     <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@((e) => OpenEditDialog(formSubmitManager.C2profile))" Variant="Variant.Filled" Color="Color.Primary"></MudIconButton>
                                     <MudIconButton Icon="@Icons.Material.Filled.Add" @onclick="OpenCreateDialog" Variant="Variant.Filled" Color="Color.Primary"></MudIconButton>
                                 </div>
@@ -163,10 +163,10 @@
                                 <MudTextField Class="mb-4 mt-4" T="int" Variant="Variant.Filled" Clearable="true" Label="Connect Port" Required=@IsReverse Disabled=@IsBind @bind-value="formSubmitManager.BindPort" RequiredError="bind port is required!" />
                                 <MudTextField Class="mb-4 mt-4" T="int" Variant="Variant.Filled" Clearable="true" Label="Listen Port" Required=@IsBind Disabled=@IsReverse @bind-value="formSubmitManager.ListenPort" RequiredError="listen port is required!" />
                                 <MudTextField Class="mb-4 mt-4" T="bool" Variant="Variant.Filled" Clearable="true" Label="Listen on Local host only?" Required=@IsBind Disabled=@IsReverse @bind-value="formSubmitManager.IsLocalHost" RequiredError="is localhost only required!" />
-                                <MudSelect Class="mb-4" T="ConnectionMode" Variant="Variant.Filled" Clearable="true" Label="Connection Direction" Required=@IsTcpSelected @bind-value="formSubmitManager.connectionMode" RequiredError="connection mode is required!">
-                                    <MudSelectItem Value="@(ConnectionMode.bind)" />
-                                    <MudSelectItem Value="@(ConnectionMode.reverse)" />
-                                </MudSelect>
+                                <MudSelectExtended Class="mb-4" T="ConnectionMode" Variant="Variant.Filled" Clearable="true" Label="Connection Direction" Required=@IsTcpSelected @bind-value="formSubmitManager.connectionMode" RequiredError="connection mode is required!">
+                                    <MudSelectItemExtended Value="@(ConnectionMode.bind)" />
+                                    <MudSelectItemExtended Value="@(ConnectionMode.reverse)" />
+                                </MudSelectExtended>
 
                             }
                             else if(formSubmitManager.Type == ManagerType.smb)
@@ -185,10 +185,10 @@
                                 }
                                 <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Named Pipe" Required=@IsSmbSelected @bind-value="formSubmitManager.NamedPipe" RequiredError="namedpipe is required!" />
                                 <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Connection Address" Required=@IsReverse Disabled=@IsBind @bind-value="formSubmitManager.ConnectionAddress" RequiredError="callback address is required!" />
-                                <MudSelect Class="mb-4" T="ConnectionMode" Variant="Variant.Filled" Clearable="true" Label="Connection Direction" Required=@IsSmbSelected @bind-value="formSubmitManager.connectionMode" RequiredError="connection mode is required!">
-                                    <MudSelectItem Value="@(ConnectionMode.bind)" />
-                                    <MudSelectItem Value="@(ConnectionMode.reverse)" />
-                                </MudSelect>
+                                <MudSelectExtended Class="mb-4" T="ConnectionMode" Variant="Variant.Filled" Clearable="true" Label="Connection Direction" Required=@IsSmbSelected @bind-value="formSubmitManager.connectionMode" RequiredError="connection mode is required!">
+                                    <MudSelectItemExtended Value="@(ConnectionMode.bind)" />
+                                    <MudSelectItemExtended Value="@(ConnectionMode.reverse)" />
+                                </MudSelectExtended>
                             }
                         </MudForm>
                         </ChildContent>
@@ -201,6 +201,9 @@
                             _stepper.Reset();
                             managerNameFormEntry.Clear();
                             managerTypeFormSelect.Clear();
+                            _form.Reset();
+                            _form2.Reset();
+                            StateHasChanged();
                         }
                         <MudSpacer/>
                     </ActionContent>
@@ -273,7 +276,7 @@
     MudStepper _stepper;
     MudForm _form;
     MudTextField<string> managerNameFormEntry;
-    MudSelect<ManagerType>? managerTypeFormSelect;
+    MudSelectExtended<ManagerType>? managerTypeFormSelect;
     MudForm _form2;
     bool _loading;
     MudMessageBox C2mbox;
@@ -332,6 +335,7 @@
         {
             await CreateTCPManager();
         }
+        formSubmitManager= new Manager();
     }
 
     private async Task<bool> CheckChange(StepChangeDirection direction)

@@ -15,9 +15,9 @@
                         <MudStep Icon="@MaterialDesignIcons.Normal.Wrench" Title="Implant Type">
                             <ChildContent>
                                 <MudForm @ref="_form" @bind-IsValid="@success">
-                                    <MudSelect Clearable="true" Class="mb-4 mt-4" T="ImplantType" Label="Implant Type" Variant="Variant.Filled" Required="true" @bind-value="formData.implantType" RequiredError="Type is required!">
-                                            <MudSelectItem Value="@ImplantType.Engineer"/>
-                                    </MudSelect>
+                                    <MudSelectExtended Clearable="true" Class="mb-4 mt-4" T="ImplantType" Label="Implant Type" Variant="Variant.Filled" Required="true" @bind-value="formData.implantType" RequiredError="Type is required!">
+                                            <MudSelectItemExtended Value="@ImplantType.Engineer"/>
+                                    </MudSelectExtended>
                                 </MudForm>
                             </ChildContent>
                         </MudStep>
@@ -129,23 +129,23 @@
                             </div>
                             @if (IsPostEx)
                         {
-                            <MudSelect Clearable="true" Class="mb-4 mt-4" T="EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
+                            <MudSelectExtended Clearable="true" Class="mb-4 mt-4" T="EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
                                 <MudSelectItem Value="@(EngCompileType.exe)" />
                                 <MudSelectItem Value="@(EngCompileType.serviceexe)" />
                                 <MudSelectItem Value="@(EngCompileType.shellcode)" />
                                 <MudSelectItem Value="@(EngCompileType.dll)" />
                                 <MudSelectItem Value="@(EngCompileType.powershellcmd)" />
-                            </MudSelect>
+                            </MudSelectExtended>
                         }
                         else
                         {
-                                <MudSelect Clearable="true" Class="mb-4 mt-4" T="EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
-                                    <MudSelectItem Value="@(EngCompileType.exe)" />
-                                    <MudSelectItem Value="@(EngCompileType.serviceexe)" />
-                                    <MudSelectItem Value="@(EngCompileType.shellcode)" />
-                                    <MudSelectItem Value="@(EngCompileType.dll)" />
-                                    <MudSelectItem Value="@(EngCompileType.powershellcmd)" />
-                                </MudSelect>
+                                <MudSelectExtended Clearable="true" Class="mb-4 mt-4" T="EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
+                                    <MudSelectItemExtended Value="@(EngCompileType.exe)" />
+                                    <MudSelectItemExtended Value="@(EngCompileType.serviceexe)" />
+                                    <MudSelectItemExtended Value="@(EngCompileType.shellcode)" />
+                                    <MudSelectItemExtended Value="@(EngCompileType.dll)" />
+                                    <MudSelectItemExtended Value="@(EngCompileType.powershellcmd)" />
+                                </MudSelectExtended>
                             }
                             @if(formData.complieType == EngCompileType.shellcode)
                             {
