@@ -1,6 +1,7 @@
 ﻿@page "/Managers"
 @using ApiModels.Requests
 @using ApiModels.Responses
+@using ApiModels.Shared;
 @using Models
 @using RestSharp
 @using System.Collections.Generic
@@ -90,13 +91,13 @@
                 <h3>Create New Managers</h3>
                 <br>
 
-                @if(formSubmitManager.Type == Manager.ManagerType.smb)
+                @if(formSubmitManager.Type == ManagerType.smb)
                 {
                     IsSmbSelected = true;
                     IsHttpSelected = false;
                     IsTcpSelected = false;
                 }
-                else if (formSubmitManager.Type == Manager.ManagerType.tcp)
+                else if (formSubmitManager.Type == ManagerType.tcp)
                 {
                     IsSmbSelected = false;
                     IsHttpSelected = false;
@@ -115,11 +116,11 @@
                             <ChildContent>
                                 <MudForm @ref="_form" @bind-IsValid="@success">
                                 <MudTextField @ref="managerNameFormEntry" Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Name" Required="true" @bind-value="formSubmitManager.Name" RequiredError="manager name is required!" />
-                                <MudSelectExtended @ref="managerTypeFormSelect" Class="mb-4" T="Manager.ManagerType" Variant="Variant.Filled" Clearable="true" Label="Manager Type" Required="true" @bind-value="formSubmitManager.Type" RequiredError="Type is required!">
-                                    <MudSelectItemExtended Value="@(Manager.ManagerType.http)" />
-                                    <MudSelectItemExtended Value="@(Manager.ManagerType.https)" />
-                                    <MudSelectItemExtended Value="@(Manager.ManagerType.tcp)" />
-                                    <MudSelectItemExtended Value="@(Manager.ManagerType.smb)" />
+                                <MudSelectExtended @ref="managerTypeFormSelect" Class="mb-4" T="ManagerType" Variant="Variant.Filled" Clearable="true" Label="Manager Type" Required="true" @bind-value="formSubmitManager.Type" RequiredError="Type is required!">
+                                    <MudSelectItemExtended Value="@(ManagerType.http)" />
+                                    <MudSelectItemExtended Value="@(ManagerType.https)" />
+                                    <MudSelectItemExtended Value="@(ManagerType.tcp)" />
+                                    <MudSelectItemExtended Value="@(ManagerType.smb)" />
                                 </MudSelectExtended>
                                 </MudForm>
                             </ChildContent>
@@ -127,15 +128,15 @@
                         <MudStep Icon="@MaterialDesignIcons.Normal.Plus" Title="Advanced Info">
                             <ChildContent>
                                 <MudForm @ref="_form2">
-                            @if (formSubmitManager.Type == Manager.ManagerType.http && !String.IsNullOrEmpty(formSubmitManager.Name) || formSubmitManager.Type == Manager.ManagerType.https && !String.IsNullOrEmpty(formSubmitManager.Name))
+                            @if (formSubmitManager.Type == ManagerType.http && !String.IsNullOrEmpty(formSubmitManager.Name) || formSubmitManager.Type == ManagerType.https && !String.IsNullOrEmpty(formSubmitManager.Name))
                             {
                                 <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Connection Address" Required=@IsHttpSelected @bind-value="formSubmitManager.ConnectionAddress" RequiredError="callback address is required!" />
                                 <MudTextField Class="mb-4 mt-4" T="int?"  Variant="Variant.Filled" Clearable="true" Label="Connection Port" Required=@IsHttpSelected @bind-value="formSubmitManager.ConnectionPort" RequiredError="port is required!" />
-                                        <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Bind Address" Required=@IsHttpSelected @bind-value="formSubmitManager.BindAddress" RequiredError="bind address is required!" />
+                                <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Bind Address" Required=@IsHttpSelected @bind-value="formSubmitManager.BindAddress" RequiredError="bind address is required!" />
                                 <MudTextField Class="mb-4 mt-4" T="int?"  Variant="Variant.Filled" Clearable="true" Label="Bind Port" Required=@IsHttpSelected @bind-value="formSubmitManager.BindPort" RequiredError="bind port is required!" />
                                 <div class="d-flex align-center justify-space-between">
-                                    <MudSelectExtended Class="mb-4" T="ApiModels.Requests.C2Profile" Variant="Variant.Filled" Clearable="true" Label="C2 Profile" Required="true" @bind-value="formSubmitManager.C2profile" RequiredError="C2 Profile required!">
-                                        @foreach(ApiModels.Requests.C2Profile profile in C2profiles)
+                                    <MudSelectExtended Class="mb-4" T="C2Profile" Variant="Variant.Filled" Clearable="true" Label="C2 Profile" Required="true" @bind-value="formSubmitManager.C2profile" RequiredError="C2 Profile required!">
+                                        @foreach(C2Profile profile in C2profiles)
                                         {
                                             <MudSelectItemExtended Value="@(profile)">@profile.Name</MudSelectItemExtended>
                                         }
@@ -144,16 +145,16 @@
                                     <MudIconButton Icon="@Icons.Material.Filled.Add" @onclick="OpenCreateDialog" Variant="Variant.Filled" Color="Color.Primary"></MudIconButton>
                                 </div>
                             }
-                            else if(formSubmitManager.Type == Manager.ManagerType.tcp && !String.IsNullOrEmpty(formSubmitManager.Name))
+                            else if(formSubmitManager.Type == ManagerType.tcp && !String.IsNullOrEmpty(formSubmitManager.Name))
                             {
                                 bool IsBind = false;
                                 bool IsReverse = false;
-                                if (formSubmitManager.connectionMode == Manager.ConnectionMode.bind)
+                                if (formSubmitManager.connectionMode == ConnectionMode.bind)
                                 {
                                     IsBind = true;
                                     IsReverse = false;
                                 }
-                                else if (formSubmitManager.connectionMode == Manager.ConnectionMode.reverse)
+                                else if (formSubmitManager.connectionMode == ConnectionMode.reverse)
                                 {
                                     IsBind = false;
                                     IsReverse = true;
@@ -162,31 +163,31 @@
                                 <MudTextField Class="mb-4 mt-4" T="int" Variant="Variant.Filled" Clearable="true" Label="Connect Port" Required=@IsReverse Disabled=@IsBind @bind-value="formSubmitManager.BindPort" RequiredError="bind port is required!" />
                                 <MudTextField Class="mb-4 mt-4" T="int" Variant="Variant.Filled" Clearable="true" Label="Listen Port" Required=@IsBind Disabled=@IsReverse @bind-value="formSubmitManager.ListenPort" RequiredError="listen port is required!" />
                                 <MudTextField Class="mb-4 mt-4" T="bool" Variant="Variant.Filled" Clearable="true" Label="Listen on Local host only?" Required=@IsBind Disabled=@IsReverse @bind-value="formSubmitManager.IsLocalHost" RequiredError="is localhost only required!" />
-                                <MudSelectExtended Class="mb-4" T="Manager.ConnectionMode" Variant="Variant.Filled" Clearable="true" Label="Connection Direction" Required=@IsTcpSelected @bind-value="formSubmitManager.connectionMode" RequiredError="connection mode is required!">
-                                    <MudSelectItemExtended Value="@(Manager.ConnectionMode.bind)" />
-                                    <MudSelectItemExtended Value="@(Manager.ConnectionMode.reverse)" />
+                                <MudSelectExtended Class="mb-4" T="ConnectionMode" Variant="Variant.Filled" Clearable="true" Label="Connection Direction" Required=@IsTcpSelected @bind-value="formSubmitManager.connectionMode" RequiredError="connection mode is required!">
+                                    <MudSelectItemExtended Value="@(ConnectionMode.bind)" />
+                                    <MudSelectItemExtended Value="@(ConnectionMode.reverse)" />
                                 </MudSelectExtended>
 
                             }
-                            else if(formSubmitManager.Type == Manager.ManagerType.smb)
+                            else if(formSubmitManager.Type == ManagerType.smb)
                             {
                                 bool IsBind = false;
                                 bool IsReverse = false;
-                                if (formSubmitManager.connectionMode == Manager.ConnectionMode.bind)
+                                if (formSubmitManager.connectionMode == ConnectionMode.bind)
                                 {
                                     IsBind = true;
                                     IsReverse = false;
                                 }
-                                else if (formSubmitManager.connectionMode == Manager.ConnectionMode.reverse)
+                                else if (formSubmitManager.connectionMode == ConnectionMode.reverse)
                                 {
                                     IsBind = false;
                                     IsReverse = true;
                                 }
                                 <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Named Pipe" Required=@IsSmbSelected @bind-value="formSubmitManager.NamedPipe" RequiredError="namedpipe is required!" />
                                 <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Connection Address" Required=@IsReverse Disabled=@IsBind @bind-value="formSubmitManager.ConnectionAddress" RequiredError="callback address is required!" />
-                                <MudSelectExtended Class="mb-4" T="Manager.ConnectionMode" Variant="Variant.Filled" Clearable="true" Label="Connection Direction" Required=@IsSmbSelected @bind-value="formSubmitManager.connectionMode" RequiredError="connection mode is required!">
-                                    <MudSelectItemExtended Value="@(Manager.ConnectionMode.bind)" />
-                                    <MudSelectItemExtended Value="@(Manager.ConnectionMode.reverse)" />
+                                <MudSelectExtended Class="mb-4" T="ConnectionMode" Variant="Variant.Filled" Clearable="true" Label="Connection Direction" Required=@IsSmbSelected @bind-value="formSubmitManager.connectionMode" RequiredError="connection mode is required!">
+                                    <MudSelectItemExtended Value="@(ConnectionMode.bind)" />
+                                    <MudSelectItemExtended Value="@(ConnectionMode.reverse)" />
                                 </MudSelectExtended>
                             }
                         </MudForm>
@@ -271,11 +272,11 @@
     private bool IsSmbSelected = false;
     private bool IsTcpSelected = false;
     private static bool firstRender = true;
-    public static List<ApiModels.Requests.C2Profile> C2profiles = new();
+    public static List<C2Profile> C2profiles = new();
     MudStepper _stepper;
     MudForm _form;
     MudTextField<string> managerNameFormEntry;
-    MudSelectExtended<Manager.ManagerType>? managerTypeFormSelect;
+    MudSelectExtended<ManagerType>? managerTypeFormSelect;
     MudForm _form2;
     bool _loading;
     MudMessageBox C2mbox;
@@ -317,20 +318,20 @@
 
     public async Task handleValidSubmit()
     {
-        if (formSubmitManager.Type == Manager.ManagerType.http)
+        if (formSubmitManager.Type == ManagerType.http)
         {
             await CreateHttpManager();
 
         }
-        else if (formSubmitManager.Type == Manager.ManagerType.https)
+        else if (formSubmitManager.Type == ManagerType.https)
         {
             await CreateHttpsManager();
         }
-        else if(formSubmitManager.Type == Manager.ManagerType.smb)
+        else if(formSubmitManager.Type == ManagerType.smb)
         {
             await CreateSMBManager();
         }
-        else if (formSubmitManager.Type == Manager.ManagerType.tcp)
+        else if (formSubmitManager.Type == ManagerType.tcp)
         {
             await CreateTCPManager();
         }
@@ -392,7 +393,7 @@
         }
     }
 
-    private async Task OpenEditDialog(ApiModels.Requests.C2Profile profile)
+    private async Task OpenEditDialog(C2Profile profile)
     {    
         DialogOptions options = new DialogOptions() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
         var parameters = new DialogParameters { ["profile"]=profile };
@@ -423,13 +424,13 @@
             managerObject.ConnectionAddress = managerObject.NamedPipe;
         }
         //if the manager is a tcp manager, update the ConnectionAddress property to be the same value as the BindAddress field
-        else if (managerObject.Type == Manager.ManagerType.tcp)
+        else if (managerObject.Type == ManagerType.tcp)
         {
-            if (managerObject.connectionMode == Manager.ConnectionMode.bind)
+            if (managerObject.connectionMode == ConnectionMode.bind)
             {
                 managerObject.ConnectionPort = managerObject.ListenPort;
             }
-            else if (managerObject.connectionMode == Manager.ConnectionMode.reverse)
+            else if (managerObject.connectionMode == ConnectionMode.reverse)
             {
                 managerObject.ConnectionPort = managerObject.BindPort;
             }
@@ -456,13 +457,13 @@
                     manager.ConnectionAddress = manager.NamedPipe;
                 }
                 //if the manager is a tcp manager, update the ConnectionAddress property to be the same value as the BindAddress field
-                else if (manager.Type == Manager.ManagerType.tcp)
+                else if (manager.Type == ManagerType.tcp)
                 {
-                    if (manager.connectionMode == Manager.ConnectionMode.bind)
+                    if (manager.connectionMode == ConnectionMode.bind)
                     {
                         manager.ConnectionPort = manager.ListenPort;
                     }
-                    else if (manager.connectionMode == Manager.ConnectionMode.reverse)
+                    else if (manager.connectionMode == ConnectionMode.reverse)
                     {
                         manager.ConnectionPort = manager.BindPort;
                     }
@@ -474,7 +475,7 @@
 
     public static string displayConnectionMode(Manager manager)
     {
-        if(manager.Type != Manager.ManagerType.tcp)
+        if(manager.Type != ManagerType.tcp)
         {
             return "";
         }
@@ -523,7 +524,7 @@
             BindAddress = formSubmitManager.BindAddress,
             IsSecure = false,
             C2profile = formSubmitManager.C2profile,
-            managertype = StartHttpmanagerRequest.ManagerType.http
+            managertype = ManagerType.http
         }; 
         formSubmitManager = new Manager();
         var request = new RestRequest(resource,Method.Post);
@@ -599,22 +600,22 @@
         {
             Name = formSubmitManager.Name,
             NamedPipe = formSubmitManager.NamedPipe,
-            managertype = StartSMBmanagerRequest.ManagerType.smb
+            managertype = ManagerType.smb
         }; 
-        if (formSubmitManager.connectionMode == Manager.ConnectionMode.bind)
+        if (formSubmitManager.connectionMode == ConnectionMode.bind)
         {
             createObject.Name = formSubmitManager.Name;
             createObject.NamedPipe = formSubmitManager.NamedPipe;
-            createObject.managertype = StartSMBmanagerRequest.ManagerType.smb;
-            createObject.connectionMode = StartSMBmanagerRequest.ConnectionMode.bind;
+            createObject.managertype = ManagerType.smb;
+            createObject.connectionMode = ConnectionMode.bind;
         }
         else
         {
             createObject.Name = formSubmitManager.Name;
             createObject.NamedPipe = formSubmitManager.NamedPipe;
             createObject.ConnectionAddress = formSubmitManager.ConnectionAddress;
-            createObject.managertype = StartSMBmanagerRequest.ManagerType.smb;
-            createObject.connectionMode = StartSMBmanagerRequest.ConnectionMode.reverse;
+            createObject.managertype = ManagerType.smb;
+            createObject.connectionMode = ConnectionMode.reverse;
         }
         formSubmitManager = new Manager();
         var request = new RestRequest(resource,Method.Post);
@@ -635,19 +636,19 @@
 
         var createObject = new StartTCPManagerRequest();
         createObject.Name = formSubmitManager.Name;
-        if(formSubmitManager.connectionMode == Manager.ConnectionMode.bind)
+        if(formSubmitManager.connectionMode == ConnectionMode.bind)
         {
             createObject.ListenPort = (int)formSubmitManager.ListenPort;
             createObject.IsLocalHost = (bool)formSubmitManager.IsLocalHost;
-            createObject.connectionMode = StartTCPManagerRequest.ConnectionMode.bind;
-            createObject.managertype = StartTCPManagerRequest.ManagerType.tcp;
+            createObject.connectionMode = ConnectionMode.bind;
+            createObject.managertype = ManagerType.tcp;
         }
         else
         {
             createObject.ConnectionAddress = formSubmitManager.ConnectionAddress;
             createObject.BindPort = (int)formSubmitManager.BindPort;
-            createObject.connectionMode = StartTCPManagerRequest.ConnectionMode.reverse;
-            createObject.managertype = StartTCPManagerRequest.ManagerType.tcp;
+            createObject.connectionMode = ConnectionMode.reverse;
+            createObject.managertype = ManagerType.tcp;
         }
         formSubmitManager = new Manager();
         var request = new RestRequest(resource, Method.Post);
@@ -684,10 +685,10 @@
 
     private static void PopulateC2ProfileList()
     {
-        List<ApiModels.Requests.C2Profile> c2list = new()
+        List<C2Profile> c2list = new()
         {
             //new Models.C2Profile {Name= "",Desc="", UserAgent="", Urls= new List<string> { }, Cookies= new List<string> { }, RequestHeaders= new List<string> { }, ResponseHeaders= new List<string> { }  }, empty example to add more.
-            new ApiModels.Requests.C2Profile {Name= "default",Desc="default http profile", UserAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246", Urls="/index.html,/", Cookies= "SESSIONID", RequestHeaders="AcceptVALUEJson/Application", ResponseHeaders="ServerVALUEMicrosoft IIS" },
+            new C2Profile {Name= "default",Desc="default http profile", UserAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246", Urls="/index.html,/", Cookies= "SESSIONID", RequestHeaders="AcceptVALUEJson/Application", ResponseHeaders="ServerVALUEMicrosoft IIS" },
         };
         //compare the name of the Modles.C2Profile objects in the C2profiles list to the ones in c2list if C2Profiles does not have one with that name then update it
         foreach (var c2 in c2list)

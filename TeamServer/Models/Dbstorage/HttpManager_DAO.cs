@@ -1,6 +1,4 @@
-﻿using System.Security.Cryptography.X509Certificates;
-using System.Threading;
-using ApiModels.Requests;
+﻿using ApiModels.Shared;
 using SQLite;
 using TeamServer.Utilities;
 

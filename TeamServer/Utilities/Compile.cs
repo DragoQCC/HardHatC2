@@ -12,7 +12,9 @@ using System.Reflection.PortableExecutable;
 using ApiModels.Requests;
 using Microsoft.CSharp;
 using System.Security.Cryptography.Xml;
+using ApiModels.Shared;
 using Mono.Cecil;
+
 
 namespace TeamServer.Utilities
 {
@@ -21,7 +23,7 @@ namespace TeamServer.Utilities
 
         public bool Confuse { get; set;}
         
-        public static byte[] GenerateEngCode(string source,SpawnEngineerRequest.EngCompileType compileType, SpawnEngineerRequest.SleepTypes sleepType, List<string> nonIncCommandList, List<string> nonIncModuleList)
+        public static byte[] GenerateEngCode(string source, EngCompileType compileType, SleepTypes sleepType, List<string> nonIncCommandList, List<string> nonIncModuleList)
         {
             bool IsEngDynLibCompiled = CompileEngDynamicLibrary();
             if (IsEngDynLibCompiled)
@@ -60,7 +62,7 @@ namespace TeamServer.Utilities
             string[] csFileList = otherCsFileList.Where(x => x != pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Program.cs").ToArray();
             
             //if compileType is not serviceexe then remove the ServiceExeMode.cs file from the list
-            if(compileType != SpawnEngineerRequest.EngCompileType.serviceexe)
+            if(compileType != EngCompileType.serviceexe)
             {
                 csFileList = csFileList.Where(x => x != pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Extra{allPlatformPathSeperator}ServiceExeMode.cs").ToArray();
             }
@@ -90,15 +92,15 @@ namespace TeamServer.Utilities
             }
             
             OutputKind outputKind = OutputKind.ConsoleApplication;
-            if(compileType == SpawnEngineerRequest.EngCompileType.exe)
+            if(compileType == EngCompileType.exe)
             {
                 outputKind = OutputKind.ConsoleApplication;
             }
-            else if(compileType == SpawnEngineerRequest.EngCompileType.dll)
+            else if(compileType == EngCompileType.dll)
             {
                 outputKind = OutputKind.DynamicallyLinkedLibrary;
             }
-            else if(compileType == SpawnEngineerRequest.EngCompileType.serviceexe)
+            else if(compileType == EngCompileType.serviceexe)
             {
                 outputKind = OutputKind.WindowsApplication;
             }

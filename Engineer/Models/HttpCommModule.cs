@@ -70,7 +70,7 @@ namespace Engineer.Models
                     for (int i = 0; i < ConnectionAttempts; i++)
                     {
                         //Console.WriteLine("Attempting to reconnect");
-                        if (Program.Sleeptype == SleepEnum.SleepTypes.Custom_RC4)
+                        if (Program.Sleeptype == SleepTypes.Custom_RC4)
                         {
                             //make sure the SleepEncrypt class is loaded, we can use the custom Module attribute
                             if (Program.typesWithModuleAttribute.Where(attr => attr.Name.Equals("SleepEncrypt", StringComparison.OrdinalIgnoreCase)).Count() > 0)
@@ -90,7 +90,7 @@ namespace Engineer.Models
                                 Thread.Sleep(EngCommBase.Sleep);
                             }
                         }
-                        else if (Program.Sleeptype == SleepEnum.SleepTypes.None)
+                        else if (Program.Sleeptype == SleepTypes.None)
                         {
                             Thread.Sleep(EngCommBase.Sleep);
                         }

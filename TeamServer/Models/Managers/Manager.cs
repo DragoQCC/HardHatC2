@@ -1,4 +1,4 @@
-﻿
+﻿using ApiModels.Shared;
 using System;
 using System.Threading.Tasks;
 using TeamServer.Services;
@@ -23,14 +23,7 @@ namespace TeamServer.Models
             EngineerService = _engineerService;
         }
 
-
         public abstract Task Start();
         public abstract void Stop();
-
-        public enum ManagerType
-        {
-            http, https, tcp, smb
-        }
-
     }
 }

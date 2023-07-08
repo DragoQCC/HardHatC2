@@ -1,5 +1,6 @@
 ﻿@using ApiModels.Requests
 @using HardHatC2Client.Pages
+@using ApiModels.Shared
 
 <MudDialog>
     <DialogContent>
@@ -19,7 +20,7 @@
 
 @code {
 
-    [Parameter] public C2Profile profile { get; set; } = new ApiModels.Requests.C2Profile();
+    [Parameter] public C2Profile profile { get; set; } = new C2Profile();
     [CascadingParameter] MudDialogInstance MudDialog { get; set; }
 
     

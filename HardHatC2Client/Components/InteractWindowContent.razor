@@ -6,7 +6,7 @@
 @using HardHatC2Client.Services;
 @using HardHatC2Client.Utilities
 @using System.Diagnostics;
-@using static HardHatC2Client.Models.EngineerTaskResult;
+@using ApiModels.Shared;
 @using static HardHatC2Client.Pages.Interact;
 @inject IJSRuntime JSRuntime
 
@@ -76,7 +76,7 @@
                     {
                         if (TaskOutputDic[currenttask].ResultObject != null)
                         {
-                            if (TaskOutputDic[currenttask].ResponseType == EngineerTaskResult.TaskResponseType.FileSystemItem)
+                            if (TaskOutputDic[currenttask].ResponseType == TaskResponseType.FileSystemItem)
                             {
                                 TaskInputDic[currenttask].Arguments.TryGetValue("/path", out string pathValue);
                                 List<FileSystemItem> resultItems = (List<FileSystemItem>)TaskOutputDic[currenttask].ResultObject;
@@ -87,19 +87,19 @@
                                     FileBrowser.AddContent(engineer.Hostname, pathValue, resultItems);
                                 }
                             }
-                            else if (TaskOutputDic[currenttask].ResponseType == EngineerTaskResult.TaskResponseType.ProcessItem)
+                            else if (TaskOutputDic[currenttask].ResponseType == TaskResponseType.ProcessItem)
                             {
                                 var result = TaskOutputDic[currenttask].ResultObject as List<ProcessItem>;
                                 <HardHatC2Client.Components.ProcessListingTable Outputs="@result" />
                             }
-                            else if (TaskOutputDic[currenttask].ResponseType == EngineerTaskResult.TaskResponseType.HelpMenuItem)
+                            else if (TaskOutputDic[currenttask].ResponseType == TaskResponseType.HelpMenuItem)
                             {
                                 var resultItem = TaskOutputDic[currenttask].ResultObject as List<Help.HelpMenuItem>;
                                 <HelpTable Outputs="@resultItem"></HelpTable>
                             }
-                            else if (TaskOutputDic[currenttask].ResponseType == EngineerTaskResult.TaskResponseType.TokenStoreItem)
+                            else if (TaskOutputDic[currenttask].ResponseType == TaskResponseType.TokenStoreItem)
                             {
-                                if (TaskOutputDic[currenttask].ResponseType == EngineerTaskResult.TaskResponseType.TokenStoreItem)
+                                if (TaskOutputDic[currenttask].ResponseType == TaskResponseType.TokenStoreItem)
                                 {
                                     var resultItem = TaskOutputDic[currenttask].ResultObject as List<TokenStoreItem>;
                                     <TokenStoreTable currentEngTokens="resultItem"></TokenStoreTable>

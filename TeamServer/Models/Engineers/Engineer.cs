@@ -1,8 +1,8 @@
-﻿using System;
+﻿using ApiModels.Shared;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using TeamServer.Services;
 //using DynamicEngLoading;
 
@@ -88,9 +88,9 @@ namespace TeamServer.Models
 		public void AddTaskResults(IEnumerable<EngineerTaskResult> results)
 		{
 			//if _taskResults contains an item with the same id as the result, then append the result field and update the status 
-			foreach (var result in results)
+			foreach (EngineerTaskResult result in results)
 			{
-                var existing = _taskResults.FirstOrDefault(r => r.Id.Equals(result.Id));
+                EngineerTaskResult existing = _taskResults.FirstOrDefault(r => r.Id.Equals(result.Id));
 				if (existing != null)
 				{
 					existing.Status = result.Status;

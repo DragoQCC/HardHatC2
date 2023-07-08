@@ -3,13 +3,12 @@ using Microsoft.AspNetCore.Mvc;
 using TeamServer.Models;
 using TeamServer.Services;
 using ApiModels.Requests;
-using System.Threading.Tasks;
 using TeamServer.Models.Extras;
 using TeamServer.Models.Managers;
-using System.Data;
 using Microsoft.AspNetCore.Authorization;
 using TeamServer.Models.Dbstorage;
 using System.Collections.Generic;
+using ApiModels.Shared;
 
 /*
  A controller is responsible for controlling the way that a user interacts with an MVC application.
@@ -54,7 +53,7 @@ namespace TeamServer.Controllers
 		[HttpPost(Name ="Startmanager")]
 		public IActionResult Startmanager([FromBody] StartManagerRequest request) //post request to take in Name and Port to set from body lets the controller take out the info sent in the bos of the psot so we get the name and port 
 		{
-			if (request.managertype == StartManagerRequest.ManagerType.http || request.managertype == StartManagerRequest.ManagerType.https)
+			if (request.managertype == ManagerType.http || request.managertype == ManagerType.https)
 			{
                 var manager = new Httpmanager(request.Name, request.ConnectionAddress,request.ConnectionPort,request.BindAddress,request.BindPort, request.IsSecure, request.C2profile);
 
@@ -74,14 +73,14 @@ namespace TeamServer.Controllers
                 LoggingService.EventLogger.Information($"{manager.Type} manager created.{@manager}", manager);
                 return Created(path, manager);
 			}
-			else if(request.managertype == StartManagerRequest.ManagerType.tcp)
+			else if(request.managertype == ManagerType.tcp)
 			{
                 TCPManager manager = null;
-                if (request.connectionMode == StartManagerRequest.ConnectionMode.bind)
+                if (request.connectionMode == ConnectionMode.bind)
 				{
                     manager = new TCPManager(request.Name,request.ListenPort, request.IsLocalHost);
                 }
-                else if(request.connectionMode == StartManagerRequest.ConnectionMode.reverse)
+                else if(request.connectionMode == ConnectionMode.reverse)
 				{
                     manager = new TCPManager(request.Name, request.ConnectionAddress, request.BindPort);
                 }
@@ -104,11 +103,11 @@ namespace TeamServer.Controllers
             else
             {
                 SMBmanager manager = null;
-                if (request.connectionMode == StartManagerRequest.ConnectionMode.bind)
+                if (request.connectionMode == ConnectionMode.bind)
 				{
 					manager = new SMBmanager(request.Name, request.NamedPipe);
 				}
-				else if(request.connectionMode == StartManagerRequest.ConnectionMode.reverse)
+				else if(request.connectionMode == ConnectionMode.reverse)
 				{
                     manager = new SMBmanager(request.Name, request.NamedPipe, request.ConnectionAddress);
                 }
@@ -166,9 +165,5 @@ namespace TeamServer.Controllers
             LoggingService.EventLogger.Warning("Manager {manager.Name} removed", manager.Name);
             return NoContent();
 		}
-
-        
-        
-
     }
 }

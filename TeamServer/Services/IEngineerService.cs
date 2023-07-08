@@ -6,6 +6,9 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
+using ApiModels.Requests;
+using ApiModels.Shared;
 using TeamServer.Models;
 using TeamServer.Models.Extras;
 using TeamServer.Models.Managers;
@@ -64,7 +67,7 @@ namespace TeamServer.Services
                 string managerName = request.managerName;
                 int connectionAttempts = (int)request.ConnectionAttempts;
                 int sleep = (int)request.Sleep;
-                SpawnEngineerRequest.SleepTypes sleepType = (SpawnEngineerRequest.SleepTypes)request.SleepType;
+                SleepTypes sleepType = (SleepTypes)request.SleepType;
                 string managerBindAddress = "";
                 string managerBindPort = "";
                 string managerConnectionAddress = "";
@@ -74,7 +77,7 @@ namespace TeamServer.Services
 
                 foreach (manager m in managerService._managers)
                 {
-                    if (m.Type == manager.ManagerType.http || m.Type == manager.ManagerType.https)
+                    if (m.Type == ManagerType.http || m.Type == ManagerType.https)
                     {
                         Httpmanager manager = (Httpmanager)m;
                         if (manager.Name == managerName)
@@ -84,11 +87,11 @@ namespace TeamServer.Services
                             managerConnectionPort = manager.ConnectionPort.ToString();
                             file = file.Replace("{{REPLACE_MANAGER_NAME}}", managerName);
                             file = file.Replace("{{REPLACE_MANAGER_TYPE}}", managerType);
-                            if (manager.Type == Models.manager.ManagerType.http)
+                            if (manager.Type == ManagerType.http)
                             {
                                 file = file.Replace("{{REPLACE_ISSECURE_STATUS}}", "False");
                             }
-                            else if (manager.Type == Models.manager.ManagerType.https)
+                            else if (manager.Type == ManagerType.https)
                             {
                                 file = file.Replace("{{REPLACE_ISSECURE_STATUS}}", "True");
                             }
@@ -102,7 +105,7 @@ namespace TeamServer.Services
                             file = file.Replace("{{REPLACE_CONNECTION_PORT}}", managerConnectionPort);
                         }
                     }
-                    else if (m.Type == manager.ManagerType.tcp)
+                    else if (m.Type == ManagerType.tcp)
                     {
                         if (m.Name == managerName)
                         {
@@ -116,18 +119,18 @@ namespace TeamServer.Services
                             //update file with ConnectionIP and ConnectionPort from request
                             file = file.Replace("{{REPLACE_CONNECTION_IP}}", managerBindAddress);
                             file = file.Replace("{{REPLACE_CONNECTION_PORT}}", managerBindPort);
-                            if (manager.connectionMode == TCPManager.ConnectionMode.bind)
+                            if (manager.connectionMode == ConnectionMode.bind)
                             {
                                 file = file.Replace("{{REPLACE_CHILD_IS_SERVER}}", "true");
                             }
-                            else if (manager.connectionMode == TCPManager.ConnectionMode.reverse)
+                            else if (manager.connectionMode == ConnectionMode.reverse)
                             {
                                 file = file.Replace("{{REPLACE_CHILD_IS_SERVER}}", "false");
                                 managerBindAddress = manager.ConnectionAddress;
                             }
                         }
                     }
-                    else if (m.Type == manager.ManagerType.smb)
+                    else if (m.Type == ManagerType.smb)
                     {
 
 
@@ -140,11 +143,11 @@ namespace TeamServer.Services
                             file = file.Replace("{{REPLACE_NAMED_PIPE}}", manager.NamedPipe);
                             file = file.Replace("{{REPLACE_CONNECTION_IP}}", managerBindAddress);
                             file = file.Replace("{{REPLACE_CONNECTION_PORT}}", managerBindAddress);
-                            if (manager.connectionMode == SMBmanager.ConnectionMode.bind)
+                            if (manager.connectionMode == ConnectionMode.bind)
                             {
                                 file = file.Replace("{{REPLACE_CHILD_IS_SERVER}}", "true");
                             }
-                            else if (manager.connectionMode == SMBmanager.ConnectionMode.reverse)
+                            else if (manager.connectionMode == ConnectionMode.reverse)
                             {
                                 file = file.Replace("{{REPLACE_CHILD_IS_SERVER}}", "false");
                                 managerBindAddress = manager.ConnectionAddress;
@@ -176,12 +179,12 @@ namespace TeamServer.Services
 
                 file = file.Replace("{{REPLACE_KILL_DATE}}", request.KillDateTime.ToString());
 
-                if (request.implantType == SpawnEngineerRequest.ImplantType.Engineer)
+                if (request.implantType == ImplantType.Engineer)
                 {
                     Console.WriteLine("Implant is an engineer");
                     file = file.Replace("{{REPLACE_IMPLANT_TYPE}}", Encryption.EncryptImplantName("Engineer"));
                 }
-                else if (request.implantType == SpawnEngineerRequest.ImplantType.Constructor)
+                else if (request.implantType == ImplantType.Constructor)
                 {
                     Console.WriteLine("Implant is a constructor");
                     file = file.Replace("{{REPLACE_IMPLANT_TYPE}}", Encryption.EncryptImplantName("Constructor"));
@@ -195,7 +198,7 @@ namespace TeamServer.Services
                 //generate code for the implant
                 List<string> nonIncCommands = Directory.GetFiles(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Commands{allPlatformPathSeperator}", "*.cs").ToList().Where(x => !request.IncludedCommands.Contains(Path.GetFileNameWithoutExtension(x), StringComparer.CurrentCultureIgnoreCase)).ToList();
                 List<string> nonIncModules = Directory.GetFiles(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Modules{allPlatformPathSeperator}", "*.cs").ToList().Where(x => !request.IncludedModules.Contains(Path.GetFileNameWithoutExtension(x), StringComparer.CurrentCultureIgnoreCase)).ToList();
-                byte[] assemblyBytes = Utilities.Compile.GenerateEngCode(file, (SpawnEngineerRequest.EngCompileType)request.complieType, (SpawnEngineerRequest.SleepTypes)request.SleepType, nonIncCommands,nonIncModules);
+                byte[] assemblyBytes = Utilities.Compile.GenerateEngCode(file, (EngCompileType)request.complieType, (SleepTypes)request.SleepType, nonIncCommands,nonIncModules);
                 if (assemblyBytes is null)
                 {
                     result_message = "Failed to compile Engineer, check teamServer Console for errors.";
@@ -218,19 +221,19 @@ namespace TeamServer.Services
 
                     string outputLocation = "";
                     string sourceAssemblyLocation = "";
-                    if (request.complieType == SpawnEngineerRequest.EngCompileType.exe)
+                    if (request.complieType == EngCompileType.exe)
                     {
                         outputLocation = pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
                         sourceAssemblyLocation = pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
                         System.IO.File.WriteAllBytes(sourceAssemblyLocation, assemblyBytes);
                     }
-                    else if (request.complieType == SpawnEngineerRequest.EngCompileType.dll)
+                    else if (request.complieType == EngCompileType.dll)
                     {
                         outputLocation = pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.dll";
                         sourceAssemblyLocation = pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.dll";
                         System.IO.File.WriteAllBytes(sourceAssemblyLocation, assemblyBytes);
                     }
-                    else if (request.complieType == SpawnEngineerRequest.EngCompileType.serviceexe)
+                    else if (request.complieType == EngCompileType.serviceexe)
                     {
                         outputLocation = pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_service.exe";
                         sourceAssemblyLocation = pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}_service.exe";
@@ -306,7 +309,7 @@ namespace TeamServer.Services
 
                 HardHatHub.AddCompiledImplant(_compImp);
 
-                if (request.complieType == SpawnEngineerRequest.EngCompileType.exe)
+                if (request.complieType == EngCompileType.exe)
                 {
                     try
                     {
@@ -330,7 +333,7 @@ namespace TeamServer.Services
                         return false;
                     }
                 }
-                else if (request.complieType == SpawnEngineerRequest.EngCompileType.serviceexe)
+                else if (request.complieType == EngCompileType.serviceexe)
                 {
                     try
                     {
@@ -354,7 +357,7 @@ namespace TeamServer.Services
                         return false;
                     }
                 }
-                else if (request.complieType == SpawnEngineerRequest.EngCompileType.dll)
+                else if (request.complieType == EngCompileType.dll)
                 {
                     try
                     {
@@ -378,7 +381,7 @@ namespace TeamServer.Services
                         return false;
                     }
                 }
-                else if (request.complieType == SpawnEngineerRequest.EngCompileType.shellcode)
+                else if (request.complieType == EngCompileType.shellcode)
                 {
                     try
                     {
@@ -416,7 +419,7 @@ namespace TeamServer.Services
                     }
                 }
                 //if request.compileType is powershellcmd then convert the assemnbly bytes to a base64 string 
-                else if (request.complieType == SpawnEngineerRequest.EngCompileType.powershellcmd)
+                else if (request.complieType == EngCompileType.powershellcmd)
                 {
                     try
                     {

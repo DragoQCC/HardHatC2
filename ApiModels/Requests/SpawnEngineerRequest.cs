@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using ApiModels.Shared;
 
 namespace ApiModels.Requests
 {
@@ -31,29 +29,5 @@ namespace ApiModels.Requests
         public List<string> IncludedModules { get; set; } = new List<string>();
 
         public bool IsPostEx { get; set; } = false;
-
-        public enum EngCompileType
-        {
-            exe, 
-            shellcode, 
-            powershellcmd, 
-            dll, 
-            serviceexe
-        }
-
-        public enum SleepTypes
-        {
-            None,
-            Custom_RC4,
-            //Ekko,
-            //Foliage,
-        }
-        
-        public enum ImplantType
-        {
-            Engineer,
-            Constructor,
-            Rustineer,
-        }
     }
 }

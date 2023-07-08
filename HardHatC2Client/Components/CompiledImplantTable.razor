@@ -113,21 +113,21 @@
         try
         {
            
-                //cause a file browser popup to save the file
-                var fileContentString = await HardHatHubClient._hub.TriggerDownload(path);
-                var fileContent = Convert.FromBase64String(fileContentString);
+            //cause a file browser popup to save the file
+            var fileContentString = await HardHatHubClient._hub.TriggerDownload(path);
+            var fileContent = Convert.FromBase64String(fileContentString);
 
-                char allPlatformPathSeperator = Path.DirectorySeparatorChar;
-                // find the Engineer cs file and load it to a string so we can update it and then run the compiler function on it
-                string dirpath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                //split path at bin keyword
-                string[] pathSplit = dirpath.Split("bin"); //[0] is the parent folder [1] is the bin folder
-                                                           //update each string in the array to replace \\ with the correct path seperator
-                pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
-                string filename = Path.GetFileName(path);
+            char allPlatformPathSeperator = Path.DirectorySeparatorChar;
+            // find the Engineer cs file and load it to a string so we can update it and then run the compiler function on it
+            string dirpath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            //split path at bin keyword
+            string[] pathSplit = dirpath.Split("bin"); //[0] is the parent folder [1] is the bin folder
+                                                        //update each string in the array to replace \\ with the correct path seperator
+            pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
+            string filename = Path.GetFileName(path);
 
-                System.IO.File.WriteAllBytes(pathSplit[0] + "Downloads" + $"{allPlatformPathSeperator}{filename}", fileContent);
-                showSuccessCallAlert = true;
+            System.IO.File.WriteAllBytes(pathSplit[0] + "Downloads" + $"{allPlatformPathSeperator}{filename}", fileContent);
+            showSuccessCallAlert = true;
         }
         catch (Exception ex)
         {

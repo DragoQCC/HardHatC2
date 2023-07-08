@@ -1,28 +1,11 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
 using System.Linq;
 using System.Threading.Tasks;
-using TeamServer.Services;
 using TeamServer.Utilities;
-using System.Reflection;
-using System.Net;
-using System.Net.Http;
-using System.Threading;
-using System.Net.Sockets;
-using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.SignalR;
-using TeamServer.Models.Extras;
-using TeamServer.Controllers;
-using Microsoft.AspNetCore.Http.Headers;
-using System.IO.Compression;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using TeamServer.Models.Dbstorage;
-using Serilog;
 using TeamServer.Models;
 
 

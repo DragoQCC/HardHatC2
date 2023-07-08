@@ -1,4 +1,5 @@
 ﻿using SQLite;
+
 namespace TeamServer.Models.Database
 {
     [Table("UsersSalt")]
