@@ -174,11 +174,7 @@
     <Compile Include="Commands\UpdateTaskKey.cs" />
     <Compile Include="Commands\Upload.cs" />
     <Compile Include="Commands\WhoAmI.cs" />
-    <Compile Include="Extra\DynInv_Methods.cs" />
     <Compile Include="Extra\Extensions.cs" />
-    <Compile Include="Extra\EngineerCommandTemplate.cs" />
-    <Compile Include="Extra\DynInv.cs" />
-    <Compile Include="Extra\Inj_techs.cs" />
     <Compile Include="Functions\DownloadTracker.cs" />
     <Compile Include="Functions\Encryption.cs" />
     <Compile Include="Functions\ForwardedFunctionWrappers.cs" />

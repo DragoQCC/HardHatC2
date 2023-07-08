@@ -51,6 +51,7 @@
     <Compile Include="DynInv.cs" />
     <Compile Include="DynInv_Methods.cs" />
     <Compile Include="h_coff.cs" />
+    <Compile Include="Inj_techs.cs" />
     <Compile Include="ModuleAttribute.cs" />
     <Compile Include="OutputRedirection.cs" />
     <Compile Include="SharedClasses.cs" />

