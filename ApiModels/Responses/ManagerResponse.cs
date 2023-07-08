@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using ApiModels.Shared;
+using System;
 
 namespace ApiModels.Responses
 {
@@ -14,10 +11,5 @@ namespace ApiModels.Responses
 		public bool Active { get; set; }
 		public ManagerType Type { get; set; } // enum of values http,https,tcp,smb
         public DateTime CreationTime { get; set; }
-
-        public enum ManagerType
-		{
-			http, https, tcp, smb
-		}
 	}
 }

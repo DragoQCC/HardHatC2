@@ -1,4 +1,5 @@
 ﻿@using ApiModels.Requests;
+@using ApiModels.Shared;
 @using HardHatC2Client.Models;
 @using HardHatC2Client.Pages;
 @using HardHatC2Client.Utilities;
@@ -14,8 +15,8 @@
                         <MudStep Icon="@MaterialDesignIcons.Normal.Wrench" Title="Implant Type">
                             <ChildContent>
                                 <MudForm @ref="_form" @bind-IsValid="@success">
-                                    <MudSelect Clearable="true" Class="mb-4 mt-4" T="SpawnEngineerRequest.ImplantType" Label="Implant Type" Variant="Variant.Filled" Required="true" @bind-value="formData.implantType" RequiredError="Type is required!">
-                                            <MudSelectItem Value="@SpawnEngineerRequest.ImplantType.Engineer"/>
+                                    <MudSelect Clearable="true" Class="mb-4 mt-4" T="ImplantType" Label="Implant Type" Variant="Variant.Filled" Required="true" @bind-value="formData.implantType" RequiredError="Type is required!">
+                                            <MudSelectItem Value="@ImplantType.Engineer"/>
                                     </MudSelect>
                                 </MudForm>
                             </ChildContent>
@@ -39,9 +40,9 @@
                                                              AllowDoubleClick="false" />
                                             @if (selectedEngModuleList.Contains("SleepEncrypt"))
                                             {
-                                                <MudSelect Clearable="true" Class="mb-4 mt-4" T="SpawnEngineerRequest.SleepTypes" Label="Sleep Encryption Type" Variant="Variant.Filled" Required="true" @bind-value="formData.SleepType" RequiredError="Type is required!">
-                                                    <MudSelectItem Value="@(SpawnEngineerRequest.SleepTypes.None)" />
-                                                    <MudSelectItem Value="@(SpawnEngineerRequest.SleepTypes.Custom_RC4)" />
+                                                <MudSelect Clearable="true" Class="mb-4 mt-4" T="SleepTypes" Label="Sleep Encryption Type" Variant="Variant.Filled" Required="true" @bind-value="formData.SleepType" RequiredError="Type is required!">
+                                                    <MudSelectItem Value="@(SleepTypes.None)" />
+                                                    <MudSelectItem Value="@(SleepTypes.Custom_RC4)" />
                                                 </MudSelect>
                                             }
                                         </MudForm>
@@ -52,7 +53,7 @@
                         <MudForm @ref="_form4" @bind-IsValid="@success">
                             <MudSelectExtended ValuePresenter="ValuePresenter.Text"  T="string" Clearable="true" Label="Manager" AnchorOrigin="Origin.BottomCenter" Variant="Variant.Filled" Required="true" @bind-value="formData.managerName" RequiredError="Type is required!">
                                 <MudSelectItemGroupExtended  T="string" Text="HTTP" Sticky="true" Nested="true">
-                                    @foreach (Manager manager in @Managers.managersList.Where(x => x.Type == Manager.ManagerType.http))
+                                    @foreach (Manager manager in @Managers.managersList.Where(x => x.Type == ManagerType.http))
                                     {
                                         <ItemTemplate>
                                             <MudStack Row="true" Justify="Justify.SpaceEvenly" AlignItems="AlignItems.Center">
@@ -64,7 +65,7 @@
                                     }
                                 </MudSelectItemGroupExtended>
                                 <MudSelectItemGroupExtended T="string" Text="HTTPS" Sticky="true" Nested="true">
-                                    @foreach (Manager manager in @Managers.managersList.Where(x => x.Type == Manager.ManagerType.https))
+                                    @foreach (Manager manager in @Managers.managersList.Where(x => x.Type == ManagerType.https))
                                     {
                                         <ItemTemplate>
                                             <MudStack Row="true" Justify="Justify.SpaceEvenly" AlignItems="AlignItems.Center">
@@ -76,9 +77,9 @@
                                     }
                                 </MudSelectItemGroupExtended>
                                 <MudSelectItemGroupExtended T="string" Text="TCP" Sticky="true" Nested="true">
-                                    @foreach (Manager manager in @Managers.managersList.Where(x => x.Type == Manager.ManagerType.tcp))
+                                    @foreach (Manager manager in @Managers.managersList.Where(x => x.Type == ManagerType.tcp))
                                     {
-                                        if (manager.connectionMode == Manager.ConnectionMode.reverse)
+                                        if (manager.connectionMode == ConnectionMode.reverse)
                                         {
                                             <ItemTemplate>
                                                 <MudStack Row="true" Justify="Justify.SpaceEvenly" AlignItems="AlignItems.Center">
@@ -89,7 +90,7 @@
                                                 </MudStack>
                                             </ItemTemplate>
                                         }
-                                        else if (manager.connectionMode == Manager.ConnectionMode.bind)
+                                        else if (manager.connectionMode == ConnectionMode.bind)
                                         {
                                             <ItemTemplate>
                                                 <MudStack Row="true" Justify="Justify.SpaceEvenly" AlignItems="AlignItems.Center">
@@ -103,7 +104,7 @@
                                     }
                                 </MudSelectItemGroupExtended>
                                 <MudSelectItemGroupExtended T="string" Text="SMB" Sticky="true" Nested="true">
-                                    @foreach (Manager manager in @Managers.managersList.Where(x => x.Type == Manager.ManagerType.smb))
+                                    @foreach (Manager manager in @Managers.managersList.Where(x => x.Type == ManagerType.smb))
                                     {
                                        
                                             <ItemTemplate>
@@ -111,7 +112,7 @@
                                                     <MudSelectItemExtended Value="@manager.Name"/>
                                                     <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Direction: @manager.connectionMode</MudChip>
                                                     <MudChip Color="Color.Info" Variant="Variant.Outlined">Named Pipe: @manager.NamedPipe</MudChip>
-                                                    @if (manager.connectionMode == Manager.ConnectionMode.reverse)
+                                                    @if (manager.connectionMode == ConnectionMode.reverse)
                                                     {
                                                         <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Address: @manager.ConnectionAddress</MudChip>
                                                     }
@@ -128,25 +129,25 @@
                             </div>
                             @if (IsPostEx)
                         {
-                            <MudSelect Clearable="true" Class="mb-4 mt-4" T="SpawnEngineerRequest.EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
-                                <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.exe)" />
-                                <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.serviceexe)" />
-                                <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.shellcode)" />
-                                <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.dll)" />
-                                <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.powershellcmd)" />
+                            <MudSelect Clearable="true" Class="mb-4 mt-4" T="EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
+                                <MudSelectItem Value="@(EngCompileType.exe)" />
+                                <MudSelectItem Value="@(EngCompileType.serviceexe)" />
+                                <MudSelectItem Value="@(EngCompileType.shellcode)" />
+                                <MudSelectItem Value="@(EngCompileType.dll)" />
+                                <MudSelectItem Value="@(EngCompileType.powershellcmd)" />
                             </MudSelect>
                         }
                         else
                         {
-                                <MudSelect Clearable="true" Class="mb-4 mt-4" T="SpawnEngineerRequest.EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
-                                    <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.exe)" />
-                                    <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.serviceexe)" />
-                                    <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.shellcode)" />
-                                    <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.dll)" />
-                                    <MudSelectItem Value="@(SpawnEngineerRequest.EngCompileType.powershellcmd)" />
+                                <MudSelect Clearable="true" Class="mb-4 mt-4" T="EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
+                                    <MudSelectItem Value="@(EngCompileType.exe)" />
+                                    <MudSelectItem Value="@(EngCompileType.serviceexe)" />
+                                    <MudSelectItem Value="@(EngCompileType.shellcode)" />
+                                    <MudSelectItem Value="@(EngCompileType.dll)" />
+                                    <MudSelectItem Value="@(EngCompileType.powershellcmd)" />
                                 </MudSelect>
                             }
-                            @if(formData.complieType == SpawnEngineerRequest.EngCompileType.shellcode)
+                            @if(formData.complieType == EngCompileType.shellcode)
                             {
                                 <MudCheckBox @bind-Checked="@formData.EncodeShellcode" Label="Encode Shellcode with SGN ?" Color="Color.Primary"></MudCheckBox>        
                             }
@@ -217,7 +218,7 @@
             <br>
             <hr>
                 <div>
-                    @if (formData.complieType == SpawnEngineerRequest.EngCompileType.powershellcmd)
+                    @if (formData.complieType == EngCompileType.powershellcmd)
                     {
                         <MudTextField @bind-Value="PsCmd" Label="Powershell Commmand" ReadOnly="true" Variant="Variant.Outlined"/>
                     }

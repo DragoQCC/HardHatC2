@@ -1,4 +1,6 @@
-﻿<MudDialog>
+﻿@using ApiModels.Shared;
+
+<MudDialog>
     <DialogContent>
         <MudTextField T="string" Value="@profile.Name" Label=Name></MudTextField>
         <MudTextField T="string" Value="@profile.Desc" Label=Desc></MudTextField>
@@ -16,7 +18,7 @@
 
 @code {
 
-[Parameter] public ApiModels.Requests.C2Profile profile { get; set; } = new ApiModels.Requests.C2Profile();
+[Parameter] public C2Profile profile { get; set; } = new C2Profile();
 [CascadingParameter] MudDialogInstance MudDialog { get; set; }
 
     void Submit() => MudDialog.Close(DialogResult.Ok(true));

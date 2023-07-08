@@ -24,8 +24,8 @@
 
 @code {
 
-        [Parameter]
-        public List<string> Outputs { get; set; }
+    [Parameter]
+    public List<string> Outputs { get; set; }
     public Dictionary<string, string[]> BodyContent = new Dictionary<string, string[]>();
     private MudTable<string[]> _table;
     private string searchString1 = "";
@@ -91,10 +91,8 @@
         _table.NavigateTo(i - 1);
     }
 
-
     protected override void OnParametersSet()
     {
         FillContents();
     }
-
 }

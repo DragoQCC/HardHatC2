@@ -1,4 +1,5 @@
-﻿using SQLite;
+﻿using ApiModels.Shared;
+using SQLite;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using TeamServer.Models;
@@ -68,23 +69,5 @@ namespace TeamServer.Models.Dbstorage
                 UsersThatHaveReadResult = dao.UsersThatHaveReadResult.Deserialize<List<string>>()
             };
         }
-
     }
-    //public enum EngTaskStatus
-    //{
-    //    Running = 2,
-    //    Complete = 3,
-    //    FailedWithWarnings = 4,
-    //    CompleteWithErrors = 5,
-    //    Failed = 6,
-    //    Cancelled = 7
-    //}
-
-    //public enum TaskResponseType
-    //{
-    //    None,
-    //    String,
-    //    FileSystemItem,
-    //    ProcessItem,
-    //}
 }

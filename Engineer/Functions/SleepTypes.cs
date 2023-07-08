@@ -4,7 +4,6 @@
     {
         None,
         Custom_RC4,
-        //Ekko,
-        //Foliage
+        // Ekko,
     }
 }

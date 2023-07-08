@@ -1,5 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using ApiModels.Shared;
 
 namespace TeamServer.Models
 {
@@ -14,11 +15,6 @@ namespace TeamServer.Models
 
         public ConnectionMode connectionMode { get; set; } // always means direction of parent -> child
 
-        public enum ConnectionMode
-        {
-            bind,
-            reverse
-        }
         public SMBmanager(string name, string namedPipe)
         {
             Name = name;

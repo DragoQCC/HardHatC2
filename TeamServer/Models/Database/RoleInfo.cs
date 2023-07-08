@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-using SQLite;
+﻿using SQLite;
 
 namespace TeamServer.Models.Database
 {

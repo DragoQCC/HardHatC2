@@ -1,16 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Text.Json;
 
 namespace TeamServer.Models
 {
     [Serializable]
     public class EngineerTask
     {
-
-
         public string Id { get; set; }
 
         public string Command { get; set; }
@@ -31,7 +26,5 @@ namespace TeamServer.Models
             this.File = File;
             this.IsBlocking = IsBlocking;
         }
-
-
     }
 }

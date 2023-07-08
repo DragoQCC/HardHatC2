@@ -1,5 +1,4 @@
-﻿
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace TeamServer.Models.Extras
 {
@@ -9,6 +8,5 @@ namespace TeamServer.Models.Extras
         public string Name { get; set; }
         public string SavedPath { get; set; }  
         public byte[] FileContent { get; set;}
-
     }
 }

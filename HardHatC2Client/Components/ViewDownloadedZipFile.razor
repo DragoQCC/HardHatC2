@@ -58,38 +58,36 @@
         string fileExtension = fileName.Split('.').Last();
         //based on the file extension return the correct content type
         switch (fileExtension)
-                {
-                    case "txt":
-                        return "text/plain";
-                    case "pdf":
-                        return "application/pdf";
-                    case "doc":
-                        return "application/vnd.ms-word";
-                    case "docx":
-                        return "application/vnd.ms-word";
-                    case "xls":
-                        return "application/vnd.ms-excel";
-                    case "xlsx":
-                        return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                    case "png":
-                        return "image/png";
-                    case "jpg":
-                        return "image/jpeg";
-                    case "jpeg":
-                        return "image/jpeg";
-                    case "gif":
-                        return "image/gif";
-                    case "csv":
-                        return "text/csv";
-                    case "zip":
-                        return "application/zip";
-                    default:
-                        break;
-                }
+        {
+            case "txt":
+                return "text/plain";
+            case "pdf":
+                return "application/pdf";
+            case "doc":
+                return "application/vnd.ms-word";
+            case "docx":
+                return "application/vnd.ms-word";
+            case "xls":
+                return "application/vnd.ms-excel";
+            case "xlsx":
+                return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            case "png":
+                return "image/png";
+            case "jpg":
+                return "image/jpeg";
+            case "jpeg":
+                return "image/jpeg";
+            case "gif":
+                return "image/gif";
+            case "csv":
+                return "text/csv";
+            case "zip":
+                return "application/zip";
+            default:
+                break;
+        }
         return "";
     }
-
-
 
     void Submit() => MudDialog.Close(DialogResult.Ok(true));
     void Cancel() => MudDialog.Cancel();

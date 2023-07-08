@@ -16,6 +16,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Security.Authentication;
 using Microsoft.Extensions.Options;
+using ApiModels.Shared;
 
 namespace TeamServer.Models
 {
@@ -32,7 +33,7 @@ namespace TeamServer.Models
         public string CertificatePassword { get; set; } = "p@ssw0rd";
         private X509Certificate2 cert { get; set; }
 
-        public ApiModels.Requests.C2Profile c2Profile { get; set;}
+        public C2Profile c2Profile { get; set;}
         
         public override ManagerType Type { get; set; } = ManagerType.http;
 
@@ -41,7 +42,7 @@ namespace TeamServer.Models
         
 
 
-        public Httpmanager(string name, string connectionAddress,int connectionPort ,string bindAddress,int bindPort, bool isSecure, ApiModels.Requests.C2Profile profile)    //Constructor for Httpmanager
+        public Httpmanager(string name, string connectionAddress,int connectionPort ,string bindAddress,int bindPort, bool isSecure, C2Profile profile)    //Constructor for Httpmanager
         {
             Name = name;
             ConnectionPort = connectionPort;
