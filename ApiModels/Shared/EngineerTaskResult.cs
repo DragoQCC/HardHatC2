@@ -4,7 +4,7 @@ namespace ApiModels.Shared
 {
     public class EngineerTaskResult
     {
-        public List<string> UsersThatHaveReadResult { get; set; } //key is username, value is a list of ids of tasks that have been seen
+        public List<string> UsersThatHaveReadResult { get; set; } = new(); //key is username, value is a list of ids of tasks that have been seen
 
         public string Id { get; set; }
 
