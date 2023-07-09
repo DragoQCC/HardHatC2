@@ -247,8 +247,8 @@
     private string[] errors = { };
     public static string PsCmd { get; set; }
     MudTransferList<string> _transferList;
-    public static ICollection<string> RequiredEngCommandList = new List<string>() { "Addcommand", "AddModule", "connect", "link", "FirstCheckIn", "exit", "socks", "rportforward", "canceltask", "GetCommands", "UpdateTaskKey" };
-    public  ICollection<string> selectedEngCommandList = new List<string>() { "Addcommand", "AddModule", "connect", "link", "FirstCheckIn", "exit", "socks", "rportforward", "canceltask", "GetCommands", "UpdateTaskKey" };
+    public static ICollection<string> RequiredEngCommandList = new List<string>() { "Addcommand", "AddModule", "connect","CheckIn", "link", "FirstCheckIn", "exit", "socks", "rportforward", "canceltask", "GetCommands", "UpdateTaskKey" };
+    public ICollection<string> selectedEngCommandList = new List<string>() { "Addcommand", "AddModule", "connect", "CheckIn", "link", "FirstCheckIn", "exit", "socks", "rportforward", "canceltask", "GetCommands", "UpdateTaskKey" };
     public ICollection<string> EngCommandList = CommandValidation.CommandList.Select(x => x.Name).ToList().Except(RequiredEngCommandList, StringComparer.OrdinalIgnoreCase).ToList();
 
     MudTransferList<string> _moduletransferList;

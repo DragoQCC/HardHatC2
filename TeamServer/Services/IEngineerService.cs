@@ -191,8 +191,8 @@ namespace TeamServer.Services
                 }
 
                 //TESTING OF DATACHUNKING 
-                file = file.Replace("{{REPLACE_CHUNK_SIZE}}", "50");
-                file = file.Replace("{{REPLACE_CHUNK_DATA}}", "true");
+                //file = file.Replace("{{REPLACE_CHUNK_SIZE}}", "50");
+                //file = file.Replace("{{REPLACE_CHUNK_DATA}}", "true");
                 //END OF TESING CODE
 
                 //generate code for the implant

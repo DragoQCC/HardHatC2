@@ -215,7 +215,22 @@ namespace Engineer
                             IsEncrypted = true;
                             if (Sleeptype == SleepTypes.Custom_RC4)
                             {
-                                Functions.SleepEncrypt.ExecuteSleep(EngCommBase.Sleep); //if we did not recvData and we have no data to send sleep for a bit
+                                if (typesWithModuleAttribute.Where(attr => attr.Name.Equals("SleepEncrypt", StringComparison.OrdinalIgnoreCase)).Count() > 0)
+                                {
+                                    //Functions.SleepEncrypt.ExecuteSleep(EngCommBase.Sleep); //if we did not recvData and we have no data to send sleep for a bit
+                                    var sleepEncryptModule = typesWithModuleAttribute.ToList().Find(x => x.Name.Equals("SleepEncrypt", StringComparison.OrdinalIgnoreCase));
+                                    // Get the method
+                                    var method = sleepEncryptModule.GetMethod("ExecuteSleep", BindingFlags.Public | BindingFlags.Static);
+                                    if (method != null)
+                                    {
+                                        // Call the method , first argument is null because it's a static method
+                                        method.Invoke(null, new object[] { EngCommBase.Sleep });
+                                    }
+                                }
+                                else
+                                {
+                                    Thread.Sleep(EngCommBase.Sleep);
+                                }
                             }
                             else if(Sleeptype == SleepTypes.None)
                             {

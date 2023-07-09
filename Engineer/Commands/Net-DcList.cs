@@ -10,7 +10,7 @@ namespace Engineer.Commands
 {
     internal class NetDcList : EngineerCommand
     {
-        public override string Name => "netdclist";
+        public override string Name => "net-dclist";
 
         public override async Task Execute(EngineerTask task)
         {

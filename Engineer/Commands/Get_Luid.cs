@@ -8,7 +8,7 @@ using static DynamicEngLoading.h_DynInv.Win32;
 
 namespace Engineer.Commands
 {
-    internal class GetLuid : EngineerCommand
+    internal class Get_Luid : EngineerCommand
     {
         public override string Name => "Get_luid";
 

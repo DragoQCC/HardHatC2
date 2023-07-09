@@ -312,6 +312,9 @@ namespace TeamServer.Utilities
                 {
                     ms.Seek(0, SeekOrigin.Begin);
                     byte[] assemblyBytes = ms.ToArray();
+                    //should help to remove file handles on the dll
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
                     File.WriteAllBytes(pathSplit[0] + allPlatformPathSeperator + "Data" + allPlatformPathSeperator+"loading.dll", assemblyBytes);
                     return true;
                 }
