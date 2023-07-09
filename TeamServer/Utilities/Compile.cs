@@ -50,11 +50,6 @@ namespace TeamServer.Utilities
 
             //get the shared library location 
             string TopLevelFolder = pathSplit[0] + $"..{allPlatformPathSeperator}";
-           // string DynamicLoadingDllPath = TopLevelFolder + "DynamicEngLoading" + allPlatformPathSeperator + "bin" + allPlatformPathSeperator + "Debug";
-            //in the TopLeelFolder should be files in the format Engineer_randomStrings.exe, we need one of those file paths 
-           // string[] DynamicLoadingLibrary = Directory.GetFiles(DynamicLoadingDllPath, "DynamicEngLoading.dll");
-            
-
 
             EnumerationOptions enumOptions = new EnumerationOptions() { RecurseSubdirectories = true  }; // enables searching sub dirs to get all the cs files.
             string[] otherCsFileList = Directory.GetFiles(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}", "*.cs",enumOptions);

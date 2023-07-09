@@ -132,9 +132,6 @@
                             <MudSelectExtended Clearable="true" Class="mb-4 mt-4" T="EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
                                 <MudSelectItem Value="@(EngCompileType.exe)" />
                                 <MudSelectItem Value="@(EngCompileType.serviceexe)" />
-                                <MudSelectItem Value="@(EngCompileType.shellcode)" />
-                                <MudSelectItem Value="@(EngCompileType.dll)" />
-                                <MudSelectItem Value="@(EngCompileType.powershellcmd)" />
                             </MudSelectExtended>
                         }
                         else

@@ -65,9 +65,9 @@ namespace TeamServer.Services
                 //usinf request.managerName to find the correct manager object and then get its BindAddress and BindPort from the manager object
                 //then using the BindAddress and BindPort to update the file
                 string managerName = request.managerName;
-                int connectionAttempts = (int)request.ConnectionAttempts;
-                int sleep = (int)request.Sleep;
-                SleepTypes sleepType = (SleepTypes)request.SleepType;
+                int connectionAttempts = request.ConnectionAttempts;
+                int sleep = request.Sleep;
+                SleepTypes sleepType = request.SleepType;
                 string managerBindAddress = "";
                 string managerBindPort = "";
                 string managerConnectionAddress = "";
@@ -198,7 +198,7 @@ namespace TeamServer.Services
                 //generate code for the implant
                 List<string> nonIncCommands = Directory.GetFiles(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Commands{allPlatformPathSeperator}", "*.cs").ToList().Where(x => !request.IncludedCommands.Contains(Path.GetFileNameWithoutExtension(x), StringComparer.CurrentCultureIgnoreCase)).ToList();
                 List<string> nonIncModules = Directory.GetFiles(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Modules{allPlatformPathSeperator}", "*.cs").ToList().Where(x => !request.IncludedModules.Contains(Path.GetFileNameWithoutExtension(x), StringComparer.CurrentCultureIgnoreCase)).ToList();
-                byte[] assemblyBytes = Utilities.Compile.GenerateEngCode(file, (EngCompileType)request.complieType, (SleepTypes)request.SleepType, nonIncCommands,nonIncModules);
+                byte[] assemblyBytes = Utilities.Compile.GenerateEngCode(file, request.complieType, request.SleepType, nonIncCommands,nonIncModules);
                 if (assemblyBytes is null)
                 {
                     result_message = "Failed to compile Engineer, check teamServer Console for errors.";
