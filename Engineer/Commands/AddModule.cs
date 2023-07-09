@@ -1,4 +1,5 @@
 ﻿using DynamicEngLoading;
+using Engineer.Functions;
 using System;
 using System.Collections.Generic;
 using System.Configuration.Assemblies;
@@ -45,7 +46,7 @@ namespace Engineer.Commands
                         Program.typesWithModuleAttribute.Add(targetType);
                         if (Module_name.Equals("SleepEncrypt", StringComparison.CurrentCultureIgnoreCase))
                         {
-                            Program.Sleeptype = Functions.SleepEnum.SleepTypes.Custom_RC4;
+                            Program.Sleeptype = SleepTypes.Custom_RC4;
                         }
                         ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"Module {Module_name} added successfully", task, EngTaskStatus.Complete, TaskResponseType.String);
                     }

@@ -1,6 +1,5 @@
-﻿using SQLite;
-using System;
-using System.Threading;
+﻿using ApiModels.Shared;
+using SQLite;
 using TeamServer.Models.Managers;
 
 namespace TeamServer.Models.Dbstorage
@@ -24,14 +23,6 @@ namespace TeamServer.Models.Dbstorage
 
         [Column("ConnectionMode")]
         public ConnectionMode connectionMode { get; set; } // always means direction of parent -> child
-
-
-        
-        public enum ConnectionMode
-        {
-            bind,
-            reverse
-        }
 
         //make a static implcit operator to convert from an actual object to a DAO object
         public static implicit operator TCPManager_DAO(TCPManager manager)
@@ -57,11 +48,8 @@ namespace TeamServer.Models.Dbstorage
                 BindPort = manager.BindPort,
                 ListenPort = manager.ListenPort,
                 IsLocalHost = manager.IsLocalHost,
-                connectionMode = (TCPManager.ConnectionMode)manager.connectionMode
+                connectionMode = (ConnectionMode)manager.connectionMode
             };
         }
-
-
-
     }
 }

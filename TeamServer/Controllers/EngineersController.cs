@@ -13,6 +13,7 @@ using System.Runtime.InteropServices;
 using TeamServer.Models.Managers;
 using TeamServer.Utilities;
 using Microsoft.AspNetCore.Authorization;
+using ApiModels.Shared;
 //using DynamicEngLoading;
 
 namespace TeamServer.Controllers
@@ -91,16 +92,16 @@ namespace TeamServer.Controllers
 					method = method.Trim();
 					if (method.Equals("psexec", StringComparison.CurrentCultureIgnoreCase))
 					{
-						implantSpwnRequest.complieType = SpawnEngineerRequest.EngCompileType.serviceexe;
+						implantSpwnRequest.complieType = EngCompileType.serviceexe;
 					}
 					else
 					{
-						implantSpwnRequest.complieType = SpawnEngineerRequest.EngCompileType.exe;
+						implantSpwnRequest.complieType = EngCompileType.exe;
 					}
 				}
 				else
 				{
-					implantSpwnRequest.complieType = SpawnEngineerRequest.EngCompileType.exe;
+					implantSpwnRequest.complieType = EngCompileType.exe;
 
 				}
 				bool isCreated = EngineerService.CreateEngineers(implantSpwnRequest, out string result_message);

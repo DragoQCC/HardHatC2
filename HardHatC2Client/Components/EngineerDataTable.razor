@@ -2,43 +2,43 @@
 @using HardHatC2Client.Models
 @using System.Diagnostics
 <MudSimpleTable Dense=true>
-                <thead class ="table table-bordered border-dark" style="background:var(--font-color); color:var(--background);">
-                <tr>
-                    <th>Status</th>
-                    <th>External Address</th>
-                    <th>Manager</th>
-                    <th>Connection Type</th>
-                    <th>Address</th>
-                    <th>hostname</th>
-                    <th>username</th>
-                    <th>note</th>
-                    <th>process</th>
-                    <th>pid</th>
-                    <th>Integrity</th>
-                    <th>arch</th>
-                    <th>Sleep</th>
-                    <th>lastseen</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr class="table" style="background:var(--background); color:var(--font-color);">
-                    <td>@engineer.Status</td>
-                    <td>@engineer.ExternalAddress</td>
-                    <td>@engineer.ManagerName</td>
-                    <td>@engineer.ConnectionType</td>
-                    <td>@engineer.Address</td>
-                    <td>@engineer.Hostname</td>
-                    <td>@engineer.Username</td>
-                    <td>@engineer.Note</td>
-                    <td>@engineer.ProcessName</td>
-                    <td>@engineer.ProcessId</td>
-                    <td>@engineer.Integrity</td>
-                    <td>@engineer.Arch</td>
-                    <td>@engineer.Sleep</td>
-                    <td>@Engineers.LastSeenTimer(engineer)</td>
-                </tr>
-                </tbody>
-            </MudSimpleTable>
+    <thead class ="table table-bordered border-dark" style="background:var(--font-color); color:var(--background);">
+    <tr>
+        <th>Status</th>
+        <th>External Address</th>
+        <th>Manager</th>
+        <th>Connection Type</th>
+        <th>Address</th>
+        <th>hostname</th>
+        <th>username</th>
+        <th>note</th>
+        <th>process</th>
+        <th>pid</th>
+        <th>Integrity</th>
+        <th>arch</th>
+        <th>Sleep</th>
+        <th>lastseen</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr class="table" style="background:var(--background); color:var(--font-color);">
+        <td>@engineer.Status</td>
+        <td>@engineer.ExternalAddress</td>
+        <td>@engineer.ManagerName</td>
+        <td>@engineer.ConnectionType</td>
+        <td>@engineer.Address</td>
+        <td>@engineer.Hostname</td>
+        <td>@engineer.Username</td>
+        <td>@engineer.Note</td>
+        <td>@engineer.ProcessName</td>
+        <td>@engineer.ProcessId</td>
+        <td>@engineer.Integrity</td>
+        <td>@engineer.Arch</td>
+        <td>@engineer.Sleep</td>
+        <td>@Engineers.LastSeenTimer(engineer)</td>
+    </tr>
+    </tbody>
+</MudSimpleTable>
 
 @code {
 

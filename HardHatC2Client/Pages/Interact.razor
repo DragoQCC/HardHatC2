@@ -1,6 +1,7 @@
 ﻿@page "/Interact"
 @using ApiModels.Requests
 @using ApiModels.Responses
+@using ApiModels.Shared;
 @using Blazored.LocalStorage;
 @using HardHatC2Client.Components;
 @using HardHatC2Client.Models
@@ -18,7 +19,6 @@
 @using RestSharp.Authenticators;
 @using System.Text.RegularExpressions;
 @using static HardHatC2Client.Utilities.Help;
-@using static HardHatC2Client.Models.EngineerTaskResult;
 @inject RestClient restClient
 @inject NavigationManager navigationManagerDefault
 @inject ISnackbar Snackbar
@@ -177,10 +177,10 @@
                                                         @foreach (string currenttask in EngineerOutboundTaskIds[engineer.Id])
                                                         {
                                                             string commandHeaderText = TaskOutputHeaderInfo[currenttask]; // gets the input based on the current task index so its always unique
-                                                           bool gotStatus = TaskStatusDic.TryGetValue(currenttask, out EngineerTaskResponse.EngTaskStatus status);
+                                                           bool gotStatus = TaskStatusDic.TryGetValue(currenttask, out EngTaskStatus status);
                                                            if(gotStatus == false)
                                                             {
-                                                                status = EngineerTaskResponse.EngTaskStatus.NONE;
+                                                                status = EngTaskStatus.NONE;
                                                             }
                                                             bool gotContent = TaskOutputDic.TryGetValue(currenttask, out EngineerTaskResponse cardContent);
                                                             if (gotContent == false)
@@ -211,7 +211,7 @@
                                                                         }
                                                                         else if (EngineerReturnedTaskIds.Values.Any(x => x.Contains(currenttask) && TaskStatusDic.ContainsKey(currenttask)))
                                                                         {
-                                                                            if (TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Running)
+                                                                            if (TaskStatusDic[currenttask] == EngTaskStatus.Running)
                                                                             {
                                                                                 <div class="d-flex">
                                                                                     <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3" />
@@ -249,7 +249,7 @@
                                                                                 {
                                                                                     @if (TaskOutputDic[currenttask].Result != null)
                                                                                     {
-                                                                                        @if (TaskInputDic[currenttask].Command == "ls" && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete)
+                                                                                        @if (TaskInputDic[currenttask].Command == "ls" && TaskStatusDic[currenttask] == EngTaskStatus.Complete)
                                                                                         {
                                                                                             TaskInputDic[currenttask].Arguments.TryGetValue("/path", out string pathValue);
                                                                                             <HardHatC2Client.Components.DirectoryListingTable Outputs="@TaskOutputDic[currenttask].Result"/>
@@ -259,17 +259,17 @@
                                                                                                 FileBrowser.AddContent(engineer.Hostname, pathValue, TaskOutputDic[currenttask].Result.Deserialize<List<FileSystemItem>>());
                                                                                             }
                                                                                         }
-                                                                                        else if (TaskInputDic[currenttask].Command == "ps" && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete)
+                                                                                        else if (TaskInputDic[currenttask].Command == "ps" && TaskStatusDic[currenttask] == EngTaskStatus.Complete)
                                                                                         {
                                                                                             var result = TaskOutputDic[currenttask].Result.Deserialize<string>().Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
                                                                                             <HardHatC2Client.Components.ProcessListingTable Outputs="@result"/>
                                                                                         }
-                                                                                        else if (TaskInputDic[currenttask].Command == "getprivs" && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete)
+                                                                                        else if (TaskInputDic[currenttask].Command == "getprivs" && TaskStatusDic[currenttask] == EngTaskStatus.Complete)
                                                                                         {
                                                                                             var result = TaskOutputDic[currenttask].Result.Deserialize<string>().Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
                                                                                             <HardHatC2Client.Components.GetPrivsTable Outputs="@result"/>
                                                                                         }
-                                                                                        else if (TaskInputDic[currenttask].Command == "print-env" && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete)
+                                                                                        else if (TaskInputDic[currenttask].Command == "print-env" && TaskStatusDic[currenttask] == EngTaskStatus.Complete)
                                                                                         {
                                                                                             var result = TaskOutputDic[currenttask].Result.Deserialize<string>().Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
                                                                                                 <HardHatC2Client.Components.PrintEnvTable Outputs="@result"/>
@@ -278,7 +278,7 @@
                                                                                         {
                                                                                             <HelpTable Outputs="TaskOutputDic[currenttask].Result"></HelpTable> 
                                                                                         }
-                                                                                        else if (ParsedCommandOutputDic.ContainsKey(currenttask) && TaskStatusDic[currenttask] == EngineerTaskResponse.EngTaskStatus.Complete)
+                                                                                        else if (ParsedCommandOutputDic.ContainsKey(currenttask) && TaskStatusDic[currenttask] == EngTaskStatus.Complete)
                                                                                         {
                                                                                             <MudSwitch @bind-Checked="@IsTableView" Label="Toggle Table View" Color="Color.Success"/>
                                                                                             if (IsTableView == true)
@@ -373,7 +373,7 @@
 
     internal static Dictionary<string, List<string>> EngineerReturnedTaskIds = new(); // key is engineer id, value is list of task ids
     internal static Dictionary<string,EngineerTaskResult> TaskOutputDic = new(); // first key is taskID and value is the output from the task
-    internal static Dictionary<string, EngineerTaskResult.EngTaskStatus> TaskStatusDic = new(); // first key is taskID and value is the status of the task
+    internal static Dictionary<string, EngTaskStatus> TaskStatusDic = new(); // first key is taskID and value is the status of the task
 
     internal static Dictionary<string, string> TaskOutputHeaderInfo = new(); // first key is taskID and value is the task output header
     public static List<Engineer> InteractEngineers = new(); // list of the engineerrs the user has added for interaction 
@@ -737,13 +737,13 @@
                     await UpdateOutGoingTaskDic(engineer.Id, currentTaskId, helpCommandheader);
                     var taskResponse = new EngineerTaskResult();
                     taskResponse.Id = currentTaskId;
-                    taskResponse.status = EngineerTaskResult.EngTaskStatus.Complete;
-                    taskResponse.ResponseType = EngineerTaskResult.TaskResponseType.HelpMenuItem;
+                    taskResponse.Status = EngTaskStatus.Complete;
+                    taskResponse.ResponseType = TaskResponseType.HelpMenuItem;
                     taskResponse.ResultObject = helpMenu;
                     TaskOutputDic.Add(currentTaskId, taskResponse);
                     if (!TaskStatusDic.ContainsKey(currentTaskId))
                     {
-                        TaskStatusDic.Add(currentTaskId, (EngTaskStatus)taskResponse.status);
+                        TaskStatusDic.Add(currentTaskId, (EngTaskStatus)taskResponse.Status);
                     }
                 }
                 return; //return here because help command does not need to be sent to the engineers
@@ -1058,11 +1058,11 @@
                 {
                     if (CancelTaskNumbersToWatch.Contains(tempTaskResults.Id))
                     {
-                        if (tempTaskResults.status == EngineerTaskResult.EngTaskStatus.Complete)
+                        if (tempTaskResults.Status == EngTaskStatus.Complete)
                         {
                             Engineers.ShowSuccessToast((string)tempTaskResults.ResultObject);
                         }
-                        else if (tempTaskResults.status == EngineerTaskResult.EngTaskStatus.Failed)
+                        else if (tempTaskResults.Status == EngTaskStatus.Failed)
                         {
                             Engineers.ShowErrorToast((string)tempTaskResults.ResultObject);
                         }
@@ -1158,7 +1158,7 @@
                 {
                     switch (requestResponse.ResponseType)
                     {
-                        case EngineerTaskResult.TaskResponseType.String:
+                        case TaskResponseType.String:
                             {
                                 taskResult = new EngineerTaskResult
                                 {
@@ -1167,12 +1167,12 @@
                                     Command = requestResponse.Command,
                                     UsersThatHaveReadResult = requestResponse.UsersThatHaveReadResult,
                                     ResultObject = requestResponse.Result.Deserialize<MessageData>()?.Message.RemoveDoubleEmptyLines() ?? string.Empty, // should help to ensure when only a string comes back it is still formatted like true json.
-                                    status = (EngineerTaskResult.EngTaskStatus)requestResponse.status,
-                                    ResponseType = (EngineerTaskResult.TaskResponseType)requestResponse.ResponseType,
+                                    Status = (EngTaskStatus)requestResponse.Status,
+                                    ResponseType = (TaskResponseType)requestResponse.ResponseType,
                                 };
                                 break;
                             }
-                        case EngineerTaskResult.TaskResponseType.FileSystemItem:
+                        case TaskResponseType.FileSystemItem:
                             {
                                 taskResult = new EngineerTaskResult
                                 {
@@ -1181,12 +1181,12 @@
                                     Command = requestResponse.Command,
                                     UsersThatHaveReadResult = requestResponse.UsersThatHaveReadResult,
                                     ResultObject = requestResponse.Result.Deserialize<List<FileSystemItem>>(),
-                                    status = (EngineerTaskResult.EngTaskStatus)requestResponse.status,
-                                    ResponseType = (EngineerTaskResult.TaskResponseType)requestResponse.ResponseType,
+                                    Status = (EngTaskStatus)requestResponse.Status,
+                                    ResponseType = (TaskResponseType)requestResponse.ResponseType,
                                 };
                                 break;
                             }
-                        case EngineerTaskResult.TaskResponseType.ProcessItem:
+                        case TaskResponseType.ProcessItem:
                             {
                                 taskResult = new EngineerTaskResult
                                     {
@@ -1195,12 +1195,12 @@
                                         Command = requestResponse.Command,
                                         UsersThatHaveReadResult = requestResponse.UsersThatHaveReadResult,
                                         ResultObject = requestResponse.Result.Deserialize<List<ProcessItem>>(),
-                                        status = (EngineerTaskResult.EngTaskStatus)requestResponse.status,
-                                        ResponseType = (EngineerTaskResult.TaskResponseType)requestResponse.ResponseType,
+                                        Status = (EngTaskStatus)requestResponse.Status,
+                                        ResponseType = (TaskResponseType)requestResponse.ResponseType,
                                     };
                                 break;
                             }
-                        case EngineerTaskResult.TaskResponseType.TokenStoreItem:
+                        case TaskResponseType.TokenStoreItem:
                             {
                                 taskResult = new EngineerTaskResult
                                 {
@@ -1209,8 +1209,8 @@
                                     Command = requestResponse.Command,
                                     UsersThatHaveReadResult = requestResponse.UsersThatHaveReadResult,
                                     ResultObject = requestResponse.Result.Deserialize<List<TokenStoreItem>>(),
-                                    status = (EngineerTaskResult.EngTaskStatus)requestResponse.status,
-                                    ResponseType = (EngineerTaskResult.TaskResponseType)requestResponse.ResponseType,
+                                    Status = (EngTaskStatus)requestResponse.Status,
+                                    ResponseType = (TaskResponseType)requestResponse.ResponseType,
                                 };
                                 break;
                             }
@@ -1230,7 +1230,7 @@
                         //if the task is a context changer we should update the implant note, and possibly the icon or username 
                         if (contextChangingCommands.Contains(taskResult.Command,StringComparer.CurrentCultureIgnoreCase))
                         {
-                            if(taskResult.status == EngTaskStatus.Complete)
+                            if(taskResult.Status == EngTaskStatus.Complete)
                             {
                                 //find the engineer object this task belongs to
                                 Engineer engineer = null;
@@ -1265,11 +1265,11 @@
                     }
                     if (!TaskStatusDic.ContainsKey(taskid))
                     {
-                        TaskStatusDic.Add(taskid, requestResponse.status);
+                        TaskStatusDic.Add(taskid, requestResponse.Status);
                     }
                     else
                     {
-                        TaskStatusDic[taskid] = requestResponse.status;
+                        TaskStatusDic[taskid] = requestResponse.Status;
                     }
                     if (OnStateChange is not null)
                     {
@@ -1281,7 +1281,7 @@
                         bool containsSeatbelt = TaskInputDic[taskid].Arguments.Values.Any(value => value.Contains("seatbelt"));
                         if (containsSeatbelt)
                         {
-                            if (TaskStatusDic[taskid] == EngineerTaskResult.EngTaskStatus.Complete)
+                            if (TaskStatusDic[taskid] == EngTaskStatus.Complete)
                             {
                                 //call the ParseAndStoreCommandOutput method
                                 //split on all the newline chars

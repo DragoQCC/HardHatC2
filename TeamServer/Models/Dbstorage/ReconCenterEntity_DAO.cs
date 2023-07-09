@@ -19,7 +19,7 @@ namespace TeamServer.Models.Dbstorage
         public string Description { get; set; }
 
         [Column("Properties")]
-       public byte[] Properties { get; set; }
+        public byte[] Properties { get; set; }
 
 
         //make a implicit conversion from the model to the dao
@@ -40,7 +40,7 @@ namespace TeamServer.Models.Dbstorage
             {
                 Name = dao.Name,
                 Description = dao.Description,
-                Properties = dao.Properties.ProDeserializeForDatabase<List<ReconCenterEntity.ReconCenterEntityProperty>>()
+                Properties = dao.Properties.ProDeserializeForDatabase<List<ReconCenterEntityProperty>>()
             };
         }
     }

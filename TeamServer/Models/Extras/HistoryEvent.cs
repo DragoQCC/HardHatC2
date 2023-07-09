@@ -5,9 +5,7 @@ namespace TeamServer.Models.Extras
 {
     public class HistoryEvent
     {
-
         public static List<HistoryEvent> HistoryEventList = new List<HistoryEvent>();
-
         
         public string Id { get; set; } = Guid.NewGuid().ToString();
         public string Event { get; set; }

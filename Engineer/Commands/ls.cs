@@ -11,7 +11,7 @@ using DynamicEngLoading;
 
 namespace Engineer.Commands
 {
-	public class ListDirectory : EngineerCommand
+	public class ls : EngineerCommand
 	{
 		public override string Name => "ls" ;
 

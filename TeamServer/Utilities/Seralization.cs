@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using TeamServer.Models.Extras;
 using ApiModels.Requests;
 using System.Text;
+using ApiModels.Shared;
 
 namespace TeamServer.Utilities
 {

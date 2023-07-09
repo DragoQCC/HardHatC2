@@ -1,5 +1,4 @@
 ﻿using SQLite;
-using TeamServer.Models.Engineers;
 
 namespace TeamServer.Models.Dbstorage
 {
@@ -16,7 +15,5 @@ namespace TeamServer.Models.Dbstorage
         //normally Engineer id or keyword for teamserver keys
         [Column("ItemID")]
         public string ItemID { get; set; }
-
-        
     }
 }
