@@ -263,7 +263,7 @@
                     Description = "returns the current luid for the user",
                     Usage = "get_luid",
                     NeedsAdmin = false,
-                    Opsec = OpsecStatus.High,
+                    Opsec = OpsecStatus.NotSet,
                     MitreTechnique = "",
                     Details = "get the current user luid",
                     Keys = ""

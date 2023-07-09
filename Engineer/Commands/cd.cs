@@ -6,7 +6,7 @@ using DynamicEngLoading;
 
 namespace Engineer.Commands
 {
-	public class ChangeDirectory : EngineerCommand
+	public class cd : EngineerCommand
 	{
 		public override string Name => "cd" ;
 	

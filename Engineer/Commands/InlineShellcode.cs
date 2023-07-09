@@ -11,7 +11,7 @@ using static DynamicEngLoading.h_DynInv.Win32;
 namespace Engineer.Commands
 {
     // goal was to allow self injection of shellcode and return the output to the C2 but nothing I do will redirect the shellcodes output away from the console. 
-    internal class ShellcodeSelf : EngineerCommand
+    internal class InlineShellcode : EngineerCommand
     {
         public override string Name => "InlineShellcode";
         public string output;

@@ -5,7 +5,7 @@ using DynamicEngLoading;
 
 namespace Engineer.Commands
 {
-	public class PrintWorkingDirectory : EngineerCommand
+	public class pwd : EngineerCommand
 	{
 		public override string Name => "pwd" ;
 	
