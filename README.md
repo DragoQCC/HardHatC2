@@ -1,4 +1,4 @@
-![Discord](https://img.shields.io/discord/882642569207644200)
+[![Discord](https://img.shields.io/discord/882642569207644200)](https://img.shields.io/discord/882642569207644200?logo=discord&label=Discord)
 ![GitHub issues](https://img.shields.io/github/issues/DragoQCC/HardHatC2)
 ![GitHub Repo stars](https://img.shields.io/github/stars/DragoQcc/HardHatC2?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/Dragoqcc/HardHatC2?style=social)
