@@ -4,6 +4,8 @@
 ![GitHub forks](https://img.shields.io/github/forks/Dragoqcc/HardHatC2?style=social)
 ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/DragoQcc/HardHatc2)
 ![GitHub last commit](https://img.shields.io/github/last-commit/dragoqcc/hardhatc2)
+![Twitter Follow](https://img.shields.io/twitter/follow/dragoqcc)
+
 
 # HardHat C2 
 ## A cross-platform, collaborative, Command & Control framework written in C#, designed for red teaming and ease of use.
