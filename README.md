@@ -1,9 +1,16 @@
-![Discord](https://img.shields.io/discord/882642569207644200)
+![Discord](https://img.shields.io/discord/882642569207644200?logo=discord&label=Discord)
 ![GitHub issues](https://img.shields.io/github/issues/DragoQCC/HardHatC2)
 ![GitHub Repo stars](https://img.shields.io/github/stars/DragoQcc/HardHatC2?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/Dragoqcc/HardHatC2?style=social)
 ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/DragoQcc/HardHatc2)
 ![GitHub last commit](https://img.shields.io/github/last-commit/dragoqcc/hardhatc2)
+![Twitter Follow](https://img.shields.io/twitter/follow/dragoqcc)
+<a href="https://bloodhoundgang.herokuapp.com/">
+    <img src="https://img.shields.io/badge/BloodHound Slack-4A154B?logo=slack&logoColor=white"
+        alt="chat on Bloodhound Slack"></a>
+<a href="https://github.com/specterops#hardhatc2">
+    <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fspecterops%2F.github%2Fmain%2Fconfig%2Fshield.json"
+      alt="Sponsored by SpecterOps"/>
 
 # HardHat C2 
 ## A cross-platform, collaborative, Command & Control framework written in C#, designed for red teaming and ease of use.
