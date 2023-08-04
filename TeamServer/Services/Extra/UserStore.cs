@@ -75,7 +75,7 @@ namespace TeamServer.Services.Extra
 
         public async Task<string> GetNormalizedUserNameAsync(UserInfo user, CancellationToken cancellationToken)
         {
-            string name = DatabaseService.AsyncConnection.Table<UserInfo>().Where(x => x == user).ToListAsync().Result[0].UserName; // this should get the user item from the table and return its name? 
+            string name = DatabaseService.AsyncConnection.Table<UserInfo>().Where(x => x == user).ToListAsync().Result[0].NormalizedUserName; // this should get the user item from the table and return its name? 
             return name;
         }
 
@@ -204,7 +204,7 @@ namespace TeamServer.Services.Extra
 
         public async Task SetPasswordHashAsync(UserInfo user, string passwordHash, CancellationToken cancellationToken)
         {
-            var UpdatedUser = new UserInfo { Id = user.Id, UserName = user.UserName, PasswordHash = passwordHash }; // you cannot update the Id this is the primary key
+            var UpdatedUser = new UserInfo { Id = user.Id, UserName = user.UserName, NormalizedUserName = user.NormalizedUserName, PasswordHash = passwordHash }; // you cannot update the Id this is the primary key
             DatabaseService.AsyncConnection.UpdateAsync(UpdatedUser);
         }
 
