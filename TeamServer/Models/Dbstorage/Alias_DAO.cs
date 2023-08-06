@@ -3,6 +3,7 @@ using TeamServer.Models.Extras;
 
 namespace TeamServer.Models.Dbstorage
 {
+    [Table("Alias")]
     public class Alias_DAO
     {
         [PrimaryKey]
