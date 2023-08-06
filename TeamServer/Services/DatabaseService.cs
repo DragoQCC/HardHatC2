@@ -194,7 +194,7 @@ namespace TeamServer.Services
         }
 
         //create a function to get all the Cred item types from the db
-        public static async Task<List<Cred>> GetCreds()
+        public static async Task<List<Cred>?> GetCreds()
         {
             try
             {
@@ -218,7 +218,7 @@ namespace TeamServer.Services
         }
 
         //a function to return all the historyevents from the database 
-        public static async Task<List<HistoryEvent>> GetHistoryEvents()
+        public static async Task<List<HistoryEvent>?> GetHistoryEvents()
         {
             try
             {
@@ -239,7 +239,7 @@ namespace TeamServer.Services
         }
 
         //a function to return all httpManagers from the database
-        public static async Task<List<Httpmanager>> GetHttpManagers()
+        public static async Task<List<Httpmanager>?> GetHttpManagers()
         {
             try
             {
@@ -260,7 +260,7 @@ namespace TeamServer.Services
         }
 
         //a function to return all the tcpManagers from the database
-        public static async Task<List<TCPManager>> GetTCPManagers()
+        public static async Task<List<TCPManager>?> GetTCPManagers()
         {
             try
             {
@@ -281,7 +281,7 @@ namespace TeamServer.Services
         }
 
         //a function to return all the smbManagers from the database
-        public static async Task<List<SMBmanager>> GetSMBManagers()
+        public static async Task<List<SMBmanager>?> GetSMBManagers()
         {
             try
             {
@@ -302,7 +302,7 @@ namespace TeamServer.Services
         }
 
         //a function to return all downloadedFiles from the database
-        public static async Task<List<DownloadFile>> GetDownloadedFiles()
+        public static async Task<List<DownloadFile>?> GetDownloadedFiles()
         {
             try
             {
@@ -323,7 +323,7 @@ namespace TeamServer.Services
         }
 
         //a function to return all the uploadedFiles from the database
-        public static async Task<List<UploadedFile>> GetUploadedFiles()
+        public static async Task<List<UploadedFile>?> GetUploadedFiles()
         {
             try
             {
@@ -344,7 +344,7 @@ namespace TeamServer.Services
         }
 
         //a function to retrun all the EncryptionKeys from the database
-        public static async Task<List<EncryptionKeys_DAO>> GetEncryptionKeys()
+        public static async Task<List<EncryptionKeys_DAO>?> GetEncryptionKeys()
         {
             try
             {
@@ -365,7 +365,7 @@ namespace TeamServer.Services
 
         //a function to return all the EngineerTaskResults from the database
 
-        public static async Task<List<Engineer>> GetEngineers()
+        public static async Task<List<Engineer>?> GetEngineers()
         {
             try
             {
@@ -385,7 +385,7 @@ namespace TeamServer.Services
             }
         }
 
-        public static async Task<List<EngineerTask>> GetEngineerTasks()
+        public static async Task<List<EngineerTask>?> GetEngineerTasks()
         {
             try
             {
@@ -405,7 +405,7 @@ namespace TeamServer.Services
             }
         }
         
-        public static async Task<List<EngineerTaskResult>> GetEngineerTaskResults()
+        public static async Task<List<EngineerTaskResult>?> GetEngineerTaskResults()
         {
             try
             {
@@ -426,7 +426,7 @@ namespace TeamServer.Services
         }
 
         //a function to return all the PivotProxy from the database
-        public static async Task<List<PivotProxy>> GetPivotProxies()
+        public static async Task<List<PivotProxy>?> GetPivotProxies()
         {
             try
             {
@@ -447,7 +447,7 @@ namespace TeamServer.Services
         }
 
         //a function to return all the ReconCenterEntities from the database
-        public static async Task<List<ReconCenterEntity>> GetReconCenterEntities()
+        public static async Task<List<ReconCenterEntity>?> GetReconCenterEntities()
         {
             try
             {
@@ -468,7 +468,7 @@ namespace TeamServer.Services
         }
         
         //function to return all the IOCFiles from the database
-        public static async Task<List<IOCFile>> GetIOCFiles()
+        public static async Task<List<IOCFile>?> GetIOCFiles()
         {
             try
             {
@@ -489,7 +489,7 @@ namespace TeamServer.Services
         }
 
         //a function to return all of the Alias objects from the database
-        public static async Task<List<Alias>> GetAliases()
+        public static async Task<List<Alias>?> GetAliases()
         {
             try
             {
@@ -510,7 +510,7 @@ namespace TeamServer.Services
         }
 
         //a function to return all the CompiledImplant objects from the database
-        public static async Task<List<CompiledImplant>> GetCompiledImplants()
+        public static async Task<List<CompiledImplant>?> GetCompiledImplants()
         {
             try
             {
