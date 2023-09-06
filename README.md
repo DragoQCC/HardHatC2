@@ -6,119 +6,146 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/dragoqcc/hardhatc2)
 ![Twitter Follow](https://img.shields.io/twitter/follow/dragoqcc)
 <a href="https://bloodhoundgang.herokuapp.com/">
-    <img src="https://img.shields.io/badge/BloodHound Slack-4A154B?logo=slack&logoColor=white"
-        alt="chat on Bloodhound Slack"></a>
+  <img src="https://img.shields.io/badge/BloodHound Slack-4A154B?logo=slack&logoColor=white" alt="chat on Bloodhound Slack" />
+</a>
 <a href="https://github.com/specterops#hardhatc2">
-    <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fspecterops%2F.github%2Fmain%2Fconfig%2Fshield.json"
-      alt="Sponsored by SpecterOps"/>
+  <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fspecterops%2F.github%2Fmain%2Fconfig%2Fshield.json" alt="Sponsored by SpecterOps"/>
+</a>
 
-# HardHat C2 
-## A cross-platform, collaborative, Command & Control framework written in C#, designed for red teaming and ease of use.
+# HardHat C2
+
+## A cross-platform, collaborative, Command & Control framework written in C#, designed for red teaming and ease of use
+
 ![image](https://user-images.githubusercontent.com/15575425/228551034-e07df233-63f6-41a2-8b94-6eb840859e82.png)
 
-HardHat is a multiplayer C# .NET-based command and control framework. Designed to aid in red team engagements and penetration testing. HardHat aims to improve the quality of life factors during engagements by providing an easy-to-use but still robust C2 framework.    
-It contains three primary components, an ASP.NET teamserver, a blazor .NET client, and C# based implants.
+HardHat is a multi-user C# .NET-based command and control (C2) framework designed to aid in red team engagements and penetration testing. It aims to improve quality-of-life during engagements by providing a robust, easy-to-use C2 framework.
 
-# Release Tracking 
-- Alpha 0.2 Release - 7/6/23
-  - Change log: https://docs.hardhat-c2.net/changelog/alpha-0.2-update-july-6-2023 
-- Alpha Release - 3/29/23
- 
-NOTE: HardHat is in Alpha release; it will have bugs, missing features, and unexpected things will happen. Thank you for trying it, and please report back any issues or missing features so they can be addressed.
+HardHat has three main components:
 
-# Community 
-[Discord](https://discord.gg/npW2yy7JFK) 
-Join the community to talk about HardHat C2, Programming, Red teaming and general cyber security things 
-The discord community is also a great way to request help, submit new features, stay up to date on the latest additions, and submit bugs. 
+1. An ASP.NET teamserver
+2. A Blazor .NET client
+3. C# based implants
 
-# Features 
-## Teamserver & Client 
-- Per-operator accounts with account tiers to allow customized access control and features, including view-only guest modes, team-lead opsec approval(WIP), and admin accounts for general operation management. 
-- Managers (Listeners) 
-- Dynamic Payload Generation (Exe, Dll, shellcode, PowerShell command)
+Full documentation is available at [https://docs.hardhat-c2.net/](https://docs.hardhat-c2.net/).
+
+**NOTE**: HardHat is in Alpha release; it will have bugs, missing features, and unexpected things will happen. Thank you for trying it, and please report back any issues or missing features so they can be addressed.
+
+## Community
+
+Join our [Discord][Discord] community to talk about HardHat C2, programming, red teaming and general cyber security topics. It's also a great place to ask for help, submit bugs or new features, and stay up-to-date on the latest additions.
+
+Code contributions are welcome! Feel free to submit feature requests, pull requests, or send me your ideas on [Discord][Discord].
+
+## Features
+
+### Teamserver & Client
+
+- Individual operator accounts with role-based access control (RBAC)
+  - Allows account personalization
+  - Allows restricted access to specific features (e.g., view-only guest role, team-lead opsec approval (WIP))
+- Managers (Listeners)
+- Dynamic Payload Generation (EXE, DLL, shellcode, PowerShell command)
 - Creation & editing of C2 profiles on the fly in the client
-- Customization of payload generation 
-  - sleep time/jitter 
-  - kill date
-  - working hours 
-  - type (Exe, Dll, Shellcode, ps command)
-  - Included commands(WIP)
-  - option to run confuser
-- File upload & Downloads 
-- Graph View 
+- Customization of payload generation
+  - Sleep time/jitter
+  - Kill date
+  - Working hours
+  - Type (EXE, DLL, shellcode, PowerShell command)
+  - Included commands (WIP)
+  - Option to run [ConfuserEx][ConfuserEx]
+- File upload & Downloads
+- Graph View
 - File Browser GUI
-- Event Log 
-- JSON logging for events & tasks 
-- Loot tracking (Creds, downloads)
-- IOC tracing 
+- Event Log
+- JSON logging for events & tasks
+- Loot tracking
+  - Credentials
+  - Downloads
+- Indicator of Compromise (IOC) tracking
 - Pivot proxies (SOCKS 4a, Port forwards)
-- Cred store 
-- Autocomplete command history 
-- Detailed help command 
-- Interactive bash terminal command if the client is on linux or powershell on windows, this allows automatic parsing and logging of terminal commands like proxychains
+- Credential store
+- Autocomplete command history
+- Detailed help command
+- Interactive bash terminal command if the client is on Linux or PowerShell on Windows
+  - Allows automatic parsing and logging of terminal commands like proxychains
 - Persistent database storage of teamserver items (User accounts, Managers, Engineers, Events, tasks, creds, downloads, uploads, etc. )
 - Recon Entity Tracking (track info about users/devices, random metadata as needed)
 - Shared files for some commands (see teamserver page for details)
-- tab-based interact window for command issuing 
-- table-based output option for some commands like ls, ps, etc. 
-- Auto parsing of output from seatbelt to create "recon entities" and fill entries to reference back to later easily 
-- Dark and Light 🤮 theme 
+- tab-based interact window for issuing commands
+- Table-based output option for some commands (e.g., `ls`, `ps`, etc.)
+- Automatic parsing of [Seatbelt](https://github.com/GhostPack/Seatbelt) output to create "recon entities" for convenient reference
+- Dark and Light 🤮 theme
 
- ![image](https://user-images.githubusercontent.com/15575425/228551170-cd455c24-3541-47ec-ad85-dcb84ce64075.png)
+![image](https://user-images.githubusercontent.com/15575425/228551170-cd455c24-3541-47ec-ad85-dcb84ce64075.png)
 ![image](https://user-images.githubusercontent.com/15575425/228551467-750a5a3a-dcff-4290-968e-7b18598e74b6.png)
 
- 
-## Engineers
-- C# .NET framework implant for windows devices, currently only CLR/.NET 4 support
-- atm only one implant, but looking to add others 
-- It can be generated as EXE, DLL, shellcode, or PowerShell stager
-- Rc4 encryption of payload memory & heap when sleeping (Exe / DLL only)
-- AES encryption of all network communication 
-- ConfuserEx integration for obfuscation
+### Engineers
+
+- C# .NET framework implant for Windows devices (currently only CLR/.NET 4 support)
+  - Only one implant at the moment, but looking to add others
+- Can be generated as EXE, DLL, shellcode, or PowerShell stager
+- RC4 encryption of payload memory & heap when sleeping (EXE / DLL only)
+- AES encryption of all network communication
+- [ConfuserEx][ConfuserEx] integration for obfuscation
 - HTTP, HTTPS, TCP, SMB communication
-  - TCP & SMB can work P2P in a bind or reverse setups
-- Unique per implant key generated at compile time 
-- multiple callback URI's depending on the C2 profile 
-- P/Invoke & D/Invoke integration for windows API calls 
-- SOCKS 4a support 
-- Reverse Port Forward & Port Forwards 
-- All commands run as async cancellable jobs 
-  - Option to run commands sync if desired
+  - TCP & SMB can work peer-to-peer (P2P) in bind or reverse configurations
+- Unique per implant key generated at compile time
+- Multiple callback URI's depending on the C2 profile
+- P/Invoke & D/Invoke integration for windows API calls
+- SOCKS 4a support
+- Reverse Port Forward & Port Forwards
+- All commands run as asynchronous, cancellable jobs
+  - Option to run commands synchronously, if desired
 - Inline assembly execution & inline shellcode execution
-- DLL Injection 
+- DLL Injection
 - Execute assembly & Mimikatz integration
-- Mimikatz is not built into the implant but is pushed when specific commands are issued
-- Various localhost & network enumeration tools 
-- Token manipulation commands 
-  - Steal Token Mask(WIP) 
-- Lateral Movement Commands 
+  - Mimikatz is not built into the implant but is pushed when specific commands are issued
+- Various local and network enumeration tools
+- Token manipulation commands
+  - Steal Token Mask (WIP)
+- Lateral Movement Commands
 - Jump (psexec, wmi, wmi-ps, winrm, dcom)
 - Remote Execution (WIP)
-- AMSI & ETW Patching 
-- Unmanaged Powershell 
-- Script Store (can load multiple scripts at once if needed)
-- Spawn & Inject 
-  - Spawn-to is configurable 
-- run, shell & execute
+- Antimalware Scan Interface (AMSI) & Event Tracing for Windows (ETW) Patching
+- Unmanaged Powershell
+- Script Store allows multiple scripts to be loaded at once
+- Spawn & Inject
+  - Spawn-to is configurable
+- Run, execute, and shell
 ![image](https://user-images.githubusercontent.com/15575425/228551103-0f1fe1f5-9b2d-42f9-a22d-f929f17b3b93.png)
 
-# Documentation
-documentation can be found at [docs](https://docs.hardhat-c2.net/)
+## Getting Started
 
-# Getting Started 
-## Prerequisites
-- Installation of the [.net 7 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/7.0) from Microsoft 
-- Once installed, the teamserver and client are started with dotnet run
-### Teamserver
-To configure the team server's starting address (where clients will connect), edit the HardHatC2\TeamServer\Properties\LaunchSettings.json changing the "applicationUrl": "https://127.0.0.1:5000" to the desired location and port. 
-start the teamserver with dotnet run from its top-level folder ../HrdHatC2/Teamserver/
+### Installation
 
-### HardHat Client 
-1. When starting the client to set the target teamserver location, include it in the command line dotnet run https://127.0.0.1:5000 for example 
-2. open a web browser and navigate to https://localhost:7096/ if this works, you should see the login page 
-3. Log in with the HardHat_Admin user (Password is printed on first TeamServer startup)
-4. Navigate to the settings page & create a new user if successful, a  message should appear, then you may log in with that account to access the full client
+#### Docker
 
+1. Install Docker and Docker Compose
+2. Run `docker compose up -d`
+    - Optionally, provide `HARDHAT_ADMIN_USERNAME` and/or `HARDHAT_ADMIN_PASSWORD` as environment variables; if omitted, the default admin username and randomly generated password will be written to the teamserver logs on first run
+3. Navigate to [https://localhost:7096/](https://localhost:7096/) in your browser
 
-# Contributions & Bug Reports 
- Code contributions are welcome feel free to submit feature requests, pull requests or send me your ideas on discord. 
+#### Manual
+
+1. Install [.NET 7 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/7.0) from Microsoft
+2. Run `dotnet run` from the `.\TeamServer` directory to build and start the teamserver
+3. Run `dotnet run https://<TEAMSERVER_HOST>:<TEAMSERVER_PORT>` from the `HardHatC2Client` directory
+    - For example, assuming your teamserver is running on the same host and default port: `dotnet run https://127.0.0.1:5000`
+4. Navigate to [https://localhost:7096/](https://localhost:7096/) in your browser
+
+To configure the teamserver's listening address (i.e., where clients will connect), edit `.\TeamServer\Properties\LaunchSettings.json` and change `"applicationUrl": "https://127.0.0.1:5000"` to the desired location and port.
+
+### Setup
+
+1. Login to the client web UI using the username and password set with environment variable or printed to STDOUT by the teamserver
+2. Navigate to the Settings page and create a new user account
+    - If successful, a message will appear; you may then login with that account to access the full client
+
+## Release Tracking
+
+- Alpha 0.2 Release - 7/6/23
+  - Change log: <https://docs.hardhat-c2.net/changelog/alpha-0.2-update-july-6-2023>
+- Alpha Release - 3/29/23
+
+[ConfuserEx]: https://github.com/mkaring/ConfuserEx
+[Discord]: https://discord.gg/npW2yy7JFK

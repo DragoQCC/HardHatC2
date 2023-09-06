@@ -67,7 +67,7 @@
                                             <!--This is the parent card  -->
                                         <MudPaper Style="background:#111111;" Height="@GetPanelHeight()">
                                             <MudCardContent Style="background:#111111; color:white;">
-                                            
+
                                                 @if (EngineerOutboundTaskIds.ContainsKey(engineer.Id))
                                                 {
                                                  <MudExpansionPanels Style="background:#32333d; color:white;" MultiExpansion="true">
@@ -94,7 +94,7 @@
                                                              Dense="true" Margin="Margin.Dense" SelectValueOnTab="true"  SelectOnClick="false" CoerceText="false" CoerceValue="true"
                                                              InputMode="InputMode.text" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentText="[COMMAND]> " Immediate="true" Clearable="true" KeyDownPreventDefault="true" KeyUpPreventDefault="true" TextUpdateSuppression="@TextSuppersion">
                                             </MudAutocomplete>
-                                 
+
                                             <MudButton style="background:var(--font-color);color:var(--background)" OnClick=@Send> <MudText>Send</MudText></MudButton>
                                             @if (IsEnterkey)
                                             {
@@ -109,7 +109,7 @@
                                         <EditForm Context="EditFormContext" Model="engineer" OnValidSubmit="@Send">
                                             <div class="d-flex mb-5">
                                                 <MudTextField style="background:#111111; color:white;" OnKeyDown="OnShowCommandHistory" @bind-Value=@placeHolder T="string"
-                                                    Margin="Margin.Dense"  InputMode="InputMode.text" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentText="[COMMAND]> " Immediate="true" Clearable="true" 
+                                                    Margin="Margin.Dense"  InputMode="InputMode.text" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentText="[COMMAND]> " Immediate="true" Clearable="true"
                                                     TextUpdateSuppression="@TextSuppersion">
                                                 </MudTextField>
                                                 <MudButton style="background:var(--font-color);color:var(--background)" ButtonType="ButtonType.Submit"> <MudText>Send</MudText></MudButton>
@@ -152,7 +152,7 @@
                         <FileBrowser></FileBrowser>
                     </MudTabPanel>
                     <MudTabPanel Text="Terminal" Icon="@Icons.Material.Filled.Terminal" >
-                        <InteractiveTerminal></InteractiveTerminal>            
+                        <InteractiveTerminal></InteractiveTerminal>
                     </MudTabPanel>
                 </MudTabs>
             </MudContainer>
@@ -206,7 +206,7 @@
                                                                             <div class="d-flex">
                                                                                 <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3" />
                                                                                 <MudIconButton Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() =>CancelTask(currenttask,engineer.Id)"></MudIconButton>
-                                                                                <MudText>@commandHeaderText</MudText>                                                   
+                                                                                <MudText>@commandHeaderText</MudText>
                                                                             </div>
                                                                         }
                                                                         else if (EngineerReturnedTaskIds.Values.Any(x => x.Contains(currenttask) && TaskStatusDic.ContainsKey(currenttask)))
@@ -217,7 +217,7 @@
                                                                                     <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3" />
                                                                                     <MudIconButton Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() =>CancelTask(currenttask,engineer.Id)"></MudIconButton>
                                                                                     <MudText>@commandHeaderText</MudText>
-        
+
                                                                                 </div>
                                                                             }
                                                                             else
@@ -235,12 +235,12 @@
                                                                                 <MudText>@commandHeaderText</MudText>
                                                                             </div>
                                                                         }
-                                        
+
                                                                     </TitleContent>
                                                                     <ChildContent>
                                                                         <MudCard Class="" Style="background:var(--background);" Outlined="true"> <!--This is the per input and output card-->
                                                                             <MudCardContent Style="background:#111111; color:white; white-space:pre-wrap;">
-                                        
+
                                                                                 @if (TaskOutputDic.ContainsKey(currenttask))
                                                                                 {
                                                                                     <!-- <MudText>output for components go here atm thats ls command, ps command, ipconfig, anything that can use a table</MudText> -->
@@ -276,7 +276,7 @@
                                                                                             }
                                                                                         else if (TaskInputDic[currenttask].Command.Equals("help",StringComparison.CurrentCultureIgnoreCase))
                                                                                         {
-                                                                                            <HelpTable Outputs="TaskOutputDic[currenttask].Result"></HelpTable> 
+                                                                                            <HelpTable Outputs="TaskOutputDic[currenttask].Result"></HelpTable>
                                                                                         }
                                                                                         else if (ParsedCommandOutputDic.ContainsKey(currenttask) && TaskStatusDic[currenttask] == EngTaskStatus.Complete)
                                                                                         {
@@ -302,16 +302,16 @@
                                                                                         <MudText Typo="Typo.body2">No output yet</MudText>
                                                                                     }
                                                                                 }
-                                                                                }            
+                                                                                }
                                                                                 else if (!TaskOutputDic.ContainsKey(currenttask))
                                                                                 {
                                                                                     <MudText Typo="Typo.body2">No output yet</MudText>
                                                                                 }
-         
+
                                                                             </MudCardContent>
-                                                                        </MudCard>  
+                                                                        </MudCard>
                                                                     </ChildContent>
-                                                                </MudExpansionPanel><!--This is the end of per input and output card -->   
+                                                                </MudExpansionPanel><!--This is the end of per input and output card -->
                                                             </MudExpansionPanels>
                                                         }
                                                     }
@@ -319,12 +319,12 @@
                                             </MudCard>
                                             <EditForm Context="EditFormContext" Model="engineer">
                                                 <div class="d-flex mb-xl-5">
-                        
+
                                                     <MudAutocomplete Disabled="true"  @ref="mudauto" @bind-Value=@placeHolder T="string" ResetValueOnEmptyText="true"
                                                                      Dense="true" Margin="Margin.Dense" SelectValueOnTab="true"  SelectOnClick="false" CoerceText="false" CoerceValue="true"
                                                                      InputMode="InputMode.text" Variant="Variant.Text" Adornment="Adornment.Start" AdornmentText="[ENGINEER]> " Immediate="true" Clearable="true" KeyDownPreventDefault="true" KeyUpPreventDefault="true" TextUpdateSuppression="@TextSuppersion">
                                                     </MudAutocomplete>
-                                         
+
                                                     <MudButton Disabled="true" style="background:var(--font-color);color:var(--background)" > <MudText>Send</MudText></MudButton>
                                                 </div>
                                             </EditForm>
@@ -337,7 +337,7 @@
                                 <FileBrowser></FileBrowser>
                             </MudTabPanel>
                             <MudTabPanel Text="Terminal" Icon="@Icons.Material.Filled.Terminal" >
-                                <InteractiveTerminal></InteractiveTerminal>            
+                                <InteractiveTerminal></InteractiveTerminal>
                             </MudTabPanel>
                         </MudTabs>
                     </MudContainer>
@@ -358,7 +358,7 @@
 </style>
 
 @code {
-    [Inject] 
+    [Inject]
     private IDialogService DialogService { get; set; }
     private static IDialogService _dialogService { get; set; }
     [Inject]
@@ -376,7 +376,7 @@
     internal static Dictionary<string, EngTaskStatus> TaskStatusDic = new(); // first key is taskID and value is the status of the task
 
     internal static Dictionary<string, string> TaskOutputHeaderInfo = new(); // first key is taskID and value is the task output header
-    public static List<Engineer> InteractEngineers = new(); // list of the engineerrs the user has added for interaction 
+    public static List<Engineer> InteractEngineers = new(); // list of the engineers the user has added for interaction
 
     public static Dictionary<string, string> EngTabTitleDic = new(); // key is engineer id, value is the tab title
 
@@ -409,7 +409,7 @@
     private static Stopwatch stopwatch2 = new Stopwatch();
 
     private static string OutputOneStringTest = "";
-    //create a delegate that we can use to invoke statehaschanged 
+    //create a delegate that we can use to invoke statehaschanged
     public delegate Task OnStateChangeDelegate();
     public static OnStateChangeDelegate OnStateChange;
     public delegate Task OnWindowInteractSubmission();
@@ -442,10 +442,10 @@
         {
             return "background:#32333d; color:white;";
         }
-        return "background:white; color:black;";  
+        return "background:white; color:black;";
     }
 
-    //set the icon and color for commands 
+    //set the icon and color for commands
     private string setIcon(string currenttask)
     {
         if (TaskStatusDic.ContainsKey(currenttask))
@@ -524,7 +524,7 @@
             //get the task ids for this engineer
             if (EngineerReturnedTaskIds.TryGetValue(Engineer.Id, out List<string> taskids))
             {
-                //for each taskid not in the ExpandedOnce Dict add to the count 
+                //for each taskid not in the ExpandedOnce Dict add to the count
                 foreach (string taskid in taskids)
                 {
                     if (!PanelExpandedOnce.ContainsKey(taskid) || PanelExpandedOnce[taskid] == false)
@@ -664,10 +664,10 @@
     }
 
 
-    //new task to getExistingTaskInfo 
+    //new task to getExistingTaskInfo
     public static async Task GetExistingTaskInfo(Dictionary<string,List<EngineerTask>> PreviousTasks)
     {
-        //pervoius tasks just holds the task id and the header text 
+        //pervoius tasks just holds the task id and the header text
         //pull out the tasks from the previous tasks dictionary and add them to the EngineerOutboundTaskIds dictionary and add the task.Command and Task.Args to the TaskInputDic with Task.Id as the key
         foreach (KeyValuePair<string, List<EngineerTask>> kvp in PreviousTasks)
         {
@@ -693,7 +693,7 @@
     {
         try
         {
-            //parse input for aliases 
+            //parse input for aliases
             command = ParseInputForAliases(command,out string aliasParseError);
             if (!string.IsNullOrWhiteSpace(aliasParseError))
             {
@@ -764,7 +764,7 @@
                 {
                     //we want to spawn a message box to get a yes or a no here ,if the user says no then return false, if the user says yes then continue
                     bool? result = null;
-                    await InvokeAsync( async () => 
+                    await InvokeAsync( async () =>
                     {
                         result = await _dialogService.ShowMessageBox("Opsec Warning", "Command is set to High opsec danger level, are you sure you want to execute?", yesText: "Fire Away!", cancelText: "Cancel");
                     });
@@ -793,12 +793,12 @@
                 return;
             }
 
-            //check if createObject.Command is one of the postex that make a new implant 
+            //check if createObject.Command is one of the postex that make a new implant
             if(ImplantCreation.PostExCommandsThatSpawnNewImp.Contains(createObject.Command,StringComparer.InvariantCultureIgnoreCase))
             {
                 var diag_options = new DialogOptions { ClassBackground = "dialog-blur-class", MaxWidth = MaxWidth.Large, FullWidth = true, DisableBackdropClick = true };
                 //invoke async needs to used to trigger the render to work correctly from inside c# code
-                await InvokeAsync( async () => 
+                await InvokeAsync( async () =>
                 {
                     var diagTask = DialogService.Show<ImplantCreation_Dialog>("Create Implant for PostEx Command",diag_options);
                     var result = await diagTask.Result;
@@ -813,7 +813,7 @@
                 });
             }
 
-            //if commandargs contains a /local key we should update the file content 
+            //if commandargs contains a /local key we should update the file content
             if (commandargs.ContainsKey("/local"))
             {
                 // check each command arg to see if it contains a file path
@@ -918,7 +918,7 @@
 
             if (removeContentSwitch)
             {
-                //check if task command is help if so skip 
+                //check if task command is help if so skip
                 if (TaskInputDic[taskId].Command.Equals("help", StringComparison.CurrentCultureIgnoreCase))
                 {
                     return;
@@ -967,7 +967,7 @@
 
     private Task TabRemove(MudTabPanel tab)
     {
-        //find the engineer where its ProcessId@Address matches the tabs Title and remove it 
+        //find the engineer where its ProcessId@Address matches the tabs Title and remove it
         var engineer = InteractEngineers.FirstOrDefault(x => x.Id == tab.ID);
         InteractEngineers.Remove(engineer);
         StateHasChanged();
@@ -976,7 +976,7 @@
 
     private async Task TabAdd()
     {
-        //cause a mud popup where the user can select to add engineers from the engineer table that are not yet interacted with 
+        //cause a mud popup where the user can select to add engineers from the engineer table that are not yet interacted with
         var options = new DialogOptions { ClassBackground = "my-custom-class", MaxWidth = MaxWidth.Medium, FullWidth = true, DisableBackdropClick = true };
         var dialog = DialogService.Show<ImplantTablePopup>("Add Implants for Interaction", options);
 
@@ -1034,7 +1034,7 @@
         var result = await dialog.Result;
     }
 
-    //called by signalR when a new task response comes in 
+    //called by signalR when a new task response comes in
     public static async Task UpdateTaskResponse(string engineerid, List<string> returnedTaskids)
     {
         // for each returnedtaskid add it to the TaskIdQueue for the engineerid and then set the GotTaskResponse to true and set the taskid to the first taskid in the queue and execute GetTaskResults
@@ -1073,7 +1073,7 @@
                 {
                     foreach (string username in tempTaskResults.UsersThatHaveReadResult)
                     {
-                        //if username matches logged in user then check if the panelexpandedonce contains the taskid if not then add it as false 
+                        //if username matches logged in user then check if the panelexpandedonce contains the taskid if not then add it as false
                         if (username == Login.SignedInUser)
                         {
                             //basically this says the teamserver has a record of this task id being seen by the user so we can set the panel as being expanded before to prevent repeated notifications
@@ -1227,7 +1227,7 @@
                     if (!EngineerReturnedTaskIds[engineerId].Contains(taskid))
                     {
                         EngineerReturnedTaskIds[engineerId].Add(taskid);
-                        //if the task is a context changer we should update the implant note, and possibly the icon or username 
+                        //if the task is a context changer we should update the implant note, and possibly the icon or username
                         if (contextChangingCommands.Contains(taskResult.Command,StringComparer.CurrentCultureIgnoreCase))
                         {
                             if(taskResult.Status == EngTaskStatus.Complete)
@@ -1250,7 +1250,7 @@
                                     }
                                     else if (taskResult.Command.Equals("getsystem", StringComparison.CurrentCultureIgnoreCase))
                                     {
-                                        engineer.Note = "Context: NT AUTHORITY\\SYSTEM"; 
+                                        engineer.Note = "Context: NT AUTHORITY\\SYSTEM";
                                         engineer.Integrity = "SYSTEM";
                                     }
                                     else
@@ -1340,7 +1340,7 @@
         }
         if(commandOutput.Count > 0)
         {
-            List<string> ParsedCommandOutput = new(); 
+            List<string> ParsedCommandOutput = new();
             //List<string> commandKeys = new();
             //take each key and value from the commandOutput and join them into a string seperatted by || then add that string to the ParsedCommandOutput list
             //get the engineer object with the matching id and return its hostname
@@ -1391,7 +1391,7 @@
                     TextSuppersion = false; //allows text box to be updated
                     placeHolder = "";
                     await Task.Delay(500);
-                    TextSuppersion = true; // reset so textbox can be typed in without autoclearing until submission 
+                    TextSuppersion = true; // reset so textbox can be typed in without autoclearing until submission
                 }
                 //get the Historyindex, set placeholder text to the history item at that index, and decrement the index
                 if (HistoryIndex >= 0)
@@ -1426,12 +1426,15 @@
             string jwtToken = await LocalStorage.GetItemAsync<string>("bearerToken");
             options.Authenticator = new JwtAuthenticator(jwtToken);
             _restClient = new RestClient(options);
+
             foreach (KeyValuePair<string, List<string>> kvp in EngineerOutboundTaskIds)
             {
                 UpdateTaskResponse(kvp.Key, kvp.Value);
             }
+
             FirstRender = false;
             Login.isVisible = false;
+
             if (Login.SignedInUser.Equals("hardhat_admin",StringComparison.CurrentCultureIgnoreCase))
             {
                 Nav.NavigateTo("Settings");
@@ -1443,7 +1446,6 @@
         }
         else
         {
-
             if (interactedEngIdUpdated)
             {
                 base.OnAfterRender(firstRender);
@@ -1482,4 +1484,4 @@
         //}
     }
 }
-  
+

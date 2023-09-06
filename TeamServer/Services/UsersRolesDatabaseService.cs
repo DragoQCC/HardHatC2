@@ -15,9 +15,9 @@ namespace TeamServer.Services
     {
         public static async Task CreateDefaultRoles()
         {
-            if(DatabaseService.AsyncConnection == null)
+            if (DatabaseService.AsyncConnection == null)
             {
-               DatabaseService.ConnectDb();
+                DatabaseService.ConnectDb();
             }
 
             //create some default roles if they dont exist of Operator, TeamLead, Administator, make sure they are added to the RoleInfo
@@ -34,21 +34,29 @@ namespace TeamServer.Services
         public static async Task CreateDefaultAdmin()
         {
             UserStore userStore = new UserStore();
-            
+
+            var AdminUsername = GetEnvironmentVariable("HARDHAT_ADMIN_USERNAME") ?? "HardHat_Admin";
+
             //try to get the admin user if it exists if not create it
-            var adminUser = await userStore.FindByNameAsync("HardHat_Admin".Normalize().ToUpperInvariant(), new CancellationToken());
-            if(adminUser != null)
+            var adminUser = await userStore.FindByNameAsync(AdminUsername.Normalize().ToUpperInvariant(), new CancellationToken());
+
+            if (adminUser != null)
             {
                 return;
             }
-            string AdminPass = Encryption.GenerateRandomString(20);
+            string AdminPass = GetEnvironmentVariable("HARDHAT_ADMIN_PASSWORD") ?? Encryption.GenerateRandomString(20);
             var passwordHash = MyPasswordHasher.HashPassword(AdminPass, out byte[] salt);
-            UserInfo user = new UserInfo { Id = Guid.NewGuid().ToString(), UserName = "HardHat_Admin", NormalizedUserName = "HardHat_Admin".Normalize().ToUpperInvariant(), PasswordHash = passwordHash };
-            
+            UserInfo user = new UserInfo { Id = Guid.NewGuid().ToString(), UserName = AdminUsername, NormalizedUserName = AdminUsername.Normalize().ToUpperInvariant(), PasswordHash = passwordHash };
+
             var result = await userStore.CreateAsync(user, new CancellationToken());
             await userStore.SetPasswordSaltAsync(user, salt);
             await userStore.AddToRoleAsync(user, "Administrator", new CancellationToken());
-            Console.WriteLine($"[**] HardHat_Admin's password is {AdminPass}, make sure to save this password, as on the next start of the server it will not be displayed again [**]");
+
+            // If password not set via environment variable, print randomly generated password
+            if (!GetEnvironmentVariable("HARDHAT_ADMIN_PASSWORD"))
+            {
+                Console.WriteLine($"[**] Default admin account; SAVE THIS PASSWORD; it will not be displayed again [**]\n    Username: {AdminUsername}\n    Password: {AdminPass}");
+            }
         }
     }
 }
