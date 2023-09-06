@@ -1,0 +1,32 @@
+# Exclude anything beginning with `.`
+#.*
+
+# Explicitly exclude git and editor files (just in case)
+**/.git
+**/.gitbook
+**/.github
+**/.gitignore
+**/.gitattributes
+**/.gitlab-ci.yml
+
+# Exclude development and test files
+**/.idea
+**/.devcontainer
+**/.mypy_cache
+**/.venv
+**/.vscode
+
+# Exclude project documentation
+**/.gitbook
+LICENSE
+README.md
+
+# Exclude Docker and Docker Compose files
+**/docker
+.dockerignore
+.env
+docker-compose.yaml
+
+# Exclude directories mounted by Docker Compose
+**/downloads
+**/logs

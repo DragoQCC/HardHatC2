@@ -1,0 +1,45 @@
+---
+version: "3"
+
+services:
+  hardhat-server:
+    build:
+      context: .
+      dockerfile: ./docker/server/Dockerfile
+    image: hardhat_server
+    container_name: hardhat_server
+    restart: unless-stopped
+    volumes:
+      - ./downloads:/app/TeamServer/Downloads
+      - ./logs:/app/TeamServer/logs
+
+      # TODO: Does this need to be persistent?
+      - certs:/app/TeamServer/Certificates
+      - db:/app/TeamServer/database
+      # TODO: Does this need to be persistent?
+      - keys_server:/root/.aspnet/DataProtection-Keys
+      # TODO: Does this need to be persistent?
+      - wwwroot:/app/TeamServer/wwwroot
+
+  hardhat-client:
+    build:
+      context: .
+      dockerfile: ./docker/client/Dockerfile
+    image: hardhat_client
+    container_name: hardhat_client
+    depends_on:
+      - hardhat-server
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:7096:7096"
+    volumes:
+      - ./logs:/app/HardHatC2Client/logs
+      # TODO: Does this need to be persistent?
+      - keys_client:/root/.aspnet/DataProtection-Keys
+
+volumes:
+  certs:
+  db:
+  keys_client:
+  keys_server:
+  wwwroot:
