@@ -3,10 +3,10 @@ using System;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-
 using TeamServer.Models.Database;
 using TeamServer.Services.Extra;
 using TeamServer.Utilities;
+using System.Runtime;
 
 namespace TeamServer.Services
 {
@@ -34,21 +34,41 @@ namespace TeamServer.Services
         public static async Task CreateDefaultAdmin()
         {
             UserStore userStore = new UserStore();
+<<<<<<< Updated upstream
             
+=======
+
+            var AdminUsername = Environment.GetEnvironmentVariable("HARDHAT_ADMIN_USERNAME") ?? "HardHat_Admin";
+
+>>>>>>> Stashed changes
             //try to get the admin user if it exists if not create it
             var adminUser = await userStore.FindByNameAsync("HardHat_Admin".Normalize().ToUpperInvariant(), new CancellationToken());
             if(adminUser != null)
             {
                 return;
             }
+<<<<<<< Updated upstream
             string AdminPass = Encryption.GenerateRandomString(20);
+=======
+            string AdminPass = Environment.GetEnvironmentVariable("HARDHAT_ADMIN_PASSWORD") ?? Encryption.GenerateRandomString(20);
+>>>>>>> Stashed changes
             var passwordHash = MyPasswordHasher.HashPassword(AdminPass, out byte[] salt);
             UserInfo user = new UserInfo { Id = Guid.NewGuid().ToString(), UserName = "HardHat_Admin", NormalizedUserName = "HardHat_Admin".Normalize().ToUpperInvariant(), PasswordHash = passwordHash };
             
             var result = await userStore.CreateAsync(user, new CancellationToken());
             await userStore.SetPasswordSaltAsync(user, salt);
             await userStore.AddToRoleAsync(user, "Administrator", new CancellationToken());
+<<<<<<< Updated upstream
             Console.WriteLine($"[**] HardHat_Admin's password is {AdminPass}, make sure to save this password, as on the next start of the server it will not be displayed again [**]");
+=======
+
+            // If password not set via environment variable, print randomly generated password
+            bool gotPasswordFromEnv = Environment.GetEnvironmentVariable("HARDHAT_ADMIN_PASSWORD") != null;
+            if (!gotPasswordFromEnv)
+            {
+                Console.WriteLine($"[**] Default admin account; SAVE THIS PASSWORD; it will not be displayed again [**]\n    Username: {AdminUsername}\n    Password: {AdminPass}");
+            }
+>>>>>>> Stashed changes
         }
     }
 }

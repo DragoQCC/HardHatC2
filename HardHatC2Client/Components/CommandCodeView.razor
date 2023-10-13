@@ -1,0 +1,252 @@
+﻿@using HardHatC2Client.Pages;
+@using HardHatC2Client.Utilities;
+@using BlazorMonaco
+@using BlazorMonaco.Editor
+@using BlazorMonaco.Languages
+@using Microsoft.CodeAnalysis.CSharp;
+@using Microsoft.CodeAnalysis;
+@inject IJSRuntime JSRuntime
+
+<div class="d-flex">
+@if(implantSrcPaths.Count() >0)
+{
+    <MudStack>
+    <MudText Style="height:4vh" Typo="Typo.h5">Command Code</MudText>
+    <MudPaper Width="350px" MaxHeight="73vh" Class="overflow-y-auto" Outlined="true">
+    <MudTreeView SelectedValueChanged="@((KeyValuePair<string,string> e) => UpdateEditor(e))" T="KeyValuePair<string,string>">
+            @foreach (var codefile in implantSrcPaths)
+            {
+                <MudTreeViewItem Value=@codefile Text="@codefile.Key" T="KeyValuePair<string,string>" Expanded=" true"></MudTreeViewItem>
+            }
+    </MudTreeView>
+    </MudPaper>
+    </MudStack>
+    @if (!String.IsNullOrEmpty(selectedCodeFile.Key))
+    {
+            <MudPaper Width=100% Outlined="true">
+            <MudToolBar>
+                <MudIconButton Icon="@Icons.Material.Filled.Save" OnClick="@(() =>SaveCommand())"></MudIconButton>
+                <MudIconButton Icon="@Icons.Material.Filled.Add" OnClick="@(() => CreateNewCommand() )"></MudIconButton>
+            </MudToolBar>
+                <StandaloneCodeEditor @ref="@myEditor" Id="@SetId()" ConstructionOptions="EditorConstructionOptions" OnDidChangeModelContent="@((() =>CheckErrorsAndProvideCompletion()))" />
+        </MudPaper>
+    }
+}
+</div>
+
+
+
+<MudMessageBox @ref="@mbox" Title="New Command Name" CancelText="Close">
+    <MessageContent>
+        <MudTextField @bind-Value="@newCommandName" Label="Command Name" Variant="Variant.Filled" />
+    </MessageContent>
+</MudMessageBox>
+
+ <style>
+    .monaco-editor-container {
+        height: 73vh;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string ImplantLang {get; set;}
+    [Parameter]
+    public string ImplantSrc { get; set; }
+
+    private Dictionary<string,string> implantSrcPaths = new();
+    private KeyValuePair<string,string> selectedCodeFile = new();
+    private static StandaloneCodeEditor myEditor = null;
+
+    MudMessageBox mbox { get; set; }
+    private string newCommandName = "";
+
+    private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
+    {
+        var editorInstance = new StandaloneEditorConstructionOptions
+            {
+                AutomaticLayout = true,
+                Language = GetCodeLanguage(selectedCodeFile.Key),
+                Value = File.ReadAllText(selectedCodeFile.Value)
+            };
+        if (Settings.IsCheckedBox)
+        {
+            editorInstance.Theme = "vs-dark";
+        }
+        else
+        {
+            editorInstance.Theme = "vs";
+        }
+        return editorInstance;
+    }
+
+    private async Task CreateNewCommand()
+    {
+        bool? result = await mbox.Show();
+        if((bool)result)
+        {
+            string relativePath = ImplantSrc.Replace("\\", HelperFunctions.PlatPathSeperator);
+            relativePath = relativePath.Replace("/", HelperFunctions.PlatPathSeperator);
+            string basePath = HelperFunctions.GetBaseFolderLocation();
+            string CommandFolder = Path.Combine(basePath, relativePath);
+            string newCommandPath = Path.Combine(CommandFolder, newCommandName + "." + ImplantLang);
+            File.WriteAllText(newCommandPath, "");
+            implantSrcPaths.Add(newCommandName + "." + ImplantLang, newCommandPath);
+        }
+        StateHasChanged();
+    }
+
+    private void getImplantSrcPaths()
+    {
+        string relativePath = ImplantSrc.Replace("\\", HelperFunctions.PlatPathSeperator);
+        relativePath = relativePath.Replace("/", HelperFunctions.PlatPathSeperator);
+        string basePath = HelperFunctions.GetBaseFolderLocation();
+        string CommandFolder = Path.Combine(basePath, relativePath);
+        //for each item at the commandFolder add the file name and the path to the dictionary if the file ends with the implantLang
+        foreach (string file in Directory.GetFiles(CommandFolder))
+        {
+            if (file.EndsWith(ImplantLang))
+            {
+                implantSrcPaths.Add(Path.GetFileName(file), file);
+            }
+        }
+    }
+
+    private void UpdateEditor(KeyValuePair<string,string> newCodeFile)
+    {
+        selectedCodeFile = newCodeFile;
+        myEditor.SetValue(File.ReadAllText(selectedCodeFile.Value));
+    }
+
+    private async Task SaveCommand()
+    {
+        string editorContent = await myEditor.GetValue();
+        File.WriteAllText(selectedCodeFile.Value, editorContent);
+        return;
+    }
+
+    private string SetId()
+    {
+        if (myEditor == null)
+        {
+            //Console.WriteLine("set id invoked");
+            return Guid.NewGuid().ToString();
+        }
+        else
+        {
+            return myEditor.Id;
+        }
+    }
+
+    private string GetCodeLanguage(string filename)
+    {
+        string extension = Path.GetExtension(filename);
+        switch (extension)
+        {
+            case ".cs":
+                return "csharp";
+            case ".js":
+                return "javascript";
+            case ".ts":
+                return "typescript";
+            case ".java":
+                return "java";
+            case ".py":
+                return "python";
+            case ".cpp":
+                return "cpp";
+            case ".c":
+                return "c";
+            case ".html":
+                return "html";
+            case ".xml":
+                return "xml";
+            case ".php":
+                return "php";
+            case ".json":
+                return "json";
+            case ".sql":
+                return "sql";
+            case ".md":
+                return "markdown";
+            case ".bat":
+                return "bat";
+            case ".shell":
+                return "shell";
+            case ".go":
+                return "go";
+            case ".fsharp":
+            case ".fs":
+                return "fsharp";
+            case ".vb":
+                return "vb";
+            case ".pl":
+                return "perl";
+            case ".r":
+                return "r";
+            case ".swift":
+                return "swift";
+            case ".yaml":
+                return "yaml";
+            case ".ini":
+                return "ini";
+            case ".dockerfile":
+                return "dockerfile";
+            case ".ruby":
+                return "ruby";
+            case ".lua":
+                return "lua";
+            case ".groovy":
+                return "groovy";
+            case ".pug":
+                return "pug";
+            case ".powershell":
+            case ".ps1":
+                return "powershell";
+            default:
+                return "plaintext";
+        }
+    }
+
+    private async Task CheckErrorsAndProvideCompletion()
+    {
+        string code = await myEditor.GetValue();
+        // Use Roslyn to parse the code and get diagnostics.
+        var syntaxTree = CSharpSyntaxTree.ParseText(code);
+        var diagnostics = syntaxTree.GetDiagnostics();
+
+        // Convert diagnostics to Monaco markers.
+        var markers = diagnostics.Select(diagnostic => new
+        {
+            startLineNumber = diagnostic.Location.GetLineSpan().StartLinePosition.Line + 1,
+            endLineNumber = diagnostic.Location.GetLineSpan().EndLinePosition.Line + 1,
+            startColumn = diagnostic.Location.GetLineSpan().StartLinePosition.Character + 1,
+            endColumn = diagnostic.Location.GetLineSpan().EndLinePosition.Character + 1,
+            message = diagnostic.GetMessage(),
+            severity = ConvertSeverity(diagnostic.Severity)
+        }).ToArray();
+
+        // Use JavaScript interop to call the setModelMarkers function.
+        //get the current js runtime and call the function
+        var editorModel = await myEditor.GetModel();
+        await JSRuntime.InvokeVoidAsync("blazorMonaco.editor.setModelMarkers",editorModel.Uri, "owner", markers);
+
+    }
+
+    private int ConvertSeverity(DiagnosticSeverity severity)
+    {
+        return severity switch
+        {
+            DiagnosticSeverity.Error => 8, // Error severity in Monaco
+            DiagnosticSeverity.Warning => 4, // Warning severity in Monaco
+            DiagnosticSeverity.Info => 2, // Info severity in Monaco
+            _ => 1 // Hint severity in Monaco
+        };
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        getImplantSrcPaths();
+        selectedCodeFile = implantSrcPaths.First();
+    }
+}

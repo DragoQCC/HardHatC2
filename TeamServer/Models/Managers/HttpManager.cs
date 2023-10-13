@@ -110,7 +110,7 @@ namespace TeamServer.Models
                     });
 
                     var host = hostBuilder.Build();
-                    host.RunAsync(_tokenSource.Token);
+                    await host.RunAsync(_tokenSource.Token);
                 }
                 else
                 {
@@ -138,26 +138,36 @@ namespace TeamServer.Models
                 Console.WriteLine(e.Message);
                 Console.WriteLine(e.StackTrace);
             }
-            
+
+
+
         }
 
 
         private void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            services.AddSingleton(EngineerService);
+            //services.AddSingleton(EngineerService);
         }
 
         private void ConfigureApp(IApplicationBuilder app)
         {
             
             app.UseRouting();
-            List<string> urls = c2Profile.Urls.Split(',').ToList();
-            foreach(string url in urls)
+            List<string> urls = c2Profile.Urls;
+            List<string> eventurls = c2Profile.EventUrls;
+            foreach (string url in urls)
             {
                 app.UseEndpoints(e =>
                 {
                 e.MapControllerRoute(url, url, new { controller = "httpmanager", action = "HandleImplant" });
+                });
+            }
+            foreach (string url in eventurls)
+            {
+                app.UseEndpoints(e =>
+                {
+                    e.MapControllerRoute(url, url, new { controller = "httpmanager", action = "HandleImplantEvent" });
                 });
             }
             app.UseStaticFiles();
@@ -167,6 +177,11 @@ namespace TeamServer.Models
         public override void Stop()
         {
             _tokenSource.Cancel();
+            //check to make sure the token is cancelled and if it is then set it to null
+            if (_tokenSource.IsCancellationRequested)
+            {
+                _tokenSource = null;
+            }
         }
 
         private async Task GenerateCert()

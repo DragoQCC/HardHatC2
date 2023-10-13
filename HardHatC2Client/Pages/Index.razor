@@ -62,16 +62,23 @@
     [Inject]
     public NavigationManager Nav { get; set; }
 
-    public static bool FirstRender = true;
 
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         //if user is logged in we need to initalize the other pages
-        if (FirstRender)
+        if (firstRender)
         {
-            FirstRender = false;
-            Nav.NavigateTo("Engineers");
+            if(Login.SignedInUser == null)
+{
+                await DialogService.ShowMessageBox("Please Login", "You must login to use HardHat C2");
+                Nav.NavigateTo("Login");
+            }
+
+            if (Login.SignedInUser.Equals("hardhat_admin", StringComparison.CurrentCultureIgnoreCase))
+            {
+                Nav.NavigateTo("Settings");
+            }
         }
     }
 }

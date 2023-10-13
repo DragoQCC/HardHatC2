@@ -13,6 +13,10 @@ using TeamServer.Models.Managers;
 using System.Threading;
 using TeamServer.Utilities;
 using ApiModels.Shared;
+using TeamServer.Plugin_BaseClasses;
+using ApiModels.Plugin_BaseClasses;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Newtonsoft.Json.Linq;
 //using DynamicEngLoading;
 
 namespace TeamServer.Services
@@ -22,16 +26,17 @@ namespace TeamServer.Services
         public static string ConnectionString = null;
         public static SQLiteAsyncConnection AsyncConnection = null;
         public static SQLiteConnection Connection = null;
-        private static List<Type> dbItemTypes = new List<Type> { typeof(Cred_DAO), typeof(DownloadFile_DAO), typeof(EncryptionKeys_DAO), typeof(Engineer_DAO), typeof(EngineerTaskResult_DAO), typeof(HistoryEvent_DAO),
-                                                        typeof(HttpManager_DAO), typeof(PivotProxy_DAO),typeof(ReconCenterEntity_DAO), typeof(SMBManager_DAO), typeof(TCPManager_DAO), typeof(UploadedFile_DAO),typeof(EngineerTask_DAO),
-                                                typeof(IOCFIle_DAO),typeof(CompiledImplant_DAO),typeof(Alias_DAO) };
+        private static List<Type> dbItemTypes = new List<Type> { typeof(Cred_DAO), typeof(DownloadFile_DAO), typeof(EncryptionKeys_DAO), typeof(ExtImplant_DAO), typeof(ExtImplantTaskResult_DAO), typeof(HistoryEvent_DAO),
+                                                        typeof(HttpManager_DAO), typeof(PivotProxy_DAO),typeof(ReconCenterEntity_DAO), typeof(SMBManager_DAO), typeof(TCPManager_DAO), typeof(UploadedFile_DAO),typeof(ExtImplantTask_DAO),
+                                                typeof(IOCFIle_DAO),typeof(CompiledImplant_DAO),typeof(Alias_DAO),typeof(Webhooks_DAO) };
 
-
+        public static Dictionary<string,DateTime> ImplantLastDatabaseUpdateTime { get; set; } = new Dictionary<string, DateTime>();
+        
         //create a function to init the database file, location string, and setup tables 
         public static void Init()
         {
             char allPlatformPathSeperator = Path.DirectorySeparatorChar;
-            // find the Engineer cs file and load it to a string so we can update it and then run the compiler function on it
+            // find the ExtImplant cs file and load it to a string so we can update it and then run the compiler function on it
             string path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             //split path at bin keyword
             string[] pathSplit = path.Split("bin"); //[0] is the parent folder [1] is the bin folder
@@ -94,19 +99,81 @@ namespace TeamServer.Services
             await AsyncConnection.CreateTablesAsync<UserInfo, RoleInfo, UserRoleInfo, UserSalt>();
         }
 
+        public static async Task CreateTable(Type tableType)
+        {
+            if (AsyncConnection == null)
+            {
+                Connection = new SQLiteConnection(ConnectionString);
+                AsyncConnection = new SQLiteAsyncConnection(ConnectionString);
+            }
+            await AsyncConnection.CreateTableAsync(tableType);
+        }
+
+        public static async Task InsertItem(object item, Type itemType)
+        {
+            if (AsyncConnection == null)
+            {
+                Connection = new SQLiteConnection(ConnectionString);
+                AsyncConnection = new SQLiteAsyncConnection(ConnectionString);
+            }
+            await AsyncConnection.InsertAsync(item, itemType);
+            //ActivationContext.Trigger("OnDatabaseInsert",);
+        }
+
+        public static async Task UpdateItem(object item, Type itemType)
+        {
+            if (AsyncConnection == null)
+            {
+                Connection = new SQLiteConnection(ConnectionString);
+                AsyncConnection = new SQLiteAsyncConnection(ConnectionString);
+            }
+            await AsyncConnection.UpdateAsync(item, itemType);
+        }
+
+        public static async Task DeleteItem(object item)
+        {
+            if (AsyncConnection == null)
+            {
+                Connection = new SQLiteConnection(ConnectionString);
+                AsyncConnection = new SQLiteAsyncConnection(ConnectionString);
+            }
+            await AsyncConnection.DeleteAsync(item);
+        }
+
+        public static async Task<List<T>> GetItemsOfType<T>(Type itemType, Type ItemDAOType)
+        {
+            if (AsyncConnection == null)
+            {
+                Connection = new SQLiteConnection(ConnectionString);
+                AsyncConnection = new SQLiteAsyncConnection(ConnectionString);
+            }
+            var tableMappings = AsyncConnection.TableMappings;
+            var tableMapping = tableMappings.FirstOrDefault(x => x.MappedType == ItemDAOType);
+            var tableName = tableMapping.TableName;
+            var query = $"SELECT * FROM {tableName}";
+            var args = new object[] { };
+            var items = await AsyncConnection.QueryAsync(tableMapping,query, args);
+            //convert the items to the correct type and return them
+            List<T> returnItems = new List<T>();
+            foreach (var item in items)
+            {
+                // Use dynamic casting along with the implicit operator
+                T convertedItem = (T)(dynamic)item;
+                returnItems.Add(convertedItem);
+            }
+            return returnItems;
+        }
+
+
         public static async Task FillTeamserverFromDatabase()
         {
             try
             {
                 Cred.CredList = await GetCreds();
                 HistoryEvent.HistoryEventList = await GetHistoryEvents();
-                List<Httpmanager> httpManagers = await GetHttpManagers();
+                //List<Httpmanager> httpManagers = await GetHttpManagers();
+                List<Httpmanager> httpManagers = await GetItemsOfType<Httpmanager>(typeof(Httpmanager), typeof(HttpManager_DAO));
                 managerService._managers.AddRange(httpManagers);
-
-                //make an http post to the managers controller calling the AddManagersFromDB and pass in the httpManagers list
-                // var request = new RestRequest("/managers/addDB", Method.Post);
-                // request.AddBody(httpManagers);
-                // _ = await Startup.client.PostAsync<IActionResult>(request);
                 await managerService.StartManagersFromDB(httpManagers);
 
 
@@ -114,40 +181,7 @@ namespace TeamServer.Services
                 managerService._managers.AddRange(await GetSMBManagers());
                 DownloadFile.downloadFiles = await GetDownloadedFiles();
                 UploadedFile.uploadedFileList = await GetUploadedFiles();
-                EngineerService._engineers.AddRange(await GetEngineers());
-                List<EngineerTaskResult> taskResults = await GetEngineerTaskResults();
-                List<EngineerTask> taskHeader = await GetEngineerTasks();
-                // for each engineer in EngineerService._engineers add the task results that match the engineer id
-                if (EngineerService._engineers.Count > 0)
-                {
-                    foreach (Engineer engineer in EngineerService._engineers)
-                    {
-                        engineer.AddTaskResults(taskResults.Where(x => x.EngineerId == engineer.engineerMetadata.Id));
-                    }
-                }
-                //for each taskHeader find the matching Id in the taskResults, and use the engineerId to add the Header to the correct engineer in Engineer.PreviousTasks
-                if (taskHeader != null && taskHeader.Count > 0)
-                {
-                    foreach (EngineerTask task in taskHeader)
-                    {
-                        EngineerTaskResult result = taskResults.Where(x => x.Id == task.Id).FirstOrDefault();
-                        if (result != null)
-                        {
-                            Engineer engineer = EngineerService._engineers.Where(x => x.engineerMetadata.Id == result.EngineerId).FirstOrDefault();
-                            if (engineer != null)
-                            {
-                                if (Engineer.previousTasks.ContainsKey(engineer.engineerMetadata.Id))
-                                {
-                                    Engineer.previousTasks[engineer.engineerMetadata.Id].Add(task);
-                                }
-                                else
-                                {
-                                    Engineer.previousTasks.Add(engineer.engineerMetadata.Id, new List<EngineerTask>() { task });
-                                }
-                            }
-                        }
-                    }
-                }
+                ExtImplantService_Base._extImplants.AddRange(await GetExtImplants());
                 
                 List<EncryptionKeys_DAO> encryptionKeys = await GetEncryptionKeys();
                 foreach (EncryptionKeys_DAO key in encryptionKeys)
@@ -179,6 +213,7 @@ namespace TeamServer.Services
                 ReconCenterEntity.ReconCenterEntityList = await GetReconCenterEntities();
                 IOCFile.IOCFiles = await GetIOCFiles();
                 Alias.savedAliases = await GetAliases();
+                Webhook.ExistingWebhooks = await GetWebhooks();
                 foreach (var iocFile in IOCFile.IOCFiles)
                 {
                     await HardHatHub.AddIOCFile(iocFile);
@@ -189,8 +224,6 @@ namespace TeamServer.Services
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(ex.StackTrace);
             }
-           
-
         }
 
         //create a function to get all the Cred item types from the db
@@ -363,9 +396,9 @@ namespace TeamServer.Services
             }
         }
 
-        //a function to return all the EngineerTaskResults from the database
+        //a function to return all the ExtImplantTaskResults from the database
 
-        public static async Task<List<Engineer>> GetEngineers()
+        public static async Task<List<ExtImplant_Base>> GetExtImplants()
         {
             try
             {
@@ -373,9 +406,11 @@ namespace TeamServer.Services
                 {
                     ConnectDb();
                 }
-                var storedEngineers = AsyncConnection.Table<Engineer_DAO>().ToListAsync().Result.Select(x => (Engineer)x);
-                List<Engineer> engineerList = new List<Engineer>(storedEngineers);
-                return engineerList;
+                var storedExtImplants = AsyncConnection.Table<ExtImplant_DAO>().ToListAsync().Result.Select(x => (ExtImplant_Base)x);
+                List<ExtImplant_Base> extimplantList = new List<ExtImplant_Base>(storedExtImplants);
+                Console.WriteLine($"restored {extimplantList.Count} implants from the database");
+                ExtImplantService_Base.ImplantNumber = extimplantList.Count;
+                return extimplantList;
             }
             catch (Exception ex)
             {
@@ -385,7 +420,7 @@ namespace TeamServer.Services
             }
         }
 
-        public static async Task<List<EngineerTask>> GetEngineerTasks()
+        public static async Task<List<ExtImplantTask_Base>> GetExtImplantTasks()
         {
             try
             {
@@ -393,9 +428,9 @@ namespace TeamServer.Services
                 {
                     ConnectDb();
                 }
-                var storedEngineerTasks = AsyncConnection.Table<EngineerTask_DAO>().ToListAsync().Result.Select(x => (EngineerTask)x);
-                List<EngineerTask> engineerTaskList = new List<EngineerTask>(storedEngineerTasks);
-                return engineerTaskList;
+                var storedExtImplantTasks = AsyncConnection.Table<ExtImplantTask_DAO>().ToListAsync().Result.Select(x => (ExtImplantTask_Base)x);
+                List<ExtImplantTask_Base> extimplantTaskList = new List<ExtImplantTask_Base>(storedExtImplantTasks);
+                return extimplantTaskList;
             }
             catch (Exception ex)
             {
@@ -405,7 +440,7 @@ namespace TeamServer.Services
             }
         }
         
-        public static async Task<List<EngineerTaskResult>> GetEngineerTaskResults()
+        public static async Task<List<ExtImplantTaskResult_Base>> GetExtImplantTaskResults()
         {
             try
             {
@@ -413,9 +448,9 @@ namespace TeamServer.Services
                 {
                     ConnectDb();
                 }
-                var storedEngineerTaskResults = AsyncConnection.Table<EngineerTaskResult_DAO>().ToListAsync().Result.Select(x => (EngineerTaskResult)x);
-                List<EngineerTaskResult> engineerTaskResultList = new List<EngineerTaskResult>(storedEngineerTaskResults);
-                return engineerTaskResultList;
+                var storedExtImplantTaskResults = AsyncConnection.Table<ExtImplantTaskResult_DAO>().ToListAsync().Result.Select(x => (ExtImplantTaskResult_Base)x);
+                List<ExtImplantTaskResult_Base> extimplantTaskResultList = new List<ExtImplantTaskResult_Base>(storedExtImplantTaskResults);
+                return extimplantTaskResultList;
             }
             catch (Exception ex)
             {
@@ -521,6 +556,27 @@ namespace TeamServer.Services
                 var storedCompiledImplants = AsyncConnection.Table<CompiledImplant_DAO>().ToListAsync().Result.Select(x => (CompiledImplant)x);
                 List<CompiledImplant> compiledImplantList = new List<CompiledImplant>(storedCompiledImplants);
                 return compiledImplantList;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
+                return null;
+            }
+        }
+
+        //a function to return all webhooks from the database
+        public static async Task<List<Webhook>> GetWebhooks()
+        {
+            try
+            {
+                if (AsyncConnection == null)
+                {
+                    ConnectDb();
+                }
+                var storedWebhooks = AsyncConnection.Table<Webhooks_DAO>().ToListAsync().Result.Select(x => (Webhook)x);
+                List<Webhook> webhookList = new List<Webhook>(storedWebhooks);
+                return webhookList;
             }
             catch (Exception ex)
             {

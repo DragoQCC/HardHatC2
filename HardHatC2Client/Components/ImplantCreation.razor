@@ -1,225 +1,53 @@
-﻿@using ApiModels.Requests;
+﻿@using ApiModels.Plugin_BaseClasses;
+@using ApiModels.Requests;
 @using ApiModels.Shared;
 @using HardHatC2Client.Models;
 @using HardHatC2Client.Pages;
+@using HardHatC2Client.Plugin_Management;
 @using HardHatC2Client.Utilities;
 @using MudExtensions.Enums;
 @using RestSharp;
 @using System.Text;
 
 <div class="container-fluid">
-    <h3>Create New Engineer</h3>
+    <h3>Create New Implant</h3>
     <hr>
-<MudStepper @ref="_stepper" Class="mud-width-full" HeaderSize="Size.Large" Color="Color.Primary" Variant="Variant.Filled" HeaderTextView="MudExtensions.Enums.HeaderTextView.All" PreventStepChangeAsync="new Func<StepChangeDirection, Task<bool>>(CheckChange)"  >
+    @if (String.IsNullOrEmpty(ImplantName))
+    {
+        <MudStepper @ref=_stepper Class="mud-width-full" HeaderSize="Size.Large" Color="Color.Primary" Variant="Variant.Filled" HeaderTextView="MudExtensions.Enums.HeaderTextView.All" PreventStepChangeAsync="new Func<StepChangeDirection, Task<bool>>(CheckChange)"  >
+            <ChildContent>
+                <MudStep Icon="@MaterialDesignIcons.Normal.Wrench" Title="Implant Type">
                     <ChildContent>
-                        <MudStep Icon="@MaterialDesignIcons.Normal.Wrench" Title="Implant Type">
-                            <ChildContent>
-                                <MudForm @ref="_form" @bind-IsValid="@success">
-                                    <MudSelectExtended Clearable="true" Class="mb-4 mt-4" T="ImplantType" Label="Implant Type" Variant="Variant.Filled" Required="true" @bind-value="formData.implantType" RequiredError="Type is required!">
-                                            <MudSelectItemExtended Value="@ImplantType.Engineer"/>
-                                    </MudSelectExtended>
-                                </MudForm>
-                            </ChildContent>
-                        </MudStep>
-                        <MudStep Icon="@MaterialDesignIcons.Normal.Cog" Title="Commands">
-                    <ChildContent>
-                        <MudForm @ref="_form2" @bind-IsValid="@success">
-                                            <MudTransferList Class="d-flex align-center justify-center" MaxItems="10" @ref="_transferList" T="string" @bind-StartCollection="EngCommandList" @bind-EndCollection="selectedEngCommandList" Color="Color.Primary"
-                                        StyleListCommon="background-color: var(--mud-palette-background-grey); width: 300px" MultiSelection="true" SelectAllType="SelectAllType.Buttons"
-                                        OrderFunc="@(new Func<ICollection<string>, ICollection<string>>(OrderMethod))" ButtonVariant="Variant.Text"
-                                        AllowDoubleClick="false" />
-                        </MudForm>
-                    </ChildContent>
-                </MudStep>
-                        <MudStep Icon="@MaterialDesignIcons.Normal.PlusNetwork" Title="Modules">
-                            <ChildContent>
-                                <MudForm @ref="_form3" @bind-IsValid="@success">
-                                            <MudTransferList Class="d-flex align-center justify-center" MaxItems="10" @ref="_moduletransferList" T="string" @bind-StartCollection="EngModuleList" @bind-EndCollection="selectedEngModuleList" Color="Color.Primary"
-                                                             StyleListCommon="background-color: var(--mud-palette-background-grey); width: 300px" MultiSelection="true" SelectAllType="SelectAllType.Buttons"
-                                                             OrderFunc="@(new Func<ICollection<string>, ICollection<string>>(OrderMethod))" ButtonVariant="Variant.Text"
-                                                             AllowDoubleClick="false" />
-                                            @if (selectedEngModuleList.Contains("SleepEncrypt"))
-                                            {
-                                                <MudSelect Clearable="true" Class="mb-4 mt-4" T="SleepTypes" Label="Sleep Encryption Type" Variant="Variant.Filled" Required="true" @bind-value="formData.SleepType" RequiredError="Type is required!">
-                                                    <MudSelectItem Value="@(SleepTypes.None)" />
-                                                    <MudSelectItem Value="@(SleepTypes.Custom_RC4)" />
-                                                </MudSelect>
-                                            }
-                                        </MudForm>
-                            </ChildContent>
-                        </MudStep>
-                        <MudStep Icon="@Icons.Material.Outlined.Construction" Title="Build Options">
-                    <ChildContent>
-                        <MudForm @ref="_form4" @bind-IsValid="@success">
-                            <MudSelectExtended ValuePresenter="ValuePresenter.Text"  T="string" Clearable="true" Label="Manager" AnchorOrigin="Origin.BottomCenter" Variant="Variant.Filled" Required="true" @bind-value="formData.managerName" RequiredError="Type is required!">
-                                <MudSelectItemGroupExtended  T="string" Text="HTTP" Sticky="true" Nested="true">
-                                    @foreach (Manager manager in @Managers.managersList.Where(x => x.Type == ManagerType.http))
+                        <MudForm @ref=_form @bind-IsValid="@success">
+                            <MudSelectExtended Clearable="true" Class="mb-4 mt-4" T="string" Label="Implant Type" Variant="Variant.Filled" Required="true" @bind-value="ImplantName" RequiredError="Type is required!">
+                                @foreach (var CreationPlugin in Plugin_Management.PluginService.pluginHub.ImplantCreation_Plugins)
+                                {
+                                    string displayname = CreationPlugin.Metadata.Name;
+                                    if (displayname.Equals("Default",StringComparison.CurrentCultureIgnoreCase))
                                     {
-                                        <ItemTemplate>
-                                            <MudStack Row="true" Justify="Justify.SpaceEvenly" AlignItems="AlignItems.Center">
-                                                <MudSelectItemExtended Value="@manager.Name" />
-                                                <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Address: @manager.ConnectionAddress</MudChip>
-                                                <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Port: @manager.ConnectionPort</MudChip>
-                                            </MudStack>
-                                        </ItemTemplate>
+                                        displayname = "Engineer";
                                     }
-                                </MudSelectItemGroupExtended>
-                                <MudSelectItemGroupExtended T="string" Text="HTTPS" Sticky="true" Nested="true">
-                                    @foreach (Manager manager in @Managers.managersList.Where(x => x.Type == ManagerType.https))
-                                    {
-                                        <ItemTemplate>
-                                            <MudStack Row="true" Justify="Justify.SpaceEvenly" AlignItems="AlignItems.Center">
-                                                <MudSelectItemExtended Value="@manager.Name" />
-                                                <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Address: @manager.ConnectionAddress</MudChip>
-                                                <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Port: @manager.ConnectionPort</MudChip>
-                                            </MudStack>
-                                        </ItemTemplate>
-                                    }
-                                </MudSelectItemGroupExtended>
-                                <MudSelectItemGroupExtended T="string" Text="TCP" Sticky="true" Nested="true">
-                                    @foreach (Manager manager in @Managers.managersList.Where(x => x.Type == ManagerType.tcp))
-                                    {
-                                        if (manager.connectionMode == ConnectionMode.reverse)
-                                        {
-                                            <ItemTemplate>
-                                                <MudStack Row="true" Justify="Justify.SpaceEvenly" AlignItems="AlignItems.Center">
-                                                    <MudSelectItemExtended Value="@manager.Name"/>
-                                                    <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Direction: @manager.connectionMode</MudChip>
-                                                    <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Address: @manager.ConnectionAddress</MudChip>
-                                                    <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Port: @manager.ConnectionPort</MudChip>
-                                                </MudStack>
-                                            </ItemTemplate>
-                                        }
-                                        else if (manager.connectionMode == ConnectionMode.bind)
-                                        {
-                                            <ItemTemplate>
-                                                <MudStack Row="true" Justify="Justify.SpaceEvenly" AlignItems="AlignItems.Center">
-                                                    <MudSelectItemExtended Value="@manager.Name"/>
-                                                    <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Direction: @manager.connectionMode</MudChip>
-                                                    <MudChip Color="Color.Info" Variant="Variant.Outlined">Local Host Only ?: @manager.IsLocalHost</MudChip>
-                                                    <MudChip Color="Color.Info" Variant="Variant.Outlined">Listening Port: @manager.ListenPort</MudChip>
-                                                </MudStack>
-                                            </ItemTemplate>
-                                        }
-                                    }
-                                </MudSelectItemGroupExtended>
-                                <MudSelectItemGroupExtended T="string" Text="SMB" Sticky="true" Nested="true">
-                                    @foreach (Manager manager in @Managers.managersList.Where(x => x.Type == ManagerType.smb))
-                                    {
-                                       
-                                            <ItemTemplate>
-                                                <MudStack Row="true" Justify="Justify.SpaceEvenly" AlignItems="AlignItems.Center">
-                                                    <MudSelectItemExtended Value="@manager.Name"/>
-                                                    <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Direction: @manager.connectionMode</MudChip>
-                                                    <MudChip Color="Color.Info" Variant="Variant.Outlined">Named Pipe: @manager.NamedPipe</MudChip>
-                                                    @if (manager.connectionMode == ConnectionMode.reverse)
-                                                    {
-                                                        <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Address: @manager.ConnectionAddress</MudChip>
-                                                    }
-                                                </MudStack>
-                                            </ItemTemplate>
-                                    }
-                                </MudSelectItemGroupExtended>
+                                    <MudSelectItemExtended Value="@CreationPlugin.Metadata.Name"> @displayname </MudSelectItemExtended>
+                                }
                             </MudSelectExtended>
-                            <MudTextField Clearable="true" Class="mb-4 mt-4" T="int" Label="Connection Attempts" Variant="Variant.Filled" Required="true" @bind-value="formData.ConnectionAttempts" RequiredError="callback address is required!" />
-                            <MudTextField Clearable="true" Class="mb-4 mt-4" T="int" Label="sleep timer" Variant="Variant.Filled" Required="true" @bind-value="formData.Sleep" RequiredError="port is required!" />
-                            <div class="d-flex">
-                                <MudDatePicker Variant="Variant.Filled" Class="mr-1 mb-4 mt-4" Clearable="true" Required="true" Label="Pick a date" @bind-Date="formData.selectedKillDate"></MudDatePicker>
-                                <MudTimePicker Variant="Variant.Filled" Class="ml-1 mb-4 mt-4" Clearable="true" Label="Pick a time in UTC" Required="true" @bind-Time="formData.selectedKillTime"></MudTimePicker>
-                            </div>
-                            @if (IsPostEx)
-                        {
-                            <MudSelectExtended Clearable="true" Class="mb-4 mt-4" T="EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
-                                <MudSelectItem Value="@(EngCompileType.exe)" />
-                                <MudSelectItem Value="@(EngCompileType.serviceexe)" />
-                            </MudSelectExtended>
-                        }
-                        else
-                        {
-                                <MudSelectExtended Clearable="true" Class="mb-4 mt-4" T="EngCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
-                                    <MudSelectItemExtended Value="@(EngCompileType.exe)" />
-                                    <MudSelectItemExtended Value="@(EngCompileType.serviceexe)" />
-                                    <MudSelectItemExtended Value="@(EngCompileType.shellcode)" />
-                                    <MudSelectItemExtended Value="@(EngCompileType.dll)" />
-                                    <MudSelectItemExtended Value="@(EngCompileType.powershellcmd)" />
-                                </MudSelectExtended>
-                            }
-                            @if(formData.complieType == EngCompileType.shellcode)
-                            {
-                                <MudCheckBox @bind-Checked="@formData.EncodeShellcode" Label="Encode Shellcode with SGN ?" Color="Color.Primary"></MudCheckBox>        
-                            }
-                        </MudForm>
-                    </ChildContent>
-                </MudStep>
-                        <MudStep Icon="@Icons.Material.Filled.Build" Title="Finalize & Submit">
-                            <ChildContent>
-                                <!-- for each item in formData print the property name and its value-->
-                                @foreach (var item in formData.GetType().GetProperties())
-                                {
-                        StringBuilder sb = new();
-                        if (item.Name.Equals("WorkingHours") || item.Name.Equals("KillDateTime") || item.Name.Equals("IsPostEx"))
-                        {
-                            continue;
-                        }
-                        else if (item.Name.Equals("IncludedCommands") || item.Name.Equals("IncludedModules"))
-                        {
-                            //these values are lists add their values to a string builder
-                            if (item.Name.Equals("IncludedCommands"))
-                            {
-                                sb.Append("Included Commands: ");
-                                foreach (var command in formData.IncludedCommands)
-                                {
-                                    sb.Append(command + ", ");
-                                }
-                            }
-                            else
-                            {
-                                sb.Append("Included Modules: ");
-                                foreach (var module in formData.IncludedModules)
-                                {
-                                    sb.Append(module + ", ");
-                                }
-                            }
-                            //remove the last comma
-                            sb.Remove(sb.Length - 2, 2);
-
-                            <MudText>@item.Name : @sb.ToString()</MudText>
-                        }
-                        else
-                        {
-                            <MudText>@item.Name : @item.GetValue(formData)</MudText>
-                        }
-                    }
-                            </ChildContent>
-                        </MudStep>
-                    </ChildContent>
-                            <ActionContent>
-                                @if (_stepper.IsAllStepsCompleted() && success)
-                                {
-                                    validSubmit();
-                                    _stepper.Reset();
-                                    _form.ResetAsync();
-                                    _form2.ResetAsync();
-                                    _form3.ResetAsync();
-                                    _form4.ResetAsync();
-                                    selectedEngCommandList = new List<string>() { "Addcommand", "AddModule", "connect", "link", "FirstCheckIn", "exit", "socks", "rportforward", "canceltask", "GetCommands", "UpdateTaskKey" };
-                                    EngCommandList = CommandValidation.CommandList.Select(x => x.Name).ToList().Except(RequiredEngCommandList, StringComparer.OrdinalIgnoreCase).ToList();
-                                    selectedEngModuleList = new List<string>();
-                                    EngModuleList = new List<string>() { "SleepEncrypt", "BofExecution" };
-                                    StateHasChanged();
-                                }
-                                <MudSpacer />
-                            </ActionContent>
-                    </MudStepper>
-                                </div>
-            <br>
-            <hr>
-                <div>
-                    @if (formData.complieType == EngCompileType.powershellcmd)
-                    {
-                        <MudTextField @bind-Value="PsCmd" Label="Powershell Commmand" ReadOnly="true" Variant="Variant.Outlined"/>
-                    }
-                </div>
+                    </MudForm>
+                </ChildContent>
+            </MudStep>
+        </ChildContent>
+        </MudStepper>
+    }
+    else
+    {
+    <CascadingValue Value="IsPostEx">
+    <CascadingValue Value="Dialog">
+    <CascadingValue Value="SetImplantNameText">
+                    <DynamicComponent Type="@PluginService.GetImplantCreationPlugin(ImplantName).GetComponentType()" Parameters=@DynamicComponentParameters />
+    </CascadingValue>
+    </CascadingValue>
+    </CascadingValue>
+    }
+    
+</div>
 
 @code {
     //this is used to create a new implant
@@ -234,34 +62,29 @@
     [CascadingParameter]
     public MudDialogInstance Dialog { get; set; }
 
-    private SpawnEngineerRequest formData = new SpawnEngineerRequest();
-    MudStepper _stepper;
+    public static string ImplantName { get; set; } = "";
+    bool success { get; set; } = false;
     MudForm _form;
-    MudForm _form2;
-    MudForm _form3;
-    MudForm _form4;
     bool _loading;
+    MudStepper _stepper;
+    public IDictionary<string, object> DynamicComponentParameters = new Dictionary<string, object>();
 
-
-    private bool success;
-    private string[] errors = { };
-    public static string PsCmd { get; set; }
-    MudTransferList<string> _transferList;
-    public static ICollection<string> RequiredEngCommandList = new List<string>() { "Addcommand", "AddModule", "connect","CheckIn", "link", "FirstCheckIn", "exit", "socks", "rportforward", "canceltask", "GetCommands", "UpdateTaskKey" };
-    public ICollection<string> selectedEngCommandList = new List<string>() { "Addcommand", "AddModule", "connect", "CheckIn", "link", "FirstCheckIn", "exit", "socks", "rportforward", "canceltask", "GetCommands", "UpdateTaskKey" };
-    public ICollection<string> EngCommandList = CommandValidation.CommandList.Select(x => x.Name).ToList().Except(RequiredEngCommandList, StringComparer.OrdinalIgnoreCase).ToList();
-
-    MudTransferList<string> _moduletransferList;
-    public  ICollection<string> selectedEngModuleList = new List<string>();
-    public  ICollection<string> EngModuleList = new List<string>() { "SleepEncrypt", "BofExecution" };
-
-    public static  List<string> PostExCommandsThatSpawnNewImp = new List<string>() {"jump","spawn","inject"};
-
-
-
-    private ICollection<string> OrderMethod(ICollection<string> e)
+    public void SetImplantNameText(string newText)
     {
-        return e.Order().ToList();
+        //Console.WriteLine("Setting implant name to: " + newText);
+        ImplantName = newText;
+    }
+
+    bool IsImplantSelected()
+    {
+        if (ImplantName == "")
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
     }
 
     private async Task<bool> CheckChange(StepChangeDirection direction)
@@ -275,66 +98,11 @@
         {
             _loading = true;
             StateHasChanged();
-            await Task.Delay(1000);
+            await Task.Delay(100);
             await _form.Validate();
             _loading = false;
             StateHasChanged();
             return !_form.IsValid;
-        }
-        else if (_stepper.GetActiveIndex() == 1)
-        {
-            _loading = true;
-            StateHasChanged();
-            await Task.Delay(1000);
-            await _form2.Validate();
-            //check that all the required commands are selected
-            if (selectedEngCommandList.Intersect(RequiredEngCommandList).Count() != RequiredEngCommandList.Count())
-            {
-                _loading = false;
-                StateHasChanged();
-                StringBuilder sb = new();   
-                foreach (var item in RequiredEngCommandList)
-                {
-                    if (!selectedEngCommandList.Contains(item))
-                    {
-                        sb.Append(item + ", ");
-                    }
-                }
-                await dialogService.ShowMessageBox("Error", $"You must select all the required commands\n {sb.ToString()}", yesText: "OK");
-                return true;
-            }
-            _loading = false;
-            StateHasChanged();
-            return !_form2.IsValid;
-        }
-        else if (_stepper.GetActiveIndex() == 2)
-        {
-            _loading = true;
-            StateHasChanged();
-            await Task.Delay(1000);
-            await _form3.Validate();
-            _loading = false;
-            StateHasChanged();
-            return !_form3.IsValid;
-        }
-        else if (_stepper.GetActiveIndex() == 3)
-        {
-            _loading = true;
-            StateHasChanged();
-            await Task.Delay(1000);
-            await _form4.Validate();
-            _loading = false;
-            StateHasChanged();
-            return !_form4.IsValid;
-        }
-        else if (_stepper.GetActiveIndex() == 4)
-        {
-            _loading = true;
-            StateHasChanged();
-            await Task.Delay(1000);
-            _loading = false;
-            StateHasChanged();
-            return false;
         }
         else
         {
@@ -342,33 +110,8 @@
         }
     }
 
-    public async Task validSubmit()
+    protected override void OnInitialized()
     {
-        if (formData.managerName != null)
-        {
-            if(IsPostEx)
-            {
-                formData.IsPostEx = IsPostEx; // should be true if created via the postex dialog
-                formData.IncludedCommands = selectedEngCommandList.ToList();
-                formData.IncludedModules = selectedEngModuleList.ToList();
-
-                ImplantCreation_Dialog.PostExSpawnRequest.IsPostEx = formData.IsPostEx;
-                ImplantCreation_Dialog.PostExSpawnRequest.managerName = formData.managerName;
-                ImplantCreation_Dialog.PostExSpawnRequest.ConnectionAttempts = formData.ConnectionAttempts;
-                ImplantCreation_Dialog.PostExSpawnRequest.Sleep = formData.Sleep;
-                ImplantCreation_Dialog.PostExSpawnRequest.complieType = formData.complieType;
-                ImplantCreation_Dialog.PostExSpawnRequest.WorkingHours = formData.WorkingHours;
-                ImplantCreation_Dialog.PostExSpawnRequest.SleepType = formData.SleepType;
-                ImplantCreation_Dialog.PostExSpawnRequest.KillDateTime = (DateTime)(formData.selectedKillDate.Value.Date + formData.selectedKillTime);
-                ImplantCreation_Dialog.PostExSpawnRequest.IncludedCommands = selectedEngCommandList.ToList();
-                ImplantCreation_Dialog.PostExSpawnRequest.IncludedModules = selectedEngModuleList.ToList();
-                formData = new SpawnEngineerRequest();
-                Dialog.Close(DialogResult.Ok(true));
-                return;
-            }
-            await Engineers.CreateEngineer(formData,selectedEngCommandList.ToList(),selectedEngModuleList.ToList());
-            formData = new SpawnEngineerRequest();
-        }
+        DynamicComponentParameters.Add("OnSetImplantName",EventCallback.Factory.Create<string>(this, SetImplantNameText));
     }
-
 }

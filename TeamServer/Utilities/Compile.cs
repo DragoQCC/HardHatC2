@@ -23,7 +23,7 @@ namespace TeamServer.Utilities
 
         public bool Confuse { get; set;}
         
-        public static byte[] GenerateEngCode(string source, EngCompileType compileType, SleepTypes sleepType, List<string> nonIncCommandList, List<string> nonIncModuleList)
+        public static byte[] GenerateEngCode(string source, ImpCompileType compileType, SleepTypes sleepType, List<string> nonIncCommandList, List<string> nonIncModuleList)
         {
             bool IsEngDynLibCompiled = CompileEngDynamicLibrary();
             if (IsEngDynLibCompiled)
@@ -57,7 +57,7 @@ namespace TeamServer.Utilities
             string[] csFileList = otherCsFileList.Where(x => x != pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Program.cs").ToArray();
             
             //if compileType is not serviceexe then remove the ServiceExeMode.cs file from the list
-            if(compileType != EngCompileType.serviceexe)
+            if(compileType != ImpCompileType.serviceexe)
             {
                 csFileList = csFileList.Where(x => x != pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Extra{allPlatformPathSeperator}ServiceExeMode.cs").ToArray();
             }
@@ -87,15 +87,15 @@ namespace TeamServer.Utilities
             }
             
             OutputKind outputKind = OutputKind.ConsoleApplication;
-            if(compileType == EngCompileType.exe)
+            if(compileType == ImpCompileType.exe)
             {
                 outputKind = OutputKind.ConsoleApplication;
             }
-            else if(compileType == EngCompileType.dll)
+            else if(compileType == ImpCompileType.dll)
             {
                 outputKind = OutputKind.DynamicallyLinkedLibrary;
             }
-            else if(compileType == EngCompileType.serviceexe)
+            else if(compileType == ImpCompileType.serviceexe)
             {
                 outputKind = OutputKind.WindowsApplication;
             }

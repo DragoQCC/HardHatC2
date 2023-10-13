@@ -1,0 +1,106 @@
+﻿@using HardHatC2Client.Services;
+
+
+@if (IsPrivate)
+{
+    <div class="d-flex">
+    <MudText Typo="Typo.h3">Private Notes</MudText>
+    <MudToggleIconButton @bind-Toggled="@IsEditing" Icon="@Icons.Material.Filled.Edit" Color="@Color.Error" Title="Edit" ToggledIcon="@Icons.Material.Filled.Note" ToggledColor="@Color.Success" ToggledTitle="View"/>
+    </div>
+    <br>
+    @if (IsEditing)
+    {
+        <MudTextField @bind-Value="PrivateNoteValue" FullWidth="true" Lines="30" />
+    }
+    else
+    {
+        <MudMarkdown Value="@PrivateNoteValue" />
+    }
+
+}
+else
+{
+    <div class="d-flex">
+        <MudText Typo="Typo.h3">Shared Notes</MudText>
+        <MudToggleIconButton @bind-Toggled="@IsEditing" Icon="@Icons.Material.Filled.Edit" Color="@Color.Error" Title="Edit" ToggledIcon="@Icons.Material.Filled.Note" ToggledColor="@Color.Success" ToggledTitle="View"/>
+    </div>
+    <br>
+    @if (IsEditing)
+    {
+        <MudTextField @bind-Value="PublicNoteValue" FullWidth="true" Lines="30" />
+    }
+    else
+    {
+        <MudMarkdown Value="@PublicNoteValue" />
+    }
+}
+
+@code
+{
+    [Parameter]
+    public bool IsPrivate { get; set; }
+
+
+    public string PrivateNoteValue { get; set; } = "";
+
+    public static string PublicNoteValue { get; set; } = "";
+
+    private static string SharedNoteContent { get; set; } 
+
+
+    private bool _isEditing;
+    public bool IsEditing
+    {
+        get => _isEditing;
+        set
+        {
+            if (_isEditing != value)
+            {
+                if (!IsPrivate)
+                {
+                    if (value)
+                    {
+                        // Entering edit mode, store the initial content
+                        SharedNoteContent = PublicNoteValue;
+                    }
+                    else
+                    {
+                        // Exiting edit mode, compare content
+                        if (PublicNoteValue != SharedNoteContent)
+                        {
+                            // Content has changed, send update to other clients
+                            NotifySharedNoteChanged();
+                        }
+                    }
+                }
+                _isEditing = value;
+            }
+        }
+    }
+
+    public delegate Task OnStateChangeDelegate();
+    public static OnStateChangeDelegate OnStateChange;
+
+    public async Task ImplementOnStateChangeEvent()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    //if IsPrivate is false, then this is a shared note and we need to update the shared note using signalR to the other clients when a user edits it
+    public async Task NotifySharedNoteChanged()
+    {
+        await HardHatHubClient._hub.NotifySharedNoteUpdate(PublicNoteValue);
+    }
+
+    public static async Task UpdateSharedNoteContent(string content)
+    {
+        PublicNoteValue = content;
+        await OnStateChange();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        OnStateChange += ImplementOnStateChangeEvent;
+    }
+
+}

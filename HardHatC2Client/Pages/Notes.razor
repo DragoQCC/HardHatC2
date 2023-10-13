@@ -1,0 +1,20 @@
+﻿@page "/Notes"
+@using HardHatC2Client.Components
+<h3>Notes</h3>
+<MudTabs>
+    <MudTabPanel Text="Private Notes">
+        <MudPaper>
+            <Notes_MD IsPrivate="true"></Notes_MD>
+        </MudPaper>
+    </MudTabPanel>
+    <MudTabPanel Text="Shared Notes">
+        <MudPaper>
+            <Notes_MD IsPrivate="false"></Notes_MD>
+        </MudPaper>
+    </MudTabPanel>
+</MudTabs>
+
+@code {
+
+
+}

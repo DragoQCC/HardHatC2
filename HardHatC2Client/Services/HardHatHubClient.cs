@@ -1,8 +1,15 @@
-﻿using ApiModels.Responses;
+﻿using ApiModels.Plugin_BaseClasses;
+using ApiModels.Plugin_Interfaces;
+using ApiModels.Responses;
+using ApiModels.Shared;
+using ApiModels.Shared.TaskResultTypes;
 using HardHatC2Client.Components;
 using HardHatC2Client.Models;
 using HardHatC2Client.Pages;
+using HardHatC2Client.Plugin_BaseClasses;
+using HardHatC2Client.Plugin_Interfaces;
 using HardHatC2Client.Utilities;
+using ICSharpCode.Decompiler.CSharp.Syntax;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Security;
@@ -54,23 +61,17 @@ namespace HardHatC2Client.Services
                     .Build();
 
                 //hubConnection.On is used to let the teamserver invoke things on the client
-                
-                //hub connection on run NewEngineer with no arguments
-                _hubConnection.On<Engineer>("CheckInEngineer", async (engineer) =>
-                {
-                    await Engineers.CheckInEngineer(engineer);
-                });
 
-                //hub connection on the new engineer task response call Interact.UpdateTaskResponse pass in the engineerid string and the list of taskIds
-                _hubConnection.On<string, List<string>>("ShowEngineerTaskResponse", async (engineerid, tasksIds) =>
+                //hub connection on run CheckInImplant with no arguments
+                _hubConnection.On<ExtImplant_Base>("CheckInImplant", async (implant) =>
                 {
-                    await Interact.UpdateTaskResponse(engineerid, tasksIds);
+                    await Implants.CheckInImplant(implant);
                 });
 
                 //hub connection on updateOutGoingTaskDic with 4 strings as arguments 
-                _hubConnection.On<string, string, string>("UpdateOutgoingTaskDic", async (engineerid, taskid, commandHeader) =>
+                _hubConnection.On<ExtImplant_Base, List<ExtImplantTask_Base>>("UpdateOutgoingTaskDic", async (implant, task) =>
                 {
-                    await Interact.UpdateOutGoingTaskDic(engineerid, taskid, commandHeader);
+                    await ImplantInteract.UpdateOutGoingTaskDic(implant, task);
                 });
 
                 //hub connection on UpdateManagerList taking a Maanger object as the argument 
@@ -84,12 +85,6 @@ namespace HardHatC2Client.Services
                     await Managers.GetExistingManagerList(managers);
                 });
 
-                //hub connection on GetExistingTaskInfo taking a Dictionary<string, List<EngineerTask>> as the argument
-                _hubConnection.On<Dictionary<string, List<EngineerTask>>>("GetExistingTaskInfo", async (taskInfoDic) =>
-                {
-                    await Interact.GetExistingTaskInfo(taskInfoDic);
-                });
-               
                 _hubConnection.On<DownloadFile>("AlertDownloadFile", (downloadFile) =>
                 {
                     Downloads.DownloadedFiles.Add(downloadFile);
@@ -107,7 +102,7 @@ namespace HardHatC2Client.Services
 
                 _hubConnection.On<string>("AddPsCommand", async (pscmd) =>
                 {
-                    await Engineers.SetPsCommand(pscmd);
+                    await Implants.SetPsCommand(pscmd);
                 });
 
                 //should take in a PivotProxy object and call a function on the PivotProxy page to add it to the list
@@ -138,7 +133,7 @@ namespace HardHatC2Client.Services
 
                 _hubConnection.On<string>("AddTaskToPickedUpList", async (taskid) =>
                 {
-                    await Interact.AddTaskToPickedUpList(taskid);
+                    await ImplantInteract.AddTaskToPickedUpList(taskid);
                 });
 
                 _hubConnection.On<List<HistoryEvent>>("GetExistingHistoryEvents", async (historyEvents) =>
@@ -172,7 +167,7 @@ namespace HardHatC2Client.Services
                     await FileIOCTable.AddIOCFile(iocFile);
                 });
                 
-                _hubConnection.On<string,Help.HelpMenuItem.OpsecStatus,string>("UpdateCommandOpsecLevelAndMitre", async (command, opsecLevel,MitreTechnique) =>
+                _hubConnection.On<string,CommandItem.OpsecStatus,string>("UpdateCommandOpsecLevelAndMitre", async (command, opsecLevel,MitreTechnique) =>
                 {
                     ToolBoxes.updateOpsecStatusAndMitre(command, opsecLevel,MitreTechnique);
                 });
@@ -182,11 +177,47 @@ namespace HardHatC2Client.Services
                 });
                 _hubConnection.On<string,string>("UpdateImplantNote", async (engId,note) =>
                 {
-                    await Engineers.UpdateImplantNote(engId,note);
+                    await Implants.UpdateImplantNote(engId,note);
                 });
                 _hubConnection.On<List<AliasEdit_Dialog.Alias>>("SendExistingAliases", async (aliases) =>
                 {
                     AliasEdit_Dialog.inputAlises = aliases;
+                });
+
+                _hubConnection.On<ExtImplant_Base,List<string>>("SendTaskResults",async (implant, taskIds) =>
+                {
+                    await ImplantInteract.UpdateTaskResponse(implant,taskIds);
+                });
+                _hubConnection.On<string, string>("NotifyTaskDeletion", async (implantId, taskid) =>
+                {
+                    await ImplantInteract.NotifyTaskDeletion(implantId, taskid);
+                });
+                _hubConnection.On<string>("SharedNoteUpdated", async (content) =>
+                {
+                    await Notes_MD.UpdateSharedNoteContent(content);
+                });
+                _hubConnection.On<VncInteractionResponse, VNCSessionMetadata>("NotifyVNCInteractionResponse", async (vncResponse, VncMetadata) =>
+                {
+                    try
+                    {
+                        //Console.WriteLine("VNC Interaction Response Received");
+                        Task.Run(async () =>
+                        {
+                            await VNC_Util.InitOrUpdateSession(VncMetadata, vncResponse);
+                            await VNC_Util.UpdateDisplaySession(VncMetadata.SessionID);
+                            while (!VNC_Util.VNCUIComponents.ContainsKey(VncMetadata.SessionID))
+                            {
+                                await Task.Delay(100);
+                            }
+                            await VNC_Util.VNCUIComponents[VncMetadata.SessionID].HandleUpdate(vncResponse, VncMetadata);
+                        });
+
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+                    
                 });
 
                 await _hubConnection.StartAsync();
@@ -301,7 +332,7 @@ namespace HardHatC2Client.Services
                 return result;
             }
             
-            public async Task FireMitreAndOpsecUpdate(string command, Help.HelpMenuItem.OpsecStatus opsecLevel,string MitreTechnique)
+            public async Task FireMitreAndOpsecUpdate(string command, CommandItem.OpsecStatus opsecLevel,string MitreTechnique)
             {
                 await _hubConnection.InvokeAsync("UpdateCommandOpsecLevelAndMitre", arg1: command, arg2: opsecLevel,arg3:MitreTechnique);
             }
@@ -316,9 +347,9 @@ namespace HardHatC2Client.Services
                 await _hubConnection.InvokeAsync("AddNoteToImplant", arg1: implantId, arg2: note);
             }
 
-            public async Task RegisterHardHatUserAfterSignin(string username)
+            public async Task<HardHatUser> RegisterHardHatUserAfterSignin(string username)
             {
-                await _hubConnection.InvokeAsync("RegisterHardHatUserAfterSignin", arg1: username);
+                return await _hubConnection.InvokeAsync<HardHatUser>("RegisterHardHatUserAfterSignin", arg1: username);
             }
 
             public async Task UpdateTaskResponseSeenNotif(string username, string taskid,string engineerId)
@@ -336,6 +367,63 @@ namespace HardHatC2Client.Services
                 return await _hubConnection.InvokeAsync<List<AliasEdit_Dialog.Alias>>("GetExistingAliases", arg1: username);
             }
 
+            public async Task<bool> AddWebhook(Webhooks.Webhook webhook)
+            {
+                return await _hubConnection.InvokeAsync<bool>("CreateOrUpdateWebhook", arg1:webhook);
+            }
+
+            public async Task<List<Webhooks.Webhook>> GetExistingWebhooks()
+            {
+                return await _hubConnection.InvokeAsync<List<Webhooks.Webhook>>("GetExistingWebhooks");
+            }
+
+            //public async Task<bool> DeleteWebhook(Webhooks.Webhook webhook)
+            //{
+            //    return await _hubConnection.InvokeAsync<bool>("DeleteWebhook", arg1:webhook);
+            //}
+
+            public async Task<bool> RefreshTeamserverPlugins()
+            {
+                return await _hubConnection.InvokeAsync<bool>("RefreshTeamserverPlugins");
+            }
+
+            public async Task NotifySharedNoteUpdate(string noteContnet)
+            { 
+                await _hubConnection.InvokeAsync("NotifySharedNoteUpdate", arg1: noteContnet);
+            }
+            public async Task VNCsendHeartbeatRequestToServer(string implantId, string vncSessionId)
+            {
+                await _hubConnection.InvokeAsync("VNCsendHeartbeatToServer", arg1: implantId, arg2: vncSessionId, arg3: "");
+            }
+           
+            public async Task VNCsendMouseClickToServer(double x, double y, long button,string implantId, string vncSessionId)
+            {
+                await _hubConnection.InvokeAsync("VNCsendMouseClickToServer", arg1: x, arg2: y, arg3: button, arg4: implantId, arg5:vncSessionId, arg6: Login.SignedInUser);
+            }
+
+            public async Task VNCsendMouseMoveToServer(double x, double y, string implantId, string vncSessionId)
+            { 
+                await _hubConnection.InvokeAsync("VNCsendMouseMoveToServer", arg1: x, arg2: y, arg3: implantId, arg4: vncSessionId, arg5: Login.SignedInUser);
+            }
+
+            public async Task VNCSendTextToServer(string text, string implantId, string vncSessionId)
+            {
+                await _hubConnection.InvokeAsync("VNCSendTextToServer", arg1: text, arg2: implantId, arg3: vncSessionId, arg4: Login.SignedInUser);
+            }
+
+            public async Task VNCsendGetClipboardToServer(string implantId, string vncSessionId)
+            {
+                await _hubConnection.InvokeAsync("VNCsendGetClipboardToServer", arg1: implantId, arg2: vncSessionId);
+            }
+            public async Task VNCsendClipboardDataToServer(string clipboardData, string implantId, string vncSessionId)
+            {
+                await _hubConnection.InvokeAsync("VNCsendClipboardDataToServer", arg1: clipboardData, arg2: implantId, arg3: vncSessionId, arg4: Login.SignedInUser);
+            }
+
+            public async Task<List<string>> GetBindableAddressesOnServer()
+            {
+                return await _hubConnection.InvokeAsync<List<string>>("GetBindableAddressesOnServer");
+            }
         }        
     }
 }

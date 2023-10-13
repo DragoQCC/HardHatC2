@@ -23,12 +23,11 @@ namespace TeamServer.Controllers
 	public class managersController : ControllerBase
 	{
 		public readonly ImanagerService _managers;
-		public readonly  IEngineerService _EngineerService;
+		//public readonly  IEngineerService _EngineerService;
 
-        public managersController(ImanagerService managers, IEngineerService EngineerService)  //constructor for class
+        public managersController(ImanagerService managers)  //constructor for class
         {
             _managers = managers;
-            _EngineerService = EngineerService;
         }
 
         
@@ -57,7 +56,7 @@ namespace TeamServer.Controllers
 			{
                 var manager = new Httpmanager(request.Name, request.ConnectionAddress,request.ConnectionPort,request.BindAddress,request.BindPort, request.IsSecure, request.C2profile);
 
-				manager.Init(_EngineerService);
+				manager.Init();
 				manager.Start();
 				_managers.Addmanager(manager);
 				if(DatabaseService.AsyncConnection == null)
@@ -84,7 +83,7 @@ namespace TeamServer.Controllers
 				{
                     manager = new TCPManager(request.Name, request.ConnectionAddress, request.BindPort);
                 }
-                manager.Init(_EngineerService);
+                manager.Init();
                 manager.Start();
                 _managers.Addmanager(manager);
                 if (DatabaseService.AsyncConnection == null)
@@ -111,7 +110,7 @@ namespace TeamServer.Controllers
 				{
                     manager = new SMBmanager(request.Name, request.NamedPipe, request.ConnectionAddress);
                 }
-                manager.Init(_EngineerService);
+                manager.Init();
                 manager.Start();
                 _managers.Addmanager(manager);
                 if (DatabaseService.AsyncConnection == null)
@@ -136,7 +135,7 @@ namespace TeamServer.Controllers
             foreach (Httpmanager _manager in _managers)
             {
 	            Console.WriteLine($"Calling Init on {_manager.Name}");
-				_manager.Init(_EngineerService);
+				_manager.Init();
 	            _manager.Start();
 				Console.WriteLine($"{_manager.Name} started should be listening on {_manager.ConnectionAddress}:{_manager.ConnectionPort}");
 				return Ok();

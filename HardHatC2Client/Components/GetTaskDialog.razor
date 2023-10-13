@@ -1,0 +1,177 @@
+﻿@using ApiModels.Plugin_BaseClasses;
+@using HardHatC2Client.Pages;
+@using HardHatC2Client.Plugin_BaseClasses;
+@using HardHatC2Client.Plugin_Management;
+@using HardHatC2Client.Utilities;
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value=@newCommandText Label="NewCommand To Run example whoami /groups" Variant="Variant.Filled" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="@Submit" Variant="Variant.Filled">Submit</MudButton>
+        <MudButton Color="Color.Secondary" OnClick="@Cancel" Variant="Variant.Filled">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    string newCommandText = "";
+    [Parameter]
+    public ExtImplant_Base Implant { get; set; }
+    [CascadingParameter]
+    public MudDialogInstance Dialog { get; set; }
+
+    void Submit() => Dialog.Close(OnSubmit());
+    void Cancel() => Dialog.Cancel();
+
+    public TaskExtImplantRequest_Base OnSubmit()
+    {
+        //Console.WriteLine("OnSubmit");
+        var taskVal_base = PluginService.GetCommandValidationPlugin(Implant.ImplantType);
+
+        //parse input for aliases
+        newCommandText = ImplantInteract.ParseInputForAliases(newCommandText, out string aliasParseError);
+        if (!string.IsNullOrWhiteSpace(aliasParseError))
+        {
+            Implants.ShowErrorToast(aliasParseError);
+            return null;
+        }
+
+        string currentTaskId = Guid.NewGuid().ToString();
+        var createObject = new TaskExtImplantRequest_Base();
+        createObject.IssuingUser = Login.SignedInUser;
+        createObject.Command = newCommandText.Split(' ')[0];
+
+
+
+        Dictionary<string, string> commandargs = new Dictionary<string, string>();
+        string error = null;
+
+        //find the command in the helpMenuItems list that matches the command name
+        CommandItem commandItem = taskVal_base.CommandList.FirstOrDefault(x => x.Name.Equals(createObject.Command, StringComparison.OrdinalIgnoreCase));
+        if (commandItem != null)
+        {
+            createObject.RequiresPostProc = commandItem.RequiresPostProc;
+            createObject.RequiresPreProc = commandItem.RequiresPreProc;
+            if (commandItem.Opsec == CommandItem.OpsecStatus.Blocked)
+            {
+                error = "Command is blocked by teamlead";
+            }
+            else if (commandItem.Opsec == CommandItem.OpsecStatus.High)
+            {
+                //we want to spawn a message box to get a yes or a no here ,if the user says no then return false, if the user says yes then continue
+                bool? result = null;
+                Task.Run(async () => await InvokeAsync(async () =>
+                {
+                    result = await ImplantInteract._dialogService.ShowMessageBox("Opsec Warning", "Command is set to High opsec danger level, are you sure you want to execute?", yesText: "Fire Away!", cancelText: "Cancel");
+                })).AndForget();
+                //bool? result =  messageBoxTask.Result;
+                if (result is null || result == false)
+                {
+                    error = "Command Cancelled by user";
+                }
+                else
+                {
+                    taskVal_base.ValidateCommand(newCommandText, out commandargs, out error);
+                }
+            }
+            else
+            {
+                taskVal_base.ValidateCommand(newCommandText, out commandargs, out error);
+            }
+        }
+        else
+        {
+            taskVal_base.ValidateCommand(newCommandText, out commandargs, out error);
+        }
+        if (error != null)
+        {
+            Implants.ShowErrorToast(error);
+            return null;
+        }
+
+        //check if createObject.Command is one of the postex that make a new implant
+        if (ImplantCreation_PluginContent.PostExCommandsThatSpawnNewImp.Contains(createObject.Command, StringComparer.InvariantCultureIgnoreCase))
+        {
+            var diag_options = new DialogOptions { ClassBackground = "dialog-blur-class", MaxWidth = MaxWidth.Large, FullWidth = true, DisableBackdropClick = true };
+            //invoke async needs to used to trigger the render to work correctly from inside c# code
+           Task.Run(async () => await InvokeAsync(async () =>
+            {
+                var diagTask = ImplantInteract._dialogService.Show<ImplantCreation_Dialog>("Create Implant for PostEx Command", diag_options);
+                var result = await diagTask.Result;
+                if (result.Canceled)
+                {
+                    return;
+                }
+                else
+                {
+                    createObject.TaskingExtras.Add("PostExImplantRequest", ImplantCreation_Dialog.PostExSpawnRequest.Serialize());
+                }
+            })).AndForget();
+        }
+
+        //if commandargs contains a /local key we should update the file content
+        if (commandargs.ContainsKey("/local"))
+        {
+            // check each command arg to see if it contains a file path
+            foreach (KeyValuePair<string, string> kvp in commandargs)
+            {
+                if (File.Exists(kvp.Value))
+                {
+                    createObject.File = File.ReadAllBytes(kvp.Value);
+                }
+            }
+            if (!(createObject.File.Length > 0))
+            {
+                Implants.ShowErrorToast("/local flag used but no matching file found on client");
+                return null;
+            }
+        }
+        createObject.Arguments = commandargs;
+
+        //assign the task id to the task
+        createObject.taskID = currentTaskId;
+
+        //if arguments contains /method as a key then if the value is sync set the IsBlocking parameter to true if its async set it to false, if the key is not present set it to false
+        if (createObject.Arguments.ContainsKey("/sync"))
+        {
+            //createObject.Arguments["/method"] = createObject.Arguments["/method"];
+            if (createObject.Arguments["/sync"].Equals("sync", StringComparison.CurrentCultureIgnoreCase))
+            {
+                createObject.IsBlocking = true;
+            }
+            else if (createObject.Arguments["/sync"].Equals("async", StringComparison.CurrentCultureIgnoreCase))
+            {
+                createObject.IsBlocking = false;
+            }
+            else
+            {
+                createObject.IsBlocking = false;
+            }
+        }
+        else
+        {
+            createObject.IsBlocking = false;
+        }
+
+        //update the local outgoing header to make it apear faster upon submit
+        var args = createObject.Arguments is null ? "" : string.Join(" ", createObject.Arguments.Select(kvp => $"{kvp.Key} {kvp.Value}"));
+        createObject.TaskHeader = $"({DateTime.UtcNow}) implant instructed to {createObject.Command + " " + args}\n";
+
+        //update the input dictionary with the new task
+        var newTask = new ExtImplantTask_Base { Id = createObject.taskID, Command = createObject.Command, Arguments = createObject.Arguments, File = null, RequiresPostProc = createObject.RequiresPostProc, RequiresPreProc = createObject.RequiresPreProc, TaskHeader = createObject.TaskHeader, IssuingUser = createObject.IssuingUser };
+        Task.Run(async () => await ImplantInteract.UpdateOutGoingTaskDic(Implant, new List<ExtImplantTask_Base>() { newTask }));
+        createObject.TaskingExtras = new Dictionary<string, byte[]> { { "ImplantId", Implant.Metadata.Id.Serialize() } };
+        //Console.WriteLine("OnSubmit ended");
+        return createObject;
+    }
+
+
+    protected override void OnParametersSet()
+    {
+        //Console.WriteLine("OnParametersSet");
+        //Console.WriteLine("Implant: " + Implant.Metadata.Id);
+        //Console.WriteLine("Dialog: " + Dialog.Id);
+        base.OnParametersSet();
+        
+    }
+}

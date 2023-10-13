@@ -7,6 +7,7 @@ namespace Engineer.Commands
     internal class CheckIn : EngineerCommand
     {
         public override string Name => "checkIn";
+        public override bool IsHidden => true;
 
         public override async Task Execute(EngineerTask task)
         {

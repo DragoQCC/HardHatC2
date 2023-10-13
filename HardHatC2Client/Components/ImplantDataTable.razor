@@ -1,0 +1,78 @@
+﻿@using HardHatC2Client.Pages
+@using HardHatC2Client.Models
+@using System.Diagnostics
+@using HardHatC2Client.Plugin_BaseClasses;
+@using HardHatC2Client.Plugin_Interfaces;
+<MudSimpleTable Dense=true>
+    <thead class ="table table-bordered border-dark" style="background:var(--font-color); color:var(--background);">
+    <tr>
+        <th>Status</th>
+        <th>ImplantType</th>
+        <th>External Address</th>
+        <th>Manager</th>
+        <th>Connection Type</th>
+        <th>Address</th>
+        <th>hostname</th>
+        <th>username</th>
+        <th>note</th>
+        <th>process</th>
+        <th>pid</th>
+        <th>Integrity</th>
+        <th>arch</th>
+        <th>Sleep</th>
+        <th>lastseen</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr class="table" style="background:var(--background); color:var(--font-color);">
+        <td>@implant.Status</td>
+        <td>@implant.ImplantType</td>
+        <td>@implant.ExternalAddress</td>
+        <td>@implant.Metadata.ManagerName</td>
+        <td>@implant.ConnectionType</td>
+        <td>@implant.Metadata.Address</td>
+        <td>@implant.Metadata.Hostname</td>
+        <td>@implant.Metadata.Username</td>
+        <td>@implant.Note</td>
+        <td>@implant.Metadata.ProcessName</td>
+        <td>@implant.Metadata.ProcessId</td>
+        <td>@implant.Metadata.Integrity</td>
+        <td>@implant.Metadata.Arch</td>
+        <td>@implant.Metadata.Sleep</td>
+        <td>@Implants.LastSeenTimer(implant)</td>
+    </tr>
+    </tbody>
+</MudSimpleTable>
+
+@code {
+
+    [Parameter]
+    public ExtImplant_Base implant { get; set; }
+
+    private static Stopwatch stopwatch = new Stopwatch();
+    private static Stopwatch stopwatch2 = new Stopwatch();
+
+    protected override Task OnParametersSetAsync()
+    {
+        if (stopwatch.IsRunning == false)
+        {
+            stopwatch.Start();
+            // stopwatch2.Start();
+            Task.Run(() =>
+            {
+                while (true)
+                {
+                    if (stopwatch.ElapsedMilliseconds > 250)
+                    {
+                        //tries to ensure refresh on last seem timer
+                        InvokeAsync(StateHasChanged);
+                        stopwatch.Restart();
+                    }
+                    Thread.Sleep(100);
+                }
+            });
+        }
+        return base.OnParametersSetAsync();
+    }
+
+}

@@ -1,0 +1,28 @@
+﻿@using ApiModels.Shared;
+@using HardHatC2Client.Pages;
+@using MudExtensions.Enums
+
+<MudDialog>
+    <DialogContent>
+        <MudSelectExtended ValuePresenter="ValuePresenter.ItemContent" ItemCollection="Tag.Existing_Tags" @bind-Value=selectedTag>
+            <ItemTemplate>
+                <MudChip Class="mr-3" Style="@Objectives.setChipStyle(@context.Value.Name)">@context.Value.Name</MudChip>
+            </ItemTemplate>
+            <ItemSelectedTemplate>
+                <MudChip Class="mr-3" Style="@Objectives.setChipStyle(@context.Value.Name)">@context.Value.Name</MudChip>
+            </ItemSelectedTemplate>
+        </MudSelectExtended>
+        <br/>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => Dialog.Close(DialogResult.Ok(selectedTag.Name)))">Select</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="@(() => Dialog.Close(DialogResult.Cancel))">Close</MudButton>
+    </DialogContent>
+    <DialogActions>
+    </DialogActions>
+</MudDialog>
+
+
+@code {
+    [CascadingParameter]
+    public MudDialogInstance Dialog { get; set; }
+    public Tag selectedTag { get; set; }
+}

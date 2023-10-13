@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using DynamicEngLoading;
 
+
 namespace Engineer.Commands;
 
 public class AddCommand : EngineerCommand
@@ -40,11 +41,11 @@ public class AddCommand : EngineerCommand
             {
                 foreach (var loaderException in typeLoadException.LoaderExceptions)
                 {
-                    Console.WriteLine("LoaderException: " + loaderException.Message);
+                    //Console.WriteLine("LoaderException: " + loaderException.Message);
                 }
             }
-            Console.WriteLine(e.Message);
-            Console.WriteLine(e.StackTrace);
+            //Console.WriteLine(e.Message);
+            //Console.WriteLine(e.StackTrace);
             ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"{e.Message}",task,EngTaskStatus.Failed,TaskResponseType.String);
         }
     }

@@ -1,0 +1,650 @@
+﻿@page "/ImplantInteract"
+@using ApiModels.Plugin_BaseClasses;
+@using ApiModels.Plugin_Interfaces;
+@using Blazored.LocalStorage;
+@using HardHatC2Client.Components;
+@using HardHatC2Client.Plugin_BaseClasses;
+@using HardHatC2Client.Plugin_Interfaces;
+@using HardHatC2Client.Plugin_Management;
+@using HardHatC2Client.Services
+@using HardHatC2Client.Utilities
+@using RestSharp
+@using System.Collections.Generic
+@using System.Linq
+@using System.Diagnostics;
+@using ApiModels.Shared.TaskResultTypes
+@inject NavigationManager navigationManagerDefault
+@inject ISnackbar Snackbar
+@inject IToastService toastService
+
+<style>
+    .dialog-blur-class {
+        backdrop-filter: blur(10px);
+    }
+</style>
+
+<CascadingAuthenticationState>
+    <AuthorizeView Roles="Operator,TeamLead">
+        <Authorized>
+            @* <h3 class="text-center">Interact</h3> *@
+            <MudPaper>
+                <MudTabs Outlined="true">
+                    <MudTabPanel Text="implants" Icon="@Icons.Material.Filled.Build">
+                        <div class="d-flex">
+                            <MudIconButton Class="mx-2" Icon="@Icons.Material.Filled.EditNote" @onclick="ShowAliasDialog"></MudIconButton>
+                            <MudSlider ValueLabel="true" @bind-Value="@InteractPanelHeight" Min="5" Max="95" Color="Color.Primary">Interact Window Height</MudSlider>
+                        </div>
+                        <MudDynamicTabs KeepPanelsAlive="true" Rounded="true" @ref="implant_tabs" AddTab="@TabAdd" CloseTab="@TabRemove" Outlined="true">
+                            @foreach(var extimplant in InteractImplants)
+                            {
+                                ExtImplant_Base implant = extimplant as ExtImplant_Base;
+                                string tabTitle = ImpTabTitleDic[implant.Metadata.Id];
+                                <MudTabPanel BadgeData=SetPanelBadgeCount(implant) BadgeColor=@Color.Primary ID="@implant.Metadata.Id" Text="@tabTitle" Icon="@Icons.Material.Filled.Build">
+                                    @if ((string)implant_tabs.ActivePanel.ID == extimplant.Metadata.Id)
+                                    {
+                                        <MudCard Class="" Style="background:#111111; overflow-y:auto" Outlined="true">
+                                            <!--This is the parent card  -->
+                                            <MudPaper Style="background:#111111;" Height="@GetPanelHeight()">
+                                                <InteractWindowTaskCard @ref="ImplantTaskPanels[implant.Metadata.Id]" currentTasks="GetCurrentTasks(implant)" implant="@implant"></InteractWindowTaskCard>
+                                            </MudPaper>
+                                        </MudCard>
+                                        <InteractCommandEntryWindow implant="@implant"></InteractCommandEntryWindow>
+                                        <ImplantDataTable implant="@implant"></ImplantDataTable>
+                                    }
+                                </MudTabPanel>
+                            }
+                        </MudDynamicTabs>
+                    </MudTabPanel>
+                    <MudTabPanel Text="Browsers" Icon="@Icons.Material.Filled.FolderOpen">
+                        <FileBrowser></FileBrowser>
+                    </MudTabPanel>
+                    <MudTabPanel Text="Terminal" Icon="@Icons.Material.Filled.Terminal">
+                        <InteractiveTerminal></InteractiveTerminal>
+                    </MudTabPanel>
+                </MudTabs>
+            </MudPaper>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Roles="Operator,TeamLead,Guest,Administrator">
+        <NotAuthorized>
+            <h1 class="text-center">Not Authorized</h1>
+            <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+        </NotAuthorized>
+    </AuthorizeView>
+</CascadingAuthenticationState>
+
+<style>
+    .my-custom-class {
+        backdrop-filter: blur(10px);
+    }
+</style>
+
+@code {
+    [Inject]
+    private IDialogService DialogService { get; set; }
+    internal static IDialogService _dialogService { get; set; }
+    [Inject]
+    private static NavigationManager Nav { get; set; }
+    [Inject]
+    public ILocalStorageService LocalStorage { get; set; }
+
+    public static Dictionary<ExtImplant_Base, List<ExtImplantTask_Base>> OutGoingTasks = new(); // key is the implant, value is the task
+    public static Dictionary<ExtImplantTask_Base, ExtImplantTaskResult_Base> TaskResultDic = new(); // key is task and value is the task result
+
+    public static List<IExtImplant> InteractImplants = new(); // list of the engineerrs the user has added for interaction
+    public static Dictionary<string, string> ImpTabTitleDic = new(); // key is engineer id, value is the tab title
+
+    public static Dictionary<string, List<string>> ParsedCommandOutputDic = new(); // key is task id, value is a dictionary of properties containing the property name and value
+    public static Dictionary<string, int> LinesParsedCommandsDic = new();
+    public static List<string> PickedUpTasks = new();
+    public static Dictionary<string, bool> PanelExpandedOnce = new(); // key is task id, value is a bool indicating if the panel has been expanded once
+    public static Dictionary<string,InteractWindowContent> TaskPanels = new();
+    public static Dictionary<string, InteractWindowTaskCard> ImplantTaskPanels = new();
+
+
+
+    private IExtImplant currentImp = null;
+
+
+    private string icon = Icons.Material.Filled.CheckCircle;
+    private static bool IsTableView = true;
+    private static bool Initialized = false;
+    public static bool removeContentSwitch { get; set; }
+    private static string OutputOneStringTest = "";
+
+
+    public static int InteractPanelHeight { get; set; } = 65;
+    private static Dictionary<string, MudExpansionPanel> Interact_ExpansionPanels = new(); //key is the task id since those are unique per panel anyway.
+    private static List<string> CancelTaskNumbersToWatch = new List<string>();
+    private static CommandItem SelectedCommandItem { get; set; }
+    private static List<string> CommandsOrOptions = new List<string>();
+    public static MudTabs implant_tabs;
+    public static string interactedImplantId = "";
+    public static bool interactedImpIdUpdated = false;
+    public bool _stateHasChanged = false;
+
+    public static List<string> contextChangingCommands = new List<string>() { "getsystem", "make_token", "steal_token", "rev2self" };
+
+
+
+    public static string SetPanelBadgeCount(ExtImplant_Base implant)
+    {
+        int count = 0;
+        if (!OutGoingTasks.ContainsKey(implant))
+        {
+            return "";
+        }
+        //get the task ids for this engineer
+        if (!OutGoingTasks.TryGetValue(implant, out List<ExtImplantTask_Base> tasks))
+        {
+            return "";
+        }
+        //for each taskid not in the ExpandedOnce Dict add to the count
+        foreach (ExtImplantTask_Base task in tasks)
+        {
+            if (!TaskResultDic.ContainsKey(task)) 
+            {
+                continue;
+            }
+            if (!PanelExpandedOnce.ContainsKey(task.Id) || PanelExpandedOnce[task.Id] == false)
+            {
+                count++;
+            }
+        }
+        if (count == 0)
+        {
+            return "";
+        }
+        return count.ToString();
+    }
+
+    public static string GetPanelHeight()
+    {
+        return InteractPanelHeight + "vh";
+    }
+
+    public static async Task AddTaskToPickedUpList(string taskid)
+    {
+        if (!PickedUpTasks.Contains(taskid))
+        {
+            PickedUpTasks.Add(taskid);
+        }
+    }
+
+
+
+    private Task TabRemove(MudTabPanel tab)
+    {
+        //find the engineer where its ProcessId@Address matches the tabs Title and remove it
+        var implamt = InteractImplants.FirstOrDefault(x => x.Metadata.Id == tab.ID);
+        InteractImplants.Remove(implamt);
+        //StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task TabAdd()
+    {
+        //cause a mud popup where the user can select to add implantss from the engineer table that are not yet interacted with
+        var options = new DialogOptions { ClassBackground = "my-custom-class", MaxWidth = MaxWidth.Medium, FullWidth = true, DisableBackdropClick = true };
+        var dialog = DialogService.Show<ImplantTablePopup>("Add Implants for Interaction", options);
+
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            //result.Data should be a list of implant objects
+            List<ExtImplant_Base> newimplants = result.Data as List<ExtImplant_Base>;
+            foreach (ExtImplant_Base imp in newimplants)
+            {
+                Implants.AddImplantToInteract(imp);
+            }
+        }
+        return;
+    }
+
+    //parse input for Aliases and replace them with the correct command
+    public static string ParseInputForAliases(string input, out string error)
+    {
+        //if input contains any strings that start with $hh_ find the alias and replace it with the alias value
+        //if the alias is not found return an error
+        error = "";
+        List<string> inputArray = input.Split(" ").ToList();
+        foreach (string inputPart in inputArray)
+        {
+            if (inputPart.Contains("$hh_"))
+            {
+                //find the alias in the alias list
+                AliasEdit_Dialog.Alias alias = AliasEdit_Dialog.inputAlises.FirstOrDefault(x => x.Name == inputPart);
+                if (alias is null)
+                {
+                    error = $"Alias {inputPart} not found";
+                    return input;
+                }
+                else
+                {
+                    //replace the alias with the alias value
+                    input = input.Replace(inputPart, alias.Value);
+                    //check if the alias value contains any other aliases
+                    if (alias.Value.Contains("$hh_"))
+                    {
+                        //if it does call this function again to replace the alias
+                        input = ParseInputForAliases(input, out error);
+                    }
+                }
+            }
+        }
+        return input;
+    }
+
+    public async Task ShowAliasDialog()
+    {
+        var options = new DialogOptions { ClassBackground = "my-custom-class", MaxWidth = MaxWidth.Medium, FullWidth = true, DisableBackdropClick = true };
+        var dialog = DialogService.Show<AliasEdit_Dialog>("Create Command Input Aliases", options);
+        var result = await dialog.Result;
+    }
+
+
+    //new task to UpdateOutGoingTaskDic
+    public static async Task UpdateOutGoingTaskDic(ExtImplant_Base implant, List<ExtImplantTask_Base> PreviousTasks)
+    {
+        //pull out the tasks from the previous tasks dictionary and add them to the implantOutboundTaskIds dictionary and add the task.Command and Task.Args to the TaskInputDic with Task.Id as the key
+        foreach (ExtImplantTask_Base task in PreviousTasks)
+        {
+            if (OutGoingTasks.Keys.FirstOrDefault(x => x?.Metadata.Id == implant.Metadata.Id,defaultValue:null) == null)
+            {
+                OutGoingTasks.Add(implant, new List<ExtImplantTask_Base> { task });
+            }
+            if(OutGoingTasks[implant].All(x => x.Id != task.Id))
+            {
+                OutGoingTasks[implant].Add(task);
+            }
+            await UpdateTaskPanelList(task);
+        }
+    }
+
+    public static async Task UpdateTaskPanelList(ExtImplantTask_Base currentTask)
+    {
+        //check if the currentTask is already a key in the TaskPanels dictionary
+        ImplantInteract.TaskPanels.TryAdd(currentTask.Id, new InteractWindowContent());
+    }
+
+    private List<ExtImplantTask_Base> GetCurrentTasks(ExtImplant_Base implant)
+    {
+        if(OutGoingTasks.ContainsKey(implant))
+        {
+            return OutGoingTasks[implant];
+        }
+        else
+        {
+            return new List<ExtImplantTask_Base>();
+        }
+    }
+
+
+    //checks if the task is one of the possible final states and returns true if it is
+    public static bool IsTaskResultInFinalState(ExtImplantTaskResult_Base result)
+    {
+        if (result.Status is not (ExtImplantTaskStatus.Failed or ExtImplantTaskStatus.Complete or ExtImplantTaskStatus.CompleteWithErrors or ExtImplantTaskStatus.CompleteWithErrors or ExtImplantTaskStatus.FailedWithWarnings)) 
+        {
+            return false;
+        }
+        return true;
+    }
+
+    //delete task function
+    public static async Task NotifyTaskDeletion(string implantId, string taskId)
+    {
+        try
+        {
+            //find the task in the outgoing task dictionary and remove it & update the UI
+            var implant = Implants.ImplantList.First(x => x.Metadata.Id == implantId);
+            var task = OutGoingTasks[implant].FirstOrDefault(x => x.Id == taskId);
+            if (task is null)
+            {
+                return;
+            }
+            OutGoingTasks[implant].Remove(task);
+            TaskResultDic.Remove(task);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Console.WriteLine(ex.StackTrace);
+        }
+    }
+
+    //called by signalR when a new task response comes in
+    public static async Task UpdateTaskResponse(ExtImplant_Base implant, List<string>? returnedTaskids)
+    {
+        try
+        {
+            // for each returnedtaskid add it to the TaskIdQueue for the engineerid and then set the GotTaskResponse to true and set the taskid to the first taskid in the queue and execute GetTaskResults
+            if (returnedTaskids != null)
+            {
+                //if implant is offline and is not in the interactImplant list return
+                if (implant.Status.Equals("Offline",StringComparison.CurrentCultureIgnoreCase) && !InteractImplants.Contains(implant))
+                {
+                    return;
+                }
+                if(OutGoingTasks.ContainsKey(implant) is false)
+                {
+                    return;
+                }
+                // using the returned id list call GetTaskResults for each taskid and add the results to the implantTaskOutputDic
+                foreach (string taskid in returnedTaskids)
+                {
+                    ExtImplantTask_Base? task = OutGoingTasks[implant].FirstOrDefault(x => x.Id == taskid);
+                    if (task != null)
+                    {
+                        if (TaskResultDic.TryAdd(task, new ExtImplantTaskResult_Base()) is false)
+                        {
+                            //if the task is already in the result ditionary, check if the task is in a complete state and if so skip it
+                            if (IsTaskResultInFinalState(TaskResultDic[task]))
+                            {
+                                continue;
+                            }
+                        }
+                    }
+                    var tempTaskResult = await GetTaskResults(implant.Metadata.Id, taskid);
+                    //if this was a cancellation task show a toast with the result
+                    if (tempTaskResult != null && CancelTaskNumbersToWatch.Contains(tempTaskResult.Id))
+                    {
+                        if (tempTaskResult.Status == ExtImplantTaskStatus.Complete)
+                        {
+                            Implants.ShowSuccessToast((string)tempTaskResult.ResultObject);
+                        }
+                        else if (tempTaskResult.Status == ExtImplantTaskStatus.Failed)
+                        {
+                            Implants.ShowErrorToast((string)tempTaskResult.ResultObject);
+                        }
+                    }
+                    //if task.command equals cancelTask then dont add ito the taskoutPutDic just display a toast
+                    if (tempTaskResult == null) 
+                    {
+                        continue;
+                    }
+                    //Console.WriteLine($"got back task result for taskid {taskid}");
+                    TaskResultDic[task] = tempTaskResult;
+                    if (tempTaskResult.UsersThatHaveReadResult != null)
+                    {
+                        foreach (string username in tempTaskResult.UsersThatHaveReadResult)
+                        {
+                            //if username matches logged in user then check if the panelexpandedonce contains the taskid if not then add it as false
+                            if (username != Login.SignedInUser) 
+                            {
+                                continue;
+                            }
+                            //basically this says the teamserver has a record of this task id being seen by the user so we can set the panel as being expanded before to prevent repeated notifications
+                            if (PanelExpandedOnce.ContainsKey(taskid))
+                            {
+                                PanelExpandedOnce[taskid] = true;
+                            }
+                            else
+                            {
+                                PanelExpandedOnce.Add(taskid, true);
+                            }
+                        }
+                    }
+                    //check the taskid against the taskInputDic to see if its an ls command if so then we can send data to the file browser component
+                    if (task.Command is "ls" && tempTaskResult.Status is ExtImplantTaskStatus.Complete)
+                    {
+                        //send the output to the file browser component
+                        bool gotOutput = OutGoingTasks[implant].FirstOrDefault(x => x.Id.Equals(tempTaskResult.Id)).Arguments.TryGetValue("/path", out string pathValue);
+                        if (gotOutput)
+                        {
+                            pathValue = pathValue.TrimStart(' ').TrimEnd(' ');
+                            // Stopwatch swfileSpeed = new Stopwatch();
+                            // swfileSpeed.Start();
+                            await Task.Run(() => FileBrowser.AddContent(implant.Metadata.Hostname, pathValue, tempTaskResult.ResultObject as List<FileSystemItem>));
+                            // swfileSpeed.Stop();
+                            // Console.WriteLine($"file browser add content took {swfileSpeed.ElapsedMilliseconds}ms");
+                        }
+                    }
+                    //if the task is a context changer we should update the implant note, and possibly the icon or username
+                    else if (contextChangingCommands.Contains(tempTaskResult.Command, StringComparer.CurrentCultureIgnoreCase) && tempTaskResult.Status == ExtImplantTaskStatus.Complete)
+                    {
+                        if (tempTaskResult.Command.Equals("rev2self", StringComparison.CurrentCultureIgnoreCase))
+                        {
+                            implant.Note = "";
+                            implant.Metadata.Integrity = implant.Metadata.Integrity;
+                        }
+                        else if (tempTaskResult.Command.Equals("getsystem", StringComparison.CurrentCultureIgnoreCase))
+                        {
+                            implant.Note = "Context: NT AUTHORITY\\SYSTEM";
+                            implant.Metadata.Integrity = "SYSTEM";
+                        }
+                        else
+                        {
+                            implant.Note = "Impersonating";
+                        }
+                    }
+                    //if inputDic shows command name is seatbelt call the ParseAndStoreCommandOutput if command status is complete
+                    else if (task.Arguments.Values.Any(value => value.Contains("seatbelt") && tempTaskResult.Status == ExtImplantTaskStatus.Complete))
+                    {
+                        //call the ParseAndStoreCommandOutput method
+                        //split on all the newline chars
+                        string[] parseReult = tempTaskResult.Result.ToString().Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+                        await ParseAndStoreCommandOutput(parseReult, "seatbelt", taskid, implant.Metadata.Id);
+                    }
+
+                    //find the matching entry in the TaskPanels dictionar and invoke the components update method
+                    if (TaskPanels.ContainsKey(taskid))
+                    {
+                        //add a small sleep so the UI can push the updated parameters to the component
+                        await Task.Delay(5);
+                        await TaskPanels[taskid].UpdateAsync();
+                    }
+                }
+                if (ImplantTaskPanels[implant.Metadata.Id].currentTasks is not null)
+                {
+                    await ImplantTaskPanels[implant.Metadata.Id].ForceListUpdate(OutGoingTasks[implant]);
+                }
+
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Console.WriteLine(ex.StackTrace);
+        }
+
+    }
+
+    private static async Task<ExtImplantTaskResult_Base?> GetTaskResults(string implantId, string taskid)
+    {
+        try
+        {
+            if (Login._restClient is not null)
+            {
+               // Stopwatch sw = new Stopwatch();
+               // sw.Start();
+                //gets the task results from the server
+                string resource = $"/implants/{implantId}/taskresults/{taskid}";
+                var request = new RestRequest(resource, Method.Get);
+                // var requestResponse = await _restClient.GetAsync<implantTaskResponse>(request);
+                var requestResponse = await Login._restClient.GetAsync<ExtImplantTaskResult_Base>(request);
+                ExtImplantTaskResult_Base? taskResult = new ExtImplantTaskResult_Base();
+                // stop the stopwatch and print how long it took to get the command 
+               // sw.Stop();
+               // Console.WriteLine($"Time to get task result for task {taskid}: {sw.ElapsedMilliseconds}ms");
+                if (requestResponse != null && requestResponse.Result != null)
+                {
+                    switch (requestResponse.ResponseType)
+                    {
+                        case ExtImplantTaskResponseType.String:
+                            {
+                                taskResult = new ExtImplantTaskResult_Base
+                                    {
+                                        Id = requestResponse.Id,
+                                        ImplantId = requestResponse.ImplantId,
+                                        Command = requestResponse.Command,
+                                        UsersThatHaveReadResult = requestResponse.UsersThatHaveReadResult,
+                                        ResultObject = requestResponse.Result.Deserialize<MessageData>()?.Message, //.RemoveDoubleEmptyLines() ?? string.Empty, // should help to ensure when only a string comes back it is still formatted like true json.
+                                        Status = requestResponse.Status,
+                                        ResponseType = requestResponse.ResponseType,
+                                    };
+                                break;
+                            }
+                        case ExtImplantTaskResponseType.FileSystemItem:
+                            {
+                                taskResult = new ExtImplantTaskResult_Base
+                                    {
+                                        Id = taskid,
+                                        ImplantId = requestResponse.ImplantId,
+                                        Command = requestResponse.Command,
+                                        UsersThatHaveReadResult = requestResponse.UsersThatHaveReadResult,
+                                        ResultObject = requestResponse.Result.Deserialize<List<FileSystemItem>>(),
+                                        Status = requestResponse.Status,
+                                        ResponseType = requestResponse.ResponseType,
+                                    };
+                                break;
+                            }
+                        case ExtImplantTaskResponseType.ProcessItem:
+                            {
+                                taskResult = new ExtImplantTaskResult_Base
+                                    {
+                                        Id = taskid,
+                                        ImplantId = requestResponse.ImplantId,
+                                        Command = requestResponse.Command,
+                                        UsersThatHaveReadResult = requestResponse.UsersThatHaveReadResult,
+                                        ResultObject = requestResponse.Result.Deserialize<List<ProcessItem>>(),
+                                        Status = requestResponse.Status,
+                                        ResponseType = requestResponse.ResponseType,
+                                    };
+                                break;
+                            }
+                        case ExtImplantTaskResponseType.TokenStoreItem:
+                            {
+                                taskResult = new ExtImplantTaskResult_Base
+                                    {
+                                        Id = taskid,
+                                        ImplantId = requestResponse.ImplantId,
+                                        Command = requestResponse.Command,
+                                        UsersThatHaveReadResult = requestResponse.UsersThatHaveReadResult,
+                                        ResultObject = requestResponse.Result.Deserialize<List<TokenStoreItem>>(),
+                                        Status = requestResponse.Status,
+                                        ResponseType = requestResponse.ResponseType,
+                                    };
+                                break;
+                            }
+                        case ExtImplantTaskResponseType.EditFile:
+                            {
+                                taskResult = new ExtImplantTaskResult_Base
+                                {
+                                    Id = taskid,
+                                    ImplantId = requestResponse.ImplantId,
+                                    Command = requestResponse.Command,
+                                    UsersThatHaveReadResult = requestResponse.UsersThatHaveReadResult,
+                                    ResultObject = requestResponse.Result.Deserialize<EditFile>(),
+                                    Status = requestResponse.Status,
+                                    ResponseType = requestResponse.ResponseType,
+                                };
+                                break;
+                            }
+                        default:
+                            taskResult = requestResponse;
+                            break;
+                    }
+
+                    return taskResult;
+                }
+                return null;
+            }
+            return null;
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+            Console.WriteLine(e.StackTrace);
+            return null;
+        }
+
+    }
+
+    public async Task CancelTask(string taskid, string engineerid)
+    {
+        DialogOptions options = new DialogOptions() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+        var dialog = DialogService.Show<YesNoSimpleMudDialog>("Are you sure you want to cancel running task", options);
+        //if the result is true then add the new profile to the list
+        var result = await dialog.Result;
+
+        if (!result.Cancelled)
+        {
+            string CancelTaskRequestNumber = await HardHatHubClient._hub.CancelRunningTask(taskid, engineerid);
+            CancelTaskNumbersToWatch.Add(CancelTaskRequestNumber);
+            Implants.ShowInfoToast($"Request to cancel task {taskid} sent");
+        }
+    }
+
+
+    public static async Task ParseAndStoreCommandOutput(string[] output, string CommandName, string taskid, string implantID)
+    {
+        Dictionary<string, string> commandOutput = new Dictionary<string, string>();
+        List<string> outputParse = new List<string>();
+        foreach (string line in output)
+        {
+            outputParse.Add(line);
+        }
+        if (CommandName == "seatbelt")
+        {
+            commandOutput = HardHatC2Client.Utilities.CommandOutputParsing.ParseSeatbelt(outputParse);
+        }
+        if (commandOutput.Count > 0)
+        {
+            List<string> ParsedCommandOutput = new();
+            //List<string> commandKeys = new();
+            //take each key and value from the commandOutput and join them into a string seperatted by || then add that string to the ParsedCommandOutput list
+            //get the engineer object with the matching id and return its hostname
+            var implant = Implants.ImplantList.Where(s => s.Metadata.Id == implantID).FirstOrDefault();
+            string hostname = implant.Metadata.Hostname;
+            string username = implant.Metadata.Username;
+            foreach (KeyValuePair<string, string> kvp in commandOutput)
+            {
+                ParsedCommandOutput.Add($"{kvp.Key}||{kvp.Value}");
+                //commandKeys.Add(kvp.Key);
+                //string entityName = ReconCenter.DetermineEntity(new Dictionary<string,string>{ { "Hostname", hostname },{ "Username", username } }, CommandName, kvp.Key);
+                //await ReconCenter.AddAutoParsedCommandEntry(entityName, kvp.Key,kvp.Value,CommandName,hostname);
+            }
+            ParsedCommandOutputDic.Add(taskid, ParsedCommandOutput);
+        }
+    }
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var restorelist = OutGoingTasks.AsReadOnly();
+
+            foreach (KeyValuePair<ExtImplant_Base, List<ExtImplantTask_Base>> kvp in restorelist)
+            {
+                List<string> taskIds = kvp.Value.Select(s => s.Id).ToList();
+                await UpdateTaskResponse(kvp.Key, taskIds);
+            }
+        }
+        if (interactedImpIdUpdated)
+        {
+            //get the implant 
+            var implant = Implants.ImplantList.FirstOrDefault(s => s.Metadata.Id == interactedImplantId);
+            if (implant != null && OutGoingTasks.ContainsKey(implant))
+            {
+                await UpdateTaskResponse(implant, OutGoingTasks[implant].Select(s => s.Id).ToList());
+            }
+            if (implant_tabs is not null)
+            {
+                implant_tabs.ActivatePanel(interactedImplantId);
+            }
+            StateHasChanged();
+            interactedImpIdUpdated = false;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Nav = navigationManagerDefault;
+        _dialogService = DialogService;
+    }
+
+}
+

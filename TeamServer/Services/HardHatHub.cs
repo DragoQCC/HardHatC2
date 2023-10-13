@@ -23,17 +23,18 @@ using TeamServer.Models.Managers;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using ApiModels.Shared;
-//using DynamicEngLoading;
+using System.Net.Http;
+using TeamServer.Plugin_Interfaces.Ext_Implants;
+using TeamServer.Plugin_BaseClasses;
+using ApiModels.Plugin_BaseClasses;
+using TeamServer.Plugin_Management;
+using ApiModels.Shared.TaskResultTypes;
+using Microsoft.AspNet.SignalR.Hosting;
+using System.Net;
+using System.Runtime.CompilerServices;
 
 namespace TeamServer.Services
 {
-    public class HardHatUser
-    {
-        public string SignalRClientId { get; set; } //track machine to send notifs to 
-        public string Username { get; set; } //track user to send notifs to
-        public List<string> Roles { get; set; } //track if the user is an admin or not
-    }
-
     public class HardHatHub : Hub
     {
 
@@ -45,51 +46,63 @@ namespace TeamServer.Services
 
         public override Task OnConnectedAsync()
         {
-            if (!_clients.Contains(Context.ConnectionId))
+            try
             {
+                if (!_clients.Contains(Context.ConnectionId))
+                {
+                    Console.WriteLine("client connected to hub");
+                    _clients.Add(Context.ConnectionId);
+                    //for a new connected client call the GetExistingManagerList function passing in the clients connection id
+                    var ManagerList = managerService._managers.Where(h => h.Type == ManagerType.http || h.Type == ManagerType.https).ToList();
+                    List<Httpmanager> httpManagersList = new();
+                    if (ManagerList != null)
+                    {
+                        foreach (manager m in ManagerList)
+                        {
+                            httpManagersList.Add((Httpmanager)m);
+                        }
+                    }
+                    var ManagerList2 = managerService._managers.Where(h => h.Type == ManagerType.smb).ToList();
+                    List<SMBmanager> smbManagersList = new();
+                    if (ManagerList2 != null)
+                    {
+                        foreach (manager m in ManagerList2)
+                        {
+                            smbManagersList.Add((SMBmanager)m);
+                        }
+                    }
+                    var ManagerList3 = managerService._managers.Where(h => h.Type == ManagerType.tcp).ToList();
+                    List<TCPManager> tcpManagersList = new();
+                    if (ManagerList3 != null)
+                    {
+                        foreach (manager m in ManagerList3)
+                        {
+                            tcpManagersList.Add((TCPManager)m);
+                        }
+                    }
+                    //should be called when a client connects, list should be populated from task in Database Service on Ts startup
+                    GetExistingHttpManagers(httpManagersList, Context.ConnectionId);
+                    GetExistingSMBManagers(smbManagersList, Context.ConnectionId);
+                    GetExistingTCPManagers(tcpManagersList, Context.ConnectionId);
+                    foreach (ExtImplant_Base imp in ExtImplantService_Base._extImplants)
+                    {
+                        UpdateOutgoingTaskDic(imp, imp.GetTasks().Result.ToList(), Context.ConnectionId);
+                    }
+                    GetExistingCreds(Context.ConnectionId);
+                    GetExistingHistoryEvents(HistoryEvent.HistoryEventList, Context.ConnectionId);
+                    GetExistingDownloadedFiles(Context.ConnectionId);
+                    GetExistingUploadedFile(Context.ConnectionId);
+                    GetExistingPivotProxies(Context.ConnectionId);
 
-                _clients.Add(Context.ConnectionId);
-                //for a new connected client call the GetExistingManagerList function passing in the clients connection id
-                var ManagerList = managerService._managers.Where(h => h.Type == ManagerType.http || h.Type == ManagerType.https).ToList();
-                List<Httpmanager> httpManagersList = new();
-                if (ManagerList != null)
-                {
-                    foreach (manager m in ManagerList)
-                    {
-                        httpManagersList.Add((Httpmanager)m);
-                    }
                 }
-                var ManagerList2 = managerService._managers.Where(h => h.Type == ManagerType.smb).ToList();
-                List<SMBmanager> smbManagersList = new();
-                if (ManagerList2 != null)
-                {
-                    foreach (manager m in ManagerList2)
-                    {
-                        smbManagersList.Add((SMBmanager)m);
-                    }
-                }
-                var ManagerList3 = managerService._managers.Where(h => h.Type == ManagerType.tcp).ToList();
-                List<TCPManager> tcpManagersList = new();
-                if (ManagerList3 != null)
-                {
-                    foreach (manager m in ManagerList3)
-                    {
-                        tcpManagersList.Add((TCPManager)m);
-                    }
-                }
-                //should be called when a client connects, list should be populated from task in Database Service on Ts startup
-                GetExistingHttpManagers(httpManagersList, Context.ConnectionId);
-                GetExistingSMBManagers(smbManagersList, Context.ConnectionId);
-                GetExistingTCPManagers(tcpManagersList, Context.ConnectionId);
-                GetExistingTaskInfo(Engineer.previousTasks, Context.ConnectionId);
-                GetExistingCreds(Context.ConnectionId);
-                GetExistingHistoryEvents(HistoryEvent.HistoryEventList, Context.ConnectionId);
-                GetExistingDownloadedFiles(Context.ConnectionId);
-                GetExistingUploadedFile(Context.ConnectionId);
-                GetExistingPivotProxies(Context.ConnectionId);
-                
+                return base.OnConnectedAsync();
             }
-            return base.OnConnectedAsync();
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return base.OnConnectedAsync();
+            }
+            
         }
 
         //hub client invokable methods 
@@ -106,7 +119,7 @@ namespace TeamServer.Services
         public async Task<string> HostFile(string file, string filename)
         {
             char allPlatformPathSeperator = Path.DirectorySeparatorChar;
-            // find the Engineer cs file and load it to a string so we can update it and then run the compiler function on it
+            // find the ExtImplant_Base cs file and load it to a string so we can update it and then run the compiler function on it
             string path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             //split path at bin keyword
             string[] pathSplit = path.Split("bin"); //[0] is the parent folder [1] is the bin folder
@@ -135,11 +148,11 @@ namespace TeamServer.Services
         public async Task<string> CancelRunningTask(string taskid, string eng)
         {
             Console.WriteLine("ts cancel running task called, creating task to send to implant");
-            //make a new engineerTask for the engid and use the taskid in an argument with the key /TaskId
-            EngineerTask task = new EngineerTask(Guid.NewGuid().ToString(), "cancelTask", new Dictionary<string, string>() { { "/TaskId", taskid } }, null, false);
-            //find the engineer with the matching engid and add the task to the engineers task list
-            Engineer engineer = EngineersController.engineerList.Where(e => e.engineerMetadata.Id == eng).FirstOrDefault();
-            engineer.QueueTask(task);
+            //make a new implantTask for the engid and use the taskid in an argument with the key /TaskId
+            ExtImplantTask_Base task = new ExtImplantTask_Base(Guid.NewGuid().ToString(), "cancelTask", new Dictionary<string, string>() { { "/TaskId", taskid } }, null, false,false,false, null, "",eng);
+            //find the implant with the matching engid and add the task to the implants task list
+            ExtImplant_Base implant = ExtImplantService_Base._extImplants.Where(e => e.Metadata.Id == eng).FirstOrDefault();
+            implant.QueueTask(task);
             return task.Id;
         }
 
@@ -165,11 +178,6 @@ namespace TeamServer.Services
             {
                 DatabaseService.ConnectDb();
             }
-            //var tempList = DatabaseService.AsyncConnection.Table<ReconCenterEntity_DAO>().Where(x => x.Name == entityName).ToListAsync();
-            //foreach (var item in tempList.Result)
-            //{
-            //    Console.WriteLine(item.Name);
-            //}
             ReconCenterEntity_DAO entityToUpdate = DatabaseService.AsyncConnection.Table<ReconCenterEntity_DAO>().Where(x => x.Name == entityName).ToListAsync().Result.FirstOrDefault();
             //we do this so the list can grow otherwise we would only be able to store one property in the database
             List<ReconCenterEntity.ReconCenterEntityProperty> entitiesProperties = entityToUpdate.Properties.ProDeserializeForDatabase<List<ReconCenterEntity.ReconCenterEntityProperty>>();
@@ -349,16 +357,16 @@ namespace TeamServer.Services
         public async Task AddNoteToImplant(string implantId, string note)
         {
               //find the implant in the list of implants 
-            Engineer implant = EngineerService._engineers.Where(x => x.engineerMetadata.Id == implantId).ToList()[0];
+            ExtImplant_Base implant = ExtImplantService_Base._extImplants.Where(x => x.Metadata.Id == implantId).ToList()[0];
             implant.Note = note;
             //update the implant in the database 
-            await DatabaseService.AsyncConnection.UpdateAsync((Engineer_DAO)implant);
+            await DatabaseService.AsyncConnection.UpdateAsync((ExtImplant_DAO)implant);
             //send the updated implant to the client 
             var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
             await hubContext.Clients.All.SendAsync("UpdateImplantNote", implantId,note);
         }
 
-        public async Task RegisterHardHatUserAfterSignin(string username)
+        public async Task<HardHatUser> RegisterHardHatUserAfterSignin(string username)
         {
             //get the current signalr connection id
             string connectionId = Context.ConnectionId;
@@ -379,15 +387,24 @@ namespace TeamServer.Services
             {
                 SignalRUsers.Add(newuser.Username, newuser);
             }
+            return newuser;
         }
 
-        public async Task UpdateTaskResponseSeenNotif(string username, string taskid, string engineerId)
+        public async Task UpdateTaskResponseSeenNotif(string username, string taskid, string implantId)
         {
             //find the task in the list of tasks and add the username to the list of users who have seen the response
-            //find the engineer in the list of engineers
-            Engineer engineer = EngineerService._engineers.Where(x => x.engineerMetadata.Id == engineerId).ToList()[0];
+            //find the implant in the list of implants
+            ExtImplant_Base implant = ExtImplantService_Base._extImplants.Where(x => x.Metadata.Id == implantId).ToList()[0];
             //find the task result in the list of task results
-            EngineerTaskResult taskResult = engineer._taskResults.Where(x => x.Id == taskid).ToList()[0];
+            ExtImplantTaskResult_Base? taskResult = implant.GetTaskResult(taskid);
+            if(taskResult == null)
+            {
+                return;
+            }
+            if(taskResult.UsersThatHaveReadResult == null)
+            {
+                taskResult.UsersThatHaveReadResult = new List<string>();
+            }
             if (!taskResult.UsersThatHaveReadResult.Contains(username))
             {
                 taskResult.UsersThatHaveReadResult.Add(username);
@@ -399,7 +416,7 @@ namespace TeamServer.Services
                 }
 
                 //update the task result in the database
-                int updated = await DatabaseService.AsyncConnection.UpdateAsync((EngineerTaskResult_DAO)taskResult);
+                int updated = await DatabaseService.AsyncConnection.UpdateAsync((ExtImplantTaskResult_DAO)taskResult);
             }
         }
 
@@ -434,36 +451,214 @@ namespace TeamServer.Services
             return aliasesToSend;
         }
 
-        //end of hub client invokable methods 
+        public async Task<bool> CreateOrUpdateWebhook(Webhook webhook)
+        {
+            if(Webhook.ExistingWebhooks.Where(x => x.Id == webhook.Id).ToList().Count > 0)
+            {
+                //update the webhook 
+                Webhook.ExistingWebhooks.Where(x => x.Id == webhook.Id).ToList()[0] = webhook;
+            }
+            else
+            {
+                //add the webhook to the list of webhooks 
+                Webhook.ExistingWebhooks.Add(webhook);
+            }
+
+            //make sure database connection is not null
+            if (DatabaseService.AsyncConnection == null)
+            {
+                DatabaseService.ConnectDb();
+            }
+            //save the webhook to the database
+            await DatabaseService.AsyncConnection.InsertAsync((Webhooks_DAO)webhook);
+
+            return true;
+        }
+
+        public async Task<List<Webhook>> GetExistingWebhooks()
+        {
+            //get the existing webhooks and return them
+            return Webhook.ExistingWebhooks;
+        }
+
+        public async Task<bool> RefreshTeamserverPlugins()
+        {
+            //refresh the plugins 
+            PluginService.RefreshPlugins();
+            return true;
+        }
+
+        public async Task NotifySharedNoteUpdate(string content)
+        {
+            //send the updated note to all users 
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
+            await hubContext.Clients.All.SendAsync("SharedNoteUpdated", content);
+        }
+
+        //public async Task VNCsendHeartbeatToServer(string implantId, string vncSessionId, string IssuingUser)
+        //{
+        //    //takes in the mouse click from the client, and sends it to the implant
+        //    var task = new ExtImplantTask_Base(Guid.NewGuid().ToString(), "HandleVNCClientInteraction",
+        //        new Dictionary<string, string>()
+        //        {
+        //            { "/interactionEvent", VncInteractionEvent.View.ToString() },
+        //            { "/sessionid", vncSessionId },
+        //},
+        //        null, false, true, true, null, IssuingUser);
+        //    //find the implant in the list of implants
+        //    ExtImplant_Base implant = ExtImplantService_Base._extImplants.Where(x => x.Metadata.Id == implantId).ToList()[0];
+        //    implant.QueueTask(task);
+        //}
+
+        //public async Task VNCsendMouseClickToServer(double x, double y, long button, string implantId, string vncSessionId, string IssuingUser)
+        //{
+        //    //takes in the mouse click from the client, and sends it to the implant
+        //    var task = new ExtImplantTask_Base(Guid.NewGuid().ToString(), "HandleVNCClientInteraction", 
+        //        new Dictionary<string, string>() 
+        //        { 
+        //            { "/interactionEvent", VncInteractionEvent.MouseClick.ToString() },
+        //            { "/x", x.ToString() },
+        //            { "/y", y.ToString() },
+        //            { "/button", button.ToString()},
+        //            { "/sessionid", vncSessionId },
+        //        }, 
+        //        null, false, true, true, null, IssuingUser);
+        //    //find the implant in the list of implants
+        //    ExtImplant_Base implant = ExtImplantService_Base._extImplants.Where(x => x.Metadata.Id == implantId).ToList()[0];
+        //    implant.QueueTask(task);
+        //}
+
+        //public async Task VNCsendMouseMoveToServer(double x, double y, string implantId, string vncSessionId, string IssuingUser)
+        //{
+        //      //takes in the mouse move from the client, and sends it to the implant
+        //    var task = new ExtImplantTask_Base(Guid.NewGuid().ToString(), "HandleVNCClientInteraction",
+        //                       new Dictionary<string, string>()
+        //                       {
+        //            { "/interactionEvent", VncInteractionEvent.MouseMove.ToString() },
+        //            { "/x", x.ToString() },
+        //            { "/y", y.ToString() },
+        //            { "/sessionid", vncSessionId },
+        //        },
+        //    null, false, true, true, null, IssuingUser);
+        //    //find the implant in the list of implants
+        //    ExtImplant_Base implant = ExtImplantService_Base._extImplants.Where(x => x.Metadata.Id == implantId).ToList()[0];
+        //    implant.QueueTask(task);
+        //}
+
+        //public async Task VNCSendTextToServer(string text, string implantId, string vncSessionId, string IssuingUser)
+        //{
+        //      //takes in the text from the client, and sends it to the implant
+        //    var task = new ExtImplantTask_Base(Guid.NewGuid().ToString(), "HandleVNCClientInteraction",
+        //                                      new Dictionary<string, string>()
+        //                                      {
+        //            { "/interactionEvent", VncInteractionEvent.KeySend.ToString() },
+        //            { "/text", text },
+        //            { "/sessionid", vncSessionId },
+        //        },
+        //          null, false, true, true, null, IssuingUser);
+        //    //find the implant in the list of implants
+        //    ExtImplant_Base implant = ExtImplantService_Base._extImplants.Where(x => x.Metadata.Id == implantId).ToList()[0];
+        //    implant.QueueTask(task);
+        //}
+
+        //public async Task VNCsendGetClipboardToServer(string implantId, string vncSessionId)
+        //{
+        //      //takes in the text from the client, and sends it to the implant
+        //    var task = new ExtImplantTask_Base(Guid.NewGuid().ToString(), "HandleVNCClientInteraction",
+        //            new Dictionary<string, string>()
+        //            {
+        //                { "/interactionEvent", VncInteractionEvent.clipboard.ToString() },
+        //                { "/sessionid", vncSessionId },
+        //            },
+        //            null, false, true, true, null, null);
+        //    //find the implant in the list of implants
+        //    ExtImplant_Base implant = ExtImplantService_Base._extImplants.Where(x => x.Metadata.Id == implantId).ToList()[0];
+        //    implant.QueueTask(task);
+        //}
+
+        //public async Task VNCsendClipboardDataToServer(string clipboardData, string implantId, string vncSessionId,string IssuingUser)
+        //{
+        //        //takes in the text from the client, and sends it to the implant
+        //    var task = new ExtImplantTask_Base(Guid.NewGuid().ToString(), "HandleVNCClientInteraction",
+        //                                                                    new Dictionary<string, string>()
+        //                                                                    {
+        //            { "/interactionEvent", VncInteractionEvent.clipboardPaste.ToString() },
+        //            { "/text", clipboardData },
+        //            { "/sessionid", vncSessionId },
+        //        },null, false, true, true, null, IssuingUser);
+        //    //find the implant in the list of implants
+        //    ExtImplant_Base implant = ExtImplantService_Base._extImplants.Where(x => x.Metadata.Id == implantId).ToList()[0];
+        //    implant.QueueTask(task);
+        //}
+
+        public async Task<List<string>> GetBindableAddressesOnServer()
+        {
+            List<string> bindableAddresses = new List<string>();
+            foreach (IPAddress ip in Dns.GetHostAddresses(Dns.GetHostName()))
+            {
+                bindableAddresses.Add(ip.ToString());
+            }
+            return bindableAddresses;
+
+        }
+
+
+//end of hub client invokable methods 
         #endregion
+
+
 
         //teamserver side invokable methods 
         #region teamserver_side_invoke_Methods
-        public static async Task StoreTaskHeader(EngineerTask storeHeaderTask)
+        public static async Task StoreTaskHeader(ExtImplantTask_Base mytask)
         {
             if(DatabaseService.AsyncConnection == null)
             {
                 DatabaseService.ConnectDb();
             }
-            DatabaseService.AsyncConnection.InsertAsync((EngineerTask_DAO)storeHeaderTask);
+            DatabaseService.AsyncConnection.InsertAsync((ExtImplantTask_DAO)mytask);
         }
 
-        public static async Task CheckIn(Engineer engineer)
+        public static async Task CheckIn(ExtImplant_Base implant)
         {
             var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;            
-            await hubContext.Clients.All.SendAsync("CheckInEngineer",engineer);
+            await hubContext.Clients.All.SendAsync("CheckInExtImplant_Base",implant);
         }
 
-        public static async Task ShowEngineerTaskResponse(string engineerid, List<string> tasksIds)
+        public static async Task ImplantCheckIn(ExtImplant_Base implant)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.All.SendAsync("ShowEngineerTaskResponse", engineerid, tasksIds);
+            try
+            {
+                var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
+                await hubContext.Clients.All.SendAsync("CheckInImplant", implant);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
         }
+
+        //public static async Task ShowExtImplant_BaseTaskResponse(string implantid, List<string> tasksIds)
+        //{
+        //    var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
+        //    await hubContext.Clients.All.SendAsync("ShowExtImplant_BaseTaskResponse", implantid, tasksIds);
+        //}
         
-        public static async Task UpdateOutgoingTaskDic(string engineerid, string taskId, string commandHeader)
+        public static async Task UpdateOutgoingTaskDic(ExtImplant_Base implant, List<ExtImplantTask_Base> task, string connectionId)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.All.SendAsync("UpdateOutgoingTaskDic", engineerid, taskId, commandHeader);
+            //should execute whenever a task is queued
+            if (String.IsNullOrEmpty(connectionId))
+            {
+                var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
+                await hubContext.Clients.All.SendAsync("UpdateOutgoingTaskDic", implant, task);
+            }
+            //should execute whenever a new client connects for the first time and needs to be updated with the current task list
+            else
+            {
+                var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
+                await hubContext.Clients.Client(connectionId).SendAsync("UpdateOutgoingTaskDic", implant, task);
+            }
         }
         
         public static async Task UpdateManagerList(manager manager)
@@ -490,10 +685,10 @@ namespace TeamServer.Services
             await hubContext.Clients.Client(clientId).SendAsync("GetExistingManagerList", managers);
         }
 
-        public static async Task GetExistingTaskInfo(Dictionary<string, List<EngineerTask>> TaskInfoDic,string clientId)
+        public static async Task GetExistingTaskInfo(ExtImplant_Base implant, List<ExtImplantTask_Base> results,string clientId)
         {
             var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.Client(clientId).SendAsync("GetExistingTaskInfo", TaskInfoDic);
+            await hubContext.Clients.Client(clientId).SendAsync("GetExistingTaskInfo", implant,results);
         }
 
         public static async Task GetExistingHistoryEvents(List<HistoryEvent> historyEvents, string clientId)
@@ -644,6 +839,164 @@ namespace TeamServer.Services
             DatabaseService.AsyncConnection.InsertAsync((CompiledImplant_DAO)compImp);
             return;
         }
+
+        public static async Task InvokeNewCheckInWebhook(ExtImplant_Base implant)
+        {
+            //find all the webhooks that have the same event type and invoke them
+            var webhooks = Webhook.ExistingWebhooks.Where(x => x.WebHookDataOption.Equals(Webhook.WebHookDataOptions.NewCheckIn));
+
+            foreach (var hook in webhooks)
+            {
+                string temp_data = hook.DataTemplate;
+                string temp_template = hook.Template;
+                //replace the properties with the implant object properties
+                foreach (var prop in implant.GetType().GetProperties())
+                {
+                    if(prop.GetValue(implant) != null)
+                    {
+                        temp_data = temp_data.Replace($"{{{{REPLACE_{prop.Name.ToUpper()}}}}}", prop.GetValue(implant).ToString());
+                    }
+                    else
+                    {
+                        temp_data = temp_data.Replace($"{{{{REPLACE_{prop.Name.ToUpper()}}}}}", "null");
+                    }
+                }
+                foreach (var prop in implant.Metadata.GetType().GetProperties())
+                {
+                    if (prop.GetValue(implant.Metadata) != null)
+                    {
+                        temp_data = temp_data.Replace($"{{{{REPLACE_{prop.Name.ToUpper()}}}}}", prop.GetValue(implant.Metadata).ToString());
+                    }
+                    else
+                    {
+                        temp_data = temp_data.Replace($"{{{{REPLACE_{prop.Name.ToUpper()}}}}}", "null");
+                    }
+                }
+                //update the webhook template title to be event type so NewCheckIn 
+                temp_template = temp_template.Replace("{{REPLACE_TITLE}}", Webhook.WebHookDataOptions.NewCheckIn.ToString());
+
+                //repalce the {{REPLACE_WEBHOOKCONTENT}} with the webhookContent
+                temp_template = temp_template.Replace("{{REPLACE_WEBHOOKCONTENT}}", temp_data);
+
+                //send the webhook as a post request using the http client 
+                var client = new HttpClient();
+                var response = await client.PostAsync(hook.Url, new StringContent(temp_template, Encoding.UTF8, "application/json"));
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine("Webhook message sent successfully.");
+                }
+                else
+                {
+                    Console.WriteLine("Failed to send webhook message: " + response.StatusCode);
+                    Console.WriteLine(response.Content.ReadAsStringAsync().Result);
+                }
+
+            }
+        }
+        public static async Task InvokeNewCheckInWebhook(IExtImplant implant)
+        {
+            //find all the webhooks that have the same event type and invoke them
+            var webhooks = Webhook.ExistingWebhooks.Where(x => x.WebHookDataOption.Equals(Webhook.WebHookDataOptions.NewCheckIn));
+
+            foreach (var hook in webhooks)
+            {
+                string temp_data = hook.DataTemplate;
+                string temp_template = hook.Template;
+                //replace the properties with the implant object properties
+                foreach (var prop in implant.GetType().GetProperties())
+                {
+                    if (prop.GetValue(implant) != null)
+                    {
+                        temp_data = temp_data.Replace($"{{{{REPLACE_{prop.Name.ToUpper()}}}}}", prop.GetValue(implant).ToString());
+                    }
+                    else
+                    {
+                        temp_data = temp_data.Replace($"{{{{REPLACE_{prop.Name.ToUpper()}}}}}", "null");
+                    }
+                }
+                foreach (var prop in implant.Metadata.GetType().GetProperties())
+                {
+                    if (prop.GetValue(implant.Metadata) != null)
+                    {
+                        temp_data = temp_data.Replace($"{{{{REPLACE_{prop.Name.ToUpper()}}}}}", prop.GetValue(implant.Metadata).ToString());
+                    }
+                    else
+                    {
+                        temp_data = temp_data.Replace($"{{{{REPLACE_{prop.Name.ToUpper()}}}}}", "null");
+                    }
+                }
+                //update the webhook template title to be event type so NewCheckIn 
+                temp_template = temp_template.Replace("{{REPLACE_TITLE}}", Webhook.WebHookDataOptions.NewCheckIn.ToString());
+
+                //repalce the {{REPLACE_WEBHOOKCONTENT}} with the webhookContent
+                temp_template = temp_template.Replace("{{REPLACE_WEBHOOKCONTENT}}", temp_data);
+
+                //send the webhook as a post request using the http client 
+                var client = new HttpClient();
+                var response = await client.PostAsync(hook.Url, new StringContent(temp_template, Encoding.UTF8, "application/json"));
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine("Webhook message sent successfully.");
+                }
+                else
+                {
+                    Console.WriteLine("Failed to send webhook message: " + response.StatusCode);
+                    Console.WriteLine(response.Content.ReadAsStringAsync().Result);
+                }
+
+            }
+        }
+
+        public static async Task SendTaskResults(ExtImplant_Base implant, List<string> implantTaskIds)
+        {
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
+            await hubContext.Clients.All.SendAsync("SendTaskResults", implant, implantTaskIds);
+        }
+
+        public static async Task<bool> CreateUserTS(string username, string password, string role)
+        {
+            try
+            {
+                //create a new salt and hash the password
+                string passwordHash =  Hash.HashPassword(password, out byte[] salt);
+                //create an instance of the UserInfo Class and set these properties, makes the Id a new guid , then make an instance of the UserStore and add the user to the store 
+                UserInfo user = new UserInfo { Id = Guid.NewGuid().ToString(), UserName = username, NormalizedUserName = username.Normalize().ToUpperInvariant(), PasswordHash = passwordHash };
+                UserStore userStore = new UserStore();
+                var result = await userStore.CreateAsync(user, new CancellationToken());
+                //Console.WriteLine($"{username}'s hashed password is {passwordHash}");
+                await userStore.SetPasswordSaltAsync(user, salt);
+
+                //created user needs to be give Operator role 
+                await userStore.AddToRoleAsync(user, role, new CancellationToken());
+                if (result.Succeeded)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
+                return false;
+            }
+        }
+
+        public static async Task NotifyTaskDeletion(string implantId, string taskId)
+        {
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
+            await hubContext.Clients.All.SendAsync("NotifyTaskDeletion", implantId, taskId);
+        }
+
+        public static async Task AddVNCInteractionResponse(VncInteractionResponse response, VNCSessionMetadata vncSessionMetadata)
+        {
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
+            await hubContext.Clients.All.SendAsync("NotifyVNCInteractionResponse", response, vncSessionMetadata);
+        }
+
         //end of teamserver side invokable methods 
         #endregion
     }

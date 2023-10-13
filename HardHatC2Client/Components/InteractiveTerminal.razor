@@ -1,7 +1,11 @@
-﻿@using HardHatC2Client.Models;
+﻿@using ApiModels.Shared;
+@using HardHatC2Client.Models;
 @using HardHatC2Client.Pages;
 @using HardHatC2Client.Services;
 @using System.Diagnostics;
+@inject IJSRuntime JSRuntime
+
+
 <MudDynamicTabs @ref="@DynamicTabs" Elevation="4" PanelClass="px-4 py-6" Rounded="true" ApplyEffectsToContainer="true"AddTab="AddTabCallback" CloseTab="@((panel) => CloseTabCallback(panel))" 
     @bind-ActivePanelIndex="UserIndex"AddIconToolTip="Click here to add a new tab" CloseIconToolTip="Close this tab. All data will be lost">
     
@@ -11,37 +15,12 @@
             <MudCard Class="" Style=" background:#111111; overflow-y:auto" Outlined="true">
                 <!--This is the parent card  -->
                 <MudCardContent Style="background:#111111; color:white; height:800px">
-                    @if (item.Content.Count() > 0)
+                    @if (item.Content.Any())
                     {
                         @foreach (InteractiveTerminalCommand currenttask in item.Content.ToList())
                         {
                             <MudExpansionPanels Style="background:#32333d; color:white;" MultiExpansion="true">
-                                <MudExpansionPanel IsExpandedChanged="(e)=>ExpandedChanged(e,item.TabId,currenttask.Id)" style="background:#32333d; color:white;">
-                                    <TitleContent>
-                                        @if (currenttask.Output == null)
-                                        {
-                                            <div class="d-flex">
-                                                <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3" />
-                                                <MudText>@currenttask.Originator Issued terminal command @currenttask.Command @@ @currenttask.Timestamp</MudText>
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            <div class="d-flex">
-                                                <MudIconButton Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success"></MudIconButton>
-                                                <MudText>@currenttask.Originator Issued terminal command @currenttask.Command @@ @currenttask.Timestamp</MudText>
-                                            </div>
-                                        }
-                                    </TitleContent>
-                                    <ChildContent>
-                                        <MudCard Class="" Style="background:var(--background);" Outlined="true">
-                                            <!--This is the per input and output card-->
-                                            <MudCardContent Style="background:#111111; color:white; white-space:pre-wrap;">
-                                                            <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@currenttask.Output</MudText>
-                                            </MudCardContent>
-                                        </MudCard>
-                                    </ChildContent>
-                                </MudExpansionPanel><!--This is the end of per input and output card -->
+                                <InteractiveTerminalContent currenttask="@currenttask" item="@item"></InteractiveTerminalContent>
                             </MudExpansionPanels>
                         }
                     }
@@ -50,7 +29,7 @@
             <EditForm Context="EditFormContext" Model="item" OnValidSubmit="@HandleSubmit">
                 <div class="d-flex mb-xl-5">
                     <MudAutocomplete @ref="mudauto" @bind-value=CommandText Adornment="Adornment.Start" CoerceText="false" CoerceValue="true" AdornmentIcon="@Icons.Material.Filled.Terminal" T="string" Label="Command" Immediate="true" Clearable="true"
-                                 Margin="Margin.Dense" Variant="Variant.Outlined" ResetValueOnEmptyText="true" TextUpdateSuppression=@TextSuppersion KeyDownPreventDefault="true" KeyUpPreventDefault="true" OnKeyUp="@((e)=>OnShowHistoryUp(e,item))">
+                                     Margin="Margin.Dense" Variant="Variant.Outlined" ResetValueOnEmptyText="true" TextUpdateSuppression=@TextSuppersion KeyDownPreventDefault="true" KeyUpPreventDefault="true" OnKeyUp="@((e)=>OnShowCommandHistory(e,item))">
                                      </MudAutocomplete>
                  
                     <MudButton style="background:var(--font-color);color:var(--background)" OnClick=HandleSubmit Variant="Variant.Filled" Class="ml-auto">Send</MudButton>
@@ -172,11 +151,6 @@
         }
         else
         {
-            //if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
-            //{
-            //    //powershell returns the directory the command was ran from each time so it can be cut out.
-            //    outputs.Remove(outputs.ElementAt(0));
-            //}
             string response = "";
             foreach(string output in outputs)
             {
@@ -191,106 +165,61 @@
         Utilities.terminalCommandRecording.TerminalInput[tabid].Enqueue(command);
     }
 
-    private async Task ExpandedChanged(bool IsChanged,string tabid, string taskId)
+
+
+    private async Task OnShowCommandHistory(KeyboardEventArgs e, TabView tab)
     {
-        TabView currentTab = UserTabs.Where(x => x.TabId == tabid).ToList()[0];
-        InteractiveTerminalCommand currentCommand = currentTab.Content.Where(x => x.Id == taskId).ToList()[0];
-        if(IsChanged)
+        if (tab.Content.Count > 0)
         {
-            currentCommand.Output = await HardHatHubClient._hub.GetTerminalOutput(currentCommand.Id);
-        }
-        else
-        {
-            currentCommand.Output = "";
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-        }
-    }
-
-    //public async Task CancelTask(string taskid, string engineerid)
-    //{
-    //    DialogOptions options = new DialogOptions() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-
-    //    var dialog = DialogService.Show<YesNoSimpleMudDialog>("Are you sure you want to cancel running task", options);
-    //    //if the result is true then add the new profile to the list
-    //    var result = await dialog.Result;
-
-    //    if (!result.Canceled)
-    //    {
-
-    //    }
-    //}
-
-    private void OnShowHistoryUp(KeyboardEventArgs e, TabView tab)
-    {
-        try
-        {
-            if (tab.Content.Count > 0)
+            //check to make sure the key pressed was the up arrow
+            if (e.Code == "ArrowUp")
             {
-                //check to make sure the key pressed was the up arrow
-                if (e.Code == "ArrowUp")
+                HistoryIndex++;
+                if (HistoryIndex > (tab.Content.Count - 1))
                 {
-                    if (HistoryIndex > tab.Content.Count)
-                    {
-                        HistoryIndex = tab.Content.Count;
-                    }
-                    //get the Historyindex, set placeholder text to the history item at that index, and increment the index
-                    if (HistoryIndex <= tab.Content.Count)
-                    {
-                        if (HistoryIndex == 0)
-                        {
-                            HistoryIndex = 1;
-                        }
-                        Task.Run(async () => await ForceHistoryUpdateUP(tab));
-                    }
+                    HistoryIndex = (tab.Content.Count - 1);
                 }
-                else if (e.Code == "ArrowDown")
+                //get the Historyindex, set placeholder text to the history item at that index, and increment the index
+                if (HistoryIndex <= tab.Content.Count)
                 {
-                    if (HistoryIndex == 0)
+                    if (HistoryIndex < 0)
                     {
-                        HistoryIndex = 1;
+                        HistoryIndex = 0;
                     }
-                    //get the Historyindex, set placeholder text to the history item at that index, and decrement the index
-                    if (HistoryIndex > 0)
-                    {
-                        if (HistoryIndex == 0)
-                        {
-                            HistoryIndex = 1;
-                        }
-                        else
-                        {
-                            HistoryIndex--;
-                            Task.Run(async () => await ForceHistoryUpdateDOWN(tab));
-                        }
-                    }
+                    await GetCommandHistory(tab);
+                }
+            }
+            else if (e.Code == "ArrowDown")
+            {
+                HistoryIndex--;
+                if (HistoryIndex < -1)
+                {
+                    //if index is less than -1 set it to -1 and update the placeholder text to be blank
+                    HistoryIndex = -1;
+                    TextSuppersion = false; //allows text box to be updated
+                    CommandText = "";
+                    await Task.Delay(500);
+                    TextSuppersion = true; // reset so textbox can be typed in without autoclearing until submission
+                }
+                //get the Historyindex, set placeholder text to the history item at that index, and decrement the index
+                if (HistoryIndex >= 0)
+                {
+                    await GetCommandHistory(tab);
                 }
             }
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-            Console.WriteLine(ex.StackTrace);
-        }
-        
     }
 
-    private async Task ForceHistoryUpdateUP(TabView tab)
+    private async Task GetCommandHistory(TabView tab)
     {
         TextSuppersion = false; //allows text box to be updated
-        CommandText = tab.Content[tab.Content.Count - HistoryIndex].Command;
-        await Task.Delay(2);
-        TextSuppersion = true; // reset so textbox can be typed in without autoclearing until submission
-        HistoryIndex++;
-    }
-    private async Task ForceHistoryUpdateDOWN(TabView tab)
-    {
-        TextSuppersion = false; //allows text box to be updated
-        CommandText = tab.Content[tab.Content.Count - HistoryIndex].Command;
-        await Task.Delay(2);
+        CommandText = tab.Content[HistoryIndex].Command;
+        await Task.Delay(500);
         TextSuppersion = true; // reset so textbox can be typed in without autoclearing until submission
     }
-
     
+
+
     protected override void OnAfterRender(bool firstRender)
     {
         if (_updateIndex == true)
@@ -299,23 +228,6 @@
             _updateIndex = false;
             StateHasChanged();
         }
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        stopwatch.Start();
-        Task.Run(() =>
-        {
-            while (true)
-            {
-                if (stopwatch.ElapsedMilliseconds > 500)
-                {
-                    InvokeAsync(StateHasChanged);
-                    stopwatch.Restart();
-                }
-                Thread.Sleep(1);
-            }
-        });
     }
 
 }

@@ -1,0 +1,107 @@
+﻿@inject IJSRuntime JSRuntime
+@using HardHatC2Client.Components;
+@using HardHatC2Client.Models
+@using HardHatC2Client.Pages
+@using HardHatC2Client.Services
+@using ApiModels.Shared
+
+<MudExpansionPanel IsExpandedChanged="(e)=>ExpandedChanged(e,item.TabId,currenttask.Id)" style="background:#32333d; color:white;">
+    <TitleContent>
+        <div class="d-flex">
+        @if (currenttask.Output == null)
+        {
+            <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3" />
+        }
+        else
+        {
+            <MudIconButton Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success"></MudIconButton>
+        }
+        <MudText>@currenttask.Originator Issued terminal command @currenttask.Command @@ @currenttask.Timestamp</MudText>
+        <MudIconButton Class="mx-5" Icon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" Color="Color.Primary" OnClick="() => CopyTaskCommand(currenttask.Command)"></MudIconButton>
+        <MudSpacer />
+        @if (Tag.Existing_Tags.Count > 0)
+        {
+            string taskChipName = GetKeyByValue(Tag.Terminal_Tags, currenttask.Id);
+            @if (!String.IsNullOrEmpty(taskChipName))
+            {
+                <MudChip Size="Size.Small" Style="@Objectives.setChipStyle(taskChipName)" Class="mr-3">@taskChipName</MudChip>
+            }
+            <MudIconButton class="mx-5" Icon="@Icons.Outlined.Label" Size="Size.Small" Color="Color.Primary" OnClick="() => SelectTaskTagChip(currenttask.Id)"></MudIconButton>
+        }
+        </div>
+    </TitleContent>
+    <ChildContent>
+        <MudCard Class="" Style="background:var(--background);" Outlined="true">
+            <!--This is the per input and output card-->
+            <MudCardContent Style="background:#111111; color:white; white-space:pre-wrap;">
+                <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@currenttask.Output</MudText>
+            </MudCardContent>
+        </MudCard>
+    </ChildContent>
+</MudExpansionPanel><!--This is the end of per input and output card -->
+
+@code {
+
+    [Inject]
+    private IDialogService DialogService { get; set; }
+    
+    [Parameter]
+    public InteractiveTerminalCommand currenttask { get; set; }
+    [Parameter]
+    public InteractiveTerminal.TabView item { get; set; }
+
+    public async Task CopyTaskCommand(string command)
+    {
+    //copy the command to the clipboard
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", command.Trim());
+    }
+
+    public static string GetKeyByValue(Dictionary<string, List<string>> dict, string targetValue)
+    {
+        foreach (KeyValuePair<string, List<string>> kvp in dict)
+        {
+            if (kvp.Value.Contains(targetValue))
+            {
+                return kvp.Key;
+            }
+        }
+        return null;
+    }
+
+
+    public async Task SelectTaskTagChip(string taskid)
+    {
+    //a message box to pick the tag name for the task
+        var options = new DialogOptions { ClassBackground = "background-blur", MaxWidth = MaxWidth.Medium, FullWidth = true, DisableBackdropClick = true };
+        var dialog = DialogService.Show<TagSelectionDialog>("Select Tag", options);
+        var result = await dialog.Result;
+        if (!result.Cancelled)
+        {
+            string tagName = result.Data.ToString();
+            if (Tag.Terminal_Tags.ContainsKey(tagName) && Tag.Terminal_Tags[tagName].Contains(taskid) is false)
+            {
+                Tag.Terminal_Tags[tagName].Add(taskid);
+            }
+            else
+            {
+                Tag.Terminal_Tags.Add(tagName, new List<string>() { taskid });
+            }
+        }
+    }
+
+    private async Task ExpandedChanged(bool IsChanged,string tabid, string taskId)
+    {
+        InteractiveTerminal.TabView currentTab = InteractiveTerminal.UserTabs.Where(x => x.TabId == tabid).ToList()[0];
+        InteractiveTerminalCommand currentCommand = currentTab.Content.Where(x => x.Id == taskId).ToList()[0];
+        if(IsChanged)
+        {
+            currentCommand.Output = await HardHatHubClient._hub.GetTerminalOutput(currentCommand.Id);
+        }
+        else
+        {
+            currentCommand.Output = "";
+        }
+    }
+
+
+}

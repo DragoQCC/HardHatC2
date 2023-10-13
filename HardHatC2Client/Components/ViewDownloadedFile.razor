@@ -1,0 +1,12 @@
+﻿<MudPaper Height="700px">
+    <MudExFileDisplay Dense="true"  ShowContentError="false" FileName="@fileName" ContentType="@contentType" Url="@dataUrl"></MudExFileDisplay>
+</MudPaper>
+@code {
+
+    [Parameter]
+    public string fileName { get; set; }
+    [Parameter]
+    public string contentType { get; set; }
+    [Parameter]
+    public string dataUrl { get; set; }
+}

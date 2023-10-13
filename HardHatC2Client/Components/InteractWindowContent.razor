@@ -1,64 +1,79 @@
-﻿@using ApiModels.Responses;
+﻿@using ApiModels.Plugin_BaseClasses;
+@using ApiModels.Plugin_Interfaces;
+@using ApiModels.Responses;
+@using ApiModels.Shared.TaskResultTypes;
 @using HardHatC2Client.Models;
 @using HardHatC2Client.Pages;
 @using System.Collections.Concurrent
-@using HardHatC2Client.Models.TaskResultTypes
+@using HardHatC2Client.Plugin_BaseClasses;
+@using HardHatC2Client.Plugin_Interfaces;
 @using HardHatC2Client.Services;
 @using HardHatC2Client.Utilities
 @using System.Diagnostics;
 @using ApiModels.Shared;
-@using static HardHatC2Client.Pages.Interact;
+@using static HardHatC2Client.Pages.ImplantInteract;
 @inject IJSRuntime JSRuntime
 
-<MudExpansionPanel Style="background:#32333d; color:white;" IsExpandedChanged="(e)=>ExpandedChanged(e,engineer.Id,currenttask)">
+<MudExpansionPanel Style="background:#32333d; color:white;" @ref="@interactConPanel" IsExpandedChanged="(e)=>ExpandedChanged(e,implant,currenttask.Id,this)">
     <TitleContent>
-        @if (PickedUpTasks.Contains(currenttask) && !(EngineerReturnedTaskIds.Values.Any(x => x.Contains(currenttask))))
+        @if (PickedUpTasks.Contains(currenttask.Id) && !(TaskResultDic.ContainsKey(currenttask)))
         {
             <div class="d-flex">
                 <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Class="mr-3" />
-                <MudIconButton Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() => CancelTask(currenttask, engineer.Id)"></MudIconButton>
+                <MudIconButton Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() => CancelTask(currenttask.Id, implant.Metadata.Id)"></MudIconButton>
                 <MudText>@commandHeaderText</MudText>
+                <MudIconButton Class="mx-5" Icon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" Color="Color.Primary" OnClick="() => CopyTaskCommand(commandHeaderText)"></MudIconButton>
             </div>
         }
-        else if (EngineerReturnedTaskIds.Values.Any(x => x.Contains(currenttask) && TaskStatusDic.ContainsKey(currenttask)))
+        else if (CardContent != null)
         {
-            if (TaskStatusDic[currenttask] == EngTaskStatus.Running)
+            if (CardContent.Status == ExtImplantTaskStatus.Running)
             {
                 <div class="d-flex">
                     <MudProgressCircular Size="Size.Small" Color="Color.Success" Indeterminate="true" Class="mr-3" />
-                    <MudIconButton class="mx-5" Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() => CancelTask(currenttask, engineer.Id)"></MudIconButton>
+                    <MudIconButton class="mx-5" Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Error" OnClick="() => CancelTask(currenttask.Id, implant.Metadata.Id)"></MudIconButton>
                     <MudText>@commandHeaderText</MudText>
-
+                    <MudIconButton Class="mx-5" Icon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" Color="Color.Primary" OnClick="() => CopyTaskCommand(commandHeaderText)"></MudIconButton>
                 </div>
             }
             else
             {
                 <div class="d-flex">
-                    @if (Interact.PanelExpandedOnce.ContainsKey(currenttask))
+                    @if (ImplantInteract.PanelExpandedOnce.ContainsKey(currenttask.Id))
                     {
-                        <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon>
+                        <MudIcon Icon=@setIcon(CardContent) Color=@SetColor(CardContent) class="mr-3"></MudIcon>
                     }
                     else
                     {
                         <MudBadge Dot="true" Color="Color.Primary" Class="mr-3">
-                            <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon>
+                            <MudIcon Icon=@setIcon(CardContent) Color=@SetColor(CardContent) class="mr-3"></MudIcon>
                         </MudBadge>
                     }
                     <MudText>@commandHeaderText</MudText>
-                    <MudIconButton Class="mx-5" Icon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" Color="Color.Primary" OnClick="() => CopyTaskCommand(currenttask)"></MudIconButton>
+                    <MudIconButton Class="mx-5" Icon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" Color="Color.Primary" OnClick="() => CopyTaskCommand(commandHeaderText)"></MudIconButton>
+                    <MudSpacer/>
+                    @if(Tag.Existing_Tags.Count >0)
+                    {
+                        string taskChipName = GetKeyByValue(Tag.Task_Tags, currenttask.Id);
+                        @if (!String.IsNullOrEmpty(taskChipName))
+                        {
+                            <MudChip Size="Size.Small" Style="@Objectives.setChipStyle(taskChipName)" Class="mr-3">@taskChipName</MudChip>
+                        }
+                        <MudIconButton class="mx-5" Icon="@Icons.Outlined.Label" Size="Size.Small" Color="Color.Primary" OnClick="() => SelectTaskTagChip(currenttask.Id)"></MudIconButton>
+                    }
                 </div>
             }
         }
         else
         {
             <div class="d-flex">
-                @if (Interact.PanelExpandedOnce.ContainsKey(currenttask))
+                @if (ImplantInteract.PanelExpandedOnce.ContainsKey(currenttask.Id))
                 {
-                    <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon>
+                    <MudIcon Icon=@setIcon(CardContent) Color=@SetColor(CardContent) class="mr-3"></MudIcon>
                 }
                 else
                 {
-                        <MudIcon Icon=@setIcon(currenttask) Color=@SetColor(currenttask) class="mr-3"></MudIcon>
+                    <MudIcon Icon=@setIcon(CardContent) Color=@SetColor(CardContent) class="mr-3"></MudIcon>
                 }
                 <MudText>@commandHeaderText</MudText>
             </div>
@@ -66,131 +81,108 @@
 
     </TitleContent>
     <ChildContent>
-        <MudCard Class="" Style="background:var(--background);" Outlined="true">
-            <!--This is the per input and output card-->
-            <MudCardContent Style="background:#111111; color:white; white-space:pre-wrap;">
-
-                @if (TaskOutputDic.ContainsKey(currenttask))
-                {
-                    if (TaskOutputDic[currenttask] != null)
-                    {
-                        if (TaskOutputDic[currenttask].ResultObject != null)
-                        {
-                            if (TaskOutputDic[currenttask].ResponseType == TaskResponseType.FileSystemItem)
-                            {
-                                TaskInputDic[currenttask].Arguments.TryGetValue("/path", out string pathValue);
-                                List<FileSystemItem> resultItems = (List<FileSystemItem>)TaskOutputDic[currenttask].ResultObject;
-                                <HardHatC2Client.Components.DirectoryListingTable Outputs="@resultItems" />
-                                if (pathValue != null)
-                                {
-                                    pathValue = pathValue.TrimStart(' ').TrimEnd(' ');
-                                    FileBrowser.AddContent(engineer.Hostname, pathValue, resultItems);
-                                }
-                            }
-                            else if (TaskOutputDic[currenttask].ResponseType == TaskResponseType.ProcessItem)
-                            {
-                                var result = TaskOutputDic[currenttask].ResultObject as List<ProcessItem>;
-                                <HardHatC2Client.Components.ProcessListingTable Outputs="@result" />
-                            }
-                            else if (TaskOutputDic[currenttask].ResponseType == TaskResponseType.HelpMenuItem)
-                            {
-                                var resultItem = TaskOutputDic[currenttask].ResultObject as List<Help.HelpMenuItem>;
-                                <HelpTable Outputs="@resultItem"></HelpTable>
-                            }
-                            else if (TaskOutputDic[currenttask].ResponseType == TaskResponseType.TokenStoreItem)
-                            {
-                                if (TaskOutputDic[currenttask].ResponseType == TaskResponseType.TokenStoreItem)
-                                {
-                                    var resultItem = TaskOutputDic[currenttask].ResultObject as List<TokenStoreItem>;
-                                    <TokenStoreTable currentEngTokens="resultItem"></TokenStoreTable>
-                                }
-                                else
-                                {
-                                    var output = TaskOutputDic[currenttask].ResultObject as string;
-                                    <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@output</MudText>
-                                }
-                            }
-                            else if (TaskInputDic[currenttask].Command.Equals("getprivs", StringComparison.CurrentCultureIgnoreCase) && TaskStatusDic[currenttask] == EngTaskStatus.Complete)
-                            {
-                                var result = ((TaskOutputDic[currenttask].ResultObject as string).Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)).ToList();
-                                <HardHatC2Client.Components.GetPrivsTable Outputs="@result" />
-                            }
-                            else if (TaskInputDic[currenttask].Command.Equals("print-env", StringComparison.CurrentCultureIgnoreCase) && TaskStatusDic[currenttask] == EngTaskStatus.Complete)
-                            {
-                                var result = ((TaskOutputDic[currenttask].ResultObject as string).Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)).ToList();
-                                <HardHatC2Client.Components.PrintEnvTable Outputs="@result" />
-                            }
-                            else if (TaskInputDic[currenttask].Command.Equals("GetCommands", StringComparison.CurrentCultureIgnoreCase) && TaskStatusDic[currenttask] == EngTaskStatus.Complete)
-                            {
-                                var resultItem = TaskOutputDic[currenttask].ResultObject as string;
-                                var resultList = resultItem.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
-                                if (CommandValidation.ImplantLoadedCommands.Keys.Contains(engineer.Id))
-                                {
-                                    foreach (string commandName in resultList)
-                                    {
-                                        if (!CommandValidation.ImplantLoadedCommands[engineer.Id].Contains(commandName))
-                                        {
-                                            CommandValidation.ImplantLoadedCommands[engineer.Id].Add(commandName);
-                                        }
-                                    }
-                                }
-                                //CommandValidation.ImplantLoadedCommands
-                            }   
-                            else if (ParsedCommandOutputDic.ContainsKey(currenttask) && TaskStatusDic[currenttask] == EngTaskStatus.Complete)
-                            {
-                                <MudSwitch @bind-Checked="@IsTableView" Label="Toggle Table View" Color="Color.Success" />
-                                if (IsTableView == true)
-                                {
-                                    <HardHatC2Client.Components.AutpParsedCommandTable Outputs="ParsedCommandOutputDic[currenttask]"></HardHatC2Client.Components.AutpParsedCommandTable>
-                                }
-                                else
-                                {
-                                    var output = TaskOutputDic[currenttask].ResultObject as string;
-                                    <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@output</MudText>
-                                }
-                            }
-                            else
-                            {
-                                var output = TaskOutputDic[currenttask].ResultObject as string;
-                                <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@output</MudText>
-                            }
-                        }
-                        else
-                        {
-                            <MudText Typo="Typo.body2">No output yet</MudText>
-                        }
-                    }
-                }
-                else
-                {
-                    <MudText Typo="Typo.body2">No output yet</MudText>
-                }
-            </MudCardContent>
-        </MudCard>
+        <InteractWindowContentChildComponent @ref=childcard currenttask="@currenttask" implant="@implant" CardContent="@CardContent"></InteractWindowContentChildComponent>
     </ChildContent>
 </MudExpansionPanel><!--This is the end of per input and output card -->
 
+<style>
+    .background-blur {
+        backdrop-filter: blur(10px);
+    }
+</style>
 
 @code {
 
+    private bool shouldRender = true;
     [Inject]
     private IDialogService DialogService { get; set; }
-
     [Parameter]
-    public EngineerTaskResult? CardContent { get; set; } = null;
+    public ExtImplantTaskResult_Base? CardContent { get; set; } = null;
     [Parameter]
     public string? commandHeaderText { get; set; } = null;
     [Parameter]
-    public string currenttask { get; set; } = "";
+    public ExtImplantTask_Base currenttask { get; set; }
     [Parameter]
-    public Engineer engineer { get; set; }
+    public ExtImplant_Base implant { get; set; }
+    [Parameter]
+    public MudExpansionPanel? interactConPanel { get; set; }
+    private InteractWindowContentChildComponent childcard;
+    private bool isInitialized = false;
+    private bool pendingUpdate = false;
 
-    public delegate void OnStateChangeDelegate();
-    public static OnStateChangeDelegate OnStateChange;
-    private DateTime? LastRefresh { get; set; } = null;
-    private static bool IsTableView = true;
-    //private static bool firstRender = true;
-    private Stopwatch stopwatch = new Stopwatch();
+    public async Task UpdateAsync()
+    {
+        shouldRender = true;
+        //Console.WriteLine("UpdateAsync called");
+        //check if this panel has been initialized before if not then initialize it
+        if (isInitialized)
+        {
+            //Console.WriteLine("UpdateAsync called and isInitialized is true rendering panel");
+            if (CardContent != null && IsTaskResultInFinalState(CardContent) == false)
+            {
+                pendingUpdate = true;
+            }
+            else
+            {
+                pendingUpdate = false;
+            }
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public async Task ExpandedChanged(bool IsExpanded, ExtImplant_Base implant, string taskId, InteractWindowContent interactWindow)
+    {
+        try
+        {
+            //Console.WriteLine("ExpandedChanged called");
+            childcard.ShouldLoadCard = IsExpanded;
+
+            //var task = OutGoingTasks[implant].FirstOrDefault(x => x.Id == taskId,defaultValue: null);
+            if (!PanelExpandedOnce.ContainsKey(taskId))
+            {
+                PanelExpandedOnce.Add(taskId, true);
+                string username = Login.SignedInUser;
+                HardHatHubClient._hub.UpdateTaskResponseSeenNotif(username, taskId, implant.Metadata.Id);
+            }
+            else if (PanelExpandedOnce[taskId] == false)
+            {
+                PanelExpandedOnce[taskId] = true;
+                string username = Login.SignedInUser;
+                HardHatHubClient._hub.UpdateTaskResponseSeenNotif(username, taskId, implant.Metadata.Id);
+            }
+
+            //if isChanged is false then the panel has been closed, if it is true the panel is open
+            if (childcard.ShouldLoadCard && childcard.FinishedLoading == false)
+            {
+                //Console.WriteLine("Panel opened & content not in finalized state refreshing");
+                StateHasChanged();
+            }
+            if (!childcard.ShouldLoadCard)
+            {
+                //Console.WriteLine("Panel is closed refreshing");
+                StateHasChanged();
+            }
+            else
+            {
+                string contentstate;
+                if (childcard.FinishedLoading)
+                {
+                    contentstate = "finalized";
+                }
+                else
+                {
+                    contentstate = "not finalized";
+                }
+                //Console.WriteLine($"Panel is {childcard.ShouldLoadCard} and content is {contentstate}");
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+            Console.WriteLine(e.StackTrace);
+        }
+
+    }
 
     private async void TaskButtonTest()
     {
@@ -199,69 +191,64 @@
     }
 
     //set the icon and color for commands
-    private string setIcon(string currenttask)
+    private string setIcon(IExtImplantTaskResult currenttask)
     {
-        if (TaskStatusDic.ContainsKey(currenttask))
+        if(currenttask == null)
         {
-            if (TaskStatusDic[currenttask] == EngTaskStatus.Complete)
-            {
-                return Icons.Filled.CheckCircle;
-            }
-            else if (TaskStatusDic[currenttask] == EngTaskStatus.Cancelled)
-            {
-                return Icons.Filled.StopCircle;
-            }
-            else if (TaskStatusDic[currenttask] == EngTaskStatus.Failed)
-            {
-                return Icons.Filled.SmsFailed;
-            }
-            else if (TaskStatusDic[currenttask] == EngTaskStatus.FailedWithWarnings)
-            {
-                return Icons.Filled.Warning;
-            }
-            else if (TaskStatusDic[currenttask] == EngTaskStatus.CompleteWithErrors)
-            {
-                return Icons.Filled.CheckCircle;
-            }
-            else
-            {
-                return Icons.Filled.Info;
-            }
+            return Icons.Filled.Info;
+        }
+        if (currenttask.Status == ExtImplantTaskStatus.Complete)
+        {
+            return Icons.Filled.CheckCircle;
+        }
+        else if (currenttask.Status == ExtImplantTaskStatus.Cancelled)
+        {
+            return Icons.Filled.StopCircle;
+        }
+        else if (currenttask.Status == ExtImplantTaskStatus.Failed)
+        {
+            return Icons.Filled.SmsFailed;
+        }
+        else if (currenttask.Status == ExtImplantTaskStatus.FailedWithWarnings)
+        {
+            return Icons.Filled.Warning;
+        }
+        else if (currenttask.Status == ExtImplantTaskStatus.CompleteWithErrors)
+        {
+            return Icons.Filled.CheckCircle;
         }
         else
         {
             return Icons.Filled.Info;
         }
+
     }
 
-    private Color SetColor(string currenttask)
+    private Color SetColor(IExtImplantTaskResult currenttask)
     {
-        if (TaskStatusDic.ContainsKey(currenttask))
+        if (currenttask == null)
         {
-            if (TaskStatusDic[currenttask] == EngTaskStatus.Complete)
-            {
-                return Color.Success;
-            }
-            else if (TaskStatusDic[currenttask] == EngTaskStatus.Cancelled)
-            {
-                return Color.Secondary;
-            }
-            else if (TaskStatusDic[currenttask] == EngTaskStatus.Failed)
-            {
-                return Color.Error;
-            }
-            else if (TaskStatusDic[currenttask] == EngTaskStatus.FailedWithWarnings)
-            {
-                return Color.Warning;
-            }
-            else if (TaskStatusDic[currenttask] == EngTaskStatus.CompleteWithErrors)
-            {
-                return Color.Warning;
-            }
-            else
-            {
-                return Color.Info;
-            }
+            return Color.Info;
+        }
+        if (currenttask.Status == ExtImplantTaskStatus.Complete)
+        {
+            return Color.Success;
+        }
+        else if (currenttask.Status == ExtImplantTaskStatus.Cancelled)
+        {
+            return Color.Secondary;
+        }
+        else if (currenttask.Status == ExtImplantTaskStatus.Failed)
+        {
+            return Color.Error;
+        }
+        else if (currenttask.Status == ExtImplantTaskStatus.FailedWithWarnings)
+        {
+            return Color.Warning;
+        }
+        else if (currenttask.Status == ExtImplantTaskStatus.CompleteWithErrors)
+        {
+            return Color.Warning;
         }
         else
         {
@@ -269,32 +256,50 @@
         }
     }
 
-    public async Task CopyTaskCommand(string currenttask)
+    public async Task SelectTaskTagChip(string taskid)
     {
-        string Command = Interact.TaskInputDic[currenttask].Command;
-        //copy the command to the clipboard
-        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", Command);
-    }
-
-    public void ImplementOnStateChangeEvent()
-    {
-        if (LastRefresh == null)
+        //a message box to pick the tag name for the task
+        var options = new DialogOptions { ClassBackground = "background-blur", MaxWidth = MaxWidth.Medium, FullWidth = true, DisableBackdropClick = true };
+        var dialog = DialogService.Show<TagSelectionDialog>("Select Tag",options);
+        var result = await dialog.Result;
+        if (!result.Cancelled)
         {
-            LastRefresh = DateTime.Now;
-            InvokeAsync(StateHasChanged);
-        }
-        else
-        {
-            // if more then 500 ms has passed since the last refresh then refresh the page
-            if (DateTime.Now.Subtract(LastRefresh.Value).TotalMilliseconds > 500)
+            string tagName = result.Data.ToString();
+            if (Tag.Task_Tags.ContainsKey(tagName))
             {
-                LastRefresh = DateTime.Now;
-                InvokeAsync(StateHasChanged);
+                Tag.Task_Tags[tagName].Add(taskid);
+            }
+            else
+            {
+                Tag.Task_Tags.Add(tagName, new List<string>() { taskid });
             }
         }
     }
 
-    public async Task CancelTask(string taskid, string engineerid)
+    public static string GetKeyByValue(Dictionary<string, List<string>> dict, string targetValue)
+    {
+        foreach (KeyValuePair<string, List<string>> kvp in dict)
+        {
+            if (kvp.Value.Contains(targetValue))
+            {
+                return kvp.Key;
+            }
+        }
+        return null; 
+    }
+
+    public async Task CopyTaskCommand(string CommandHeader)
+    {
+        //split the command header on the first instance of to everything to the right of that is the command string 
+        string Command = CommandHeader.Split(new string[] { "to" }, 2, StringSplitOptions.None)[1];
+
+        //copy the command to the clipboard
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", Command.Trim());
+        Implants.ShowInfoToast("Command Copied to Clipboard");
+    }
+
+
+    public async Task CancelTask(string taskid, string implantid)
     {
         DialogOptions options = new DialogOptions() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
 
@@ -304,23 +309,39 @@
 
         if (!result.Cancelled)
         {
-            await HardHatHubClient._hub.CancelRunningTask(taskid, engineerid);
-            Engineers.ShowInfoToast($"Request to cancel task {taskid} sent");
+            await HardHatHubClient._hub.CancelRunningTask(taskid, implantid);
+            Implants.ShowInfoToast($"Request to cancel task {taskid} sent");
         }
-        if (OnStateChange is not null)
+    }
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && pendingUpdate)
         {
-            OnStateChange();
+            await UpdateAsync();
+            await base.OnAfterRenderAsync(firstRender);
+            while(pendingUpdate)
+            {
+                //sleep the thread for 2 seconds, then run the update again
+                await Task.Delay(2000);
+                await UpdateAsync();
+            }
         }
     }
 
-    protected override Task OnParametersSetAsync()
+    protected override bool ShouldRender()
     {
-        return base.OnParametersSetAsync();
+        if (!shouldRender) 
+        {
+            return false;
+        }
+        shouldRender = false;
+        return true;
     }
-
-    protected override async Task OnInitializedAsync()
+   
+    protected override void OnInitialized()
     {
-        OnStateChange = ImplementOnStateChangeEvent;
+        isInitialized = true;
     }
-    
 }

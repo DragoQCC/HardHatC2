@@ -27,7 +27,7 @@
                 color: white !important;
             }
             </style>
-                        <MudTable Items="@DownloadedFiles" HorizontalScrollbar="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Outlined="true" Striped="true" RowClassFunc="@SelectedRowClassFunc" OnRowClick="RowClickEvent" @ref="mudTable" T="DownloadFile">
+                        <MudTable Virtualize="true" Items="@DownloadedFiles" HorizontalScrollbar="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Outlined="true" Striped="true" RowClassFunc="@SelectedRowClassFunc" OnRowClick="RowClickEvent" @ref="mudTable" T="DownloadFile">
                             <HeaderContent>
                                 <MudTh Style="@setStyle(Settings.IsCheckedBox)">Name </MudTh>
                                 <MudTh Style="@setStyle(Settings.IsCheckedBox)">Host</MudTh>
@@ -86,7 +86,7 @@
                     color: white !important;
                 }
                 </style>
-                        <MudTable Items="@DownloadedFiles" HorizontalScrollbar="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Outlined="true" Striped="true" RowClassFunc="@SelectedRowClassFunc" OnRowClick="RowClickEvent" @ref="mudTable" T="DownloadFile">
+                        <MudTable Virtualize="true" Items="@DownloadedFiles" HorizontalScrollbar="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Outlined="true" Striped="true" RowClassFunc="@SelectedRowClassFunc" OnRowClick="RowClickEvent" @ref="mudTable" T="DownloadFile">
                             <HeaderContent>
                                 <MudTh Style="@setStyle(Settings.IsCheckedBox)">Name </MudTh>
                                 <MudTh Style="@setStyle(Settings.IsCheckedBox)">Host</MudTh>
@@ -236,7 +236,6 @@
                     var dialogParameters = new DialogParameters
                         {
                             ["fileName"] = name,
-                            ["dataUrl"] = dataUrl,
                             ["fileData"] = ms
                         };
                     var dialogOptions = new DialogOptions
@@ -245,7 +244,7 @@
                             FullWidth = true,
 
                         };
-                    DialogService.Show<ViewDownloadedZipFile>("Zip File", dialogParameters, dialogOptions);
+                    DialogService.Show<ViewDownloadedZipFile_Dialog>("Zip File", dialogParameters, dialogOptions);
                     return;
                 }
                 await MudExFileDisplayDialog.Show(DialogService, dataUrl, name, contentType, ex => ex.JsRuntime = JS);
@@ -255,12 +254,12 @@
         {
             Console.WriteLine(ex.Message);
             Console.WriteLine(ex.StackTrace);
-            Engineers.ShowErrorToast(ex.Message);
+            Implants.ShowErrorToast(ex.Message);
         }
     }
 
 
-    private async Task<string> DetermineFileContentType(string fileName)
+    public static async Task<string> DetermineFileContentType(string fileName)
     {
         string fileExtension = fileName.Split('.').Last();
         //based on the file extension return the correct content type

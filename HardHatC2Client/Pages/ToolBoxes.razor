@@ -1,12 +1,21 @@
 ﻿@page "/Toolboxes"
 @inject IToastService toastService
+@using HardHatC2Client.Plugin_BaseClasses;
+@using HardHatC2Client.Plugin_Management;
 @using HardHatC2Client.Utilities
 @using HardHatC2Client.Services
+@using HardHatC2Client.Components;
 @using System.ComponentModel.Design.Serialization
+
 <CascadingAuthenticationState>
 <AuthorizeView Roles="TeamLead">
     <Authorized>
 <h3>ToolBoxes</h3>
+<MudTabs>
+    <MudTabPanel Text="Commands">
+
+    </MudTabPanel>
+    <MudTabPanel Text="MITRE Tracking">
 <MudDataGrid @ref="_table" T="ToolboxCommand" Items="@BodyContent" ReadOnly="false" Dense="true" Hover="true" CanCancelEdit="true" Height="700px" Elevation="10" Outlined="true" Striped="true"
                                      @bind-SelectedItem="selectedItem1" EditMode="DataGridEditMode.Form" StartedEditingItem="@StartedEditingItem" CanceledEditingItem="@CanceledEditingItem" CommittedItemChanges="@CommittedItemChanges"
                                      EditTrigger="DataGridEditTrigger.Manual" QuickFilter="@_quickFilter">
@@ -19,8 +28,8 @@
         <PropertyColumn HeaderStyle="@setStyle(Settings.IsCheckedBox)" Property="x => x.commandName" Title="Command Name" CellStyleFunc="@_styleFunc" IsEditable="false"/>
                     <TemplateColumn CellClass="d-flex" HeaderStyle="@setStyle(Settings.IsCheckedBox)" Title="Opsec Status" CellStyleFunc="@_styleFunc" IsEditable="true">
             <CellTemplate Context="cellcontext">
-            <MudSelect Variant="Variant.Outlined" ValueChanged="(e)=>OpsecChanged(selectedItem1.commandName,e)"  T="Help.HelpMenuItem.OpsecStatus">
-                @foreach (Help.HelpMenuItem.OpsecStatus opsec in Enum.GetValues(typeof(Help.HelpMenuItem.OpsecStatus)))
+                            <MudSelect Variant="Variant.Outlined" ValueChanged="(e)=>OpsecChanged(selectedItem1.commandName,e)" T="CommandItem.OpsecStatus">
+                                @foreach (CommandItem.OpsecStatus opsec in Enum.GetValues(typeof(CommandItem.OpsecStatus)))
                 {
                     <MudSelectItem Value="@opsec">@opsec</MudSelectItem>
                 }
@@ -38,10 +47,32 @@
                 <MudDataGridPager T="ToolboxCommand" />
             </PagerContent>
     </MudDataGrid>
-    </Authorized>
+                </MudTabPanel>
+</MudTabs>
+        </Authorized>
 </AuthorizeView>
 <AuthorizeView Roles="Operator,Guest">
 <Authorized>
+    <MudTabs>
+        <MudTabPanel Text="Commands">
+                    <MudSelectExtended ValuePresenter="MudExtensions.Enums.ValuePresenter.ItemContent" Clearable="true" Class="mb-4 mt-4" T="Lazy<CommandCodeView_Base, CommandCodeViewBaseData>" Label="Implant Type" Variant="Variant.Filled" Required="true" @bind-value="CodeViewPlugin" RequiredError="Type is required!">
+	    @foreach (var _codeViewPlugin in Plugin_Management.PluginService.pluginHub.CommandCodeView_Plugins)
+	    {
+		    string displayname = _codeViewPlugin.Metadata.Name;
+		    if (displayname.Equals("Default",StringComparison.CurrentCultureIgnoreCase))
+		    {
+			    displayname = "Engineer";
+		    }
+		    <MudSelectItemExtended Value="@_codeViewPlugin"> @displayname </MudSelectItemExtended>
+	    }
+    </MudSelectExtended>
+    <br>
+    @if(CodeViewPlugin != null && !String.IsNullOrEmpty(CodeViewPlugin.Metadata.Name))
+	    {
+		    <CommandCodeView ImplantLang="@CodeViewPlugin.Metadata.CodeLang" ImplantSrc="@CodeViewPlugin.Metadata.ImplantSrc"></CommandCodeView>
+	    }
+    </MudTabPanel>
+    <MudTabPanel Text="MITRE Tracking">
 <MudDataGrid @ref="_table" T="ToolboxCommand" Items="@BodyContent" ReadOnly="true" Dense="true" Hover="true" CanCancelEdit="true" Height="700px" Elevation="10" Outlined="true" Striped="true"
                                      @bind-SelectedItem="selectedItem1" QuickFilter="@_quickFilter">
                             <ToolBarContent>
@@ -53,8 +84,8 @@
         <PropertyColumn HeaderStyle="@setStyle(Settings.IsCheckedBox)" Property="x => x.commandName" Title="Command Name" CellStyleFunc="@_styleFunc" IsEditable="false"/>
                     <TemplateColumn CellClass="d-flex" HeaderStyle="@setStyle(Settings.IsCheckedBox)" Title="Opsec Status" CellStyleFunc="@_styleFunc" IsEditable="false">
             <CellTemplate Context="cellcontext">
-            <MudSelect ValueChanged="(e)=>OpsecChanged(selectedItem1.commandName,e)"  T="Help.HelpMenuItem.OpsecStatus">
-                @foreach (Help.HelpMenuItem.OpsecStatus opsec in Enum.GetValues(typeof(Help.HelpMenuItem.OpsecStatus)))
+                            <MudSelect ValueChanged="(e)=>OpsecChanged(selectedItem1.commandName,e)" T="CommandItem.OpsecStatus">
+                                @foreach (CommandItem.OpsecStatus opsec in Enum.GetValues(typeof(CommandItem.OpsecStatus)))
                 {
                     <MudSelectItem Value="@opsec">@opsec</MudSelectItem>
                 }
@@ -72,6 +103,8 @@
                 <MudDataGridPager T="ToolboxCommand" />
             </PagerContent>
     </MudDataGrid>
+                </MudTabPanel>
+</MudTabs>
 </Authorized>
 </AuthorizeView>
 <AuthorizeView roles="TeamLead,Operator,Guest">
@@ -92,15 +125,16 @@
     private string searchString1 = "";
     private MudDataGrid<ToolboxCommand> _table;
     private List<string> editEvents = new();
-    private static Dictionary<string, Help.HelpMenuItem.OpsecStatus> CommandSelectedOpsecLevel { get; set; } = new();
+    private static Dictionary<string, CommandItem.OpsecStatus> CommandSelectedOpsecLevel { get; set; } = new();
+    private static Lazy<CommandCodeView_Base, CommandCodeViewBaseData> CodeViewPlugin { get; set; }
 
     public class ToolboxCommand
     {
-       public string commandName { get; set; }
-       public Help.HelpMenuItem.OpsecStatus opsecStatus { get; set; }
-       public string MitreTechnique { get; set; }
+        public string commandName { get; set; }
+        public CommandItem.OpsecStatus opsecStatus { get; set; }
+        public string MitreTechnique { get; set; }
     }
-    
+
     //functions
     private string setStyle(bool IsDark)
     {
@@ -110,7 +144,7 @@
         }
         return "background:#333333; color:white;";
     }
-    
+
     private void PageChanged(int i)
     {
         _table.CurrentPage = i - 1;
@@ -166,7 +200,7 @@
         //HardHatHubClient._hub.
         AddEditionEvent($"Event = CommittedItemChanges, Data = {System.Text.Json.JsonSerializer.Serialize(item)}");
     }
-    
+
     private static void ShowSuccessToast(string successMessage)
     {
         _toastService.ShowSuccess(successMessage);
@@ -175,14 +209,15 @@
     {
         _toastService.ShowError(errorMessage);
     }
-    
-    
-    public void OpsecChanged(string commandName, Help.HelpMenuItem.OpsecStatus opsecStatus)
+
+
+    public void OpsecChanged(string commandName, CommandItem.OpsecStatus opsecStatus)
     {
         string MitreTechnique = "";
         CommandSelectedOpsecLevel[commandName] = opsecStatus;
+        var comValBase = PluginService.GetCommandValidationPlugin("Default");
         //find the matching helpmenuitem 
-        foreach (Help.HelpMenuItem item in Help.menuItems)
+        foreach (CommandItem item in comValBase.CommandList)
         {
             if (item.Name == commandName)
             {
@@ -193,7 +228,7 @@
         ShowSuccessToast($"Opsec Status for {commandName} has been changed to {opsecStatus}");
     }
 
-    public static void updateOpsecStatusAndMitre(string commandName, Help.HelpMenuItem.OpsecStatus opsecStatus,string MitreTechnique)
+    public static void updateOpsecStatusAndMitre(string commandName, CommandItem.OpsecStatus opsecStatus, string MitreTechnique)
     {
         CommandSelectedOpsecLevel[commandName] = opsecStatus;
         foreach (ToolboxCommand command in BodyContent)
@@ -208,8 +243,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var comValBase = PluginService.GetCommandValidationPlugin("Default");
         _toastService = (ToastService)toastService;
-        foreach (Help.HelpMenuItem menuItem in Help.menuItems)
+        foreach (CommandItem menuItem in comValBase.CommandList)
         {
             ToolboxCommand command = new ToolboxCommand();
             command.commandName = menuItem.Name;

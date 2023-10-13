@@ -14,12 +14,16 @@ using Microsoft.IdentityModel.Tokens;
 using RestSharp;
 using TeamServer.Services.Extra;
 using TeamServer.Models.Database;
+using TeamServer.Plugin_Management;
+using TeamServer.Plugin_Interfaces.Ext_Implants;
+using TeamServer.Plugin_BaseClasses;
+using System.Threading.Tasks;
 
 namespace TeamServer
 {
     public class Startup
     {
-        public static string TeamserverIP { get; private set;}
+        public static string TeamserverIP { get; internal set;}
         public static RestClient client { get; private set; }
         
         public Startup(IConfiguration configuration)
@@ -32,15 +36,41 @@ namespace TeamServer
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+
             services.AddSignalR();
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "TeamServer", Version = "v1" });
                 c.CustomSchemaIds(type => type.ToString());
+
+                // Configure Swagger to use OAuth2
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+                    Name = "Authorization",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.ApiKey,
+                    Scheme = "Bearer"
+                });
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        new string[] {}
+                    }
+                });
             });
             services.AddSingleton<ImanagerService, managerService>();
-            services.AddSingleton<IEngineerService, EngineerService>();
+            //services.AddSingleton<IEngineerService, EngineerService>();
+            services.AddSingleton<IExtImplantService, ExtImplantService_Base>();
 
             string sqliteConnectionString = DatabaseService.ConnectionString;
 
@@ -90,51 +120,80 @@ namespace TeamServer
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public static async void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
+            try
             {
-                app.UseDeveloperExceptionPage();
-                app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "TeamServer v1"));
-                Console.WriteLine("TeamServer is running in development mode.");
-            }
+                PluginService.InitPlugins();
+                if (env.IsDevelopment())
+                {
+                    app.UseDeveloperExceptionPage();
+                    app.UseSwagger();
+                    app.UseSwaggerUI(c =>
+                    {
+                        c.SwaggerEndpoint("/swagger/v1/swagger.json", "TeamServer v1");
+                        // Enable OAuth2 in Swagger UI
+                        c.OAuthUsePkce();
+                    });
+                    Console.WriteLine("TeamServer is running in development mode.");
+                }
 
-            app.UseRouting();
-            app.UseAuthentication();
-            app.UseAuthorization();
-            app.UseIPWhitelist();
+                app.UseRouting();
+                app.UseAuthentication();
+                app.UseAuthorization();
+                app.UseIPWhitelist();
 
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-                endpoints.MapHub<HardHatHub>("/HardHatHub");
-            });
-            Seralization.Init();
-            TeamserverIP = app.ServerFeatures.Get<Microsoft.AspNetCore.Hosting.Server.Features.IServerAddressesFeature>().Addresses.First();
-            Console.WriteLine("TeamServer is running on " + TeamserverIP);
-            LoggingService.Init();
-            Console.WriteLine("Initiating SQLite server");
-            DatabaseService.Init();
-            RestClientOptions options = new RestClientOptions($"{TeamserverIP}");
-            //options.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
-            //client = new RestClient(options);
-            Console.WriteLine("Connecting to database");
-            DatabaseService.ConnectDb();
-            Console.WriteLine("Creating tables");
-            DatabaseService.CreateTables().Wait();
-            Console.WriteLine("Creating default roles");
-            UsersRolesDatabaseService.CreateDefaultRoles().Wait();
-            Console.WriteLine("Creating default admin");
-            UsersRolesDatabaseService.CreateDefaultAdmin().Wait();
-            Console.WriteLine("Filling teamserver from database");
-            DatabaseService.FillTeamserverFromDatabase().ContinueWith((task) =>
-            {
+                app.UseEndpoints(endpoints =>
+                {
+                    endpoints.MapControllers();
+                    endpoints.MapHub<HardHatHub>("/HardHatHub");
+                });
+                Seralization.Init();
+                //add a check to make sure the Microsoft.AspNetCore.Hosting.Server.Features.IServerAddressesFeature>().Addresses is not empty
+                if(String.IsNullOrEmpty(TeamserverIP))
+                {
+                    if (app.ServerFeatures.Get<Microsoft.AspNetCore.Hosting.Server.Features.IServerAddressesFeature>().Addresses.Count > 0)
+                    {
+                        TeamserverIP = app.ServerFeatures.Get<Microsoft.AspNetCore.Hosting.Server.Features.IServerAddressesFeature>().Addresses.First();
+                    }
+                    else
+                    {
+                        Console.WriteLine("Ip address to run teamserver not found defaulting to https://localhost:5000.");
+                        TeamserverIP = "https://localhost:5000";
+                    }
+                }
+                Console.WriteLine("TeamServer is running on " + TeamserverIP);
+                LoggingService.Init();
+                Console.WriteLine("Initiating SQLite server");
+                DatabaseService.Init();
+                Console.WriteLine("Connecting to database");
+                DatabaseService.ConnectDb();
+                Console.WriteLine("Creating tables");
+                await DatabaseService.CreateTables();
+                Console.WriteLine("Creating default roles");
+                await UsersRolesDatabaseService.CreateDefaultRoles();
+                Console.WriteLine("Creating default admin");
+                await UsersRolesDatabaseService.CreateDefaultAdmin();
+                Console.WriteLine("Filling teamserver from database");
+                await DatabaseService.FillTeamserverFromDatabase();
                 if (String.IsNullOrEmpty(Encryption.UniversialMetadataKey))
                 {
                     Console.WriteLine("Generating unique encryption keys for pathing and metadata id");
                     Encryption.GenerateUniversialKeys();
                 }
-            }).Wait();
-           
+
+                //make a timer that every 30 seconds runs the ManageImplantStatusUpdate() function in the implant service
+                await ExtImplantService_Base.ManageImplantStatusUpdate();
+                System.Timers.Timer timer = new System.Timers.Timer();
+                timer.Interval = 30000;
+                timer.Start();
+                timer.AutoReset = true;
+                timer.Elapsed += (sender, e) => { ExtImplantService_Base.ManageImplantStatusUpdate(); };
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("An error occured during startup");
+                Console.WriteLine(e);
+                throw;
+            }
         }
     }
 }

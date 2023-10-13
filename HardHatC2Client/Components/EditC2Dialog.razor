@@ -1,0 +1,149 @@
+﻿@using ApiModels.Shared;
+@using HardHatC2Client.Utilities;
+@using MudExtensions.Enums;
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField T="string" @bind-value="@profile.Name" Label=Name></MudTextField>
+        <MudTextField T="string" @bind-value="@profile.Desc" Label=Desc></MudTextField>
+        <MudComboBox @bind-SelectedValues="urls" Variant="Variant.Filled" Label="Callback URIs" MultiSelection="true" Editable="true"
+                     ShowCheckbox="true" Bordered="true" Dense="Dense.Slim" Color="@Color.Primary" Clearable="true">
+            <ChildContent>
+                @foreach (string item in profile.Urls)
+                {
+                    <MudComboBoxItem Value="@item" Text="@item"></MudComboBoxItem>
+                }
+            </ChildContent>
+            <PopoverEndContent>
+                @if (true)
+                {
+
+                    <div class="d-flex gap-4 pa-4">
+                        <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="@Color.Primary" OnClick="(()=>profile.Urls.Add(_urlToAdd))" />
+                        <MudTextFieldExtended @bind-Value="_urlToAdd" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </div>
+                }
+            </PopoverEndContent>
+        </MudComboBox>
+        <MudComboBox @bind-SelectedValues="eventUrls" Variant="Variant.Filled" Label="Callback URIs" MultiSelection="true" Editable="true"
+                     ShowCheckbox="true" Bordered="true" Dense="Dense.Slim" Color="@Color.Primary" Clearable="true">
+            <ChildContent>
+                @foreach (string item in profile.EventUrls)
+                {
+                    <MudComboBoxItem Value="@item" Text="@item"></MudComboBoxItem>
+                }
+            </ChildContent>
+            <PopoverEndContent>
+                @if (true)
+                {
+ 
+                    <div class="d-flex gap-4 pa-4">
+                        <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="@Color.Primary" OnClick="(()=>profile.EventUrls.Add(_eventurlToAdd))" />
+                        <MudTextFieldExtended @bind-Value="_eventurlToAdd" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </div>
+                }
+            </PopoverEndContent>
+        </MudComboBox>
+        <MudComboBox @bind-SelectedValues="cookies" Variant="Variant.Filled" Label="cookies" MultiSelection="true" Editable="true"
+                     ShowCheckbox="true" Bordered="true" Dense="Dense.Slim" Color="@Color.Primary" Clearable="true">
+            <ChildContent>
+                @foreach (string item in profile.Cookies)
+                {
+                    <MudComboBoxItem Value="@item" Text="@item"></MudComboBoxItem>
+                }
+            </ChildContent>
+            <PopoverEndContent>
+                @if (true)
+                {
+                    
+                    <div class="d-flex gap-4 pa-4">
+                        <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="@Color.Primary" OnClick="(()=>profile.Cookies.Add(_cookieToAdd))" />
+                        <MudTextFieldExtended @bind-Value="_cookieToAdd" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </div>
+                }
+            </PopoverEndContent>
+        </MudComboBox>
+        <MudComboBox @bind-SelectedValues="requestHeaders" Variant="Variant.Filled" Label="requestHeaders" MultiSelection="true" Editable="true"
+                     ShowCheckbox="true" Bordered="true" Dense="Dense.Slim" Color="@Color.Primary" Clearable="true">
+            <ChildContent>
+                @foreach (string item in profile.RequestHeaders)
+                {
+                    <MudComboBoxItem Value="@item" Text="@item"></MudComboBoxItem>
+                }
+            </ChildContent>
+            <PopoverEndContent>
+                @if (true)
+                {
+
+                    <div class="d-flex gap-4 pa-4">
+                        <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="@Color.Primary" OnClick="(()=>profile.RequestHeaders.Add(_requestHeaderToAdd))" />
+                        <MudTextFieldExtended @bind-Value="_requestHeaderToAdd" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </div>
+                }
+            </PopoverEndContent>
+        </MudComboBox>
+        <MudComboBox @bind-SelectedValues="responseHeaders" Variant="Variant.Filled" Label="responseHeaders" MultiSelection="true" Editable="true"
+                     ShowCheckbox="true" Bordered="true" Dense="Dense.Slim" Color="@Color.Primary" Clearable="true">
+            <ChildContent>
+                @foreach (string item in profile.ResponseHeaders)
+                {
+                    <MudComboBoxItem Value="@item" Text="@item"></MudComboBoxItem>
+                }
+            </ChildContent>
+            <PopoverEndContent>
+                @if (true)
+                {
+
+                    <div class="d-flex gap-4 pa-4">
+                        <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="@Color.Primary" OnClick="(()=>profile.ResponseHeaders.Add(_responseHeaderToAdd))" />
+                        <MudTextFieldExtended @bind-Value="_responseHeaderToAdd" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </div>
+                }
+            </PopoverEndContent>
+        </MudComboBox>
+        <MudTextField T="string" @bind-value="@profile.UserAgent" Label=UserAgent></MudTextField>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="HandleSubmit">Ok</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [Parameter]
+    public string profile_ser { get; set; }
+    public C2Profile profile { get; set; } = new();
+    [CascadingParameter] 
+    MudDialogInstance MudDialog { get; set; }
+    IEnumerable<string> urls;
+    string _urlToAdd = "";
+    IEnumerable<string> eventUrls;
+    string _eventurlToAdd = "";
+    IEnumerable<string> cookies;
+    string _cookieToAdd = "";
+    IEnumerable<string> requestHeaders;
+    string _requestHeaderToAdd = "";
+    IEnumerable<string> responseHeaders;
+    string _responseHeaderToAdd = "";
+
+    void Cancel() => MudDialog.Cancel();
+
+    private void HandleSubmit()
+    {
+        profile.Urls = urls.ToList();
+        profile.EventUrls = eventUrls.ToList();
+        profile.Cookies = cookies.ToList();
+        profile.RequestHeaders = requestHeaders.ToList();
+        profile.ResponseHeaders = responseHeaders.ToList();
+        MudDialog.Close(DialogResult.Ok(profile));
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        profile = profile_ser.Deserialize_Str<C2Profile>();
+        //Console.WriteLine($"profile has {profile.Urls.Count()} urls");
+    }
+}
+

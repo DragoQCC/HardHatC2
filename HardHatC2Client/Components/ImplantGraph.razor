@@ -2,9 +2,16 @@
 @using Blazor.Diagrams.Core;
 @using Blazor.Diagrams.Core.Geometry;
 @using Blazor.Diagrams.Core.Models;
+@using Blazor.Diagrams;
+@using Blazor.Diagrams.Core.Options;
+@using Blazor.Diagrams.Core.PathGenerators;
+@using Blazor.Diagrams.Core.Routers;
+@using Blazor.Diagrams.Options;
 @using HardHatC2Client.Models
 @using HardHatC2Client.Pages
 @using System.Security.Cryptography
+@using HardHatC2Client.Plugin_BaseClasses;
+@using HardHatC2Client.Plugin_Interfaces;
 
 <MudButton style="z-index: 999;" @onclick="() =>ResetDiagram()">Reset Diagram</MudButton>
 <MudButton style="z-index: 999;" @onclick="() => Diagram.ZoomToFit(50)">Zoom to fit</MudButton>
@@ -23,30 +30,30 @@
     
     public class ImplantNode : NodeModel
     {
-        public ImplantNode(Point position = null, ShapeDefiner shape = null) : base(position, RenderLayer.HTML, shape) { }
+        public ImplantNode(Point position = null) : base(position) { }
 
-        public Engineer _engineer { get; set;}
+        public ExtImplant_Base _implant { get; set; }
         public string Name { get; set;}
     }
 
     public class TeamServerNode : NodeModel
     {
-        public TeamServerNode(Point position = null, ShapeDefiner shape = null) : base(position, RenderLayer.HTML, shape) { }
+        public TeamServerNode(Point position = null) : base(position) { }
 
         public string Name { get; set;}
     }
 
-    private static Diagram Diagram { get; set; }
+    private static BlazorDiagram Diagram { get; set; }
     private static Dictionary<string,Point> http_even_positions = new Dictionary<string, Point>();
     private static Dictionary<string,Point> http_odd_positions = new Dictionary<string, Point>();
     public static bool ShouldRenderDiagram = true;
 
 
-    private ImplantNode NewImplantNode(double x, double y, Engineer engineer)
+    private ImplantNode NewImplantNode(double x, double y, ExtImplant_Base implant)
     {
-        var node = new ImplantNode(new Point(x, y),shape: Shapes.Rectangle);
+        var node = new ImplantNode(new Point(x, y));
         node.Size = new Blazor.Diagrams.Core.Geometry.Size(200, 200);
-        node._engineer = engineer;
+        node._implant = implant;
         node.AddPort(PortAlignment.Left);
         node.AddPort(PortAlignment.Right);
         return node;
@@ -54,7 +61,7 @@
 
     private TeamServerNode NewTSNode(double x, double y)
     {
-        var node = new TeamServerNode(new Point(x, y),shape: Shapes.Rectangle);
+        var node = new TeamServerNode(new Point(x, y));
         node.Size = new Blazor.Diagrams.Core.Geometry.Size(200, 200);
         node.AddPort(PortAlignment.Left);
         node.AddPort(PortAlignment.Right);
@@ -72,14 +79,14 @@
         try
         {
             base.OnInitialized();
-                Diagram = new Diagram(new DiagramOptions
+                Diagram = new BlazorDiagram(new BlazorDiagramOptions
                 {
                     GridSize = 50,
                 });
 
     //Diagram.Options.DefaultNodeComponent = typeof(SvgNodeWidget);
-                Diagram.RegisterModelComponent<ImplantNode, ImplantSvgNodeWidget>();
-                Diagram.RegisterModelComponent<TeamServerNode, TeamServerSvgNodeWidget>();
+                Diagram.RegisterComponent<ImplantNode, ImplantSvgNodeWidget>();
+                Diagram.RegisterComponent<TeamServerNode, TeamServerSvgNodeWidget>();
     //foreach engineer in the list of engineers in the Engineers page add a node to the diagram
                 int http_count = 0;
 
@@ -90,15 +97,15 @@
                 Diagram.Nodes.Add(node);
                 http_count++;
 
-                foreach (Engineer engineer in Engineers.EngineerDisplayList)
+            foreach (ExtImplant_Base implant in Implants.ImplantDisplayList)
                 {
     //if engineer.ConnectionTye is smb or tcp skip it because we want to map all the http/https connections first 
-                    if (engineer.ConnectionType.Equals("smb bind", StringComparison.OrdinalIgnoreCase) || engineer.ConnectionType.Equals("smb reverse", StringComparison.OrdinalIgnoreCase) || engineer.ConnectionType.Equals("tcp bind", StringComparison.OrdinalIgnoreCase) || engineer.ConnectionType.Equals("tcp reverse", StringComparison.OrdinalIgnoreCase))
+                    if (implant.ConnectionType.Equals("smb bind", StringComparison.OrdinalIgnoreCase) || implant.ConnectionType.Equals("smb reverse", StringComparison.OrdinalIgnoreCase) || implant.ConnectionType.Equals("tcp bind", StringComparison.OrdinalIgnoreCase) || implant.ConnectionType.Equals("tcp reverse", StringComparison.OrdinalIgnoreCase))
                     {
                         continue;
                     }
 
-                    ImplantNode implant_node = NewImplantNode(0, 0, engineer);
+                    ImplantNode implant_node = NewImplantNode(0, 0, implant);
                     Point newPosition = new Point(0, 0);
     //taking the lastPostion if count is odd and lastPostion.X equals 400 add 75 to the x and -75 to the y, otherwise just add -75 to y,
     //if it is even and lastPostion.X is equal to 400 add 75 to the x and 75 to the y, if y would be greater then 800 or less then 0 reset it to 50 and add 75 to the x
@@ -119,40 +126,40 @@
                         {
     //reset the chart height to 600, and move over 250 to the right to start a new row 
                             newPosition = new Point(lastPosition.X + 250, 600);
-                            implant_node = NewImplantNode(newPosition.X, newPosition.Y, engineer);
-                            implant_node.Name = $"{engineer.ProcessId}@{engineer.Address}";
-                            http_even_positions.Add(engineer.Id, newPosition);
+                            implant_node = NewImplantNode(newPosition.X, newPosition.Y, implant);
+                        implant_node.Name = $"{implant.Metadata.ProcessId}@{implant.Metadata.Address}";
+                        http_even_positions.Add(implant.Metadata.Id, newPosition);
                             Diagram.Nodes.Add(implant_node);
-                            if (engineer.ConnectionType.Equals("http", StringComparison.OrdinalIgnoreCase) || engineer.ConnectionType.Equals("https", StringComparison.OrdinalIgnoreCase))
+                            if (implant.ConnectionType.Equals("http", StringComparison.OrdinalIgnoreCase) || implant.ConnectionType.Equals("https", StringComparison.OrdinalIgnoreCase))
                             {
                                 TeamServerNode node1 = (TeamServerNode)Diagram.Nodes.OfType<TeamServerNode>().FirstOrDefault(x => x.Name.Equals("TeamServer"));
-                                ImplantNode node2 = (ImplantNode)Diagram.Nodes.OfType<ImplantNode>().FirstOrDefault(x => x.Name.Equals($"{engineer.ProcessId}@{engineer.Address}"));
+                            ImplantNode node2 = (ImplantNode)Diagram.Nodes.OfType<ImplantNode>().FirstOrDefault(x => x.Name.Equals($"{implant.Metadata.ProcessId}@{implant.Metadata.Address}"));
                                 Diagram.Links.Add(new LinkModel(node1, node2)
                                 {
                                     SourceMarker = LinkMarker.Arrow,
                                     TargetMarker = LinkMarker.Square,
-                                    Router = Routers.Normal,
-                                    PathGenerator = PathGenerators.Straight,
+                                    Router = new NormalRouter(),
+                                    PathGenerator = new StraightPathGenerator(),
                                     Color = "green"
                                 });
                             }
                         }
                         else
                         {
-                            implant_node = NewImplantNode(newPosition.X, newPosition.Y, engineer);
-                            implant_node.Name = $"{engineer.ProcessId}@{engineer.Address}";
-                            http_even_positions.Add(engineer.Id, newPosition);
+                            implant_node = NewImplantNode(newPosition.X, newPosition.Y, implant);
+                        implant_node.Name = $"{implant.Metadata.ProcessId}@{implant.Metadata.Address}";
+                        http_even_positions.Add(implant.Metadata.Id, newPosition);
                             Diagram.Nodes.Add(implant_node);
-                            if (engineer.ConnectionType.Equals("http", StringComparison.OrdinalIgnoreCase) || engineer.ConnectionType.Equals("https", StringComparison.OrdinalIgnoreCase))
+                            if (implant.ConnectionType.Equals("http", StringComparison.OrdinalIgnoreCase) || implant.ConnectionType.Equals("https", StringComparison.OrdinalIgnoreCase))
                             {
                                 TeamServerNode node1 = (TeamServerNode)Diagram.Nodes.OfType<TeamServerNode>().FirstOrDefault(x => x.Name.Equals("TeamServer"));
-                                ImplantNode node2 = (ImplantNode)Diagram.Nodes.OfType<ImplantNode>().FirstOrDefault(x => x.Name.Equals($"{engineer.ProcessId}@{engineer.Address}"));
+                            ImplantNode node2 = (ImplantNode)Diagram.Nodes.OfType<ImplantNode>().FirstOrDefault(x => x.Name.Equals($"{implant.Metadata.ProcessId}@{implant.Metadata.Address}"));
                                 Diagram.Links.Add(new LinkModel(node1, node2)
                                 {
                                     SourceMarker = LinkMarker.Arrow,
                                     TargetMarker = LinkMarker.Square,
-                                    Router = Routers.Normal,
-                                    PathGenerator = PathGenerators.Straight,
+                                    Router = new NormalRouter(),
+                                    PathGenerator = new StraightPathGenerator(),
                                     Color = "green"
 
                                 });
@@ -176,20 +183,20 @@
                         {
     //reset the chart height to 600
                             newPosition = new Point(lastPosition.X + 250, 600);
-                            implant_node = NewImplantNode(newPosition.X, newPosition.Y, engineer);
-                            implant_node.Name = $"{engineer.ProcessId}@{engineer.Address}";
-                            http_odd_positions.Add(engineer.Id, newPosition);
+                            implant_node = NewImplantNode(newPosition.X, newPosition.Y, implant);
+                        implant_node.Name = $"{implant.Metadata.ProcessId}@{implant.Metadata.Address}";
+                        http_odd_positions.Add(implant.Metadata.Id, newPosition);
                             Diagram.Nodes.Add(implant_node);
-                            if (engineer.ConnectionType.Equals("http", StringComparison.OrdinalIgnoreCase) || engineer.ConnectionType.Equals("https", StringComparison.OrdinalIgnoreCase))
+                            if (implant.ConnectionType.Equals("http", StringComparison.OrdinalIgnoreCase) || implant.ConnectionType.Equals("https", StringComparison.OrdinalIgnoreCase))
                             {
                                 TeamServerNode node1 = (TeamServerNode)Diagram.Nodes.OfType<TeamServerNode>().FirstOrDefault(x => x.Name.Equals("TeamServer"));
-                                ImplantNode node2 = (ImplantNode)Diagram.Nodes.OfType<ImplantNode>().FirstOrDefault(x => x.Name.Equals($"{engineer.ProcessId}@{engineer.Address}"));
+                            ImplantNode node2 = (ImplantNode)Diagram.Nodes.OfType<ImplantNode>().FirstOrDefault(x => x.Name.Equals($"{implant.Metadata.ProcessId}@{implant.Metadata.Address}"));
                                 Diagram.Links.Add(new LinkModel(node1, node2)
                                 {
                                     SourceMarker = LinkMarker.Arrow,
                                     TargetMarker = LinkMarker.Square,
-                                    Router = Routers.Normal,
-                                    PathGenerator = PathGenerators.Straight,
+                                    Router = new NormalRouter(),
+                                    PathGenerator = new StraightPathGenerator(),
                                     Color = "green"
 
                                 });
@@ -197,20 +204,20 @@
                         }
                         else
                         {
-                            implant_node = NewImplantNode(newPosition.X, newPosition.Y, engineer);
-                            implant_node.Name = $"{engineer.ProcessId}@{engineer.Address}";
-                            http_odd_positions.Add(engineer.Id, newPosition);
+                            implant_node = NewImplantNode(newPosition.X, newPosition.Y, implant);
+                        implant_node.Name = $"{implant.Metadata.ProcessId}@{implant.Metadata.Address}";
+                        http_odd_positions.Add(implant.Metadata.Id, newPosition);
                             Diagram.Nodes.Add(implant_node);
-                            if (engineer.ConnectionType.Equals("http", StringComparison.OrdinalIgnoreCase) || engineer.ConnectionType.Equals("https", StringComparison.OrdinalIgnoreCase))
+                            if (implant.ConnectionType.Equals("http", StringComparison.OrdinalIgnoreCase) || implant.ConnectionType.Equals("https", StringComparison.OrdinalIgnoreCase))
                             {
                                 TeamServerNode node1 = (TeamServerNode)Diagram.Nodes.OfType<TeamServerNode>().FirstOrDefault(x => x.Name.Equals("TeamServer"));
-                                ImplantNode node2 = (ImplantNode)Diagram.Nodes.OfType<ImplantNode>().FirstOrDefault(x => x.Name.Equals($"{engineer.ProcessId}@{engineer.Address}"));
+                            ImplantNode node2 = (ImplantNode)Diagram.Nodes.OfType<ImplantNode>().FirstOrDefault(x => x.Name.Equals($"{implant.Metadata.ProcessId}@{implant.Metadata.Address}"));
                                 Diagram.Links.Add(new LinkModel(node1, node2)
                                 {
                                     SourceMarker = LinkMarker.Arrow,
                                     TargetMarker = LinkMarker.Square,
-                                    Router = Routers.Normal,
-                                    PathGenerator = PathGenerators.Straight,
+                                    Router = new NormalRouter(),
+                                    PathGenerator = new StraightPathGenerator(),
                                     Color = "green"
 
                                 });
@@ -222,16 +229,16 @@
 
     //for each Engineer in the list of Engineers, if it has the connection type of http or https, skip it, otherwise the engineer is a p2p connection and its external address value is the name of a node in the diagram, which will be used for the connection, 
     // the connection will be red for tcp and blue for smb, if it is a bind connection the sourceMarker will be a square and the targetMarker will be an arrow, if it is a reverse connection the sourceMarker will be an arrow and the targetMarker will be a square
-                foreach (Engineer engineer in Engineers.EngineerDisplayList)
+            foreach (ExtImplant_Base implant in Implants.ImplantDisplayList)
                 {
-                    if (engineer.ConnectionType.Equals("http", StringComparison.OrdinalIgnoreCase) || engineer.ConnectionType.Equals("https", StringComparison.OrdinalIgnoreCase))
+                    if (implant.ConnectionType.Equals("http", StringComparison.OrdinalIgnoreCase) || implant.ConnectionType.Equals("https", StringComparison.OrdinalIgnoreCase))
                     {
                         continue;
                     }
 
                     Point newPosition = new Point(0, 0);
     //take the engineers external address and use it to find the node in the diagram
-                    ImplantNode node1 = (ImplantNode)Diagram.Nodes.OfType<ImplantNode>().FirstOrDefault(x => x.Name.Equals($"{engineer.ExternalAddress}"));
+                    ImplantNode node1 = (ImplantNode)Diagram.Nodes.OfType<ImplantNode>().FirstOrDefault(x => x.Name.Equals($"{implant.ExternalAddress}"));
     //update newPostion to be the position of the node with +250 to x and +0 to y, this will be the position of the new node, if any node is already at that position, move up 150 in the y axis
                     newPosition = new Point(node1.Position.X + 250, node1.Position.Y);
 
@@ -270,11 +277,11 @@
                     }
 
     //create a new node with the new position and the engineer object
-                    ImplantNode node2 = NewImplantNode(newPosition.X, newPosition.Y, engineer);
+                    ImplantNode node2 = NewImplantNode(newPosition.X, newPosition.Y, implant);
     //add the new node to the diagram
                     Diagram.Nodes.Add(node2);
 
-                    string eng_connection_type = engineer.ConnectionType + " " + Engineers.FindManager(engineer, engineer.ManagerName);
+                string eng_connection_type = implant.ConnectionType + " " + Implants.FindManager(implant, implant.Metadata.ManagerName);
 
                     if (eng_connection_type.Equals("tcp bind", StringComparison.OrdinalIgnoreCase))
                     {
@@ -283,8 +290,8 @@
                         {
                             SourceMarker = LinkMarker.Square,
                             TargetMarker = LinkMarker.Arrow,
-                            Router = Routers.Normal,
-                            PathGenerator = PathGenerators.Straight,
+                            Router = new NormalRouter(),
+                            PathGenerator = new StraightPathGenerator(),
                             Color = "red"
                         });
                     }
@@ -295,8 +302,8 @@
                         {
                             SourceMarker = LinkMarker.Arrow,
                             TargetMarker = LinkMarker.Square,
-                            Router = Routers.Normal,
-                            PathGenerator = PathGenerators.Straight,
+                            Router = new NormalRouter(),
+                            PathGenerator = new StraightPathGenerator(),
                             Color = "red"
                         });
 
@@ -308,8 +315,8 @@
                         {
                             SourceMarker = LinkMarker.Square,
                             TargetMarker = LinkMarker.Arrow,
-                            Router = Routers.Normal,
-                            PathGenerator = PathGenerators.Straight,
+                            Router = new NormalRouter(),
+                            PathGenerator = new StraightPathGenerator(),
                             Color = "blue"
                         });
 
@@ -321,8 +328,8 @@
                         {
                             SourceMarker = LinkMarker.Arrow,
                             TargetMarker = LinkMarker.Square,
-                            Router = Routers.Normal,
-                            PathGenerator = PathGenerators.Straight,
+                            Router = new NormalRouter(),
+                            PathGenerator = new StraightPathGenerator(),
                             Color = "blue"
                         });
 

@@ -18,7 +18,7 @@ using System.Threading.Tasks;
      
 //        public bool IsHidden { get; set; }
 
-//        public string EngineerId { get; set; }
+//        public string ImplantId { get; set; }
 
 //        public EngTaskStatus Status { get; set; }
        

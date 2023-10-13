@@ -2865,8 +2865,10 @@ namespace DynamicEngLoading
         public struct ADVAPI32_DELEGATES
         {
             //logonUser
-            [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
-            public delegate bool LogonUser(string lpszUsername, string lpszDomain, string lpszPassword, Win32.Advapi32.LOGON_TYPE dwLogonType, Win32.Advapi32.LOGON_PROVIDER dwLogonProvider, out IntPtr phToken);
+            //[UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
+            //public delegate bool LogonUser(string lpszUsername, string lpszDomain, string lpszPassword, Win32.Advapi32.LOGON_TYPE dwLogonType, Win32.Advapi32.LOGON_PROVIDER dwLogonProvider, out IntPtr phToken);
+            [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true, CharSet = CharSet.Unicode)]
+            public delegate bool LogonUserW([MarshalAs(UnmanagedType.LPWStr)] string lpszUsername,[MarshalAs(UnmanagedType.LPWStr)] string lpszDomain, [MarshalAs(UnmanagedType.LPWStr)] string lpszPassword, Win32.Advapi32.LOGON_TYPE dwLogonType, Win32.Advapi32.LOGON_PROVIDER dwLogonProvider,out IntPtr phToken);
             //RevetToSelf
             [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Auto)]
             public delegate bool RevertToSelf();

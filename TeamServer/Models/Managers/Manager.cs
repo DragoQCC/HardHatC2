@@ -11,16 +11,17 @@ namespace TeamServer.Models
 {
     public abstract class manager
     {
+        public string Id { get; set; } = Guid.NewGuid().ToString(); // id for the manager
         public abstract string Name { get; set; }
 
         public abstract ManagerType Type { get; set; } // enum of values http,https,tcp,smb
 
         public DateTime CreationTime { get; set; } = DateTime.UtcNow;
 
-        protected IEngineerService EngineerService;
-        public void Init(IEngineerService _engineerService)
+       // protected IEngineerService EngineerService;
+        public void Init()
         {
-            EngineerService = _engineerService;
+          
         }
 
         public abstract Task Start();

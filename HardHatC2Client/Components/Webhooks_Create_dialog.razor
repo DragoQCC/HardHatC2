@@ -1,0 +1,98 @@
+﻿@using System.Reflection;
+@using HardHatC2Client.Pages;
+@using HardHatC2Client.Services;
+<MudDialog>
+    <DialogContent>
+        <MudForm>
+            <MudTextField @bind-Value="newWebhook.Name" Label="Name" />
+            <MudTextField @bind-Value="newWebhook.Url" Label="Url" />
+            <MudSelectExtended ValueChanged="@((e)=>OnTargetSiteChanged(e))" T="Webhooks.Webhook.TargetSites" Label="Target Site">
+                <MudSelectItemExtended Value="Webhooks.Webhook.TargetSites.Custom" Text="Custom" />
+                <MudSelectItemExtended Value="Webhooks.Webhook.TargetSites.Discord" Text="Discord" />
+                <MudSelectItemExtended Value="Webhooks.Webhook.TargetSites.Slack" Text="Slack" />
+@*                 <MudSelectItemExtended Value="Webhooks.Webhook.TargetSites.MatterMost" Text="MatterMost" /> *@
+        </MudSelectExtended>
+            <MudSelectExtended ValueChanged="@((e)=>OnWebhookDataOptionChange(e))" T="Webhooks.Webhook.WebHookDataOptions" Label="Webhook Data Option">
+                <MudSelectItemExtended Value="Webhooks.Webhook.WebHookDataOptions.Custom" Text="Custom" />
+                <MudSelectItemExtended Value="Webhooks.Webhook.WebHookDataOptions.NewCheckIn" Text="New Check In" />
+@*                 <MudSelectItem Value="Webhooks.Webhook.WebHookDataOptions.Alert" Text="Alert" />
+                <MudSelectItem Value="Webhooks.Webhook.WebHookDataOptions.Initilization" Text="Initilization" />
+                <MudSelectItem Value="Webhooks.Webhook.WebHookDataOptions.Feedback" Text="Feedback" /> *@
+        </MudSelectExtended>
+            <MudTextField Lines="@TemplateLineCount" @bind-Value="newWebhook.Template" Label="Template" />
+        <MudTextField Lines="@DataTemplateLineCount" @bind-Value="newWebhook.DataTemplate" Label="Data Template" />
+            <br />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="(()=>SendWebhookToTS(newWebhook))">Send Webhook</MudButton>
+            <br />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [Parameter]
+    public Webhooks.Webhook newWebhook { get; set; } = new Webhooks.Webhook();
+    [CascadingParameter]
+    public MudDialogInstance MudDialog { get; set; }
+
+    private int TemplateLineCount = 1;
+    private int DataTemplateLineCount = 1;
+
+    public void OnTargetSiteChanged(Webhooks.Webhook.TargetSites targetsite)
+    {
+        try
+        {
+            newWebhook.TargetSite = targetsite;
+            char allPlatformPathSeperator = Path.DirectorySeparatorChar;
+            string assemblyBasePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string[] pathSplit = assemblyBasePath.Split("bin"); // [0] is the main path D:\my_Custom_code\HardHatC2\HardHatC2Client\
+            pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
+            string targetSiteTemplatePath = pathSplit[0] + "JSON Templates" + allPlatformPathSeperator + "Webhooks" + allPlatformPathSeperator + "TargetTemplates" + allPlatformPathSeperator + newWebhook.TargetSite.ToString() + ".json";
+            string targetSiteTemplate = File.ReadAllText(targetSiteTemplatePath);
+
+            //update the TemplanteLineCount to the number of lines in the file
+            TemplateLineCount = targetSiteTemplate.Split('\n').Length;
+            newWebhook.Template = targetSiteTemplate;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+    }
+
+    public void OnWebhookDataOptionChange(Webhooks.Webhook.WebHookDataOptions webhookOption)
+    {
+        try
+        {
+            newWebhook.WebHookDataOption = webhookOption;
+            char allPlatformPathSeperator = Path.DirectorySeparatorChar;
+            string assemblyBasePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string[] pathSplit = assemblyBasePath.Split("bin"); // [0] is the main path D:\my_Custom_code\HardHatC2\HardHatC2Client\
+            pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
+            string targetSiteTemplatePath = pathSplit[0] + "JSON Templates" + allPlatformPathSeperator + "Webhooks" + allPlatformPathSeperator + "ContentTemplates" + allPlatformPathSeperator + newWebhook.WebHookDataOption.ToString() + "_" + newWebhook.TargetSite.ToString() + ".json";
+            string targetSiteTemplate = File.ReadAllText(targetSiteTemplatePath);
+            //update the DataTemplanteLineCount to the number of lines in the file
+            DataTemplateLineCount = targetSiteTemplate.Split('\n').Length;
+            newWebhook.DataTemplate = targetSiteTemplate;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+    }
+
+    public async Task SendWebhookToTS(Webhooks.Webhook webhookToSend)
+    {
+        Webhooks.ExistingWebhooks.Add(webhookToSend);
+        bool success = await HardHatHubClient._hub.AddWebhook(webhookToSend);
+        Implants.ShowSuccessToast("Webhook Sent Successfully");
+        //reset the field values and close the dialog
+        newWebhook = new Webhooks.Webhook();
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+}

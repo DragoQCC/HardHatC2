@@ -1,0 +1,41 @@
+﻿@using ApiModels.Shared;
+@using HardHatC2Client.Pages;
+
+<MudDialog>
+    <DialogContent>
+        <MudForm>
+            <MudTextField @bind-Value="ObjectiveToCreate.Name" Label="Name" />
+            <MudTextField @bind-Value="ObjectiveToCreate.Description" Label="Description" />
+            <MudTextField @bind-Value="ObjectiveToCreate.Tag_Value.Name" Label="Tag Name" />
+            <MudTextField @bind-Value="ObjectiveToCreate.Tag_Value.Description" Label="Tag Details" />
+            <MudTextField @bind-Value="ObjectiveToCreate.Tag_Value.Color" Label="Tag Color" InputType="InputType.Color" />
+<MudSelectExtended T="Objective.ObjectiveType" @bind-Value="ObjectiveToCreate.Type" Label="Type">
+                <MudSelectItemExtended Value="Objective.ObjectiveType.Primary">Primary</MudSelectItemExtended>
+                <MudSelectItemExtended Value="Objective.ObjectiveType.Secondary">Secondary</MudSelectItemExtended>
+                <MudSelectItemExtended Value="Objective.ObjectiveType.Tertiary">Tertiary</MudSelectItemExtended>
+</MudSelectExtended>
+<MudSelectExtended T="Objective.ObjectiveStatus" @bind-Value="ObjectiveToCreate.Status" Label="Status">
+<MudSelectItemExtended Value="Objective.ObjectiveStatus.NotStarted">Not Started</MudSelectItemExtended>
+                <MudSelectItemExtended Value="Objective.ObjectiveStatus.InProgress">In Progress</MudSelectItemExtended>
+                <MudSelectItemExtended Value="Objective.ObjectiveStatus.Incomplete">Incomplete</MudSelectItemExtended>
+                <MudSelectItemExtended Value="Objective.ObjectiveStatus.Missed">Missed</MudSelectItemExtended>
+                <MudSelectItemExtended Value="Objective.ObjectiveStatus.PartiallyComplete">Partially Complete</MudSelectItemExtended>
+                <MudSelectItemExtended Value="Objective.ObjectiveStatus.Complete">Complete</MudSelectItemExtended>
+</MudSelectExtended>
+            <MudTextField T="string" @bind-Value="ObjectiveToCreate._subtaskString" Label="Sub Tasks (one per line)" Lines="3" />
+            <br />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => Dialog.Close(DialogResult.Ok(ObjectiveToCreate)))">Create</MudButton>
+            <br/>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [CascadingParameter]
+    public MudDialogInstance Dialog { get; set; }
+
+    public Objective ObjectiveToCreate = new Objective();
+}

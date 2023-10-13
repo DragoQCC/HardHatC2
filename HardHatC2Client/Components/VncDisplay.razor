@@ -1,0 +1,236 @@
+﻿@using System.Windows;
+@using System.Drawing;
+@using ApiModels.Shared.TaskResultTypes;
+@using ApiModels.Shared;
+@using HardHatC2Client.Services;
+@using HardHatC2Client.Utilities;
+@using System.Text;
+@using Microsoft.AspNetCore.Components.Rendering;
+@using MudBlazor.Extensions.Options;
+@inject IJSRuntime JSRuntime
+@inject IDialogService dialogService
+
+
+    <MudIconButton Icon="@Icons.Material.Filled.Fullscreen" Color="MudBlazor.Color.Primary" @onclick="@ToggleFullscreen" />
+
+@if (IsFullscreen)
+{
+    <MudDialog @bind-IsVisible="@IsFullscreen" Options="diagOptions">
+        <DialogContent>
+            <MudPaper Width=100% Height="95vh" Outlined="true">
+                <div style="height:100%; object-fit:contain;" tabindex="0" @ref="imageWrapperRef" @onfocus="HandleFocus" @onblur="HandleBlur">
+                    <MudImage @onmouseup="HandleRightClick" Style="@imageStyle" @oncontextmenu:preventDefault=true @onpaste="HandlePaste" @onkeydown="HandleKeyDown" @key="@vncImageDataUrl" @onmousemove="HandleMouseMove" @onclick="HandleClick" Src=@vncImageDataUrl Elevation="25" Class="rounded-lg" />
+                </div>
+            </MudPaper>
+        </DialogContent>
+    </MudDialog>
+}
+else
+{
+    <MudPaper Width=100% Height="55vh" Outlined="true">
+        <div style="height:100%; object-fit:contain;" tabindex="0" @ref="imageWrapperRef" @onfocus="HandleFocus" @onblur="HandleBlur">
+            <MudImage @onmouseup="HandleRightClick" Style="@imageStyle" @oncontextmenu:preventDefault=true @onpaste="HandlePaste" @onkeydown="HandleKeyDown" @key="@vncImageDataUrl" @onmousemove="HandleMouseMove" @onclick="HandleClick" Src=@vncImageDataUrl Elevation="25" Class="rounded-lg" />
+        </div>
+    </MudPaper>
+}
+
+
+
+
+
+@code {
+
+    string vncImageDataUrl { get; set; }
+    [Parameter]
+    public string implantId { get; set; }
+    [Parameter]
+    public string vncSessionId { get; set; }
+    public ObjectFit ImageFit { get; set; } = ObjectFit.Contain;
+
+    private VNCSessionMetadata meta { get; set; }
+    private Timer timer { get; set; }
+
+    private DotNetObjectReference<VncDisplay> objRef;
+    private ElementReference imageWrapperRef;
+    private ElementReference fullscreenDiv;
+
+    private StringBuilder textBuffer = new StringBuilder();
+    private Timer keyStrokeTimer;
+    private const int delay = 1000; // 1 second delay
+    private bool IsFullscreen { get; set; } = false;
+    private string imageStyle = "height:100%; width:100%";
+
+    public DialogOptionsEx diagOptions { get; set; } = new()
+        {
+            MaximizeButton = true,
+            CloseButton = true,
+            CloseOnEscapeKey = true,
+            FullScreen = true,
+            DragMode = MudDialogDragMode.Simple,
+            Position = DialogPosition.Center,
+            DisableSizeMarginY = true,
+            DisableSizeMarginX = true,
+            DisablePositionMargin = true
+        };
+
+    public class Size
+    {
+        public double Width { get; set; }
+        public double Height { get; set; }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            objRef = DotNetObjectReference.Create(this);
+            JSRuntime.InvokeVoidAsync("monitorClipboard", objRef);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            //nsole.WriteLine("VNC Display Initialized");
+            meta = VNC_Util.ImplantVNCSessionMeta[vncSessionId];
+            if (VNC_Util.VNCUIComponents.ContainsKey(vncSessionId) == false)
+            {
+                VNC_Util.VNCUIComponents.Add(vncSessionId, this);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+    }
+
+    private void HandleFocus(FocusEventArgs e)
+    {
+        Console.WriteLine("Element received focus");
+    }
+
+    private void HandleBlur(FocusEventArgs e)
+    {
+        Console.WriteLine("Element lost focus");
+    }
+
+    public async Task HandleUpdate(VncInteractionResponse response, VNCSessionMetadata meta)
+    {
+        this.meta = meta;
+        vncImageDataUrl = "data:image/png;base64," + Convert.ToBase64String(response.ScreenContent);
+        //verify that the vncImageDataUrl is a valid data url
+        await Task.Delay(100);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ToggleFullscreen()
+    {
+        IsFullscreen = !(IsFullscreen);
+    }
+
+
+    private async Task HandleClick(MouseEventArgs e)
+    {
+        var x = e.OffsetX;
+        var y = e.OffsetY;
+        var button = e.Button; // 0 for left, 1 for middle, 2 for right button
+                               // Send the captured mouse click to the server with signal
+        HandleSendClick(x, y, button);
+    }
+
+    private async Task HandleRightClick(MouseEventArgs e)
+    {
+        var x = e.OffsetX;
+        var y = e.OffsetY;
+        var button = e.Button; // 0 for left, 1 for middle, 2 for right button
+                               // Send the captured mouse click to the server with signal
+        HandleSendClick(x, y, button);
+    }
+
+    private async Task HandleSendClick(double x, double y, long button)
+    {
+        // Get the mouse click coordinates and other details
+
+        // Get the displayed image size
+        var imageSize = await JSRuntime.InvokeAsync<Size>("getImageSize", imageWrapperRef);
+        double displayedImageWidth = imageSize.Width;
+        double displayedImageHeight = imageSize.Height;
+
+        // Get the original screen size
+        double originalScreenWidth = meta.ScreenWidth;
+        double originalScreenHeight = meta.ScreenHeight;
+
+        // Calculate the scale factor
+        double scaleX = originalScreenWidth / displayedImageWidth;
+        double scaleY = originalScreenHeight / displayedImageHeight;
+
+        // Apply the scale factor to the click location
+        double originalX = x * scaleX;
+        double originalY = y * scaleY;
+
+        Console.WriteLine("Sending mouse click to vnc server");
+        HardHatHubClient._hub.VNCsendMouseClickToServer(originalX, originalY, button, implantId, vncSessionId);
+    }
+
+    private async Task HandleMouseMove(MouseEventArgs e)
+    {
+        //var x = e.ClientX;
+        //var y = e.ClientY;
+        //// Send the captured mouse move to the server with SignalR
+        //await HardHatHubClient._hub.VNCsendMouseMoveToServer(x, y, implantId, vncSessionId);
+    }
+
+    //builds up text until the user stops typing for 1 second, then sends the text to the server
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        Console.WriteLine($"{e.Key} pressed");
+        textBuffer.Append(e.Key); // Append the pressed key to the buffer
+
+        if (keyStrokeTimer == null)
+        {
+            keyStrokeTimer = new Timer(SendBufferedText, null, delay, Timeout.Infinite);
+        }
+        else
+        {
+            keyStrokeTimer.Change(delay, Timeout.Infinite); // Reset the timer
+        }
+    }
+
+    private void SendBufferedText(object state)
+    {
+        var textToSend = textBuffer.ToString();
+        textBuffer.Clear(); // Clear the buffer
+
+        if (!string.IsNullOrEmpty(textToSend))
+        {
+            // Send the accumulated text to the server
+            Console.WriteLine("Sending text to vnc");
+            HardHatHubClient._hub.VNCSendTextToServer(textToSend, implantId, vncSessionId);
+        }
+        keyStrokeTimer.Dispose();
+        keyStrokeTimer = null;
+    }
+
+    [JSInvokable]
+    public async Task RequestClipboardContentFromServer()
+    {
+        // Send a request to the server to get the clipboard content
+        await HardHatHubClient._hub.VNCsendGetClipboardToServer(implantId, vncSessionId);
+    }
+
+    private async Task HandlePaste(ClipboardEventArgs e)
+    {
+        var clipboardData = await JSRuntime.InvokeAsync<string>("navigator.clipboard.readText",null);
+        // Send the clipboard data to the server with SignalR
+        await HardHatHubClient._hub.VNCsendClipboardDataToServer(clipboardData, implantId, vncSessionId);
+    }
+
+    private async Task SendHeartbeatRequest()
+    {
+        // Send a heartbeat request to the server with signalR
+        Console.WriteLine($"{DateTime.UtcNow} sending heartbeat");
+        HardHatHubClient._hub.VNCsendHeartbeatRequestToServer(implantId, vncSessionId);
+    }
+}

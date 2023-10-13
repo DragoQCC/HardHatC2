@@ -3,7 +3,9 @@
 @using HardHatC2Client.Pages
 @using System.Collections.Concurrent
 @using System.Collections.ObjectModel
-@using HardHatC2Client.Models.TaskResultTypes
+@using ApiModels.Shared.TaskResultTypes;
+@using HardHatC2Client.Plugin_BaseClasses;
+@using HardHatC2Client.Plugin_Interfaces;
 @using HardHatC2Client.Utilities
 @inject IToastService toastDefault
  <MudDynamicTabs @ref="@DynamicTabs" Elevation="4" PanelClass="px-4 py-6" Rounded="true" ApplyEffectsToContainer="true" CloseTab="@((panel) => CloseTabCallback(panel))" @bind-ActivePanelIndex="UserIndex">
@@ -12,58 +14,58 @@
          <MudTabPanel Tag="@tab.TabId" Text="@tab.Name" Icon="@Icons.Material.Outlined.DesktopWindows">
              <!-- a dropdown menu of all the engineers on the host who can list content  -->
              <div class="d-flex">
-             @*<MudSwitch @bind-Checked="@HideOfflineEngineers" Label="Hide Offline Engineers" Color="Color.Primary" />*@
-             <MudToggleIconButton @bind-Toggled="@HideOfflineEngineers" Color="Color.Primary" Icon="@Icons.Material.Filled.Visibility" ToggledIcon="@Icons.Material.Filled.VisibilityOff" Title="Hide Offline Engineers"  ToggledTitle="Hide Offline Engineers" />
-             <MudToggleIconButton @bind-Toggled="@HostOnlyEngineers" Color="Color.Primary" Icon="@Icons.Material.Filled.FilterAlt" ToggledColor="@Color.Error" ToggledIcon="@Icons.Material.Filled.FilterAltOff" Title="Host Only Implants"  ToggledTitle="Host Only Implants" />
-             @*<MudSwitch @bind-Checked="@HostOnlyEngineers" Label="Host Only Engineers" Color="Color.Primary" />*@
+             @*<MudSwitch @bind-Checked="@HideOfflineImplants" Label="Hide Offline Implants" Color="Color.Primary" />*@
+             <MudToggleIconButton @bind-Toggled="@HideOfflineImplants" Color="Color.Primary" Icon="@Icons.Material.Filled.Visibility" ToggledIcon="@Icons.Material.Filled.VisibilityOff" Title="Hide Offline Implants"  ToggledTitle="Hide Offline Implants" />
+             <MudToggleIconButton @bind-Toggled="@HostOnlyImplants" Color="Color.Primary" Icon="@Icons.Material.Filled.FilterAlt" ToggledColor="@Color.Error" ToggledIcon="@Icons.Material.Filled.FilterAltOff" Title="Host Only Implants"  ToggledTitle="Host Only Implants" />
+             @*<MudSwitch @bind-Checked="@HostOnlyImplants" Label="Host Only Implants" Color="Color.Primary" />*@
              </div>
              <div class="d-flex mb-xl-2">
-                 <MudSelect Class="mb-4 mt-4" T="Engineer" Label="Engineer To Browse With" Variant="Variant.Filled" Required="true" @bind-value="selectedEngineer" RequiredError="Engineer is required!">
-                     @if (HostOnlyEngineers)
+                <MudSelect Class="mb-4 mt-4" T="ExtImplant_Base" Label="Implant To Browse With" Variant="Variant.Filled" Required="true" @bind-value="selectedImplant" RequiredError="Implant is required!">
+                     @if (HostOnlyImplants)
                      {
-                         if (HideOfflineEngineers)
+                         if (HideOfflineImplants)
                          {
-                             foreach (Engineer eng in Engineers.EngineerList)
+                            foreach (ExtImplant_Base imp in Implants.ImplantList)
                              {
-                                 if (eng.Status == null)
+                                 if (imp.Status == null)
                                  {
-                                     Engineers.GetEngineerStatus(eng);
+                                     Implants.GetImplantStatus(imp);
                                  }
                              }
-                             foreach (Engineer eng in Engineers.EngineerList.Where(x => x.Hostname.Equals(tab.Name, StringComparison.CurrentCultureIgnoreCase) && x.Status.Equals("Active",StringComparison.CurrentCultureIgnoreCase)))
+                            foreach (ExtImplant_Base imp in Implants.ImplantList.Where(x => x.Metadata.Hostname.Equals(tab.Name, StringComparison.CurrentCultureIgnoreCase) && x.Status.Equals("Active", StringComparison.CurrentCultureIgnoreCase)))
                              {
-                                 <MudSelectItem Value="@(eng)">
-                                     <MudText>@eng.Username - @eng.ProcessId@@@eng.Address, Int: @eng.Integrity, Sleep: @eng.Sleep </MudText>
+                                 <MudSelectItem Value="@(imp)">
+                                    <MudText>@imp.Metadata.Username - @imp.Metadata.ProcessId@@@imp.Metadata.Address, Int: @imp.Metadata.Integrity, Sleep: @imp.Metadata.Sleep </MudText>
                                  </MudSelectItem>
                              }
                          }
                          else
                          {
-                             foreach (Engineer eng in Engineers.EngineerList.Where(x => x.Hostname.Equals(tab.Name, StringComparison.CurrentCultureIgnoreCase)))
+                            foreach (ExtImplant_Base imp in Implants.ImplantList.Where(x => x.Metadata.Hostname.Equals(tab.Name, StringComparison.CurrentCultureIgnoreCase)))
                              {
-                                 <MudSelectItem Value="@(eng)">
-                                     <MudText>@eng.Username - @eng.ProcessId@@@eng.Address, Int: @eng.Integrity, Sleep: @eng.Sleep </MudText>
+                                 <MudSelectItem Value="@(imp)">
+                                    <MudText>@imp.Metadata.Username - @imp.Metadata.ProcessId@@@imp.Metadata.Address, Int: @imp.Metadata.Integrity, Sleep: @imp.Metadata.Sleep </MudText>
                                  </MudSelectItem>
                              }
                          }
                      }
                      else
                      {
-                         if (HideOfflineEngineers)
+                         if (HideOfflineImplants)
                          {
-                             foreach (Engineer eng in Engineers.EngineerList.Where(x => x.Status.Equals("Active", StringComparison.CurrentCultureIgnoreCase)))
+                            foreach (ExtImplant_Base imp in Implants.ImplantList.Where(x => x.Status.Equals("Active", StringComparison.CurrentCultureIgnoreCase)))
                              {
-                                 <MudSelectItem Value="@(eng)">
-                                     <MudText>@eng.Username - @eng.ProcessId@@@eng.Address, Int: @eng.Integrity, Sleep: @eng.Sleep </MudText>
+                                 <MudSelectItem Value="@(imp)">
+                                    <MudText>@imp.Metadata.Username - @imp.Metadata.ProcessId@@@imp.Metadata.Address, Int: @imp.Metadata.Integrity, Sleep: @imp.Metadata.Sleep </MudText>
                                  </MudSelectItem>
                              }
                          }
                          else
                          {
-                             foreach (Engineer eng in Engineers.EngineerList)
+                            foreach (ExtImplant_Base imp in Implants.ImplantList)
                              {
-                                 <MudSelectItem Value="@(eng)">
-                                     <MudText>@eng.Username - @eng.ProcessId@@@eng.Address, Int: @eng.Integrity, Sleep: @eng.Sleep </MudText>
+                                 <MudSelectItem Value="@(imp)">
+                                    <MudText>@imp.Metadata.Username - @imp.Metadata.ProcessId@@@imp.Metadata.Address, Int: @imp..MetadataIntegrity, Sleep: @imp.Metadata.Sleep </MudText>
                                  </MudSelectItem>
                              }
                          }
@@ -144,17 +146,17 @@
                                 {
                                     LocationsToBrowse.Remove(SelectedValue.FullPath.Trim());
                                     ShowSuccessToast($"Got back content for {SelectedValue.FullPath}");
-                                    OnStateChange();
+                                   // OnStateChange();
                                 }
                                  <DirectoryListingTable IsFileBrowser="true" Outputs="@outputs" Path="@SelectedValue.FullPath"></DirectoryListingTable>
                              }
                              else
                              {
                                  <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
-                                 if (!LocationsToBrowse.Contains(SelectedValue.FullPath.Trim()) && selectedEngineer != null)
+                                 if (!LocationsToBrowse.Contains(SelectedValue.FullPath.Trim()) && selectedImplant != null)
                                  {
                                      LocationsToBrowse.Add(SelectedValue.FullPath.Trim());
-                                     GetFiles(selectedEngineer, SelectedValue.FullPath.Trim());
+                                     GetFiles(selectedImplant, SelectedValue.FullPath.Trim());
                                  }
                              }
                          }
@@ -182,15 +184,15 @@
     public static int UserIndex = 0;
     private bool _updateIndex = false;
     private static TreeItemData SelectedValue { get; set; }
-    public static Engineer selectedEngineer = null;
+    public static ExtImplant_Base selectedImplant = null;
     private static ObservableCollection<string> LocationsToBrowse = new ObservableCollection<string>();
     public static string? targetPath = null;
     public static bool GetItemCount = false;
     public static bool GetACLs = false;
-    public bool HostOnlyEngineers = true;
-    public bool HideOfflineEngineers = false;
-    public delegate void OnStateChangeDelegate();
-    public static OnStateChangeDelegate OnStateChange;
+    public bool HostOnlyImplants = true;
+    public bool HideOfflineImplants = false;
+    //  public delegate void OnStateChangeDelegate();
+    //  public static OnStateChangeDelegate OnStateChange;
     public static MudTextField<string> pathTextFiled; 
 
     public class TabView
@@ -228,37 +230,13 @@
     }
 
 
-    public static void AddSideBarContent(string hostname,List<FileSystemItem> inputs)
+    public static async Task AddSideBarContent(string hostname, List<FileSystemItem> inputs, TabView tabview)
     {
         //remove any items from inputsToParse that contain a . in the path
         List<FileSystemItem> inputsToParse = inputs.Where(x => !x.Name.Contains('.')).ToList();
 
-        //if the hostname is already the name of a tab if it is pull out its hashset and add the new files to it
-        //if it is not then create a new tab with the hostname as the name and the hashset as the content
-        HashSet<TreeItemData> treeItems = new HashSet<TreeItemData>();
-        if (Tabs.Any(x => x.Name == hostname))
-        {
-            //get the tab that has the hostname
-            TabView tab = Tabs.First(x => x.Name == hostname);
-            //get the hashset of the hostname
-            treeItems = tab.Content;
-        }
-        else
-        {
-            //create a new tab with the hostname as the name and the hashset as the content
-            Tabs.Add(new TabView { Name = hostname, Content = new HashSet<TreeItemData>(), DirectoryContent = new Dictionary<string, List<FileSystemItem>>(), TabId = Guid.NewGuid().ToString() });
-            //get the tab that has the hostname
-            TabView tab = Tabs.First(x => x.Name == hostname);
-            backupTabs.Add(tab);
-            //get the hashset of the hostname
-            treeItems = Tabs.First(x => x.Name == hostname).Content;
-            //add the hostname as the first item to the hashset
-            TreeItemData host = new TreeItemData(hostname,hostname);
-            host.Icon = Icons.Material.Outlined.DesktopWindows;
-            host.IconColor = Color.Info;
-            treeItems.Add(host);
-        }
-
+        //get the tabs current side bar content
+        HashSet<TreeItemData> treeItems = tabview.Content;
 
 
         //split the elements in InputsToParse at the first | then take that first element which is a path and if it ends in a .* then it is a file otherwise it is a folder , after that build a hierarchy of folders and files where each \ is a higher tier
@@ -268,13 +246,19 @@
             {
                 continue;
             }
-            //this is the parts of the path split by \
+            //this is the parts of the path split by \, for example c:\ Windows\ System32\ 
             string[] splitPath = input.Name.Split('\\');
             //foreach element in the split path if it already exists in the hashset then skip it and add the next element to its child tree items
             //if it does not exist then add it to the hashset and add the next element to its child tree items
             for(int i=0; i<splitPath.Length; i++)
             {
                 string path = splitPath[i];
+
+                //if the path ends in .* then it is a file otherwise it is a folder
+                if (path.Contains("."))
+                {
+                    continue;
+                }
 
                 //if i is larger then 0 then add this element to the child tree items of the previous element
                 if (i > 0)
@@ -347,36 +331,34 @@
                     continue;
                 }
 
+
+
                 //if the hashset does not contain the path then add it
-                if (!treeItems.Any(x => x.Text.Equals(path,StringComparison.CurrentCultureIgnoreCase)))
+                if (treeItems.Any(x => x.Text.Equals(path, StringComparison.CurrentCultureIgnoreCase))) 
                 {
-                    //if the path ends in .* then it is a file otherwise it is a folder
-                    if (path.Contains("."))
-                    {
-                        continue;
-                    }
-                    else
-                    {
-                        //get the tree Item that holds the hostname and add the path to its child tree items
-                        TreeItemData treeItemData = treeItems.FirstOrDefault(x => x.Text == hostname);
-                        //check if the path is already in the child tree items of the hostname
-                        if (treeItemData.ChildTreeItems.Any(x => x.Text == path))
-                        {
-                            continue;
-                        }
-                        TreeItemData childItem = new TreeItemData(path, path);
-                        childItem.ItemCount = (int)input.ChildItemCount;
-                        treeItemData.ChildTreeItems.Add(childItem);
-                    }
+                    continue;
                 }
+
+                //get the tree Item that holds the hostname and add the path to its child tree items
+                TreeItemData treeItemData = treeItems.FirstOrDefault(x => x.Text == hostname);
+                //check if the path is already in the child tree items of the hostname
+                if (treeItemData.ChildTreeItems.Any(x => x.Text == path))
+                {
+                    continue;
+                }
+                TreeItemData otherchildItem = new TreeItemData(path, path);
+                otherchildItem.ItemCount = (int)input.ChildItemCount;
+                treeItemData.ChildTreeItems.Add(otherchildItem);
+
+
             }
         }
     }
 
     //add a function that takes in a engineer object and a path string and issues a command to the engineer to get the files in that path
-    private static async Task GetFiles(Engineer engineer, string path)
+    private static async Task GetFiles(ExtImplant_Base implant, string path)
     {
-        if(engineer == null)
+        if(implant == null)
         {
             return;
         }
@@ -390,15 +372,15 @@
             command += " /getcount true";
         }
         ShowInfoToast($"getting content of {path}");
-        var testInt = new Interact();
-        await testInt.SendTask(engineer, command);
+        var testInt = new InteractCommandEntryWindow();
+        await testInt.SendTask(implant, command);
     }
 
 
     //make a function to handle the MudTextField ValueChanged event
     public static async Task OnPathChanged(string s)
     {
-        if(selectedEngineer == null)
+        if(selectedImplant == null)
         {
             return;
         }
@@ -409,7 +391,7 @@
         string path = targetPath;
         path = path.Trim();
         string command = "ls /path " + path;
-        await GetFiles(selectedEngineer, path);
+        await GetFiles(selectedImplant, path);
         targetPath = null;
     }
 
@@ -444,11 +426,8 @@
                 break;
             }
         }
-        if(treeItem == null)
-        {
-            return null;
-        }
-        return treeItem;
+        //return the tree item or null if it does not exist
+        return treeItem ?? null;
     }
 
     private void CloseTabCallback(MudTabPanel panel)
@@ -462,22 +441,33 @@
     }
 
 
-    public static void AddContent(string hostname,string path, List<FileSystemItem> inputs)
+    public static async Task AddContent(string hostname,string path, List<FileSystemItem> inputs)
     {
         try
         {
-            //remove the first two entries from inputs if the first line contains the headers "Name" and "Last modified"
-            AddSideBarContent(hostname, inputs);
-
-
-
-            TabView tabView = Tabs.FirstOrDefault(x => x.Name.Equals(hostname, StringComparison.CurrentCultureIgnoreCase));
-
-
+            path = path.TrimEnd('\\');
+            //get the tab that has the hostname, or set it to null if it does not exist
+            TabView? tabView = null;
+            tabView = Tabs.FirstOrDefault(x => x.Name.Equals(hostname, StringComparison.CurrentCultureIgnoreCase), defaultValue:null); 
+            //if its still null create a new tabView object and assign some defaults 
+            if(tabView is null)
+            {
+                //create a new tab with the hostname as the name and the hashset as the content
+                tabView = new TabView() { Name = hostname, Content = new HashSet<TreeItemData>(), DirectoryContent = new Dictionary<string, List<FileSystemItem>>(), TabId = Guid.NewGuid().ToString() };
+                Tabs.Add(tabView);
+                //get the tab that has the hostname
+                backupTabs.Add(tabView);
+                //add the hostname as the first item to the hashset
+                TreeItemData host = new TreeItemData(hostname,hostname);
+                host.Icon = Icons.Material.Outlined.DesktopWindows;
+                host.IconColor = Color.Info;
+                tabView.Content.Add(host);
+            }
 
             //if DirectoryContent does not already contain the path then add it and the inputs, otherwise update the list with missing entries
             if (!tabView.DirectoryContent.ContainsKey(path))
             {
+                await AddSideBarContent(hostname, inputs, tabView);
                 tabView.DirectoryContent.Add(path, inputs);
                 //get the TreeItemData with the name of the path and set its icon color to primary if inputs.Count >0 
                 TreeItemData? targetItem = null;
@@ -525,16 +515,17 @@
             {
                 //get the list of inputs for the path
                 List<FileSystemItem> existingInputs = tabView.DirectoryContent[path];
-                //foreach input in the list of inputs check if it already exists in the existing inputs list if it does not then add it
-                foreach (FileSystemItem input in inputs)
+                //remove all the items in inputs that exist in the existingInputs list
+                List<FileSystemItem> newResults = inputs.Except(existingInputs).ToList();
+
+                if (newResults.Count > 0)
                 {
-                    if (!existingInputs.Contains(input))
-                    {
-                        existingInputs.Add(input);
-                    }
+                    //add the remaining items to the existingInputs list
+                    existingInputs.AddRange(newResults);
+                    //populate the sidebar with these new inputs
+                    await AddSideBarContent(hostname, newResults, tabView);
                 }
             }
-            OnStateChange?.Invoke();
         }
         catch (Exception e)
         {
@@ -544,15 +535,15 @@
     }
 
 
-    public void ImplementOnStateChangeEvent()
-    {
-        InvokeAsync(StateHasChanged);
-    }
+    // public void ImplementOnStateChangeEvent()
+    // {
+    //     InvokeAsync(StateHasChanged);
+    // }
 
     protected override async Task OnInitializedAsync()
     {
 
-        OnStateChange = ImplementOnStateChangeEvent;
+       // OnStateChange = ImplementOnStateChangeEvent;
         toastService = toastDefault;
     }
 

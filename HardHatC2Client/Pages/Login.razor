@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using ApiModels.Shared;
 @using HardHatC2Client.Models;
 @using HardHatC2Client.Services;
 @using HardHatC2Client.Utilities;
@@ -7,8 +8,8 @@
 @using Blazored.LocalStorage;
 @using Microsoft.AspNetCore.SignalR.Client
 @using System.IdentityModel.Tokens.Jwt;
+@using RestSharp.Authenticators;
 @inject IToastService toastService
-@inject RestClient _restClient
 
 <div class="row-cols-md-auto">
     <img class="rounded mx-auto d-block" src="Images/MainIcon_Orange_shadows.png" />
@@ -38,7 +39,9 @@
     [Inject]
     public  ILocalStorageService localStorage { get; set; }
     private static ILocalStorageService _localStorage { get; set; }
-    private static RestClient restClient;
+    [Inject]
+    private RestClient restClient { get; set; }
+    public static RestClient _restClient { get; set; }
     private static ToastService _toastService;
     private static NavigationManager _Nav;
     private MudForm form;
@@ -51,6 +54,7 @@
     private MudTabs tabs;
     public static bool IsLoggedIn { get; set; } = false;
     public static string SignedInUser { get; private set; }
+    public static HardHatUser? _hhUser { get; private set; }
     public static bool isVisible = false;
     private bool FormSubmitted;
 
@@ -85,16 +89,24 @@
             loginRequest.PasswordHash = passwordHash;
             var request = new RestRequest("/login", Method.Post);
             request.AddJsonBody(loginRequest);
-            string token = await _restClient.PostAsync<string>(request);
+            string token = await restClient.PostAsync<string>(request);
 
             if(token != null)
             {
+                //update the restClient service with the new token so other pages have it as well
+                RestClientOptions options = new RestClientOptions();
+                options.BaseUrl = restClient.Options.BaseUrl;
+                options.RemoteCertificateValidationCallback = restClient.Options.RemoteCertificateValidationCallback;
+                options.Authenticator = new JwtAuthenticator(token);
+                _restClient = new RestClient(options);
+
                 //jwtToken = token;
-                localStorage.SetItemAsync("bearerToken", token);
-                localStorage.SetItemAsync("UserName", UserName);
+                await localStorage.SetItemAsync("bearerToken", token);
+                await localStorage.SetItemAsync("UserName", UserName);
+                //localStorage.SetItemAsync("hasImplantIntRen", false);
                 SignedInUser = UserName;
                 IsLoggedIn = true;
-                HardHatHubClient._hub.RegisterHardHatUserAfterSignin(SignedInUser);
+                _hhUser = await HardHatHubClient._hub.RegisterHardHatUserAfterSignin(SignedInUser);
                 StateHasChanged();
                 ShowSuccessToast("Logging in!");
                 Nav.NavigateTo("/Index");
@@ -123,10 +135,9 @@
         await _localStorage.RemoveItemAsync("bearerToken");
         await _localStorage.RemoveItemAsync("UserName");
         SignedInUser = "";
+        _hhUser = null;
         IsLoggedIn = false;
-        Interact.FirstRender = true;
-        Engineers.FirstRender = true;
-        Index.FirstRender = true;
+        Task.Delay(1000).Wait();
         _Nav.NavigateTo(_Nav.BaseUri);
     }
 
@@ -165,9 +176,16 @@
                     bool userExistsInDB = await HardHatHubClient._hub.VerifyTokenUsernameExists(SignedInUser);
                     if (userExistsInDB)
                     {
+                        await localStorage.SetItemAsync("hasImplantIntRen", false);
                         isVisible = true;
                         IsLoggedIn = true;
-                        HardHatHubClient._hub.RegisterHardHatUserAfterSignin(SignedInUser);
+                        _hhUser = await HardHatHubClient._hub.RegisterHardHatUserAfterSignin(SignedInUser);
+                        //update the restClient service with the new token so other pages have it as well
+                        RestClientOptions options = new RestClientOptions();
+                        options.BaseUrl = restClient.Options.BaseUrl;
+                        options.RemoteCertificateValidationCallback = restClient.Options.RemoteCertificateValidationCallback;
+                        options.Authenticator = new JwtAuthenticator(token);
+                        _restClient = new RestClient(options);
                         StateHasChanged();
                         ShowSuccessToast("Logging in!");
                         Nav.NavigateTo("/Index");
@@ -194,7 +212,6 @@
             await Services.HardHatHubClient.CreateHubClient();
         }
         _toastService = (ToastService)toastService;
-        restClient = _restClient;
         _localStorage = localStorage;
         _Nav = Nav;
     }

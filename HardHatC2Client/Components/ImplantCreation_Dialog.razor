@@ -1,4 +1,5 @@
-﻿@using ApiModels.Requests;
+﻿@using ApiModels.Plugin_BaseClasses;
+@using ApiModels.Requests;
 
 <MudDialog>
     <DialogContent>
@@ -15,7 +16,7 @@
     //ex. spawn, inject, jump, etc.
     [CascadingParameter] 
     public MudDialogInstance Dialog { get; set; }
-    public static SpawnEngineerRequest PostExSpawnRequest { get; set; } = new SpawnEngineerRequest();
+    public static ExtImplantCreateRequest_Base PostExSpawnRequest { get; set; } = new ExtImplantCreateRequest_Base();
 
     void Submit() =>  Dialog.Close(DialogResult.Ok(true));
     void Cancel() => Dialog.Cancel();

@@ -1,0 +1,144 @@
+﻿@using HardHatC2Client.Pages;
+@using HardHatC2Client.Utilities;
+@using BlazorMonaco
+@using BlazorMonaco.Editor
+@using BlazorMonaco.Languages
+@using ICSharpCode.Decompiler.TypeSystem;
+@using Microsoft.CodeAnalysis.CSharp;
+@using Microsoft.CodeAnalysis;
+@using ICSharpCode.Decompiler;
+@using ICSharpCode.Decompiler.CSharp;
+@using ICSharpCode.Decompiler.Metadata;
+@using System.Text;
+@using System.Reflection.Metadata;
+@using System.Reflection.PortableExecutable;
+@inject IJSRuntime JSRuntime
+
+<div class="d-flex">
+        <MudPaper Width=100% Outlined="true">
+            <StandaloneCodeEditor @ref="@myEditor" Id="@SetId()" ConstructionOptions="EditorConstructionOptions"/>
+        </MudPaper>
+</div>
+
+
+
+<style>
+    .monaco-editor-container {
+        height: 60vh;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string Src { get; set; }
+    [Parameter]
+    public string fileName { get; set; }
+    [Parameter]
+    public bool canEdit { get; set; }
+
+    private StandaloneCodeEditor myEditor;
+
+    private string SetId()
+    {
+        if (myEditor == null)
+        {
+            //Console.WriteLine("set id invoked");
+            return Guid.NewGuid().ToString();
+        }
+        else
+        {
+            return myEditor.Id;
+        }
+    }
+
+    private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
+    {
+        var editorInstance = new StandaloneEditorConstructionOptions
+            {
+                AutomaticLayout = true,
+                Language = GetCodeLanguage(fileName),
+                Value = Src,
+                ReadOnly = !canEdit
+            };
+        if (Settings.IsCheckedBox)
+        {
+            editorInstance.Theme = "vs-dark";
+        }
+        else
+        {
+            editorInstance.Theme = "vs";
+        }
+        return editorInstance;
+    }
+
+    private string GetCodeLanguage(string filename)
+    {
+        string extension = Path.GetExtension(filename);
+        switch (extension)
+        {
+            case ".cs":
+                return "csharp";
+            case ".js":
+                return "javascript";
+            case ".ts":
+                return "typescript";
+            case ".java":
+                return "java";
+            case ".py":
+                return "python";
+            case ".cpp":
+                return "cpp";
+            case ".c":
+                return "c";
+            case ".html":
+                return "html";
+            case ".xml":
+                return "xml";
+            case ".php":
+                return "php";
+            case ".json":
+                return "json";
+            case ".sql":
+                return "sql";
+            case ".md":
+                return "markdown";
+            case ".bat":
+                return "bat";
+            case ".shell":
+                return "shell";
+            case ".go":
+                return "go";
+            case ".fsharp":
+            case ".fs":
+                return "fsharp";
+            case ".vb":
+                return "vb";
+            case ".pl":
+                return "perl";
+            case ".r":
+                return "r";
+            case ".swift":
+                return "swift";
+            case ".yaml":
+                return "yaml";
+            case ".ini":
+                return "ini";
+            case ".dockerfile":
+                return "dockerfile";
+            case ".ruby":
+                return "ruby";
+            case ".lua":
+                return "lua";
+            case ".groovy":
+                return "groovy";
+            case ".pug":
+                return "pug";
+            case ".powershell":
+            case ".ps1":
+                return "powershell";
+            default:
+                return "plaintext";
+        }
+    }
+}
+

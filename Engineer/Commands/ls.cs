@@ -69,24 +69,13 @@ namespace Engineer.Commands
             {
 				//check that the path is valid
 				path.Trim();
-                //if (!Directory.Exists(path))
-                //{
-                //    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: invalid path", task, EngTaskStatus.Failed,TaskResponseType.String);
-                //    return;
-                //}
 
                 var Items  = GetDirectoryListing(path);
-                StringBuilder output = new StringBuilder();
-    //             foreach (var item in Items)
-				// {
-				// 	//take each items properties and seperate make them into a string seperated by a | 
-				// 	output.AppendLine($"{item.Name}|{item.Length}|{item.Owner}|{item.ChildItemCount}|{item.CreationTimeUtc}|{item.LastAccessTimeUtc}|{item.LastWriteTimeUtc}|{item.DirACL}|{item.FileACL}");
-				// }
                 ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(Items, task,EngTaskStatus.Complete,TaskResponseType.FileSystemItem);
             }
             catch (Exception ex)
             {
-	           // Console.WriteLine(ex.Message);
+				// Console.WriteLine(ex.Message);
 	            //Console.WriteLine(ex.StackTrace);
                 ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + ex.Message,task,EngTaskStatus.Failed,TaskResponseType.String);
             }

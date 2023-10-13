@@ -7,6 +7,9 @@
 		FileSystemItem,
 		ProcessItem,
 		HelpMenuItem,
-        TokenStoreItem
+        TokenStoreItem,
+        DataChunk,
+        EditFile,
+        VncInteractionEvent,
     }
 }

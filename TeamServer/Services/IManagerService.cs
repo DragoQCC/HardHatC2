@@ -49,7 +49,7 @@ namespace TeamServer.Services
 			foreach (Httpmanager _manager in _httpmanagers)
 			{
 				Console.WriteLine($"Calling Init on {_manager.Name}");
-				_manager.Init(_EngineerService);
+				_manager.Init();
 				_manager.Start();
 				Console.WriteLine($"{_manager.Name} started should be listening on {_manager.BindAddress}:{_manager.BindPort}");
 			}
