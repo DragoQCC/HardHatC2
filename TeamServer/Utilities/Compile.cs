@@ -251,7 +251,6 @@ namespace TeamServer.Utilities
         }
 
 
-        // spawn a new process running D:\Share between vms\ConfuserEx-CLI\Confuser.CLI.Exe , pass in the file location we compiled 
         public static void RunConfuser(string fileLocation)
         {
             // get the base directory of the project

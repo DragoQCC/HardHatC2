@@ -25,10 +25,10 @@
 		{
 			selectedTheme = "Dark";
 		}
-			<MudButton style="background:var(--font-color);color:var(--background)" OnClick=@RefreshClientPlugins> Disabled=@context.User.IsInRole("Guest") <MudText>Refresh Client Plugins</MudText></MudButton>
+			<MudButton style="background:var(--font-color);color:var(--background)" OnClick=@RefreshClientPlugins Disabled=@context.User.IsInRole("Guest") ><MudText>Refresh Client Plugins</MudText></MudButton>
 		<br>
 		<br>
-			<MudButton style="background:var(--font-color);color:var(--background)" OnClick=@RefreshTeamServerPlugins> Disabled=@context.User.IsInRole("Guest") <MudText>Refresh Server Plugins</MudText></MudButton>
+			<MudButton style="background:var(--font-color);color:var(--background)" OnClick=@RefreshTeamServerPlugins Disabled=@context.User.IsInRole("Guest")><MudText>Refresh Server Plugins</MudText></MudButton>
 		<br>
 		<br>
 
