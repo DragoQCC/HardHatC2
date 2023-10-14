@@ -1,0 +1,285 @@
+﻿@page "/Objectives"
+@using ApiModels.Plugin_BaseClasses;
+@using ApiModels.Plugin_Interfaces;
+@using ApiModels.Shared;
+@using HardHatC2Client.Components;
+@using HardHatC2Client.Models
+@using HardHatC2Client.Plugin_BaseClasses;
+@using HardHatC2Client.Plugin_Interfaces;
+
+<CascadingAuthenticationState>
+    <AuthorizeView Roles="Operator,TeamLead,Administrator">
+        <Authorized>
+        <h3>Objectives</h3>
+        <br/>
+            <MudExpansionPanels MultiExpansion="true">
+            <!--Primary Objectives-->
+            <MudExpansionPanel style="color:white; background:#f16666ff;">
+                <TitleContent>
+                    <MudText>Primary Objectives</MudText>
+                </TitleContent>
+                <ChildContent>
+            @foreach (Objective prime_obj in Objective.Existing_Objectives.Where(x => x.Type == Objective.ObjectiveType.Primary))
+            {
+                <MudExpansionPanel>
+                    <TitleContent>
+                         <div class="d-flex">
+                        <MudText>@prime_obj.Name</MudText>
+                        </div>
+                    </TitleContent>
+                    <ChildContent>
+                        <MudSelectExtended Label="Status" T="Objective.ObjectiveStatus" @bind-Value=prime_obj.Status>
+                            @foreach (Objective.ObjectiveStatus status in Enum.GetValues(typeof(Objective.ObjectiveStatus)))
+                            {
+                                <MudSelectItemExtended Value="status">@status</MudSelectItemExtended>
+                            }
+                        </MudSelectExtended>
+                        <MudCard Style="background:var(--background);" Outlined="true">
+                        <MudCardContent Style="background:#111111; color:white; white-space:pre-wrap;">
+                         <div class="d-flex">
+                        <MudText>Description : </MudText>
+                        <MudText> @prime_obj.Description</MudText>
+                        </div>
+                         <div class="d-flex">
+                        <MudText>Tag Name : </MudText>
+                        <MudText> @prime_obj.Tag_Value.Name</MudText>
+                        </div>
+                                <MudTreeView MultiSelection="true" @bind-SelectedValues=Objective.Objectives_FinishedSubTasks[prime_obj]>
+                            <MudTreeViewItem Value="@("Sub Tasks")">
+                            @foreach (string subtask in prime_obj.SubTasks)
+                            {
+                                <MudTreeViewItem Value="subtask" />
+                            }
+                        </MudTreeViewItem>
+                        </MudTreeView>
+                        </MudCardContent>
+                        </MudCard>
+                    </ChildContent>
+                </MudExpansionPanel>
+            }
+           </ChildContent>
+            </MudExpansionPanel>
+                <!--Secondary Objectives-->
+            <MudExpansionPanel style="color:white; background:#f1b265ff;">
+                <TitleContent>
+                    <MudText>Secondary Objectives</MudText>
+                </TitleContent>
+                <ChildContent>
+                    @foreach (Objective prime_obj in Objective.Existing_Objectives.Where(x => x.Type == Objective.ObjectiveType.Secondary))
+                    {
+                        <MudExpansionPanel>
+                            <TitleContent>
+                                <div class="d-flex">
+                                    <MudText>@prime_obj.Name</MudText>
+                                    <MudSelectExtended T="Objective.ObjectiveStatus" @bind-Value=prime_obj.Status>
+                                        @foreach (Objective.ObjectiveStatus status in Enum.GetValues(typeof(Objective.ObjectiveStatus)))
+                                        {
+                                            <MudSelectItemExtended Value="status">@status</MudSelectItemExtended>
+                                        }
+                                    </MudSelectExtended>
+                                </div>
+                            </TitleContent>
+                            <ChildContent>
+                                <MudText>@prime_obj.Description</MudText>
+                                <MudText>@prime_obj.Tag_Value.Name</MudText>
+                                <MudTreeView MultiSelection="true" @bind-SelectedValues=Objective.Objectives_FinishedSubTasks[prime_obj]>
+                                    <MudTreeViewItem Value="@("Sub Tasks")">
+                                        @foreach (string subtask in prime_obj.SubTasks)
+                                        {
+                                            <MudTreeViewItem Value="subtask" />
+                                        }
+                                    </MudTreeViewItem>
+                                </MudTreeView>
+                            </ChildContent>
+                        </MudExpansionPanel>
+                    }
+                </ChildContent>
+            </MudExpansionPanel>
+            <!--Tertiary Objectives-->
+            <MudExpansionPanel style="color:white; background:#658744ff;">
+                <TitleContent>
+                        <MudText>Tertiary Objectives</MudText>
+                </TitleContent>
+                <ChildContent>
+                    @foreach (Objective prime_obj in Objective.Existing_Objectives.Where(x => x.Type == Objective.ObjectiveType.Tertiary))
+                    {
+                        <MudExpansionPanel>
+                            <TitleContent>
+                                <div class="d-flex">
+                                    <MudText>@prime_obj.Name</MudText>
+                                    <MudSelectExtended T="Objective.ObjectiveStatus" @bind-Value=prime_obj.Status>
+                                        @foreach (Objective.ObjectiveStatus status in Enum.GetValues(typeof(Objective.ObjectiveStatus)))
+                                        {
+                                            <MudSelectItemExtended Value="status">@status</MudSelectItemExtended>
+                                        }
+                                    </MudSelectExtended>
+                                </div>
+                            </TitleContent>
+                            <ChildContent>
+                                <MudText>@prime_obj.Description</MudText>
+                                <MudText>@prime_obj.Tag_Value.Name</MudText>
+                                <MudTreeView MultiSelection="true" @bind-SelectedValues=Objective.Objectives_FinishedSubTasks[prime_obj]>
+                                    <MudTreeViewItem Value="@("Sub Tasks")">
+                                        @foreach (string subtask in prime_obj.SubTasks)
+                                        {
+                                            <MudTreeViewItem Value="subtask" />
+                                        }
+                                    </MudTreeViewItem>
+                                </MudTreeView>
+                            </ChildContent>
+                        </MudExpansionPanel>
+                    }
+                </ChildContent>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
+            <br/>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@CreateObjective">Add Objective</MudButton>
+            <br/>
+            <br/>
+            <h3>Tagging System</h3>
+            <br/>
+            <MudSelectExtended ValuePresenter="MudExtensions.Enums.ValuePresenter.Text" T="string" @bind-Value="@selectedTag">
+                @foreach (Tag tag in Tag.Existing_Tags)
+                {
+                <MudSelectItemExtended Value="tag.Name">@tag.Name</MudSelectItemExtended>
+                }
+            </MudSelectExtended>
+            <br/>
+            @if(selectedTag != null)
+            {
+                <!--Here 3 panels one for taks with this tag, one for interactive terminal commmands, and one for events-->
+                <MudExpansionPanels MultiExpansion="true">
+                    <!--Tasks-->
+                    <MudExpansionPanel>
+                        <TitleContent>
+                            <MudText>Tasks</MudText>
+                        </TitleContent>
+                        <ChildContent>
+                            <MudExpansionPanels Style="background:#32333d; color:white;" MultiExpansion="true">
+                                @if(Tag.Task_Tags.ContainsKey(selectedTag))
+                                {
+                                    foreach( string taskid in Tag.Task_Tags[selectedTag])
+                                    {
+                                        ExtImplantTaskResult_Base? taskResult = null;
+                                        ExtImplantTask_Base task = null;
+                                        ExtImplant_Base implant = null;
+                                        foreach (var tasklist in ImplantInteract.OutGoingTasks)
+                                        {
+                                           if (tasklist.Value.Any(x => x.Id == taskid))
+                                           {
+                                                task = tasklist.Value.Where(x => x.Id == taskid).ToList()[0];
+                                                implant = tasklist.Key;
+                                                break;
+                                           }
+
+                                        }
+                                        @if (ImplantInteract.TaskResultDic.ContainsKey(task))
+                                        {
+                                            taskResult = ImplantInteract.TaskResultDic[task];
+                                        }
+                                        <InteractWindowContent currenttask="@task" commandHeaderText="@task.TaskHeader" implant="@implant" CardContent="@taskResult"></InteractWindowContent>
+                                    }
+                                }
+                            </MudExpansionPanels>
+                        </ChildContent>
+                    </MudExpansionPanel>
+                    <!--Interactive Terminal Commands-->
+                    <MudExpansionPanel>
+                        <TitleContent>
+                            <MudText>Client Terminal Commands</MudText>
+                        </TitleContent>
+                        <ChildContent>
+                        @if (Tag.Terminal_Tags.ContainsKey(selectedTag))
+                        {
+                            foreach (string interactTermTaskId in Tag.Terminal_Tags[selectedTag])
+                            {
+                                InteractiveTerminal.TabView? item = InteractiveTerminal.UserTabs.FirstOrDefault(x => x.Content.FirstOrDefault()?.Id == interactTermTaskId);
+                                if (item != null)
+                                {
+                                    InteractiveTerminalCommand currenttask = item.Content.FirstOrDefault(x => x.Id == interactTermTaskId);
+                                    //render the terminal content 
+                                    <InteractiveTerminalContent currenttask="@currenttask" item="@item"></InteractiveTerminalContent>
+                                }
+                            }
+                        }
+                        </ChildContent>
+                    </MudExpansionPanel>
+                    <!--Events-->
+                    <MudExpansionPanel>
+
+                    </MudExpansionPanel>                
+                </MudExpansionPanels>
+            }
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Roles="Operator,TeamLead,Guest,Administrator">
+        <NotAuthorized>
+            <h1 class="text-center">Not Authorized</h1>
+            <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+        </NotAuthorized>
+    </AuthorizeView>
+    </CascadingAuthenticationState>
+
+<style>
+    .background-blur {
+        backdrop-filter: blur(10px);
+    }
+</style>
+
+@code {
+    [Inject]
+    public IDialogService dialogService { get; set; }
+
+
+
+
+
+    public Objective newObjective = new Objective();
+
+    public string selectedTag { get; set; }
+
+    public async Task CreateObjective()
+    {
+        var options = new DialogOptions { ClassBackground = "background-blur", MaxWidth = MaxWidth.Medium, FullWidth = true, DisableBackdropClick = true };
+        var dialog = dialogService.Show<Objective_creation_dialog>("Create Objective",options );
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            newObjective = (Objective)result.Data;
+            newObjective.SubTasks = newObjective._subtaskString.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
+        }
+        Objective.Existing_Objectives.Add(newObjective);
+        AddTag(new Tag() { Name = newObjective.Tag_Value.Name, Description = newObjective.Tag_Value.Description, Color = newObjective.Tag_Value.Color });
+        Objective.Objectives_FinishedSubTasks.Add(newObjective, new HashSet<string>());
+
+    }
+
+    public static void AddObjective(Objective objective)
+    {
+        Objective.Existing_Objectives.Add(objective);
+    }
+
+    public void AddTag(Tag tag)
+    {
+        Tag.Existing_Tags.Add(tag);
+    }
+
+    //tags are meant to be displayed as chips on tasks, terminal commands, and other areas of the application
+    public static string setChipStyle(string chipName)
+    {
+        //find the tag with the name of the chip
+        Tag tag = Tag.Existing_Tags.Find(x => x.Name.Equals(chipName, StringComparison.CurrentCultureIgnoreCase));
+
+        if(Settings.IsCheckedBox)
+        {
+            //dark mode 
+             return $"background:{tag.Color}; color:white;";
+        }
+        else
+        {
+            //light mode
+            return $"background:{tag.Color}; color:black;";
+        }
+    }
+
+}

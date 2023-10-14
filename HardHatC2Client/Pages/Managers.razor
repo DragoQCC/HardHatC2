@@ -2,6 +2,8 @@
 @using ApiModels.Requests
 @using ApiModels.Responses
 @using ApiModels.Shared;
+@using HardHatC2Client.Components;
+@using HardHatC2Client.Services;
 @using Models
 @using RestSharp
 @using System.Collections.Generic
@@ -18,6 +20,7 @@
 @using Bromix.MudBlazor.MaterialDesignIcons
 @using System.Text;
 @using System.Reflection;
+@using HardHatC2Client.Utilities;
 @inject RestClient _restClient
 @inject IToastService toastService
 @inject ISnackbar Snackbar
@@ -65,7 +68,28 @@
                                     //for each item in the profile objects properties add a line that is the property name and the value of the property
                                     foreach (PropertyInfo prop in profile.GetType().GetProperties())
                                     {
-                                        <p>@prop.Name : @prop.GetValue(profile, null)</p>
+                                        var value = prop.GetValue(profile, null);
+                                        if (value == null) continue; // Skip if the value is null
+
+                                        if (prop.PropertyType == typeof(List<string>))
+                                        {
+                                            var list = (List<string>)value;
+                                            foreach (var item in list)
+                                            {
+                                                <p>@prop.Name : @item</p>
+                                            }
+                                        }
+                                        else if (value is string stringValue)
+                                        {
+                                            // Skip if the string value is the full type name of any property
+                                            if (profile.GetType().GetProperties().Any(p => p.PropertyType.FullName == stringValue)) continue;
+
+                                            <p>@prop.Name : @stringValue</p>
+                                        }
+                                        else
+                                        {
+                                            <p>@prop.Name : @value</p>
+                                        }
                                     }
                                 }
                             </MessageContent>
@@ -132,10 +156,26 @@
                             {
                                 <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Connection Address" Required=@IsHttpSelected @bind-value="formSubmitManager.ConnectionAddress" RequiredError="callback address is required!" />
                                 <MudTextField Class="mb-4 mt-4" T="int?"  Variant="Variant.Filled" Clearable="true" Label="Connection Port" Required=@IsHttpSelected @bind-value="formSubmitManager.ConnectionPort" RequiredError="port is required!" />
-                                <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Bind Address" Required=@IsHttpSelected @bind-value="formSubmitManager.BindAddress" RequiredError="bind address is required!" />
+                                        @*<MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Bind Address" Required=@IsHttpSelected @bind-value="formSubmitManager.BindAddress" RequiredError="bind address is required!" />*@
+    
+                                <MudComboBox T=string Required=@IsHttpSelected @bind-value="formSubmitManager.BindAddress" RequiredError="bind address is required!" Variant="Variant.Filled" Label="Bind Address" MultiSelection="false" Editable="true"
+                                                ShowCheckbox="true" Bordered="true" Dense="Dense.Slim" Color="@Color.Primary" Clearable="true">
+                                    <ChildContent>
+                                        @foreach (string item in bindableIpAddresses)
+                                        {
+                                            <MudComboBoxItem Value="@item" Text="@item"></MudComboBoxItem>
+                                        }
+                                    </ChildContent>
+                                    <PopoverEndContent>
+                                        <div class="d-flex gap-4 pa-4">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="@Color.Primary" OnClick="(()=>bindableIpAddresses.Add(_bindAddressToAdd))" />
+                                            <MudTextFieldExtended @bind-Value="_bindAddressToAdd" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                        </div>
+                                    </PopoverEndContent>
+                                </MudComboBox>
                                 <MudTextField Class="mb-4 mt-4" T="int?"  Variant="Variant.Filled" Clearable="true" Label="Bind Port" Required=@IsHttpSelected @bind-value="formSubmitManager.BindPort" RequiredError="bind port is required!" />
                                 <div class="d-flex align-center justify-space-between">
-                                    <MudSelectExtended Class="mb-4" T="C2Profile" Variant="Variant.Filled" Clearable="true" Label="C2 Profile" Required="true" @bind-value="formSubmitManager.C2profile" RequiredError="C2 Profile required!">
+                                    <MudSelectExtended ValuePresenter="ValuePresenter.ItemContent" Class="mb-4" T="C2Profile" Variant="Variant.Filled" Clearable="true" Label="C2 Profile" Required="true" @bind-value="formSubmitManager.C2profile" RequiredError="C2 Profile required!">
                                         @foreach(C2Profile profile in C2profiles)
                                         {
                                             <MudSelectItemExtended Value="@(profile)">@profile.Name</MudSelectItemExtended>
@@ -160,9 +200,9 @@
                                     IsReverse = true;
                                 }
                                 <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Connection Address" Required=@IsReverse Disabled=@IsBind @bind-value="formSubmitManager.ConnectionAddress" RequiredError="callback address is required!" />
-                                <MudTextField Class="mb-4 mt-4" T="int" Variant="Variant.Filled" Clearable="true" Label="Connect Port" Required=@IsReverse Disabled=@IsBind @bind-value="formSubmitManager.BindPort" RequiredError="bind port is required!" />
-                                <MudTextField Class="mb-4 mt-4" T="int" Variant="Variant.Filled" Clearable="true" Label="Listen Port" Required=@IsBind Disabled=@IsReverse @bind-value="formSubmitManager.ListenPort" RequiredError="listen port is required!" />
-                                <MudTextField Class="mb-4 mt-4" T="bool" Variant="Variant.Filled" Clearable="true" Label="Listen on Local host only?" Required=@IsBind Disabled=@IsReverse @bind-value="formSubmitManager.IsLocalHost" RequiredError="is localhost only required!" />
+                                <MudTextField Class="mb-4 mt-4" T="int?" Variant="Variant.Filled" Clearable="true" Label="Connect Port" Required=@IsReverse Disabled=@IsBind @bind-value="formSubmitManager.BindPort" RequiredError="bind port is required!" />
+                                <MudTextField Class="mb-4 mt-4" T="int?" Variant="Variant.Filled" Clearable="true" Label="Listen Port" Required=@IsBind Disabled=@IsReverse @bind-value="formSubmitManager.ListenPort" RequiredError="listen port is required!" />
+                                <MudTextField Class="mb-4 mt-4" T="bool?" Variant="Variant.Filled" Clearable="true" Label="Listen on Local host only?" Required=@IsBind Disabled=@IsReverse @bind-value="formSubmitManager.IsLocalHost" RequiredError="is localhost only required!" />
                                 <MudSelectExtended Class="mb-4" T="ConnectionMode" Variant="Variant.Filled" Clearable="true" Label="Connection Direction" Required=@IsTcpSelected @bind-value="formSubmitManager.connectionMode" RequiredError="connection mode is required!">
                                     <MudSelectItemExtended Value="@(ConnectionMode.bind)" />
                                     <MudSelectItemExtended Value="@(ConnectionMode.reverse)" />
@@ -262,17 +302,15 @@
 
 @code {
     private Manager formSubmitManager = new Manager();
-    protected internal static List<Manager> managersList = new List<Manager>();
+    public static List<Manager> managersList = new List<Manager>();
     private static ToastService _toastService;
-    //private static RestClient restClient;
-    //private static Mapper mapper;
     private bool success;
     private string[] errors = { };
     private bool IsHttpSelected = false;
     private bool IsSmbSelected = false;
     private bool IsTcpSelected = false;
-    private static bool firstRender = true;
     public static List<C2Profile> C2profiles = new();
+    public static List<string> bindableIpAddresses = new() { "127.0.0.1" };
     MudStepper _stepper;
     MudForm _form;
     MudTextField<string> managerNameFormEntry;
@@ -280,6 +318,7 @@
     MudForm _form2;
     bool _loading;
     MudMessageBox C2mbox;
+    string _bindAddressToAdd = "";
 
     [Inject] 
     private IDialogService DialogService { get; set; }
@@ -309,8 +348,6 @@
 
     private async void OnC2ProfileButtonClicked(C2Profile profile)
     {
-
-
         bool? result = await C2mbox.Show();
         state = result == null ? "Closed" : "Ok";
         StateHasChanged();
@@ -391,29 +428,6 @@
                 //edit    
                 break;
         }
-    }
-
-    private async Task OpenEditDialog(C2Profile profile)
-    {    
-        DialogOptions options = new DialogOptions() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        var parameters = new DialogParameters { ["profile"]=profile };
-
-        DialogService.Show<EditC2Dialog>("View/Edit existing C2 Profile",parameters,options);
-    }
-
-    private async Task OpenCreateDialog()
-    {    
-        DialogOptions options = new DialogOptions() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-
-        var dialog = DialogService.Show<CreateC2Dialog>("Create New C2 Profile", options);
-        //if the result is true then add the new profile to the list
-        var result = await dialog.Result;
-
-        if (!result.Cancelled)
-        {
-            C2profiles.Add((C2Profile)result.Data);
-        }
-
     }
 
     public static async Task UpdateManagerList(Manager managerObject)
@@ -683,17 +697,67 @@
         _toastService.ShowWarning("This is Warning message with title");
     }
 
+    private async Task OpenEditDialog(C2Profile profile)
+    {
+        try
+        {
+            DialogOptions options = new DialogOptions() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+            var parameters = new DialogParameters { ["profile_ser"] = profile.Serialize_Str() };
+
+            var dialog = DialogService.Show<EditC2Dialog>("View/Edit existing C2 Profile", parameters, options);
+            var result = await dialog.Result;
+            if (!result.Canceled)
+            {
+                C2Profile newProfile = (C2Profile)result.Data;
+                //Console.WriteLine("Dialog OK");
+                //Console.WriteLine($"C2 profile name is now: {newProfile.Name}");
+                //Console.WriteLine($"C2 profile description is now: {newProfile.Desc}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Console.WriteLine(ex.StackTrace);
+        }   
+        
+        
+    } 
+
+    private async Task OpenCreateDialog()
+    {
+                  
+       
+        DialogOptions options = new DialogOptions() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+        var dialog = DialogService.Show<CreateC2Dialog>("Create New C2 Profile", options);
+        //if the result is true then add the new profile to the list
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            C2profiles.Add((C2Profile)result.Data);
+        }
+
+    }
+
     private static void PopulateC2ProfileList()
     {
+        var urls = new List<string>() { "/index.html", "/" };
+        var eventUrls = new List<string>() { "/e", "/events" };
+        var cookies = new List<string>(){"SESSIONID" };
+        var requestHeaders = new List<string>() { "Accept,Json/Application"};
+        var responseHeaders = new List<string>() { "Server,Microsoft IIS" };
+
         List<C2Profile> c2list = new()
         {
             //new Models.C2Profile {Name= "",Desc="", UserAgent="", Urls= new List<string> { }, Cookies= new List<string> { }, RequestHeaders= new List<string> { }, ResponseHeaders= new List<string> { }  }, empty example to add more.
-            new C2Profile {Name= "default",Desc="default http profile", UserAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246", Urls="/index.html,/", Cookies= "SESSIONID", RequestHeaders="AcceptVALUEJson/Application", ResponseHeaders="ServerVALUEMicrosoft IIS" },
+            new C2Profile {Name= "default",Desc="default http profile", UserAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246", 
+                Urls=urls, EventUrls=eventUrls, Cookies=cookies , RequestHeaders=requestHeaders, ResponseHeaders=responseHeaders },
         };
         //compare the name of the Modles.C2Profile objects in the C2profiles list to the ones in c2list if C2Profiles does not have one with that name then update it
         foreach (var c2 in c2list)
         {
-            if (!C2profiles.Any(x => x.Name == c2.Name))
+            if (!C2profiles.Any(x => x.Name.Equals(c2.Name,StringComparison.CurrentCultureIgnoreCase)))
             {
                 C2profiles.Add(c2);
             }
@@ -703,7 +767,7 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if(firstRender)
         {
             PopulateC2ProfileList();
             RestClientOptions options = new RestClientOptions();
@@ -712,6 +776,7 @@
             string jwtToken = await LocalStorage.GetItemAsync<string>("bearerToken");
             options.Authenticator = new JwtAuthenticator(jwtToken);
             _restClient = new RestClient(options);
+            bindableIpAddresses.AddRange(await HardHatHubClient._hub.GetBindableAddressesOnServer());
         }
     }
 

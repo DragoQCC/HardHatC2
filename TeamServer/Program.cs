@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using RestSharp;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -17,6 +19,18 @@ namespace TeamServer
         public static IHost WebHost;
         public static void Main(string[] args)
         {
+            if (args.Count() > 0)
+            {
+                if (args[0] != null)
+                {
+                    Console.WriteLine("Setting Teamserver IP to: " + args[0]);
+                    Startup.TeamserverIP = args[0];
+                }
+                //reset args
+                args = new string[] { };
+            }
+
+
             WebHost = CreateHostBuilder(args).Build();
             WebHost.Run();
         }
@@ -25,14 +39,27 @@ namespace TeamServer
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(async webBuilder =>
                 {
-                    await CertGen.GeneerateCert();
+                    await CertGen.GenerateCert();
                     webBuilder.ConfigureKestrel(serverOptions =>
                     {
-                        serverOptions.ConfigureEndpointDefaults(listenOptions =>
+                        //if Startup.TeamserverIP is not null then use that for the ip to listen on
+                        if (Startup.TeamserverIP != null)
                         {
-                            listenOptions.UseHttps(new X509Certificate2(CertGen.CertificatePath, CertGen.CertificatePassword));
+                            //split the ip address and port, then use the ip address and port to start kestrel
+                            string[] ipAndPort = Startup.TeamserverIP.Split(":");
+                            serverOptions.Listen(System.Net.IPAddress.Parse(ipAndPort[0]), int.Parse(ipAndPort[1]), listenOptions =>
+                            {
+                                listenOptions.UseHttps(new X509Certificate2(CertGen.CertificatePath, CertGen.CertificatePassword));
+                            });
+                        }
+                        else
+                        {
+                            serverOptions.ConfigureEndpointDefaults(listenOptions =>
+                            {
+                                listenOptions.UseHttps(new X509Certificate2(CertGen.CertificatePath, CertGen.CertificatePassword));
 
-                        });
+                            });
+                        }
                     });
                     webBuilder.UseStartup<Startup>();
                 });

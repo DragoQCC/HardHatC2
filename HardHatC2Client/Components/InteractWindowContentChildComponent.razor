@@ -1,0 +1,199 @@
+﻿@using ApiModels.Plugin_BaseClasses;
+@using ApiModels.Plugin_Interfaces;
+@using ApiModels.Shared.TaskResultTypes;
+@using HardHatC2Client.Pages;
+@using HardHatC2Client.Plugin_BaseClasses;
+@using HardHatC2Client.Utilities;
+@using static HardHatC2Client.Pages.ImplantInteract;
+
+<MudCard Class="" Style="background:var(--background);" Outlined="true">
+@if (ShouldLoadCard)
+{
+        <!--This is the per input and output card-->
+        <MudCardContent Style="background:#111111; color:white; white-space:pre-wrap;">
+            <div class="scrollable-content">
+            @if (CardContent != null)
+            {
+                if (CardContent.ResponseType == ExtImplantTaskResponseType.FileSystemItem)
+                {
+                    currenttask.Arguments.TryGetValue("/path", out string pathValue);
+                    List<FileSystemItem> resultItems = (List<FileSystemItem>)CardContent.ResultObject;
+                    <HardHatC2Client.Components.DirectoryListingTable Outputs="@resultItems" />
+                    if (pathValue != null)
+                    {
+                        pathValue = pathValue.TrimStart(' ').TrimEnd(' ');
+                        FileBrowser.AddContent(implant.Metadata.Hostname, pathValue, resultItems);
+                    }
+                }
+                else if (CardContent.ResponseType == ExtImplantTaskResponseType.ProcessItem)
+                {
+                    var result = CardContent.ResultObject as List<ProcessItem>;
+                    <HardHatC2Client.Components.ProcessListingTable Outputs="@result" />
+                }
+                else if (CardContent.ResponseType == ExtImplantTaskResponseType.HelpMenuItem)
+                {
+                    var resultItem = CardContent.ResultObject as List<CommandItem>;
+                    <HelpTable Outputs="@resultItem"></HelpTable>
+                }
+                else if (CardContent.ResponseType == ExtImplantTaskResponseType.TokenStoreItem)
+                {
+
+                    var resultItem = CardContent.ResultObject as List<TokenStoreItem>;
+                    <TokenStoreTable currentEngTokens="resultItem"></TokenStoreTable>
+                }
+                else if (CardContent.ResponseType == ExtImplantTaskResponseType.EditFile)
+                {
+                    if (CardContent.ResultObject != null)
+                    {
+                        var output = CardContent.ResultObject as EditFile;
+                        <EditFileComponent Src="@output.Content" fileName="@output.FileName" canEdit=@output.CanEdit></EditFileComponent>
+                    }
+                }
+                else if (currenttask.Command.Equals("getprivs", StringComparison.CurrentCultureIgnoreCase) && CardContent.Status == ExtImplantTaskStatus.Complete)
+                {
+                    var result = ((CardContent.ResultObject as string).Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)).ToList();
+                    <HardHatC2Client.Components.GetPrivsTable Outputs="@result" />
+                }
+                else if (currenttask.Command.Equals("print-env", StringComparison.CurrentCultureIgnoreCase) && CardContent.Status == ExtImplantTaskStatus.Complete)
+                {
+                    var result = ((CardContent.ResultObject as string).Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)).ToList();
+                    <HardHatC2Client.Components.PrintEnvTable Outputs="@result" />
+                }
+                else if (currenttask.Command.Equals("GetCommands", StringComparison.CurrentCultureIgnoreCase) && CardContent.Status == ExtImplantTaskStatus.Complete)
+                {
+                    var resultItem = CardContent.ResultObject as string;
+                    var resultList = resultItem.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
+                    if (ImplantCommandValidation_Base.ImplantLoadedCommands.Keys.Contains(implant.Metadata.Id))
+                    {
+                        foreach (string commandName in resultList)
+                        {
+                            if (!ImplantCommandValidation_Base.ImplantLoadedCommands[implant.Metadata.Id].Contains(commandName))
+                            {
+                                ImplantCommandValidation_Base.ImplantLoadedCommands[implant.Metadata.Id].Add(commandName);
+                            }
+                        }
+                    }
+                }
+                else if (currenttask.Command.Equals("Download", StringComparison.CurrentCultureIgnoreCase) && CardContent.Status == ExtImplantTaskStatus.Complete)
+                {
+                    //get file type
+                    currenttask.Arguments.TryGetValue("/file", out string name);
+                    string fileType = Downloads.DetermineFileContentType(name).Result;
+                    MemoryStream ms = new MemoryStream(CardContent.Result);
+                    var dataUrl = $"data:{fileType};base64,{Convert.ToBase64String(CardContent.Result)}";
+                    if (fileType.Equals("application/zip"))
+                    {
+                        dataUrl = null;
+                        <ViewDownloadedZipFile fileData="@ms" fileName="@name"></ViewDownloadedZipFile>
+                    }
+                    else
+                    {
+                        ms = null;
+                        <ViewDownloadedFile dataUrl="@dataUrl" contentType="@fileType" fileName="@name"></ViewDownloadedFile>
+                    }
+                }
+                else if (currenttask.Command.Equals("ViewAssembly", StringComparison.CurrentCultureIgnoreCase) && CardContent.Status == ExtImplantTaskStatus.Complete)
+                {
+                    currenttask.Arguments.TryGetValue("/file", out string name);
+                    <AssemblyView Src="@CardContent.Result" fileName="@name"></AssemblyView>
+                }
+                else if (currenttask.Command.Equals("Vnc", StringComparison.CurrentCultureIgnoreCase) && CardContent.Status == ExtImplantTaskStatus.Running)
+                {
+                    if (VNC_Util.ImplantVNCSessionMeta.ContainsKey(currenttask.Id))
+                    {
+                        <VncDisplay implantId="@implant.Metadata.Id" vncSessionId="@currenttask.Id"></VncDisplay>
+                    }
+                    else
+                    {
+                        //Console.WriteLine("VNC util currently has results for" + VNC_Util.ImplantVNCSessionMeta.Count());
+                        <MudText>Waiting for VNC Session to start...</MudText>
+                    }
+                }
+                else if (ParsedCommandOutputDic.ContainsKey(currenttask.Id) && CardContent.Status == ExtImplantTaskStatus.Complete)
+                {
+                    <MudSwitch @bind-Checked="@IsTableView" Label="Toggle Table View" Color="Color.Success" />
+                    if (IsTableView == true)
+                    {
+                        <HardHatC2Client.Components.AutpParsedCommandTable Outputs="ParsedCommandOutputDic[currenttask.Id]"></HardHatC2Client.Components.AutpParsedCommandTable>
+                    }
+                    else
+                    {
+                        var output = CardContent.ResultObject as string;
+                        <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@output</MudText>
+                    }
+                }
+                else
+                {
+                    var output = CardContent.ResultObject as string;
+                    <MudText Class="text-break" style="font-family:Courier New, Courier, monospace">@output</MudText>
+                }
+                
+                if (CardContent.Status != ExtImplantTaskStatus.Pending && CardContent.Status != ExtImplantTaskStatus.Running && CardContent.Status != ExtImplantTaskStatus.Tasked)
+                {
+                    FinishedLoading = true;
+                }
+                else
+                {
+                    //Console.WriteLine($"status is {CardContent.Status} content not finilized");
+                    FinishedLoading = false;
+                }
+            }
+            else
+            {
+                <MudText Typo="Typo.body2">No output yet</MudText>
+            }
+            </div>
+        </MudCardContent>
+}
+else
+{
+    <MudCardContent Style="background:#111111; color:white; white-space:pre-wrap;">
+            <MudText Typo="Typo.body2">should load card is false</MudText>
+    </MudCardContent>
+}
+</MudCard>
+
+<style>
+    .scrollable-content {
+        max-height: 55vh;
+        overflow-y: auto;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public ExtImplantTaskResult_Base? CardContent { get; set; }
+    [Parameter]
+    public ExtImplantTask_Base currenttask { get; set; }
+    [Parameter]
+    public ExtImplant_Base implant { get; set; }
+
+    private bool IsTableView = true;
+    public bool ShouldLoadCard = false;
+    public bool FinishedLoading = false;
+
+    protected override bool ShouldRender()
+    {
+        if (FinishedLoading)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (FinishedLoading)
+        {
+            FinishedLoading = false;
+            await InvokeAsync(StateHasChanged);
+            FinishedLoading = true;
+        }
+        else
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+
+    }
+
+}

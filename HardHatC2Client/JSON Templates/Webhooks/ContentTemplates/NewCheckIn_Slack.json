@@ -1,0 +1,28 @@
+{
+  "title": "Implant Type",
+  "value": "Engineer"
+},
+{
+  "title": "Number",
+  "value": "{{REPLACE_NUMBER}}"
+},
+{
+  "title": "Address",
+  "value": "{{REPLACE_ADDRESS}}"
+},
+{
+  "title": "Integrity Level",
+  "value": "{{REPLACE_INTEGRITY}}"
+},
+{
+  "title": "Connection Type",
+  "value": "{{REPLACE_CONNECTIONTYPE}}"
+},
+{
+  "title": "PID",
+  "value": "{{REPLACE_PROCESSID}}"
+},
+{
+  "title": "Sleep",
+  "value": "{{REPLACE_SLEEP}}"
+}

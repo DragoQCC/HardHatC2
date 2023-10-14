@@ -7,12 +7,12 @@
 <MudCard Outlined="false" Square="true" Elevation="0" Style="width: 200px; height: 150px;">
     <MudCardContent>
         <div Class="d-flex">
-            <MudIcon Class="justify-center align-center" Color="SetColor(Node._engineer.Integrity, Node._engineer.Status)" Size="Size.Large" Icon="@Icons.Material.Outlined.DesktopWindows"></MudIcon>
-            <MudIconButton Icon="@Icons.Material.Outlined.Terminal" Color="Color.Primary" OnClick="() => Engineers.AddImplantToInteract(Node._engineer)"></MudIconButton>
+            <MudIcon Class="justify-center align-center" Color="SetColor(Node._implant.Metadata.Integrity, Node._implant.Status)" Size="Size.Large" Icon="@Icons.Material.Outlined.DesktopWindows"></MudIcon>
+            <MudIconButton Icon="@Icons.Material.Outlined.Terminal" Color="Color.Primary" OnClick="() => Implants.AddImplantToInteract(Node._implant)"></MudIconButton>
         </div>
-        <MudText Class="d-flex  align-center" Typo="Typo.caption">@Node._engineer.Hostname</MudText>
-        <MudText Class="d-flex  align-center" Typo="Typo.caption">@Node._engineer.Username</MudText>
-        <MudText Class="d-flex  align-center" Typo="Typo.caption">@Node._engineer.ProcessId@@@Node._engineer.Address</MudText>
+        <MudText Class="d-flex  align-center" Typo="Typo.caption">@Node._implant.Metadata.Hostname</MudText>
+        <MudText Class="d-flex  align-center" Typo="Typo.caption">@Node._implant.Metadata.Username</MudText>
+        <MudText Class="d-flex  align-center" Typo="Typo.caption">@Node._implant.Metadata.ProcessId@@@Node._implant.Metadata.Address</MudText>
     </MudCardContent>
 </MudCard>
 

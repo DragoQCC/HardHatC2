@@ -9,6 +9,7 @@
     <RootNamespace>Engineer</RootNamespace>
     <AssemblyName>Engineer</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <LangVersion>11</LangVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <IsWebBootstrapper>false</IsWebBootstrapper>
@@ -34,6 +35,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
+    <LangVersion>11</LangVersion>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
@@ -45,6 +47,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
+    <LangVersion>11</LangVersion>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -74,6 +77,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="CSScriptLibrary">
+      <HintPath>..\TeamServer\Data\CSScriptLibrary.dll</HintPath>
+    </Reference>
     <Reference Include="fastJSON, Version=2.4.0.0, Culture=neutral, PublicKeyToken=6b75a806b86095cd, processorArchitecture=MSIL">
       <HintPath>..\packages\fastJSON.2.4.0.4\lib\net40\fastJSON.dll</HintPath>
     </Reference>
@@ -88,6 +94,7 @@
     <Reference Include="System.DirectoryServices" />
     <Reference Include="System.DirectoryServices.AccountManagement" />
     <Reference Include="System.DirectoryServices.Protocols" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.IdentityModel" />
     <Reference Include="System.Management" />
     <Reference Include="System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -105,7 +112,11 @@
     <Reference Include="System.ServiceProcess.ServiceController, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.ServiceProcess.ServiceController.7.0.0\lib\net462\System.ServiceProcess.ServiceController.dll</HintPath>
     </Reference>
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
+    <Reference Include="WindowsInput, Version=1.0.9.0, Culture=neutral, PublicKeyToken=de2685b4776e9c2e, processorArchitecture=MSIL">
+      <HintPath>..\packages\InputSimulatorPlus2.1.0.9.0\lib\net20\WindowsInput.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Commands\Add-MachineAccount.cs" />
@@ -114,6 +125,8 @@
     <Compile Include="Commands\arp.cs" />
     <Compile Include="Commands\CleanupInteractiveProfile.cs" />
     <Compile Include="Commands\CreateProcess_StolenToken.cs" />
+    <Compile Include="Commands\DataChunking.cs" />
+    <Compile Include="Commands\EditFile.cs" />
     <Compile Include="Commands\execute_bof.cs" />
     <Compile Include="Commands\CancelTask.cs" />
     <Compile Include="Commands\Cat.cs" />
@@ -128,6 +141,7 @@
     <Compile Include="Commands\execute_pe.cs" />
     <Compile Include="Commands\FirstCheckIn.cs" />
     <Compile Include="Commands\GetCommands.cs" />
+    <Compile Include="Commands\GetModules.cs" />
     <Compile Include="Commands\Get_Luid.cs" />
     <Compile Include="Commands\GetMachineAccountQuota.cs" />
     <Compile Include="Commands\GetPrivs.cs" />
@@ -137,6 +151,7 @@
     <Compile Include="Commands\ipconfig.cs" />
     <Compile Include="Commands\jump.cs" />
     <Compile Include="Commands\LdapSearch.cs" />
+    <Compile Include="Commands\LdapWhoami.cs" />
     <Compile Include="Commands\Link.cs" />
     <Compile Include="Commands\LoadAssembly.cs" />
     <Compile Include="Commands\mkdir.cs" />
@@ -160,6 +175,7 @@
     <Compile Include="Commands\rportForward.cs" />
     <Compile Include="Commands\Run.cs" />
     <Compile Include="Commands\RunAs.cs" />
+    <Compile Include="Commands\Script.cs" />
     <Compile Include="Commands\Shell.cs" />
     <Compile Include="Commands\InlineShellcode.cs" />
     <Compile Include="Commands\Sleep.cs" />
@@ -173,6 +189,8 @@
     <Compile Include="Commands\UnManagedPowershell.cs" />
     <Compile Include="Commands\UpdateTaskKey.cs" />
     <Compile Include="Commands\Upload.cs" />
+    <Compile Include="Commands\viewassembly.cs" />
+    <Compile Include="Commands\vnc.cs" />
     <Compile Include="Commands\WhoAmI.cs" />
     <Compile Include="Extra\Extensions.cs" />
     <Compile Include="Functions\DownloadTracker.cs" />
@@ -181,6 +199,8 @@
     <Compile Include="Functions\HelperFunctions.cs" />
     <Compile Include="Functions\InjectionTest.cs" />
     <Compile Include="Modules\BofExecution.cs" />
+    <Compile Include="Modules\DataChunk.cs" />
+    <Compile Include="Modules\ScriptModule.cs" />
     <Compile Include="Modules\SleepEncrypt.cs" />
     <Compile Include="Functions\SleepEnum.cs" />
     <Compile Include="Functions\Tasking.cs" />

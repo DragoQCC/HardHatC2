@@ -1,9 +1,9 @@
 ﻿@using HardHatC2Client.Pages;
 @using System.Collections.Concurrent
-@using HardHatC2Client.Models.TaskResultTypes
+@using ApiModels.Shared.TaskResultTypes
 @using HardHatC2Client.Utilities
 
-<MudTable T="FileSystemItem" @ref=@_table Items="BodyContent.Values" HorizontalScrollbar="false" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Outlined="true" Striped="true" Filter="new Func<FileSystemItem,bool>(FilterFunc1)" SortLabel="Sort By">
+<MudTable T="FileSystemItem" Height="50vh" @ref=@_table Items="BodyContent.Values" HorizontalScrollbar="false" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Outlined="true" Striped="true" Filter="new Func<FileSystemItem,bool>(FilterFunc1)" SortLabel="Sort By">
     <ToolBarContent>
         @if (Path != null)
         {

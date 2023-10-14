@@ -1203,13 +1203,13 @@ namespace DynamicEngLoading
             public static bool LogonUser(string lpszUsername, string lpszDomain, string lpszPassword, Win32.Advapi32.LOGON_TYPE dwLogonType, Win32.Advapi32.LOGON_PROVIDER dwLogonProvider, out IntPtr phToken)
             {
                 // Craft an array for the arguments
-                IntPtr temp = new IntPtr();
+                phToken = new IntPtr();
                 object[] funcargs =
                 {
-                    lpszUsername, lpszDomain, lpszPassword, dwLogonType, dwLogonProvider, temp
+                    lpszUsername, lpszDomain, lpszPassword, dwLogonType, dwLogonProvider, phToken
                 };
 
-                bool retValue = (bool)DynInv.DynamicAPIInvoke(@"advapi32.dll", @"LogonUserA",typeof(ADVAPI32_DELEGATES.LogonUser), ref funcargs);
+                bool retValue = (bool)DynInv.DynamicAPIInvoke(@"advapi32.dll", @"LogonUserW",typeof(ADVAPI32_DELEGATES.LogonUserW), ref funcargs);
                 phToken = (IntPtr)funcargs[5];
                 return retValue;
             }
@@ -1234,8 +1234,7 @@ namespace DynamicEngLoading
                     hToken
                 };
 
-                bool retValue = (bool)DynInv.DynamicAPIInvoke(@"advapi32.dll", @"ImpersonateLoggedOnUser",
-                    typeof(ADVAPI32_DELEGATES.ImpersonateLoggedOnUser), ref funcargs);
+                bool retValue = (bool)DynInv.DynamicAPIInvoke(@"advapi32.dll", @"ImpersonateLoggedOnUser", typeof(ADVAPI32_DELEGATES.ImpersonateLoggedOnUser), ref funcargs);
                 return retValue;
             }
             //func wrapper for bool OpenProcessToken(IntPtr ProcessHandle, uint dwDesiredAccess, out IntPtr TokenHandle);

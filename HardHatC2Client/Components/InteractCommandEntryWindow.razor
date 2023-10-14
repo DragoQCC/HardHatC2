@@ -1,0 +1,397 @@
+﻿@using HardHatC2Client.Pages;
+@using Microsoft.AspNetCore.Components.Web;
+@using MudBlazor;
+@using ApiModels.Plugin_BaseClasses;
+@using ApiModels.Plugin_Interfaces;
+@using Blazored.LocalStorage;
+@using HardHatC2Client.Components;
+@using HardHatC2Client.Plugin_BaseClasses;
+@using HardHatC2Client.Plugin_Interfaces;
+@using HardHatC2Client.Plugin_Management;
+@using HardHatC2Client.Services;
+@using HardHatC2Client.Utilities;
+@using RestSharp;
+@using System.Collections.Generic;
+@using System.Linq;
+@using System.Diagnostics;
+@using ApiModels.Shared.TaskResultTypes;
+
+
+@if (Settings._InteractInputMode == InteractInputMode.Classic)
+{
+    <EditForm Context="EditFormContext" Model="implant" OnValidSubmit="@Send">
+        <div class="d-flex mb-5">
+            <MudAutocomplete style="background:#111111; color:white;" MaxItems="@((AutocompleteSearchShowAllItems) ? (int?)null : 10)" Strict="false" OnKeyDown="OnShowCommandHistory" @bind-Value=@placeHolder T="string" ResetValueOnEmptyText="false" SearchFunc="@CommandSelection.SearchCommand"
+                             Dense="true" Margin="Margin.Dense" SelectValueOnTab="true" SelectOnClick="false" CoerceText="false" CoerceValue="true"
+                             InputMode="InputMode.text" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentText="[COMMAND]> " Immediate="true" Clearable="true" KeyDownPreventDefault="true" KeyUpPreventDefault="true" TextUpdateSuppression="@TextSuppersion">
+            </MudAutocomplete>
+
+            <MudButton style="background:var(--font-color);color:var(--background)" OnClick=@Send> <MudText>Send</MudText></MudButton>
+            @if (IsEnterkey)
+            {
+                Task.Run(async () => await SendTask(implant, UserInput));
+                IsEnterkey = false;
+            }
+        </div>
+    </EditForm>
+}
+else if (Settings._InteractInputMode == InteractInputMode.NoAutoComplete)
+{
+    <EditForm Context="EditFormContext" Model="implant" OnValidSubmit="@Send">
+        <div class="d-flex mb-5">
+            <MudTextField style="background:#111111; color:white;" OnKeyDown="OnShowCommandHistory" @bind-Value=@placeHolder T="string"
+                          Margin="Margin.Dense" InputMode="InputMode.text" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentText="[COMMAND]> " Immediate="true" Clearable="true"
+                          TextUpdateSuppression="@TextSuppersion">
+            </MudTextField>
+            <MudButton style="background:var(--font-color);color:var(--background)" ButtonType="ButtonType.Submit"> <MudText>Send</MudText></MudButton>
+            @if (IsEnterkey)
+            {
+                Task.Run(async () => await SendTask(implant, UserInput));
+                IsEnterkey = false;
+            }
+        </div>
+        <div class="d-flex mb-5">
+            <MudAutocomplete style="background:#111111; color:white;" @bind-Value=@placeHolder MaxItems="null" Strict="false" T="string" ResetValueOnEmptyText="true" SearchFunc="@CommandSelection.SearchCommand"
+                             Dense="true" Margin="Margin.Dense" SelectValueOnTab="true" SelectOnClick="true" CoerceText="true"
+                             InputMode="InputMode.text" Variant="Variant.Outlined" Label="Search Commands" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Immediate="true" Clearable="true" TextUpdateSuppression="@TextSuppersion">
+            </MudAutocomplete>
+        </div>
+    </EditForm>
+}
+else
+{
+    <EditForm Context="EditFormContext" Model="implant" OnValidSubmit="@OnCommandSelectionEnterKeyDown">
+        <div class="d-flex mb-xl-5">
+            <CommandSelection @ref="commandSelector" Commands="@PluginService.GetCommandValidationPlugin(implant.ImplantType).CommandList" OnEnterKeyDown="OnCommandSelectionEnterKeyDown" />
+
+            <MudButton style="background:var(--font-color);color:var(--background)" OnClick=@OnCommandSelectionEnterKeyDown> <MudText>Send</MudText></MudButton>
+            @if (IsEnterkey)
+            {
+                //Console.WriteLine("Enter key pressed");
+                Task.Run(async () => await SendTask(implant, UserInput));
+                IsEnterkey = false;
+            }
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Inject]
+    private IDialogService DialogService { get; set; }
+    [Parameter]
+    public ExtImplant_Base implant { get; set; }
+
+    public delegate Task OnWindowInteractSubmission();
+    public static OnWindowInteractSubmission _onWindowInteractSubmission;
+    private string placeHolder = null;
+    private static List<string> PreviousCommands = new();
+    private string selectedHistoryCommand = null;
+    private static int HistoryIndex = -1;
+    public static bool TextSuppersion = true;
+    private CommandSelection commandSelector;
+
+
+
+    private bool IsEnterkey { get; set; } = false;
+    public static bool AutocompleteSearchShowAllItems { get; set; } = false;
+    private static string UserInput { get; set; }
+
+    public enum InteractInputMode
+    {
+        Classic,
+        Inline,
+        Modal_Window,
+        NoAutoComplete
+    }
+
+    private async Task OnCommandSelectionEnterKeyDown()
+    {
+        await UpdateUserInput();
+        await Send();
+    }
+
+    public async Task Send()
+    {
+        if (!String.IsNullOrWhiteSpace(placeHolder))
+        {
+            UserInput = placeHolder;
+            TextSuppersion = false; //allows text box to be updated
+            placeHolder = "";      // sets text back to empty
+            IsEnterkey = true;
+            await Task.Delay(2);
+            TextSuppersion = true; // reset so textbox can be typed in without autoclearing until submission
+
+            //if any of the strings in PreviousCommands matches UserInput then do not add it
+            if (!PreviousCommands.Contains(UserInput))
+            {
+                PreviousCommands.Insert(0, UserInput);
+            }
+            HistoryIndex = -1;
+        }
+    }
+
+    public async Task SendTask(ExtImplant_Base implant, string command)
+    {
+        try
+        {
+            var taskVal_base = PluginService.GetCommandValidationPlugin(implant.ImplantType);
+            //parse input for aliases
+            command = ImplantInteract.ParseInputForAliases(command, out string aliasParseError);
+            if (!string.IsNullOrWhiteSpace(aliasParseError))
+            {
+                Implants.ShowErrorToast(aliasParseError);
+                return;
+            }
+
+
+            Console.WriteLine("Starting send Task");
+            string currentTaskId = Guid.NewGuid().ToString();
+            var createObject = new TaskExtImplantRequest_Base();
+            createObject.IssuingUser = Login.SignedInUser;
+            createObject.Command = command.Split(' ')[0];
+
+            //if command is help then run help and return
+            if (createObject.Command.Trim().Equals("help", StringComparison.CurrentCultureIgnoreCase))
+            {
+                Dictionary<string, string> helpDiction = new Dictionary<string, string>();
+                string commandCheck = "";
+                string helpCommandheader = "";
+                if (command.Split(' ').Length > 2)
+                {
+                    commandCheck = command.Split(' ')[2];
+                    helpCommandheader = $"({DateTime.UtcNow}) implant instructed to {createObject.Command} {command.Split(' ')[1]} {command.Split(' ')[2]}\n";
+                }
+                else
+                {
+                    helpCommandheader = $"({DateTime.UtcNow}) implant instructed to {createObject.Command}\n";
+                }
+                if (!string.IsNullOrWhiteSpace(commandCheck))
+                {
+                    helpDiction.Add("/command", commandCheck);
+                }
+                //List<Help.HelpMenuItem> helpMenu = Help.DisplayHelp(helpDiction);
+                List<CommandItem> commandItemsHelp = taskVal_base.DisplayHelp(helpDiction);
+
+                var helpTask = new ExtImplantTask_Base { Id = currentTaskId, Command = createObject.Command, Arguments = helpDiction, File = null, TaskHeader = helpCommandheader };
+                await ImplantInteract.UpdateOutGoingTaskDic(implant, new List<ExtImplantTask_Base>() { helpTask });
+
+                var taskResponse = new ExtImplantTaskResult_Base();
+                taskResponse.Id = currentTaskId;
+                taskResponse.Status = ExtImplantTaskStatus.Complete;
+                taskResponse.ResponseType = ExtImplantTaskResponseType.HelpMenuItem;
+                taskResponse.ResultObject = commandItemsHelp;
+
+                ImplantInteract.TaskResultDic.Add(helpTask, taskResponse);
+                return; //return here because help command does not need to be sent to the engineers
+            }
+
+            Dictionary<string, string> commandargs = new Dictionary<string, string>();
+            string error = null;
+
+            //find the command in the helpMenuItems list that matches the command name
+            CommandItem? commandItem = taskVal_base.CommandList.FirstOrDefault(x => x.Name.Equals(createObject.Command, StringComparison.OrdinalIgnoreCase));
+            if (commandItem != null)
+            {
+                createObject.RequiresPostProc = commandItem.RequiresPostProc;
+                createObject.RequiresPreProc = commandItem.RequiresPreProc;
+                if (commandItem.Opsec == CommandItem.OpsecStatus.Blocked)
+                {
+                    error = "Command is blocked by teamlead";
+                }
+                else if (commandItem.Opsec == CommandItem.OpsecStatus.High)
+                {
+                    //we want to spawn a message box to get a yes or a no here ,if the user says no then return false, if the user says yes then continue
+                    bool? result = null;
+                    await InvokeAsync(async () =>
+                    {
+                        result = await DialogService.ShowMessageBox("Opsec Warning", "Command is set to High opsec danger level, are you sure you want to execute?", yesText: "Fire Away!", cancelText: "Cancel");
+                    });
+                    //bool? result =  messageBoxTask.Result;
+                    if (result is null || result == false)
+                    {
+                        error = "Command Cancelled by user";
+                    }
+                    else
+                    {
+                        taskVal_base.ValidateCommand(command, out commandargs, out error);
+                    }
+                }
+                else
+                {
+                    taskVal_base.ValidateCommand(command, out commandargs, out error);
+                }
+            }
+            else
+            {
+                taskVal_base.ValidateCommand(command, out commandargs, out error);
+            }
+            if (error != null)
+            {
+                Implants.ShowErrorToast(error);
+                return;
+            }
+
+            //check if createObject.Command is one of the postex that make a new implant
+            if (ImplantCreation_PluginContent.PostExCommandsThatSpawnNewImp.Contains(createObject.Command, StringComparer.InvariantCultureIgnoreCase))
+            {
+                var diag_options = new DialogOptions { ClassBackground = "dialog-blur-class", MaxWidth = MaxWidth.Large, FullWidth = true, DisableBackdropClick = true };
+                //invoke async needs to used to trigger the render to work correctly from inside c# code
+                await InvokeAsync(async () =>
+                {
+                    var diagTask = DialogService.Show<ImplantCreation_Dialog>("Create Implant for PostEx Command", diag_options);
+                    var result = await diagTask.Result;
+                    if (result.Canceled)
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        createObject.TaskingExtras.Add("PostExImplantRequest", ImplantCreation_Dialog.PostExSpawnRequest.Serialize());
+                    }
+                });
+            }
+
+            //if commandargs contains a /local key we should update the file content
+            if (commandargs.ContainsKey("/local"))
+            {
+                // check each command arg to see if it contains a file path
+                foreach (KeyValuePair<string, string> kvp in commandargs)
+                {
+                    if (File.Exists(kvp.Value))
+                    {
+                        createObject.File = File.ReadAllBytes(kvp.Value);
+                    }
+                }
+                if (!(createObject.File.Length > 0))
+                {
+                    Implants.ShowErrorToast("/local flag used but no matching file found on client");
+                    return;
+                }
+            }
+            createObject.Arguments = commandargs;
+
+            //assign the task id to the task
+            createObject.taskID = currentTaskId;
+
+            //if arguments contains /method as a key then if the value is sync set the IsBlocking parameter to true if its async set it to false, if the key is not present set it to false
+            if (createObject.Arguments.ContainsKey("/sync"))
+            {
+                //createObject.Arguments["/method"] = createObject.Arguments["/method"];
+                if (createObject.Arguments["/sync"].Equals("sync", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    createObject.IsBlocking = true;
+                }
+                else if (createObject.Arguments["/sync"].Equals("async", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    createObject.IsBlocking = false;
+                }
+                else
+                {
+                    createObject.IsBlocking = false;
+                }
+            }
+            else
+            {
+                createObject.IsBlocking = false;
+            }
+
+            //update the local outgoing header to make it apear faster upon submit
+            var args = createObject.Arguments is null ? "" : string.Join(" ", createObject.Arguments.Select(kvp => $"{kvp.Key} {kvp.Value}"));
+            createObject.TaskHeader = $"({DateTime.UtcNow}) implant instructed to {createObject.Command + " " + args}\n";
+
+            //update the input dictionary with the new task
+            var newTask = new ExtImplantTask_Base { Id = createObject.taskID, Command = createObject.Command, Arguments = createObject.Arguments, File = null, RequiresPostProc = createObject.RequiresPostProc, RequiresPreProc = createObject.RequiresPreProc, TaskHeader = createObject.TaskHeader, IssuingUser = createObject.IssuingUser };
+            await ImplantInteract.UpdateOutGoingTaskDic(implant, new List<ExtImplantTask_Base>() { newTask });
+
+            //send the task to the server
+            string resource = $"/implants/{implant.Metadata.Id}";
+            var request = new RestRequest(resource, Method.Post);
+            request.AddJsonBody(createObject);
+            request.OnBeforeDeserialization = (resp =>
+            {
+                //Console.WriteLine(resp.Content);
+            });
+            _ = await Task.Run(() => Login._restClient.PostAsync(request));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Console.WriteLine(ex.StackTrace);
+        }
+    }
+    // end of send task function
+
+    private async Task UpdateUserInput()
+    {
+        if (commandSelector.SelectedCommandItem != null)
+        {
+            var selectedCommand = commandSelector.SelectedCommandItem.Name;
+
+            // Filter out keys with empty values
+            var keyValuePairs = commandSelector.keyValue.Where(kvp => !string.IsNullOrEmpty(kvp.Value));
+
+            // Build the command string with key-value pairs
+            var commandString = selectedCommand + " " + string.Join(" ", keyValuePairs.Select(kvp => $"{kvp.Key} {kvp.Value}"));
+            placeHolder = commandString.Trim();
+        }
+    }
+
+    private async Task OnShowCommandHistory(KeyboardEventArgs e)
+    {
+        if (PreviousCommands.Count > 0)
+        {
+            //check to make sure the key pressed was the up arrow
+            if (e.Code == "ArrowUp")
+            {
+                HistoryIndex++;
+                if (HistoryIndex > (PreviousCommands.Count - 1))
+                {
+                    HistoryIndex = (PreviousCommands.Count - 1);
+                }
+                //get the Historyindex, set placeholder text to the history item at that index, and increment the index
+                if (HistoryIndex <= PreviousCommands.Count)
+                {
+                    if (HistoryIndex < 0)
+                    {
+                        HistoryIndex = 0;
+                    }
+                    //Task.Run(async () => await GetCommandHistory());
+                    await GetCommandHistory();
+                }
+            }
+            else if (e.Code == "ArrowDown")
+            {
+                HistoryIndex--;
+                if (HistoryIndex < -1)
+                {
+                    //if index is less than -1 set it to -1 and update the placeholder text to be blank
+                    HistoryIndex = -1;
+                    TextSuppersion = false; //allows text box to be updated
+                    placeHolder = "";
+                    await Task.Delay(500);
+                    TextSuppersion = true; // reset so textbox can be typed in without autoclearing until submission
+                }
+                //get the Historyindex, set placeholder text to the history item at that index, and decrement the index
+                if (HistoryIndex >= 0)
+                {
+                    //Task.Run(async () => await GetCommandHistory());
+                    await GetCommandHistory();
+                }
+            }
+        }
+    }
+
+    private async Task GetCommandHistory()
+    {
+        TextSuppersion = false; //allows text box to be updated
+        placeHolder = PreviousCommands[HistoryIndex];
+        await Task.Delay(500);
+        TextSuppersion = true; // reset so textbox can be typed in without autoclearing until submission
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _onWindowInteractSubmission = OnCommandSelectionEnterKeyDown;
+    }
+
+}

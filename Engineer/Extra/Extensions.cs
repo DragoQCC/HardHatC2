@@ -61,6 +61,7 @@ namespace Engineer
             try
             {
                 string json = Encoding.UTF8.GetString(data);
+                //Console.WriteLine(json);
                 //if data type is string, return the message data
                 if (typeof(T) == typeof(string))
                 {
@@ -71,8 +72,8 @@ namespace Engineer
             }
             catch (Exception e)
             {
-                //Console.WriteLine(e.Message);
-                //Console.WriteLine(e.StackTrace);
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
                 return default;
             }
         }

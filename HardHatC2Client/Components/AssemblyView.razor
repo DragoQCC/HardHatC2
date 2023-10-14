@@ -1,0 +1,512 @@
+﻿@using HardHatC2Client.Pages;
+@using HardHatC2Client.Utilities;
+@using BlazorMonaco
+@using BlazorMonaco.Editor
+@using BlazorMonaco.Languages
+@using ICSharpCode.Decompiler.TypeSystem;
+@using Microsoft.CodeAnalysis.CSharp;
+@using Microsoft.CodeAnalysis;
+@using ICSharpCode.Decompiler;
+@using ICSharpCode.Decompiler.CSharp;
+@using ICSharpCode.Decompiler.Metadata;
+@using System.Text;
+@using System.Reflection.Metadata;
+@using System.Reflection.PortableExecutable;
+@inject IJSRuntime JSRuntime;
+
+@if (loading)
+{
+    <MudPaper Style="height: 300px; position: relative;" Width=100% Outlined="true">
+        <MudOverlay Visible="@loading" DarkBackground="true" Absolute="true">
+            <MudProgressCircular Color="Color.Secondary" Indeterminate="true" />
+            <MudText>Decompiling...</MudText>
+        </MudOverlay>
+    </MudPaper>
+}
+@if (source.Count() > 0)
+{
+    <MudToolBar>
+        <MudTextField @bind-Value="searchTerm" Placeholder="Search..." Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Search" />
+    </MudToolBar>
+    <div class="d-flex">
+        <MudSplitter @bind-Dimension="@_percentage" OnDoubleClicked="@OnDoubleClicked" EnableSlide="true" EnableMargin="true" Sensitivity="0.1" Height="60vh">
+            <StartContent>
+            <MudPaper Width=100% MaxHeight="60vh" Class="overflow-y-auto" Outlined="true">
+                    <MudTreeView Hover="true" SelectedValueChanged="@((e)=>UpdateEditor(e))" ExpandOnClick="true" T="KeyValuePair<string,string>">
+                @foreach(var asm in source)
+                {
+                            <MudTreeViewItem Disabled="true" Icon="@Icons.Material.Filled.Api" IconColor="Color.Tertiary" T="KeyValuePair<string,string>" Text="@asm.Key">
+                        @foreach(var asmNamespace in asm.Value)
+                        {
+                                    <MudTreeViewItem Disabled="true" Icon="@Icons.Material.Filled.Apps" IconColor="Color.Primary" T="KeyValuePair<string,string>" Text="@asmNamespace.Key">
+                                @foreach(var asmClassName in asmNamespace.Value)
+                                {
+                                    <MudTreeViewItem CanExpand="false" Icon="@Icons.Material.Filled.Code" IconColor="Color.Success" T="KeyValuePair<string,string>" Value="asmClassName" Text="@asmClassName.Key" />
+                                }
+                            </MudTreeViewItem>
+                        }
+                    </MudTreeViewItem>
+                }
+            </MudTreeView>
+        </MudPaper>
+        </StartContent>
+        <EndContent>
+            <MudPaper Width=100% Outlined="true">
+                    <StandaloneCodeEditor @ref="@myEditor" Id="@SetId()" ConstructionOptions="EditorConstructionOptions" OnDidChangeModelContent="@HandleModelContentChangedAsync" OnMouseDown="@HandleEditorClick" />
+            </MudPaper>
+        </EndContent>
+    </MudSplitter>
+    </div>
+}
+
+
+
+<style>
+    .monaco-editor-container {
+        height: 60vh;
+    }
+</style>
+
+
+
+@code {
+    [Parameter]
+    public byte[] Src { get; set; }
+    [Parameter]
+    public string fileName { get; set; }
+    //key is the assembly then the namespace, value is a dictionary of key value pairs where key is the class name and value is the source code
+    private Dictionary<string, Dictionary<string, Dictionary<string, string>>> source = new Dictionary<string, Dictionary<string, Dictionary<string, string>>>();
+    private DotNetObjectReference<AssemblyView> objRef;
+    private StandaloneCodeEditor myEditor;
+    private KeyValuePair<string, string> selectedCodeFile = new KeyValuePair<string, string>();
+    private string searchTerm = string.Empty;
+    private bool RegisteredClickCommand = false;
+    private bool loading = true;
+    double _percentage = 20;
+
+
+    //private IEnumerable<KeyValuePair<string, string>> FilteredSource => source.Where(s => s.Key.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+
+    private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
+    {
+        var editorInstance = new StandaloneEditorConstructionOptions
+            {
+                AutomaticLayout = true,
+                Language = "csharp",
+                Value = ""
+            };
+        if (Settings.IsCheckedBox)
+        {
+            editorInstance.Theme = "vs-dark";
+        }
+        else
+        {
+            editorInstance.Theme = "vs";
+        }
+
+        return editorInstance;
+    }
+
+    private async Task UpdateEditor(KeyValuePair<string,string> selectedfile)
+    {
+        selectedCodeFile = selectedfile;
+        await myEditor.SetValue(selectedCodeFile.Value);
+    }
+
+    private void NavigateToType(KeyValuePair<string, string> selectedType)
+    {
+        // Navigate to the selected type and update the editor content
+        UpdateEditor(selectedType);
+        StateHasChanged();
+    }
+
+    public void NavigateToNamespace(KeyValuePair<string, Dictionary<string, string>> selectedNamespace)
+    {
+    }
+
+
+    private async Task GetAssemblySource(byte[] assemblyBytes)
+    {
+        using var stream = new MemoryStream(assemblyBytes);
+        var peFile = new PEFile(fileName, stream, PEStreamOptions.Default);
+
+        //var resolver = new UniversalAssemblyResolver(fileName, true, peFile.DetectTargetFrameworkId(), peFile.DetectRuntimePack());
+        var resolver = new UniversalAssemblyResolver(fileName, true, "netstandard2.0");
+        var decompiler = new CSharpDecompiler(peFile, resolver, new DecompilerSettings());
+
+        var metadata = peFile.Metadata;
+        var typeSystem = new DecompilerTypeSystem(peFile, resolver);
+
+        // Dictionary to hold the assemblies, namespaces, and their classes
+        var assemblies = new Dictionary<string, Dictionary<string, Dictionary<string, string>>>();
+        //get the source for the main asm
+        assemblies.Add(peFile.Name, new Dictionary<string, Dictionary<string, string>>());
+        var mainAsmMetadata = peFile.Metadata;
+        // Dictionary to hold the namespaces and their classes for the current assembly
+        var mainnamespaces = new Dictionary<string, Dictionary<string, string>>();
+        // Iterate over the type definitions in the assembly
+        foreach (var handle in mainAsmMetadata.TypeDefinitions)
+        {
+            try
+            {
+                var definition = mainAsmMetadata.GetTypeDefinition(handle);
+                var fullName = typeSystem.MainModule.ResolveEntity(handle).FullName;
+                var className = typeSystem.MainModule.ResolveEntity(handle).Name;
+                var namespaceName = mainAsmMetadata.GetString(definition.Namespace);
+
+                var fullTypeName = new FullTypeName(fullName);
+                var decompiled = decompiler.DecompileTypeAsString(fullTypeName);
+
+                if (!mainnamespaces.ContainsKey(namespaceName))
+                {
+                    mainnamespaces.Add(namespaceName, new Dictionary<string, string>());
+                }
+                mainnamespaces[namespaceName].Add(className, decompiled);
+            }
+            catch (Exception ex)
+            {
+                //Console.WriteLine($"Failed to process assembly {fileName}: {ex.Message}");
+                continue;
+            }
+            assemblies[peFile.Name] = mainnamespaces;
+        }
+        // Dictionary to hold the namespaces and their classes for the current assembly
+        var namespaces = new Dictionary<string, Dictionary<string, string>>();
+        // Repeat the process for the assembly references
+        foreach (var assemblyRef in peFile.AssemblyReferences)
+        {
+            var name = assemblyRef.Name;
+            try
+            {
+                if (!assemblies.ContainsKey(name))
+                {
+                    assemblies.Add(name, new Dictionary<string, Dictionary<string, string>>());
+                }
+
+                // Resolve the assembly reference to get the actual assembly
+                var resolvedAssembly = resolver.Resolve(assemblyRef);
+                var resolvedPEFile = new PEFile(resolvedAssembly.FileName, PEStreamOptions.Default);
+                var resolvedMetadata = resolvedPEFile.Metadata;
+                var resolvedTypeSystem = new DecompilerTypeSystem(resolvedPEFile, resolver);
+
+                // Iterate over the type definitions in the resolved assembly
+                foreach (var handle in resolvedMetadata.TypeDefinitions)
+                {
+                    try
+                    {
+                        var definition = resolvedMetadata.GetTypeDefinition(handle);
+                        var fullName = resolvedTypeSystem.MainModule.ResolveEntity(handle).FullName;
+                        var className = resolvedTypeSystem.MainModule.ResolveEntity(handle).Name;
+                        var namespaceName = resolvedMetadata.GetString(definition.Namespace);
+
+                        var fullTypeName = new FullTypeName(fullName);
+                        var decompiled = decompiler.DecompileTypeAsString(fullTypeName);
+
+                        if (!namespaces.ContainsKey(namespaceName))
+                        {
+                            namespaces.Add(namespaceName, new Dictionary<string, string>());
+                        }
+                        namespaces[namespaceName].Add(className, decompiled);
+                    }
+                    catch (Exception ex)
+                    {
+                        //Console.WriteLine($"Failed to process assembly {name}: {ex.Message}");
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                //Console.WriteLine($"Failed to process assembly {name}: {ex.Message}");
+                break;
+            }
+            assemblies[name] = namespaces;  
+        }
+        source = assemblies;
+    }
+
+    private async Task HandleModelContentChangedAsync()
+    {
+        Task.Run(() => CheckErrorsAndProvideCompletion());
+    }
+
+    private async Task CheckErrorsAndProvideCompletion()
+    {
+        await Task.Run( async() =>
+        {
+            string code = await myEditor.GetValue();
+            // Use Roslyn to parse the code and get diagnostics.
+            var syntaxTree = CSharpSyntaxTree.ParseText(code);
+            var diagnostics = syntaxTree.GetDiagnostics();
+
+            // Convert diagnostics to Monaco markers.
+            var markers = diagnostics.Select(diagnostic => new
+            {
+                startLineNumber = diagnostic.Location.GetLineSpan().StartLinePosition.Line + 1,
+                endLineNumber = diagnostic.Location.GetLineSpan().EndLinePosition.Line + 1,
+                startColumn = diagnostic.Location.GetLineSpan().StartLinePosition.Character + 1,
+                endColumn = diagnostic.Location.GetLineSpan().EndLinePosition.Character + 1,
+                message = diagnostic.GetMessage(),
+                severity = ConvertSeverity(diagnostic.Severity)
+            }).ToArray();
+
+            // Use JavaScript interop to call the setModelMarkers function.
+            //get the current js runtime and call the function
+            var editorModel = await myEditor.GetModel();
+            await JSRuntime.InvokeVoidAsync("blazorMonaco.editor.setModelMarkers", editorModel.Uri, "owner", markers);
+        });
+    }
+
+    private int ConvertSeverity(DiagnosticSeverity severity)
+    {
+        return severity switch
+        {
+            DiagnosticSeverity.Error => 8, // Error severity in Monaco
+            DiagnosticSeverity.Warning => 4, // Warning severity in Monaco
+            DiagnosticSeverity.Info => 2, // Info severity in Monaco
+            _ => 1 // Hint severity in Monaco
+        };
+    }
+
+    void OnDoubleClicked()
+    {
+        _percentage = 20;
+    }
+
+    public async Task HandleEditorClick()
+    {
+        try
+        {
+            //get the mouse position from the editor
+            BlazorMonaco.Position position = await myEditor.GetPosition();
+            TextModel model = await myEditor.GetModel();
+            WordAtPosition word = await model.GetWordAtPosition(position);
+            if (word == null)
+            {
+                //Console.WriteLine("word is null");
+                return;
+            }
+
+            //Console.WriteLine($"checking for {word.Word}");
+            if (!IsTextNamespaceOrClass(word.Word))
+            {
+                // Get the line content where the user clicked
+                string lineContent = await model.GetLineContent(position.LineNumber);
+                //Console.WriteLine($"Line Content: {lineContent}");
+
+                // Extract the full namespace or class name from the line content
+                string fullNamespaceOrClass = ExtractFullNamespaceOrClass(lineContent, word.Word);
+                //Console.WriteLine($"Full Namespace or Class: {fullNamespaceOrClass}");
+                if (!IsTextNamespaceOrClass(fullNamespaceOrClass))
+                {
+                    Console.WriteLine($"Did not find namespace or type to navigate to {fullNamespaceOrClass}");
+                    //if its not a class or namespace, then it might be a method
+                    //so lets try to find the method by searching the editor text for something that looks like a method declaration matching the fullNamespaceOrClass
+                    //if we find it, then we can navigate to it
+                    if( await FoundMethodInCurrentPage(word.Word))
+                    {
+                        //Console.WriteLine($"Found method decleration {word.Word} in current page");
+                    }
+
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Console.WriteLine(ex.StackTrace);
+        }
+    }
+
+    private bool IsTextNamespaceOrClass(string fullNamespaceOrClass)
+    {
+        // Find the class or namespace in the source dictionary
+        foreach (var asm in source)
+        {
+            foreach (var asmnamespace in asm.Value)
+            {
+                if (asmnamespace.Key.Equals(fullNamespaceOrClass))
+                {
+                    //Console.WriteLine($"Navigating to namespace {fullNamespaceOrClass}");
+                    NavigateToNamespace(asmnamespace);
+                    return true;
+                }
+
+                foreach (var asmclass in asmnamespace.Value)
+                {
+                    if (asmclass.Key.Equals(fullNamespaceOrClass))
+                    {
+                        //Console.WriteLine($"Navigating to type {fullNamespaceOrClass}");
+                        NavigateToType(asmclass);
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private string ExtractFullNamespaceOrClass(string lineContent, string clickedWord)
+    {
+        int index = lineContent.IndexOf(clickedWord);
+        if (index == -1) return clickedWord; // Return the clicked word if not found in line content
+
+        int start = index;
+        int end = index + clickedWord.Length - 1;
+
+        // Expand to the left
+        while (start > 0 && IsNamespaceOrClassNameCharacter(lineContent[start - 1]))
+        {
+            start--;
+        }
+
+        // Expand to the right
+        while (end < lineContent.Length - 1 && IsNamespaceOrClassNameCharacter(lineContent[end + 1]))
+        {
+            end++;
+        }
+
+        return lineContent.Substring(start, end - start + 1);
+    }
+
+    private async Task<bool> FoundMethodInCurrentPage(string methodName)
+    {
+        // Get the current page text
+        var model = await myEditor.GetModel();
+
+        // Define search parameters
+        bool searchOnlyEditableRange = false;
+        bool isRegex = false; 
+        bool matchCase = true; 
+        string wordSeparators = ""; 
+        bool captureMatches = true;
+        int? limitResultCount = null; 
+
+        // Construct a search string that represents a method declaration
+        string searchString = methodName + "(";
+
+        // Search for the method declaration
+        var findInFileResult = await FindMethodInCurrentFile(methodName);
+        if(findInFileResult.Item2.Count() >0)
+        {
+            //this is prob a method call but since the method is not in the current page, we cant navigate to it and instead need to find the class that contains the method
+            //so lets get the text of the line that contains the method call and see if we can find the class name
+            var text = await model.GetLineContent(findInFileResult.Item2[0].Range.StartLineNumber);
+            var textSplit = text.Split(".");
+            if(textSplit.Length > 1)
+            {
+                var className = textSplit[0].Split(" ").Last().Trim();
+                //remove any () or . from the className
+                className = className.Replace("(", "");
+                className = className.Replace(")", "");
+                // Find the class or namespace in the source dictionary
+                foreach (var asm in source)
+                {
+                    foreach (var asmnamespace in asm.Value)
+                    {
+                        foreach (var asmclass in asmnamespace.Value)
+                        {
+                            if (asmclass.Key.Equals(className))
+                            {
+                                Console.WriteLine($"Navigating to type {className}");
+                                NavigateToType(asmclass);
+                                var findInNewFileResult = await FindMethodInCurrentFile(methodName);
+                                if (findInNewFileResult.Item1)
+                                {
+                                    //Console.WriteLine($"Found method decleration {methodName} in current page");
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private async Task<Tuple<bool,List<FindMatch>>> FindMethodInCurrentFile(string methodName)
+    {
+        // Get the current page text
+        var model = await myEditor.GetModel();
+        // Define search parameters
+        bool searchOnlyEditableRange = false;
+        bool isRegex = false;
+        bool matchCase = true;
+        string wordSeparators = "";
+        bool captureMatches = true;
+        int? limitResultCount = null;
+
+        // Construct a search string that represents a method declaration
+        string searchString = methodName + "(";
+        // Search for the method declaration
+        var matches = await model.FindMatches(searchString, searchOnlyEditableRange, isRegex, matchCase, wordSeparators, captureMatches, limitResultCount);
+
+        //remove matches that contain a ; so its not a c#    method declaration
+        //foreach match use its range to get the text and see if it contains things that method declarations have
+        //if it does, then we found a method declaration
+        var matchesRead = matches.ToList();
+        List<FindMatch> matchWithDot = new();
+        foreach (var match in matchesRead)
+        {
+            var text = await model.GetLineContent(match.Range.StartLineNumber);
+
+            // Check if the text contains a semicolon, indicating it might be a method usage
+            if (text.Contains(";"))
+            {
+                continue; // Skip to the next iteration
+            }
+            if (text.Contains("public") || text.Contains("private") || text.Contains("protected") || text.Contains("internal") || text.Contains("static") || text.Contains("override"))
+            {
+                continue;
+            }
+            if (text.Contains("."))
+            {
+                matches.Remove(match);
+                matchWithDot.Add(match);
+                continue;
+            }
+        }
+
+
+        if (matches != null && matches.Count() > 0)
+        {
+            // If found, then navigate to it
+            var firstMatch = matches[0];
+            // Navigate to the position of the match
+            await myEditor.RevealRange(firstMatch.Range);
+        }
+        return Tuple.Create(matches.Count() > 0, matchWithDot);
+    }
+
+    private bool IsNamespaceOrClassNameCharacter(char c)
+    {
+        return char.IsLetterOrDigit(c) || c == '.' || c == '_';
+    }
+
+    private string SetId()
+    {
+        if (myEditor == null)
+        {
+            //Console.WriteLine("set id invoked");
+            return Guid.NewGuid().ToString();
+        }
+        else
+        {
+            return myEditor.Id;
+        }
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        Task.Run(async() =>
+        {
+            await GetAssemblySource(Src); 
+            loading = false;
+            await InvokeAsync(StateHasChanged);
+        });
+        return base.OnInitializedAsync();
+
+    }
+}
+

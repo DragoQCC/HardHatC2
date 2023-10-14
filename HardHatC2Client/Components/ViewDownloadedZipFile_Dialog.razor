@@ -1,0 +1,94 @@
+﻿@using MudBlazor
+@using MudBlazor.Extensions.Components.Base;
+@using MudBlazor.Extensions.Options;
+@using MudExtensions
+@using MudBlazor.Extensions
+@using MudBlazor.Extensions.Components
+@using Nextended.Blazor.Extensions;
+@using Nextended.Blazor.Models;
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid Spacing="2" Justify="Justify.Center" Style="height: 100%;width: 100%;overflow: auto;">
+            <MudItem xs="12" sm="6" Style="width: 50%;height: 75vh;">
+                <MudExFileDisplayZip AllowPreview="false" ShowContentError="false" SelectedChanged="((e)=>OnSelectedChanged(e))" SelectionMode="ItemSelectionMode.Single" RootFolderName="@fileName" ContentStream="@fileData"></MudExFileDisplayZip>
+            </MudItem>
+            <MudItem xs="12" sm="6" Style="width: 50%;height: 75vh;">
+            <MudExFileDisplay ShowContentError="false" FileName="@_selected?.FullName" ContentType="@_selected?.ContentType" Url="@_selectedUrl"></MudExFileDisplay>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Ok</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public string fileName { get; set; }
+    [Parameter]
+    public Stream fileData { get; set; }
+
+    private ZipBrowserFile? _selected;
+    private string _selectedUrl;
+    private IList<ZipBrowserFile> _selectedList;
+
+    public void OnSelectedChanged(IList<ZipBrowserFile> selectedfiles)
+    {
+        if(selectedfiles.Count == 1)
+        {
+            _selected = selectedfiles[0];
+            string contentType = DetermineFileContentType(_selected.Name).Result;
+            _selectedUrl = $"data:{contentType};base64,{Convert.ToBase64String(_selected.FileBytes)}";
+        }
+        StateHasChanged();
+    }
+
+    private Task<MudExFileDisplayContentErrorResult> HandleContentError(IMudExFileDisplayInfos arg)
+    {
+        return Task.FromResult(MudExFileDisplayContentErrorResult.Unhandled);
+    }
+
+    private async Task<string> DetermineFileContentType(string fileName)
+    {
+        string fileExtension = fileName.Split('.').Last();
+        //based on the file extension return the correct content type
+        switch (fileExtension)
+        {
+            case "txt":
+                return "text/plain";
+            case "pdf":
+                return "application/pdf";
+            case "doc":
+                return "application/vnd.ms-word";
+            case "docx":
+                return "application/vnd.ms-word";
+            case "xls":
+                return "application/vnd.ms-excel";
+            case "xlsx":
+                return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            case "png":
+                return "image/png";
+            case "jpg":
+                return "image/jpeg";
+            case "jpeg":
+                return "image/jpeg";
+            case "gif":
+                return "image/gif";
+            case "csv":
+                return "text/csv";
+            case "zip":
+                return "application/zip";
+            default:
+                break;
+        }
+        return "";
+    }
+
+
+    void Submit() => MudDialog.Close(DialogResult.Ok(true));
+    void Cancel() => MudDialog.Cancel();
+}

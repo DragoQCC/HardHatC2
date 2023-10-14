@@ -3,7 +3,7 @@
 @using HardHatC2Client.Models.TaskResultTypes
 @using HardHatC2Client.Utilities
 
-<MudTable T="Help.HelpMenuItem" @ref=@_table Items="BodyContent.Values" HorizontalScrollbar="false" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Outlined="true" Striped="true" Filter="new Func<Help.HelpMenuItem,bool>(FilterFunc1)" RowStyleFunc=SetOpacity SortLabel="Sort By">
+<MudTable T="CommandItem" @ref=@_table Items="BodyContent.Values" HorizontalScrollbar="false" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Outlined="true" Striped="true" Filter="new Func<CommandItem,bool>(FilterFunc1)" RowStyleFunc=SetOpacity SortLabel="Sort By">
     <ToolBarContent>
             <MudText Typo="Typo.h6">Help Menu</MudText>
         <MudSpacer/>
@@ -16,7 +16,6 @@
         <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(2))">Usage</MudTableSortLabel></MudTh>
         <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(3))">NeedsAdmin</MudTableSortLabel></MudTh>
         <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(4))">Opsec</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(5))">Details</MudTableSortLabel></MudTh>
         <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(6))">Keys</MudTableSortLabel></MudTh>
     </HeaderContent>
     <RowTemplate>
@@ -25,7 +24,6 @@
         <MudTd>@context.Usage</MudTd>
         <MudTd>@context.NeedsAdmin</MudTd>
         <MudTd> <MudIcon Size="Size.Small" Class="m-2" Color=@GetColor(context) Icon=@getIcon(context)></MudIcon> @context.Opsec</MudTd>
-        <MudTd>@context.Details</MudTd>
         <MudTd>@context.Keys</MudTd>
     </RowTemplate>
     <PagerContent>
@@ -38,9 +36,9 @@
 @code {
 
     [Parameter]
-    public List<Help.HelpMenuItem> Outputs {get; set;}
-    public Dictionary<string, Help.HelpMenuItem> BodyContent = new Dictionary<string, Help.HelpMenuItem>();
-    private MudTable<Help.HelpMenuItem>? _table;
+    public List<CommandItem> Outputs {get; set;}
+    public Dictionary<string, CommandItem> BodyContent = new Dictionary<string, CommandItem>();
+    private MudTable<CommandItem>? _table;
     private string searchString1 = "";
     private bool ContentParsed = false;
 
@@ -54,9 +52,9 @@
         return "background:#333333; color:white;";
     }
 
-    private string SetOpacity(Help.HelpMenuItem item, int index)
+    private string SetOpacity(CommandItem item, int index)
     {
-        if(item.Opsec == Help.HelpMenuItem.OpsecStatus.Blocked)
+        if(item.Opsec == CommandItem.OpsecStatus.Blocked)
         {
             return "Opacity:.25;";
         }
@@ -64,25 +62,25 @@
     }
 
     //returns an icon depending on the name of the item
-    private string getIcon(Help.HelpMenuItem item)
+    private string getIcon(CommandItem item)
     {
-        if (item.Opsec == Help.HelpMenuItem.OpsecStatus.Blocked)
+        if (item.Opsec == CommandItem.OpsecStatus.Blocked)
         {
             return Icons.Outlined.Info;
         }
-        else if (item.Opsec == Help.HelpMenuItem.OpsecStatus.RequiresLeadAuthorization)
+        else if (item.Opsec == CommandItem.OpsecStatus.RequiresLeadAuthorization)
         {
             return Icons.Outlined.Info;
         }
-        else if (item.Opsec == Help.HelpMenuItem.OpsecStatus.High)
+        else if (item.Opsec == CommandItem.OpsecStatus.High)
         {
             return Icons.Outlined.Info;
         }
-        else if (item.Opsec == Help.HelpMenuItem.OpsecStatus.Moderate)
+        else if (item.Opsec == CommandItem.OpsecStatus.Moderate)
         {
             return Icons.Outlined.Info;
         }
-        else if (item.Opsec == Help.HelpMenuItem.OpsecStatus.Low)
+        else if (item.Opsec == CommandItem.OpsecStatus.Low)
         {
             return Icons.Outlined.Info;
         }
@@ -90,25 +88,25 @@
     }
 
     //function to return the icon color based on the type or extesnion
-    private Color GetColor(Help.HelpMenuItem item)
+    private Color GetColor(CommandItem item)
     {
-        if (item.Opsec == Help.HelpMenuItem.OpsecStatus.Blocked)
+        if (item.Opsec == CommandItem.OpsecStatus.Blocked)
         {
             return Color.Dark;
         }
-        else if (item.Opsec == Help.HelpMenuItem.OpsecStatus.RequiresLeadAuthorization)
+        else if (item.Opsec == CommandItem.OpsecStatus.RequiresLeadAuthorization)
         {
             return Color.Info;
         }
-        else if (item.Opsec == Help.HelpMenuItem.OpsecStatus.High)
+        else if (item.Opsec == CommandItem.OpsecStatus.High)
         {
             return Color.Error;
         }
-        else if (item.Opsec == Help.HelpMenuItem.OpsecStatus.Moderate)
+        else if (item.Opsec == CommandItem.OpsecStatus.Moderate)
         {
             return Color.Warning;
         }
-        else if (item.Opsec == Help.HelpMenuItem.OpsecStatus.Low)
+        else if (item.Opsec == CommandItem.OpsecStatus.Low)
         {
             return Color.Success;
         }
@@ -118,7 +116,7 @@
 
     public void FillContents()
     {
-        foreach (Help.HelpMenuItem output in Outputs)
+        foreach (CommandItem output in Outputs)
         {
             if (!BodyContent.ContainsKey(output.Name))
             {
@@ -130,9 +128,9 @@
 
 
 
-    private bool FilterFunc1(Help.HelpMenuItem search) => FilterFunc(search, searchString1);
+    private bool FilterFunc1(CommandItem search) => FilterFunc(search, searchString1);
 
-    private bool FilterFunc(Help.HelpMenuItem search, string searchString)
+    private bool FilterFunc(CommandItem search, string searchString)
     {
         if (string.IsNullOrWhiteSpace(searchString))
         {
@@ -159,13 +157,12 @@
         {
             return true;
         }
-        if (search.Details.ToLower().Contains(searchString.ToLower()))
+        foreach (var key in search.Keys)
         {
-            return true;
-        }
-        if (search.Keys.ToLower().Contains(searchString.ToLower()))
-        {
-            return true;
+            if (key.Name.ToLower().Contains(searchString.ToLower()))
+            {
+                return true;
+            }
         }
         return false;
     }

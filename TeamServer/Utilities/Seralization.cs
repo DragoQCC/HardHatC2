@@ -67,13 +67,13 @@ namespace TeamServer.Utilities
 
         public static T Deserialize<T>(this byte[] data)
         {
-            string json = null;
+            string json = "";
             try
             {
-                json = Encoding.UTF8.GetString(data);
-                //Console.WriteLine(json);
-                if (data.Length > 0)
+                if (data is not null && data.Length > 0)
                 {
+                    json = Encoding.UTF8.GetString(data);
+                    //Console.WriteLine(json);
                     if (IsValidJson(json))
                     {
                         JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions();
@@ -82,7 +82,6 @@ namespace TeamServer.Utilities
                     }
                     else if (typeof(T) == typeof(string))
                     {
-                        //json.Trim('"');
                         return (T)(object)json;
                     }
                     else
@@ -93,12 +92,12 @@ namespace TeamServer.Utilities
                             return JsonSerializer.Deserialize<T>(fixedJson);
                         }
                         Console.WriteLine("Input data is not a valid JSON & is not a normal string, returning default value");
-                        return default(T);
+                        return default;
                     }
                 }
                 else
                 {
-                    return default(T);
+                    return default;
                 }
 
             }

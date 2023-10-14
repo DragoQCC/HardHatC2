@@ -1,0 +1,70 @@
+﻿@using HardHatC2Client.Services;
+
+<MudSelectExtended T="Webhook" @bind-value="SelectedEditWebhook" Label="Select Webhook to edit">
+    @foreach(Webhook hook in ExistingWebhooks)
+    {
+        <MudSelectItemExtended Text="@hook.Name" Value="@hook"/>
+    }
+</MudSelectExtended>
+@if(SelectedEditWebhook != null)
+{
+   OpenCreateDialog();
+}
+<br/>
+<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@OpenCreateDialog">Create Webhook</MudButton>
+
+
+@code {
+
+    public class Webhook
+    {
+        public string Name { get; set; }
+        public string Url { get; set; }
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public TargetSites TargetSite { get; set; } //target site is used to determine the target template we will use 
+        public string Template { get; set; } //template content holds the scaffolded to send data to the specific webhook
+        public WebHookDataOptions WebHookDataOption { get; set; } //this is used to determine what data template we will use
+        public string DataTemplate { get; set; }
+
+        public enum TargetSites 
+        { 
+            Discord, 
+            Slack, 
+            MatterMost, 
+            Custom 
+        }
+
+        public enum WebHookDataOptions
+        {
+            Custom,
+            NewCheckIn,
+            // Alert,
+            // Initilization,
+            // Feedback,
+        }
+    }
+
+    [Inject]
+    public IDialogService DialogService { get; set; }
+    public static List<Webhook> ExistingWebhooks = new List<Webhook>();
+    public Webhook newWebhook = new Webhook();
+    public Webhook? SelectedEditWebhook = null;
+
+    public async Task OpenCreateDialog()
+    {
+        DialogParameters parameters = new();
+        if(SelectedEditWebhook != null)
+        {
+            parameters = new DialogParameters { { "newWebhook", SelectedEditWebhook } };
+        }
+        
+        DialogOptions diagOptions = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.Large, FullWidth = true };
+        DialogService.Show<Webhooks_Create_dialog>("Create or Edit Dialog", parameters, diagOptions); 
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        ExistingWebhooks = await HardHatHubClient._hub.GetExistingWebhooks();
+    }
+
+}

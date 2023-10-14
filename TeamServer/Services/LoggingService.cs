@@ -18,7 +18,11 @@ using TeamServer.Services.Extra;
 using System.Text;
 using Serilog.Sinks.File;
 using Microsoft.Extensions.Logging;
-//using DynamicEngLoading;
+using ApiModels.Plugin_Interfaces;
+using ApiModels.Plugin_BaseClasses;
+using ApiModels.Shared.TaskResultTypes;
+using System.Collections.Generic;
+using TeamServer.Utilities;
 
 namespace TeamServer.Services    
 {
@@ -93,6 +97,33 @@ namespace TeamServer.Services
                 string filename = file.Split(".json")[0];
                 File.WriteAllText($"{filename}_pretty.json", prettyJson);
             }
+        }
+
+        public static string HandleComplexTaskResultTypes(ExtImplantTaskResult_Base taskResult)
+        {
+            string result = "";
+            //if the function is not a basic string then it got sent here and we should perform special formatting of the data result based on the type
+            if(taskResult.ResponseType == ExtImplantTaskResponseType.FileSystemItem)
+            {
+                //deserialize the data into a list of file system items
+                List<FileSystemItem> fileSystemItems = taskResult.Result.Deserialize<List<FileSystemItem>>();
+                //get the string output for logging 
+                result = HandleFileSystemItemResult(fileSystemItems);
+            }
+            return result;
+        }
+
+        private static string HandleFileSystemItemResult(List<FileSystemItem> taskResult)
+        {
+            //take the list of file system item and create a string version of output similiar to an ls command
+            StringBuilder result = new StringBuilder();
+            //create a header for the output
+            result.AppendLine("Name Length CreationTimeUtc LastAccessTimeUtc LastWriteTimeUtc Owner");
+            foreach (FileSystemItem item in taskResult)
+            {
+                result.AppendLine($"{item.Name} {item.Length} {item.CreationTimeUtc} {item.LastAccessTimeUtc} {item.LastWriteTimeUtc} {item.Owner}");
+            }
+            return result.ToString(); 
         }
     }
 

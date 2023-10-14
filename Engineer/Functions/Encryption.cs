@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,26 +13,30 @@ namespace Engineer.Functions
     internal class Encryption
     {
         // Aes encryption is used to encrypt the data before sending it to the server
-        public static byte[] AES_Encrypt(byte[] bytesToBeEncrypted, string EncodedPassword)
+        public static byte[] AES_Encrypt(byte[] bytesToBeEncrypted, string EncodedPassword, SecureString taskKey = null)
         {
             try
             {
-
-                // make passwordBytes array out of string H@rdH@tC2P@$$w0rd!
-                byte[] passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes("H@rdH@tC2P@$$w0rd!"));
-                //byte[] passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(EncodedPassword));
-
+                byte[] passwordBytes;
+                if (taskKey != null)
+                {
+                    passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(SecureStringToString(taskKey)));
+                    taskKey = null;
+                }
+                else
+                {
+                    passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(EncodedPassword));
+                    EncodedPassword = null;
+                }
                 byte[] encryptedBytes = null;
                 byte[] saltBytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
                 using (MemoryStream ms = new MemoryStream())
                 {
-
-                    
                     using (Aes aes = Aes.Create())
                     {
                         aes.KeySize = 256;
                         aes.BlockSize = 128;
-                        var key = new Rfc2898DeriveBytes(passwordBytes, saltBytes, 1000);
+                        var key = new Rfc2898DeriveBytes(passwordBytes, saltBytes, 500,HashAlgorithmName.SHA256);
                         aes.Key = key.GetBytes(aes.KeySize / 8);
                         aes.IV = key.GetBytes(aes.BlockSize / 8);
                         aes.Mode = CipherMode.CBC;
@@ -54,16 +60,21 @@ namespace Engineer.Functions
             }
         }
         // Aes decryption is used to decrypt the data after it has been received from the server
-        public static byte[] AES_Decrypt(byte[] bytesToBeDecrypted, string EncodedPassword)
+        public static byte[] AES_Decrypt(byte[] bytesToBeDecrypted, string EncodedPassword, SecureString taskKey = null)
         {
             try
             {
-                
-                //Console.WriteLine($"decrypting {bytesToBeDecrypted.Length} bytes");
-                // make passwordBytes array out of string H@rdH@tC2P@$$w0rd!
-                byte[] passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes("H@rdH@tC2P@$$w0rd!"));
-                //byte[] passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(EncodedPassword));
-
+                byte[] passwordBytes;
+                if (taskKey != null)
+                {
+                    passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(SecureStringToString(taskKey)));
+                    taskKey = null;
+                }
+                else
+                {
+                    passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(EncodedPassword));
+                    EncodedPassword = null;
+                }
                 byte[] decryptedBytes = null;
                 byte[] saltBytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
                 using (MemoryStream ms = new MemoryStream())
@@ -72,7 +83,7 @@ namespace Engineer.Functions
                     {
                         aes.KeySize = 256;
                         aes.BlockSize = 128;
-                        var key = new Rfc2898DeriveBytes(passwordBytes, saltBytes, 1000);
+                        var key = new Rfc2898DeriveBytes(passwordBytes, saltBytes, 500, HashAlgorithmName.SHA256);
                         aes.Key = key.GetBytes(aes.KeySize / 8);
                         aes.IV = key.GetBytes(aes.BlockSize / 8);
                         aes.Mode = CipherMode.CBC;
@@ -90,9 +101,23 @@ namespace Engineer.Functions
             }
             catch (System.Exception ex)
             {
-                //Console.WriteLine(ex.Message);
-                //Console.WriteLine(ex.StackTrace);
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
                 return null;
+            }
+        }
+
+        private static String SecureStringToString(SecureString value)
+        {
+            IntPtr valuePtr = IntPtr.Zero;
+            try
+            {
+                valuePtr =  Marshal.SecureStringToBSTR(value);
+                return Marshal.PtrToStringUni(valuePtr);
+            }
+            finally
+            {
+                Marshal.ZeroFreeBSTR(valuePtr);
             }
         }
     }

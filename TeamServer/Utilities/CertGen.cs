@@ -13,7 +13,7 @@ namespace TeamServer.Utilities
         public static string CertificatePassword { get; set; } = "p@ssw0rd";
         public static X509Certificate2 cert { get; set; }
 
-        public static async Task GeneerateCert()
+        public static async Task GenerateCert()
         {
             // Generate private-public key pair
             var rsaKey = RSA.Create(2048);
@@ -76,8 +76,9 @@ namespace TeamServer.Utilities
             }
 
             // Export certificate to a file.
+            string baseFolderPath =  Helpers.GetBaseFolderLocation();
             var DirectorySeperatorChar = Path.DirectorySeparatorChar;
-            string CertificateDir = $"{Environment.CurrentDirectory}{DirectorySeperatorChar}Certificates{DirectorySeperatorChar}";
+            string CertificateDir = $"{baseFolderPath}{DirectorySeperatorChar}Certificates{DirectorySeperatorChar}";
 
             File.WriteAllBytes($"{CertificateDir}certServer.pfx", exportableCertificate.Export(X509ContentType.Pfx, passwordForCertificateProtection));
             CertificatePath = CertificateDir + $"certServer.pfx";

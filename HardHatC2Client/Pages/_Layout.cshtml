@@ -20,6 +20,7 @@
     <link href="_content/Blazored.Typeahead/blazored-typeahead.css" rel="stylesheet" />
     <link href="_content/Z.Blazor.Diagrams/style.min.css" rel="stylesheet" />
     <link href="_content/Z.Blazor.Diagrams/default.styles.min.css" rel="stylesheet" />
+    <link href="_content/MudBlazor.Markdown/MudBlazor.Markdown.min.css" rel="stylesheet" />
     <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
 </head>
 <body>
@@ -38,12 +39,39 @@
 
     <script src="_framework/blazor.server.js"></script>
 <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    <script src="_content/MudBlazor.Markdown/MudBlazor.Markdown.min.js"></script>
  <script src="_content/CodeBeam.MudBlazor.Extensions/MudExtensions.min.js"></script>
 <script src="_content/Blazored.Typeahead/blazored-typeahead.js"></script>
     <script src="_content/Z.Blazor.Diagrams/script.min.js"></script>
+    <script src="_content/BlazorMonaco/jsInterop.js"></script>
+    <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/loader.js"></script>
+    <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/editor/editor.main.js"></script>
     <script>
-	function addToLocalStorage(key,value) {localStorage[key] = value;}
-	function readLocalStorage(key) {return localStorage[key];}
+	    function addToLocalStorage(key,value) {localStorage[key] = value;}
+	    function readLocalStorage(key) {return localStorage[key];}
+        window.monitorClipboard = (dotNetReference) => {
+            document.addEventListener('copy', (event) => {
+                // Call a Blazor method to send a request to the server to get the clipboard content
+                dotNetReference.invokeMethodAsync('RequestClipboardContentFromServer');
+            });
+        }
+        window.getImageSize = (element) => {
+            var imgElement = element.querySelector('img');
+            return {
+                width: imgElement.clientWidth,
+                height: imgElement.clientHeight
+            };
+        };
+        window.toggleFullscreen = function (element) {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                document.fullscreenElement = element;
+            }
+        }
+        window.preventDefault = function () {
+           oncontextmenu.preventdefault();
+        }
     </script>
 
 

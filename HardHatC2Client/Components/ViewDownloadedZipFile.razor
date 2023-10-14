@@ -1,4 +1,5 @@
 ﻿@using MudBlazor
+@using MudBlazor.Extensions.Components.Base;
 @using MudBlazor.Extensions.Options;
 @using MudExtensions
 @using MudBlazor.Extensions
@@ -6,32 +7,22 @@
 @using Nextended.Blazor.Extensions;
 @using Nextended.Blazor.Models;
 
-<MudDialog>
-    <DialogContent>
-        <MudGrid Spacing="2" Justify="Justify.Center" Style="height: 100%;width: 100%;overflow: auto;">
-            <MudItem xs="12" sm="6" Style="width: 50%;height: 75vh;">
-                <MudExFileDisplayZip AllowPreview="false" ShowContentError="false" SelectedChanged="((e)=>OnSelectedChanged(e))" SelectionMode="ItemSelectionMode.Single" RootFolderName="@fileName" ContentStream="@fileData" Url="@dataUrl"></MudExFileDisplayZip>
-            </MudItem>
-            <MudItem xs="12" sm="6" Style="width: 50%;height: 75vh;">
-            <MudExFileDisplay ShowContentError="false" FileName="@_selected?.FullName" ContentType="@_selected?.ContentType" Url="@_selectedUrl"></MudExFileDisplay>
-            </MudItem>
-        </MudGrid>
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" OnClick="Submit">Ok</MudButton>
-    </DialogActions>
-</MudDialog>
+
+<MudGrid Spacing="2" Justify="Justify.Center" Style="height: 100%;width: 100%;overflow: auto;">
+    <MudItem xs="12" sm="6" Style="width: 50%;height: 75vh;">
+        <MudExFileDisplayZip AllowPreview="false" ShowContentError="false" SelectedChanged="((e)=>OnSelectedChanged(e))" SelectionMode="ItemSelectionMode.Single" RootFolderName="@fileName" ContentStream="@fileData"></MudExFileDisplayZip>
+    </MudItem>
+    <MudItem xs="12" sm="6" Style="width: 50%;height: 75vh;">
+        <MudExFileDisplay ShowContentError="false" FileName="@_selected?.FullName" ContentType="@_selected?.ContentType" Url="@_selectedUrl"></MudExFileDisplay>
+    </MudItem>
+</MudGrid>
 
 @code {
-    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
-
+ 
     [Parameter]
     public string fileName { get; set; }
     [Parameter]
     public Stream fileData { get; set; }
-    [Parameter]
-    public string dataUrl { get; set; }
 
     private ZipBrowserFile? _selected;
     private string _selectedUrl;
@@ -39,7 +30,7 @@
 
     public void OnSelectedChanged(IList<ZipBrowserFile> selectedfiles)
     {
-        if(selectedfiles.Count == 1)
+        if (selectedfiles.Count == 1)
         {
             _selected = selectedfiles[0];
             string contentType = DetermineFileContentType(_selected.Name).Result;
@@ -88,7 +79,5 @@
         }
         return "";
     }
-
-    void Submit() => MudDialog.Close(DialogResult.Ok(true));
-    void Cancel() => MudDialog.Cancel();
 }
+

@@ -4,11 +4,11 @@
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <LangVersion>10</LangVersion>
+    <LangVersion>11</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-    <PlatformTarget>x64</PlatformTarget>
+    <PlatformTarget>anycpu</PlatformTarget>
     <DebugType>full</DebugType>
   </PropertyGroup>
 
@@ -22,20 +22,24 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Blazored.LocalStorage" Version="4.3.0" />
+    <PackageReference Include="Blazored.LocalStorage" Version="4.4.0" />
     <PackageReference Include="Blazored.Toast" Version="4.1.0" />
     <PackageReference Include="Blazored.Toast.TestExtensions" Version="4.1.0" />
+    <PackageReference Include="BlazorMonaco" Version="3.1.0" />
     <PackageReference Include="BlazorXTabs" Version="1.9.0" />
-    <PackageReference Include="Bootstrap.Switch" Version="3.3.2.2" />
+    <PackageReference Include="Bootstrap.Switch" Version="3.3.4" />
     <PackageReference Include="Bromix.MudBlazor.MaterialDesignIcons" Version="7.2.96.50" />
-    <PackageReference Include="CodeBeam.MudBlazor.Extensions" Version="6.5.3" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.8" />
-    <PackageReference Include="MudBlazor" Version="6.6.0" />
-    <PackageReference Include="MudBlazor.Extensions" Version="1.7.59" />
-    <PackageReference Include="MudBlazor.Markdown" Version="0.1.1" />
-    <PackageReference Include="RestSharp" Version="109.0.1" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.15.1" />
-    <PackageReference Include="Z.Blazor.Diagrams" Version="2.1.6" />
+    <PackageReference Include="CodeBeam.MudBlazor.Extensions" Version="6.5.10" />
+    <PackageReference Include="ICSharpCode.Decompiler" Version="8.1.1.7464" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.11" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.7.0" />
+    <PackageReference Include="MudBlazor" Version="6.10.0" />
+    <PackageReference Include="MudBlazor.Extensions" Version="1.7.67" />
+    <PackageReference Include="MudBlazor.Markdown" Version="0.1.2" />
+    <PackageReference Include="RestSharp" Version="110.2.0" />
+    <PackageReference Include="System.ComponentModel.Composition" Version="7.0.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.0.0" />
+    <PackageReference Include="Z.Blazor.Diagrams" Version="3.0.0" />
   </ItemGroup>
 
   <ItemGroup>

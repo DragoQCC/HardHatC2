@@ -349,7 +349,7 @@ namespace Engineer.Models
                                 //else this task is for this current engineer and should be added to the taskQueue
                                 else
                                 {
-                                    byte[] decryptedTaskData = Encryption.AES_Decrypt(incomingMessage.TaskData.ToArray(), Program.UniqueTaskKey);
+                                    byte[] decryptedTaskData = Encryption.AES_Decrypt(incomingMessage.TaskData.ToArray(), "", Program.UniqueTaskKey);
                                     HandleResponse(decryptedTaskData);
                                     IsDataInTransit = false;
                                 }

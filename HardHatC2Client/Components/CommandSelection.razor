@@ -1,11 +1,12 @@
-﻿@using MudBlazor
+﻿@using HardHatC2Client.Plugin_Management;
+@using MudBlazor
 @using HardHatC2Client.Services
 @using HardHatC2Client.Models
 @using HardHatC2Client.Utilities
 @using HardHatC2Client.Pages
 @using System.Text
 
-@if(Settings._InteractInputMode == Interact.InteractInputMode.Inline )
+@if (Settings._InteractInputMode == InteractCommandEntryWindow.InteractInputMode.Inline)
 {
 <MudGrid>
     <MudItem xs="12" sm="12" md="12" lg="12">
@@ -28,11 +29,11 @@
     }
     </MudGrid>
 }
-else if(Settings._InteractInputMode == Interact.InteractInputMode.Modal_Window)
+else if (Settings._InteractInputMode == InteractCommandEntryWindow.InteractInputMode.Modal_Window)
 {
     <MudGrid>
         <MudItem xs="12" sm="12" md="12" lg="12">
-            <MudAutocomplete MaxItems="@((Interact.AutocompleteSearchShowAllItems) ? (int?)null : 10)" Strict="true" T="string" ResetValueOnEmptyText="true" SearchFunc="@SearchCommand" ValueChanged="(e) => OnCommandSelected(e)"
+            <MudAutocomplete MaxItems="@((InteractCommandEntryWindow.AutocompleteSearchShowAllItems) ? (int?)null : 10)" Strict="true" T="string" ResetValueOnEmptyText="true" SearchFunc="@SearchCommand" ValueChanged="(e) => OnCommandSelected(e)"
                              Dense="true" Margin="Margin.Dense" SelectValueOnTab="true" SelectOnClick="false" CoerceText="false" CoerceValue="true"
                              InputMode="InputMode.text" Variant="Variant.Text" Adornment="Adornment.Start" AdornmentText="[COMMAND]> " Immediate="true" Clearable="true" KeyDownPreventDefault="true" KeyUpPreventDefault="true" TextUpdateSuppression="@TextSuppersion">
             </MudAutocomplete>
@@ -44,16 +45,17 @@ else if(Settings._InteractInputMode == Interact.InteractInputMode.Modal_Window)
 @code {
 
     [Inject]
-    private IDialogService DialogService { get; set; }
-    public string SelectedCommand { get; set; }
-    public CommandItem SelectedCommandItem { get; set; }
-    public Dictionary<string, string> keyValue = new Dictionary<string, string>();
+    private IDialogService? DialogService { get; set; }
+    public string? SelectedCommand { get; set; }
+    public CommandItem? SelectedCommandItem { get; set; }
+    public Dictionary<string, string> keyValue = new();
     public static bool TextSuppersion = true;
 
-    [Parameter] public List<CommandItem> Commands { get; set; }
+    [Parameter] public List<CommandItem>? Commands { get; set; }
     [Parameter] public EventCallback<string> OnContentChanged { get; set; }
-    //private CommandKeyInputContent commandKeyInputContent;
     [Parameter] public EventCallback OnEnterKeyDown { get; set; }
+    [Parameter] public static string ImplantName { get; set; } = "";
+
 
     private void UpdateContent()
     {
@@ -68,19 +70,21 @@ else if(Settings._InteractInputMode == Interact.InteractInputMode.Modal_Window)
 
     public static async Task<IEnumerable<string>> SearchCommand(string searchText)
     {
-        if(Settings._InteractInputMode == Interact.InteractInputMode.Classic || Settings._InteractInputMode == Interact.InteractInputMode.NoAutoComplete)
+        var cmdVal_base = PluginService.GetCommandValidationPlugin(ImplantName);
+        
+        if (Settings._InteractInputMode == InteractCommandEntryWindow.InteractInputMode.Classic || Settings._InteractInputMode == InteractCommandEntryWindow.InteractInputMode.NoAutoComplete)
         {
-            if (Interact.AutocompleteSearchShowAllItems)
+            if (InteractCommandEntryWindow.AutocompleteSearchShowAllItems)
             {
                 //if input is blank or null give the whole list.
                 if (string.IsNullOrEmpty(searchText))
                 {
-                    var list = Help.menuItems.Select(x => x.Usage);
+                    var list = cmdVal_base.CommandList.Select(x => x.Usage);
                     //alpabatize the list by the Name before returning it
                     return list.OrderBy(x => x);
                 }
                 //return the name of the Help.MenuItem that matches the search term
-                var resultItem = await Task.FromResult(Help.menuItems.Where(x => x.Name.ToLower().Contains(searchText.ToLower())).ToList());
+                var resultItem = await Task.FromResult(cmdVal_base.CommandList.Where(x => x.Name.ToLower().Contains(searchText.ToLower())).ToList());
                 //alphabetize and return the list
                 var nameList = resultItem.Select(x => x.Usage);
                 return nameList.OrderBy(x => x);
@@ -89,8 +93,8 @@ else if(Settings._InteractInputMode == Interact.InteractInputMode.Modal_Window)
             {
                 if (!string.IsNullOrEmpty(searchText))
                 {
-                    //return the name of the CommandValidation CommandList item that starts with the same input
-                    var resultItem = await Task.FromResult(Help.menuItems.Where(x => x.Name.ToLower().StartsWith(searchText.ToLower())).ToList());
+                    //return the name of the ImplantCommandValidation_Base CommandList item that starts with the same input
+                    var resultItem = await Task.FromResult(cmdVal_base.CommandList.Where(x => x.Name.ToLower().StartsWith(searchText.ToLower())).ToList());
                     //alphabetize and return the list
                     var nameList = resultItem.Select(x => x.Usage);
                     return nameList.OrderBy(x => x);
@@ -102,17 +106,17 @@ else if(Settings._InteractInputMode == Interact.InteractInputMode.Modal_Window)
             }
         }
 
-        if (Interact.AutocompleteSearchShowAllItems)
+        if (InteractCommandEntryWindow.AutocompleteSearchShowAllItems)
         {
             //if input is blank or null give the whole list. 
             if (string.IsNullOrEmpty(searchText))
             {
-                var list = CommandValidation.CommandList.Select(x => x.Name);
+                var list = cmdVal_base.CommandList.Select(x => x.Name);
                 //alpabatize the list by the Name before returning it 
                 return list.OrderBy(x => x);
             }
-            //return the name of the CommandValidation that matches the search term
-            var resultItem = await Task.FromResult(CommandValidation.CommandList.Where(x => x.Name.ToLower().Contains(searchText.ToLower())).ToList());
+            //return the name of the ImplantCommandValidation_Base that matches the search term
+            var resultItem = await Task.FromResult(cmdVal_base.CommandList.Where(x => x.Name.ToLower().Contains(searchText.ToLower())).ToList());
             //alphabetize and return the list
             var nameList = resultItem.Select(x => x.Name);
             return nameList.OrderBy(x => x);
@@ -121,8 +125,8 @@ else if(Settings._InteractInputMode == Interact.InteractInputMode.Modal_Window)
         {
             if (!string.IsNullOrEmpty(searchText))
             {
-                //return the name of the CommandValidation CommandList item that starts with the same input 
-                var resultItem =  await Task.FromResult(CommandValidation.CommandList.Where(x => x.Name.ToLower().StartsWith(searchText.ToLower())).Select(x => x.Name));
+                //return the name of the ImplantCommandValidation_Base CommandList item that starts with the same input 
+                var resultItem = await Task.FromResult(cmdVal_base.CommandList.Where(x => x.Name.ToLower().StartsWith(searchText.ToLower())).Select(x => x.Name));
                 return resultItem.OrderBy(x => x);
             }
             else
@@ -134,11 +138,12 @@ else if(Settings._InteractInputMode == Interact.InteractInputMode.Modal_Window)
 
     private async Task OnCommandSelected(string command)
     {
+        var cmdVal_base = PluginService.GetCommandValidationPlugin(ImplantName);
         SelectedCommand = command;
-        SelectedCommandItem = CommandValidation.CommandList.FirstOrDefault(x => x.Name.Equals(command,StringComparison.CurrentCultureIgnoreCase));
+        SelectedCommandItem = cmdVal_base.CommandList.FirstOrDefault(x => x.Name.Equals(command, StringComparison.CurrentCultureIgnoreCase));
         InitializeKeyValue();
 
-        if (SelectedCommandItem != null && Settings._InteractInputMode == Interact.InteractInputMode.Modal_Window)
+        if (SelectedCommandItem != null && Settings._InteractInputMode == InteractCommandEntryWindow.InteractInputMode.Modal_Window)
         {
             var dialogParameters = new DialogParameters
             {
@@ -160,7 +165,7 @@ else if(Settings._InteractInputMode == Interact.InteractInputMode.Modal_Window)
             else
             {
                 // Handle the case when the dialog is submitted
-                Interact._onWindowInteractSubmission();
+                await InteractCommandEntryWindow._onWindowInteractSubmission();
                 dialog.Close();
             }
         }

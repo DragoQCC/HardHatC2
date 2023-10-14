@@ -1,6 +1,11 @@
-﻿using System;
+﻿using ApiModels.Plugin_BaseClasses;
+using ApiModels.Shared;
+using Microsoft.Owin.BuilderProperties;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -9,6 +14,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TeamServer.Models;
+using TeamServer.Plugin_BaseClasses;
+using TeamServer.Services.Handle_Implants;
 //using DynamicEngLoading;
 
 namespace TeamServer.Utilities
@@ -18,6 +25,7 @@ namespace TeamServer.Utilities
         private readonly int _bindPort;
         private readonly IPAddress _bindAddress;
         private readonly CancellationTokenSource _tokenSource = new();
+        public static int TrafficSize = 12800000;
 
         private ConcurrentDictionary<string,TcpClient> SocksClients = new();
         public ConcurrentDictionary<string, ConcurrentQueue<byte[]>> SocksClientsData = new();
@@ -29,7 +37,7 @@ namespace TeamServer.Utilities
             _bindAddress = bindAddress ?? IPAddress.Any;
         }
 
-        public async Task Start(Engineer engineer)
+        public async Task Start(ExtImplant_Base implant)
         {
             try
             {
@@ -39,9 +47,11 @@ namespace TeamServer.Utilities
                 {
                     // this blocks until a connection is received
                     var client = await listener.AcceptTcpClientAsync(_tokenSource.Token);
-                    client.ReceiveBufferSize = 131070;
-                    client.SendBufferSize = 131070;
-                    Task.Run(async () => await HandleClient(client, engineer));
+                    //ensures the network stream buffer is always a bit larger than the traffic size
+                    client.ReceiveBufferSize = TrafficSize;
+                    client.SendBufferSize = TrafficSize;
+                    client.NoDelay = true;
+                    Task.Run(async () => await HandleClient(client, implant));
                     
                 }
 
@@ -55,7 +65,7 @@ namespace TeamServer.Utilities
             }
         }
 
-        private async Task HandleClient(TcpClient client, Engineer engineer)
+        private async Task HandleClient(TcpClient client, ExtImplant_Base implant)
         {
             // read connect request making sure connection type is socks 4 and that the client command is to stream data 
             var request = await ReadConnectRequest(client);
@@ -70,60 +80,90 @@ namespace TeamServer.Utilities
             SocksClients.TryAdd(client_guid, client);
             SocksClientsData.TryAdd(client_guid, new ConcurrentQueue<byte[]>());
             SocksDestinationConnected.TryAdd(client_guid, false);
+            HttpmanagerController.SocksClientToProxyCache.TryAdd(client_guid, _bindPort.ToString());
             Dictionary<string, string> args = new Dictionary<string, string>
             {
                 { "/Address", request.DestinationAddress.ToString() },
                 { "/Port", request.DestinationPort.ToString() },
                 { "/Client", client_guid }
             };
-            //make an engineer task to connect to the client send task name of ConnectSocks with arguments /address and /port which are the request.DestinationAddress, request.DestinationPort
-            var task = new EngineerTask(Guid.NewGuid().ToString(),"SocksConnect",args,null,false);
+            //make an implant task to connect to the client send task name of ConnectSocks with arguments /address and /port which are the request.DestinationAddress, request.DestinationPort
+            var task = new ExtImplantTask_Base(Guid.NewGuid().ToString(),"SocksConnect",args,null,false,false,true, null, "",implant.Metadata.Id);
 
             // add the task to the engineers task queue
-            //Console.WriteLine("Sending socks connect request to engineer");
-            engineer.QueueTask(task);
+            //Console.WriteLine("Sending socks connect request to implant");
+            implant.QueueTask(task);
 
-            // wait for the engineer to connect to the client
+            // wait for the implant to connect to the client
             while (!SocksDestinationConnected[client_guid])
             {
-                await Task.Delay(10);
+                await Task.Delay(2);
             }
-            
+
+            //Stopwatch Clientstopwatch = new Stopwatch();
+            //decimal ClientDataSentPerSecond = 0;
+            //decimal ClientnumberOfSendsPerSecond = 0;
+
+            //Stopwatch Deststopwatch = new Stopwatch();
+            //decimal DestDataSentPerSecond = 0;
+            //decimal DestnumberOfSendsPerSecond = 0;
             while (!_tokenSource.IsCancellationRequested)
             {
                 try
                 {
-                    ////if client is not connected check if it is in the dictionaries and if it is present then remove it from the dictionaries
-                    //if (!client.Connected)
-                    //{
-                    //    if (SocksClients.ContainsKey(client_guid))
-                    //    {
-                    //        SocksClients.TryRemove(client_guid, out var _);
-                    //        SocksClientsData.TryRemove(client_guid, out var _);
-                    //    }
-                    //    break;
-                    //}
                     
                     // read from client
                     if (client.DataAvailable())
                     {
                         var req = await client.ReceiveData(_tokenSource.Token);
-
-                        // make an engineer task send it the req as a base64 string in its arguments with the key of /req
-                        var task2 = new EngineerTask(Guid.NewGuid().ToString(),"SocksSend",new Dictionary<string, string>
+                        //used to get the average amount of data and number of sends per second to me from the client end
+                        //if (!Deststopwatch.IsRunning)
+                        //{
+                        //    Deststopwatch.Start();
+                        //}
+                        //DestDataSentPerSecond += req.Length;
+                        //DestnumberOfSendsPerSecond++;
+                        //if (Deststopwatch.ElapsedMilliseconds >= 10000)
+                        //{
+                        //    //should only print every 10 seconds so we dont spam the console
+                        //    Console.WriteLine($"Data obtained from client end per second: {DestDataSentPerSecond / 10}");
+                        //    Console.WriteLine($"Number of sends obtained from client end per second: {DestnumberOfSendsPerSecond / 10}");
+                        //    DestDataSentPerSecond = 0;
+                        //    DestnumberOfSendsPerSecond = 0;
+                        //    Deststopwatch.Reset();
+                        //}
+                        // make an implant task send it the req as a base64 string in its arguments with the key of /req
+                        var task2 = new ExtImplantTask_Base(Guid.NewGuid().ToString(),"SocksSend",new Dictionary<string, string>
                         {
                             {"/client", client_guid }
-                        },req, false);
+                        },req, false,false,false,null, "",implant.Metadata.Id);
                         
                         // add the task to the engineers task queue
-                        engineer.QueueTask(task2);
-                        //Console.WriteLine($"sending engineer {req.Length} bytes from client {client_guid}");
+                        implant.QueueTask(task2);
+                        //Console.WriteLine($"sending implant {req.Length} bytes from client {client_guid}");
                     }
 
                     // in a thread safe way find the clients with data to send and send it if the client is still connected
                     if (!SocksClientsData[client_guid].IsEmpty)
                     {
                         SocksClientsData[client_guid].TryDequeue(out var data);
+                        //start the stopwatch if it is not already running, every 10 seconds that data is sent increment the DataSentPerSecond variable,
+                        //print the amount of data in bytes sent per second and reset the stopwatch and DataSentPerSecond variables
+                        //if (!Clientstopwatch.IsRunning)
+                        //{
+                        //    Clientstopwatch.Start();
+                        //}
+                        //ClientDataSentPerSecond += data.Length;
+                        //ClientnumberOfSendsPerSecond++;
+                        //if (Clientstopwatch.ElapsedMilliseconds >= 10000)
+                        //{
+                        //    //should only print every 10 seconds so we dont spam the console
+                        //    Console.WriteLine($"Data sent to client end per second: {ClientDataSentPerSecond / 10}");
+                        //    Console.WriteLine($"Number of sends to client end per second: {ClientnumberOfSendsPerSecond / 10}");
+                        //    ClientDataSentPerSecond = 0;
+                        //    ClientnumberOfSendsPerSecond = 0;
+                        //    Clientstopwatch.Reset();
+                        //}
                         //Console.WriteLine($"sending {data.Length} bytes to client {client_guid}");
                         await client.SendData(data, _tokenSource.Token);
                     }
@@ -236,7 +276,7 @@ namespace TeamServer.Utilities
         {
             Client = client;
             Destination = destination;
-            Buffer = new byte[131070];
+            Buffer = new byte[Socks4Proxy.TrafficSize];
         }
     }
 
@@ -252,7 +292,7 @@ namespace TeamServer.Utilities
 
             do
             {
-                var buf = new byte[131070];
+                var buf = new byte[Socks4Proxy.TrafficSize];
                 read = await ns.ReadAsync(buf, 0, buf.Length, token);
 
                 if (read == 0)
@@ -260,7 +300,7 @@ namespace TeamServer.Utilities
 
                 await ms.WriteAsync(buf, 0, read, token);
 
-            } while (read >= 131070);
+            } while (read >= Socks4Proxy.TrafficSize);
 
             return ms.ToArray();
         }

@@ -1,20 +1,17 @@
-using System.Net.Security;
-using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using Blazored.LocalStorage;
 using Blazored.Toast;
 using HardHatC2Client.Services;
 using HardHatC2Client.Utilities;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 using RestSharp;
 using MudBlazor.Services;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Server.Kestrel.Https;
-using RestSharp.Authenticators;
-using MudExtensions.Services;
+using HardHatC2Client.Plugin_Management;
 using MudBlazor.Extensions;
+using MudBlazor;
+using System.Diagnostics;
+using System.Security;
+using ICSharpCode.Decompiler.IL;
 
 internal class Program
 {
@@ -23,6 +20,7 @@ internal class Program
         var builder = WebApplication.CreateBuilder(args);
 
         // Add services to the container.
+        PluginService.InitPlugins();
         builder.Services.AddRazorPages();
         builder.Services.AddServerSideBlazor();
         // if args[0] is null then options is http://localhost:5000 else its args[0]
@@ -39,8 +37,11 @@ internal class Program
         builder.Services.AddBlazoredLocalStorage();
         builder.Services.AddSignalR();
         builder.Services.AddMudServices();
-        builder.Services.AddMudExtensions();
-        //builder.Services.AddMudServicesWithExtensions();
+        builder.Services.AddMudMarkdownServices();
+        MudExtensions.Services.ExtensionServiceCollectionExtensions.AddMudExtensions(builder.Services);
+        MudBlazor.Extensions.ServiceCollectionExtensions.AddMudExtensions(builder.Services);
+ 
+
 
         options.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
         builder.Services.AddSingleton(new RestClient(new HttpClient(new HttpClientHandler { ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true }), options));
@@ -50,7 +51,18 @@ internal class Program
 
         builder.Services.AddScoped<AuthenticationStateProvider, MyAuthenticationStateProviderService>();
 
-        await CertGen.GeneerateCert();
+        //only generate cert if it doesnt exist
+        await CertGen.SetCertificatePath();
+        if (!File.Exists(CertGen.CertificatePath))
+        {
+            Console.WriteLine("Generating Cert");
+            await CertGen.GenerateCert();
+        }
+        else
+        {
+            Console.WriteLine("Loading Cert");
+            await CertGen.LoadExistingCert();
+        }
         builder.WebHost.ConfigureKestrel(serverOptions =>
                         {
                             serverOptions.ConfigureEndpointDefaults(listenOptions =>
@@ -60,6 +72,38 @@ internal class Program
                             });
                         });
         var app = builder.Build();
+
+        //read the appsettings.json file for the AutoInstallCert option
+        var config = new ConfigurationBuilder().AddJsonFile("appsettings.json", optional: false).Build();
+        
+        //if AutoInstallCert is true then install the cert to the root store
+        if (config.GetValue<bool>("AutoInstallCert"))
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    using (var store = new X509Store(StoreName.Root, StoreLocation.LocalMachine))
+                    {
+                        Console.WriteLine("Adding cert to root store");
+                        store.Open(OpenFlags.ReadWrite);
+                        store.Add(CertGen.cert);
+                        Console.WriteLine("Cert added to root store");
+                        store.Close();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(ex.StackTrace);
+                }
+            });
+        }
+        else
+        {
+            Console.WriteLine("AutoInstallCert is false, if you wish to automatically trust the cert edit the appsettings.json file");
+        }
+        
 
         // Configure the HTTP request pipeline.
         if (!app.Environment.IsDevelopment())
@@ -79,7 +123,7 @@ internal class Program
 
         app.MapBlazorHub();
         app.MapFallbackToPage("/_Host");
-
+        app.UseMudExtensions();
         app.Run();
     }
 }

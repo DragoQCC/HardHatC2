@@ -7,8 +7,8 @@ namespace TeamServer.Models.Dbstorage
     [Table("HttpManager")]
     public class HttpManager_DAO
     {
-        [Column("Id"), PrimaryKey, AutoIncrement]
-        public int Id { get; set; }
+        [Column("Id"), PrimaryKey]
+        public string Id { get; set; }
         
         [Column("Name")]
         public string Name { get; set; } // properties allows us to get Name when manager is created later so set will go with creation functions later
@@ -39,6 +39,7 @@ namespace TeamServer.Models.Dbstorage
         {
             return new Httpmanager
             {
+                Id = dao.Id,
                 Name = dao.Name,
                 ConnectionPort = dao.ConnectionPort,
                 ConnectionAddress = dao.ConnectionAddress,
@@ -55,6 +56,7 @@ namespace TeamServer.Models.Dbstorage
         {
             return new HttpManager_DAO
             {
+                Id = manager.Id,
                 Name = manager.Name,
                 ConnectionPort = manager.ConnectionPort,
                 ConnectionAddress = manager.ConnectionAddress,

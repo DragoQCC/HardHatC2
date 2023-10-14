@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 
 namespace HardHatC2Client.Models
 {
-    public class Engineer
+    public class Engineer 
     {
         public EngineerMetadata engineerMetadata { get; set;}           
         public int Number { get; set; }

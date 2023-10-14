@@ -1,5 +1,7 @@
 ﻿@using HardHatC2Client.Models;
 @using HardHatC2Client.Pages;
+@using HardHatC2Client.Plugin_BaseClasses;
+@using HardHatC2Client.Plugin_Interfaces;
 @using MudBlazor
 @using System.Collections.Generic
 @using HardHatC2Client.Services
@@ -17,63 +19,63 @@
 
 
 
-@if (HideOfflineEngineers)
+@if (HideOfflineImplants)
 {
-    EngineerDisplayList = AvalibleEngineers.Where(x => x.Status == "Active").ToList();
+    ImplantDisplayList = AvalibleImplants.Where(x => x.Status == "Active").ToList();
 }
 else
 {
-    EngineerDisplayList = AvalibleEngineers.ToList();
+    ImplantDisplayList = AvalibleImplants.ToList();
 }
 <MudDialog>
     <DialogContent>
         <div class="container-fluid d-flex flex-grow-1" style="height:500px; overflow-y:scroll">
-        <MudTable Style="width:100%;" Height="400px" Class="flex-auto" Breakpoint="Breakpoint.None" Items="@EngineerDisplayList" HorizontalScrollbar="true" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Elevation="10" Outlined="true" Striped="true" T="Engineer" Filter="new Func<Engineer,bool>(FilterFunc1)" SortLabel="Sort By">
+        <MudTable Style="width:100%;" Height="400px" Class="flex-auto" Breakpoint="Breakpoint.None" Items="@ImplantDisplayList" HorizontalScrollbar="true" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Elevation="10" Outlined="true" Striped="true" Filter="new Func<ExtImplant_Base,bool>(FilterFunc1)" SortLabel="Sort By">
             <ToolBarContent>
                 <MudText Typo="Typo.h6">Implants</MudText>
                 <MudSpacer />
-                <MudToggleIconButton @bind-Toggled="@HideOfflineEngineers" Color="Color.Primary" Icon="@Icons.Material.Filled.Visibility" ToggledIcon="@Icons.Material.Filled.VisibilityOff" Title="Hide Offline Engineers" ToggledTitle="Hide Offline Engineers" />
+                    <MudToggleIconButton @bind-Toggled="@HideOfflineImplants" Color="Color.Primary" Icon="@Icons.Material.Filled.Visibility" ToggledIcon="@Icons.Material.Filled.VisibilityOff" Title="Hide Offline ExtImplant_Bases" ToggledTitle="Hide Offline ExtImplant_Bases" />
                 <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
             </ToolBarContent>
             <HeaderContent>
                 <MudTh>Add</MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Engineer, object>(x => x.Number)">#</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x => x.Number)">#</MudTableSortLabel></MudTh>
                 <MudTh></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Status)">Status</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.ExternalAddress)">External Address</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.ManagerName)">Manager</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.ConnectionType)">Connection Type</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Address)">Address</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Hostname)">hostname</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Username)">username</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.ProcessName)">process</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.ProcessId)">pid</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Integrity)">Integrity</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Arch)">arch</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.Sleep)">Sleep Time</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.LastSeen)">lastseen</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Engineer, object>(x=>x.FirstSeen)">firstseen</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Status)">Status</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.ExternalAddress)">External Address</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.ManagerName)">Manager</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.ConnectionType)">Connection Type</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Address)">Address</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Hostname)">hostname</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Username)">username</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.ProcessName)">process</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.ProcessId)">pid</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Integrity)">Integrity</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Arch)">arch</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Sleep)">Sleep Time</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.LastSeen)">lastseen</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.FirstSeen)">firstseen</MudTableSortLabel></MudTh>
             </HeaderContent>
             <RowTemplate Context="Rowcontext">
                 <MudTd> 
-                        <MudToggleIconButton ToggledChanged="(x)=>OnEngineerAddedChanged(x,Rowcontext)" Icon="@Icons.Material.Filled.Add" Color="@Color.Primary" Title="Off"
+                        <MudToggleIconButton ToggledChanged="(x)=>OnImplantAddedChanged(x,Rowcontext)" Icon="@Icons.Material.Filled.Add" Color="@Color.Primary" Title="Off"
                             ToggledIcon="@Icons.Material.Filled.Check" ToggledColor="@Color.Success" ToggledTitle="On" /> 
                 </MudTd>
                 <MudTd>@Rowcontext.Number</MudTd>
-                <MudTd><MudIcon Size="Size.Small" Class="mb-2 ms-2" Icon=@Icons.Material.Outlined.DesktopWindows Color=@Engineers.SetColor(Rowcontext.Integrity)></MudIcon></MudTd>
+                    <MudTd><MudIcon Size="Size.Small" Class="mb-2 ms-2" Icon=@Icons.Material.Outlined.DesktopWindows Color=@Implants.SetColor(Rowcontext.Metadata.Integrity)></MudIcon></MudTd>
                 <MudTd>@Rowcontext.Status</MudTd>
                 <MudTd>@Rowcontext.ExternalAddress</MudTd>
-                <MudTd>@Rowcontext.ManagerName</MudTd>
-                <MudTd>@Rowcontext.ConnectionType @Engineers.FindManager(Rowcontext,Rowcontext.ManagerName)</MudTd>
-                <MudTd>@Rowcontext.Address</MudTd>
-                <MudTd>@Rowcontext.Hostname</MudTd>
-                <MudTd>@Rowcontext.Username</MudTd>
-                <MudTd>@Rowcontext.ProcessName</MudTd>
-                <MudTd>@Rowcontext.ProcessId</MudTd>
-                <MudTd>@Rowcontext.Integrity</MudTd>
-                <MudTd>@Rowcontext.Arch</MudTd>
-                <MudTd>@Rowcontext.Sleep sec</MudTd>
-                <MudTd>@Engineers.LastSeenTimer(Rowcontext)</MudTd>
+                    <MudTd>@Rowcontext.Metadata.ManagerName</MudTd>
+                    <MudTd>@Rowcontext.ConnectionType @Implants.FindManager(Rowcontext,Rowcontext.Metadata.ManagerName)</MudTd>
+                    <MudTd>@Rowcontext.Metadata.Address</MudTd>
+                    <MudTd>@Rowcontext.Metadata.Hostname</MudTd>
+                    <MudTd>@Rowcontext.Metadata.Username</MudTd>
+                    <MudTd>@Rowcontext.Metadata.ProcessName</MudTd>
+                    <MudTd>@Rowcontext.Metadata.ProcessId</MudTd>
+                    <MudTd>@Rowcontext.Metadata.Integrity</MudTd>
+                    <MudTd>@Rowcontext.Metadata.Arch</MudTd>
+                    <MudTd>@Rowcontext.Metadata.Sleep sec</MudTd>
+                <MudTd>@Implants.LastSeenTimer(Rowcontext)</MudTd>
                 <MudTd>@Rowcontext.FirstSeen</MudTd>
             </RowTemplate>
         </MudTable>
@@ -87,54 +89,54 @@ else
 
 
 @code {
-    List<Engineer> selectedEngineers = new();
-    List<Engineer> AvalibleEngineers = Engineers.EngineerList.ToList().Where(x => !(Interact.InteractEngineers.Contains(x))).ToList();
-    List<Engineer> EngineerDisplayList = new();
+    List<ExtImplant_Base> selectedImplants = new();
+    List<ExtImplant_Base> AvalibleImplants = Implants.ImplantList.ToList().Where(x => !(ImplantInteract.InteractImplants.Contains(x))).ToList();
+    List<ExtImplant_Base> ImplantDisplayList = new();
     [CascadingParameter] MudDialogInstance MudDialog { get; set; }
-    public static bool HideOfflineEngineers { get; set; }
+    public static bool HideOfflineImplants { get; set; }
     private string searchString1 = "";
 
 
-    public void OnEngineerAddedChanged(bool added, Engineer engineer)
+    public void OnImplantAddedChanged(bool added, ExtImplant_Base implant)
     {
         if (added)
         {
-            selectedEngineers.Add(engineer);
+            selectedImplants.Add(implant);
         }
         else
         {
-            selectedEngineers.Remove(engineer);
+            selectedImplants.Remove(implant);
         }
     }
 
-    private bool FilterFunc1(Engineer search) => FilterFunc(search, searchString1);
+    private bool FilterFunc1(ExtImplant_Base search) => FilterFunc(search, searchString1);
 
-    private bool FilterFunc(Engineer search, string searchString)
+    private bool FilterFunc(ExtImplant_Base search, string searchString)
     {
         if (string.IsNullOrWhiteSpace(searchString))
             return true;
         //for each element in the array if it contains searchString then return true
-        if (search.Id.ToLower().Contains(searchString.ToLower()))
+        if (search.Metadata.Id.ToLower().Contains(searchString.ToLower()))
         {
             return true;
         }
-        if (search.Sleep.ToString().ToLower().Contains(searchString.ToLower()))
+        if (search.Metadata.Sleep.ToString().ToLower().Contains(searchString.ToLower()))
         {
             return true;
         }
-        if (search.Address.ToLower().Contains(searchString.ToLower()))
+        if (search.Metadata.Address.ToLower().Contains(searchString.ToLower()))
         {
             return true;
         }
-        if (search.Arch.ToString().ToLower().Contains(searchString.ToLower()))
+        if (search.Metadata.Arch.ToString().ToLower().Contains(searchString.ToLower()))
         {
             return true;
         }
-        if (search.Hostname.ToLower().Contains(searchString.ToLower()))
+        if (search.Metadata.Hostname.ToLower().Contains(searchString.ToLower()))
         {
             return true;
         }
-        if (search.Integrity.ToLower().Contains(searchString.ToLower()))
+        if (search.Metadata.Integrity.ToLower().Contains(searchString.ToLower()))
         {
             return true;
         }
@@ -142,19 +144,19 @@ else
         {
             return true;
         }
-        if (search.ManagerName.ToLower().Contains(searchString.ToLower()))
+        if (search.Metadata.ManagerName.ToLower().Contains(searchString.ToLower()))
         {
             return true;
         }
-        if (search.Username.ToLower().Contains(searchString.ToLower()))
+        if (search.Metadata.Username.ToLower().Contains(searchString.ToLower()))
         {
             return true;
         }
-        if (search.ProcessId.ToString().ToLower().Contains(searchString.ToLower()))
+        if (search.Metadata.ProcessId.ToString().ToLower().Contains(searchString.ToLower()))
         {
             return true;
         }
-        if (search.ProcessName.ToLower().Contains(searchString.ToLower()))
+        if (search.Metadata.ProcessName.ToLower().Contains(searchString.ToLower()))
         {
             return true;
         }
@@ -170,9 +172,13 @@ else
         {
             return true;
         }
+        if (search.ImplantType.ToLower().Contains(searchString.ToLower()))
+        {
+            return true;
+        }
         return false;
     }
 
-    void Submit() => MudDialog.Close(DialogResult.Ok(selectedEngineers));
+    void Submit() => MudDialog.Close(DialogResult.Ok(selectedImplants));
     void Cancel() => MudDialog.Cancel();
 }

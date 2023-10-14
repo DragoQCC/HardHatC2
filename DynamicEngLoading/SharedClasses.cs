@@ -15,6 +15,8 @@ namespace DynamicEngLoading
     {
         public abstract string Name { get; }
 
+        public virtual bool IsHidden { get; set; } = false;
+
         public abstract Task Execute(EngineerTask task);
     }
 
@@ -59,7 +61,7 @@ namespace DynamicEngLoading
 
         public bool IsHidden { get; set; }
 
-        public string EngineerId { get; set; }
+        public string ImplantId { get; set; }
 
         public EngTaskStatus Status { get; set; }
 
@@ -82,6 +84,9 @@ namespace DynamicEngLoading
         ProcessItem,
         TokenStoreItem,
         FilePart,
+        DataChunk,
+        EditFile,
+        VncInteractionEvent,
     }
 
     public class FilePart
@@ -131,5 +136,43 @@ namespace DynamicEngLoading
         public string AccessControlType { get; set; } = "";
         public string FileSystemRights { get; set; } = "";
         public bool IsInherited { get; set; }
+    }
+
+    public class DataChunk
+    {
+        public int Type { get; set; } // 1 is a part, 2 marks we hit the last of the byte[] 
+        public int Position { get; set; } // Position of this chunk in the file
+        public int Length { get; set; } // Size of data in bytes
+        public byte[] Data { get; set; } // Actual data
+        public TaskResponseType RealResponseType { get; set; } //this is the og response type since the task would have its reponse type updated to DataChunk
+    }
+
+    public class EditFile
+    {
+        public string FileName { get; set; }
+        public string Content { get; set; }
+        public bool CanEdit { get; set; }
+    }
+
+    public class VncInteractionResponse
+    {
+        public string SessionID { get; set; }
+        public byte[] ScreenContent { get; set; }
+        public string ClipboardContent { get; set; }
+        public VncInteractionEvent InteractionEvent { get; set; }
+        public double ScreenWidth { get; set; }
+        public double ScreenHeight { get; set; }
+        public double MouseX { get; set; }
+        public double MouseY { get; set; }
+    }
+
+    public enum  VncInteractionEvent
+    {
+        View,
+        MouseClick,
+        MouseMove,
+        KeySend,
+        clipboard,
+        clipboardPaste,
     }
 }
