@@ -49,7 +49,7 @@ namespace TeamServer.Services
             var result = await userStore.CreateAsync(user, new CancellationToken());
             await userStore.SetPasswordSaltAsync(user, salt);
             await userStore.AddToRoleAsync(user, "Administrator", new CancellationToken());
-            Console.WriteLine($"[**] HardHat_Admin's password is {AdminPass}, make sure to save this password, as on the next start of the server it will not be displayed again [**]");
+            Console.WriteLine($"[**] {AdminUsername}'s password is {AdminPass}, make sure to save this password, as on the next start of the server it will not be displayed again [**]");
 
             // If password not set via environment variable, print randomly generated password
             bool gotPasswordFromEnv = Environment.GetEnvironmentVariable("HARDHAT_ADMIN_PASSWORD") != null;
