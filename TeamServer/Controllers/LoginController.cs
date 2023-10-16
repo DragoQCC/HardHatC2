@@ -21,10 +21,12 @@ namespace TeamServer.Controllers
         {
             //create an instance of the UserStore and check if the user exists
             UserStore userStore = new UserStore();
-            var user = await userStore.FindByNameAsync(request.Username,new CancellationToken());
+            var user = await userStore.FindByNameAsync(request.Username, new CancellationToken());
             if (user != null)
             {
-                string token = await Authentication.SignIn(user,request.PasswordHash);
+                byte[] salt = await UserStore.GetUserPasswordSalt(request.Username);
+                string PasswordHash = Utilities.Hash.HashPassword(request.Password, salt);
+                string token = await Authentication.SignIn(user, PasswordHash);
                 //if the user exists check if the password hash matches the one in the store
                 if (!string.IsNullOrEmpty(token))
                 {
