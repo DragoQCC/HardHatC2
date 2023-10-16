@@ -44,7 +44,7 @@ namespace TeamServer.Services
             }
             string AdminPass = Environment.GetEnvironmentVariable("HARDHAT_ADMIN_PASSWORD") ?? Encryption.GenerateRandomString(20);
             var passwordHash = MyPasswordHasher.HashPassword(AdminPass, out byte[] salt);
-            UserInfo user = new UserInfo { Id = Guid.NewGuid().ToString(), UserName = "HardHat_Admin", NormalizedUserName = "HardHat_Admin".Normalize().ToUpperInvariant(), PasswordHash = passwordHash };
+            UserInfo user = new UserInfo { Id = Guid.NewGuid().ToString(), UserName = AdminUsername, NormalizedUserName = AdminUsername.Normalize().ToUpperInvariant(), PasswordHash = passwordHash };
             
             var result = await userStore.CreateAsync(user, new CancellationToken());
             await userStore.SetPasswordSaltAsync(user, salt);

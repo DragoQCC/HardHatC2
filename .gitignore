@@ -369,3 +369,4 @@ FodyWeavers.xsd
 /TeamServer/Models/Engineers/EngineerCommands
 /TeamServer/temp
 *.bin
+RivetAsset/.idea/workspace.xml
