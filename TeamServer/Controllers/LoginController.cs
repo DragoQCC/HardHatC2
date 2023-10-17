@@ -12,12 +12,12 @@ using ApiModels.Shared;
 
 namespace TeamServer.Controllers
 {
-    [AllowAnonymous]
     [ApiController]
     [Route("[Controller]")]
     public class LoginController : ControllerBase
     {
         [HttpPost]
+        [AllowAnonymous]
         public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request)
         {
             //create an instance of the UserStore and check if the user exists
