@@ -11,7 +11,7 @@ namespace Engineer.Commands
 
         public override async Task Execute(EngineerTask task)
         {
-            Console.WriteLine()
+            Console.WriteLine();
             ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("hello from custom command", task, EngTaskStatus.Complete,TaskResponseType.String);
             return;
         }
