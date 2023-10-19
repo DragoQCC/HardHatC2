@@ -34,8 +34,7 @@ bld/
 [Ll]ogs/
 /*.exe
 *.txt
-TeamServer/temp/*.exe
-TeamServer/wwwroot/*
+
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
@@ -370,3 +369,17 @@ FodyWeavers.xsd
 /TeamServer/temp
 *.bin
 RivetAsset/.idea/workspace.xml
+
+#other
+/.idea/ 
+Assets/
+TeamServer/temp/
+TeamServer/wwwroot/
+TeamServer/Certificates/
+TeamServer/database/
+TeamServer/logs/
+TeamServer/Plugins/
+HardHatC2Client/Certificates/
+HardHatC2Client/Downloads/
+HardHatC2Client/Plugins/
+

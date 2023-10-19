@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.Composition.Hosting;
+﻿using System;
+using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Reflection;
 using TeamServer.Plugin_BaseClasses;
@@ -20,6 +21,7 @@ namespace TeamServer.Plugin_Management
             directoryCatalog.Refresh();
             _container = new CompositionContainer(catalog);
             pluginHub = _container.GetExportedValue<IPluginHub>();
+            Console.WriteLine("Plugins Refreshed");
         }
 
         public static void InitPlugins()
@@ -35,6 +37,7 @@ namespace TeamServer.Plugin_Management
             catalog.Catalogs.Add(directoryCatalog);
             _container = new CompositionContainer(catalog);
             pluginHub = _container.GetExportedValue<IPluginHub>();
+            Console.WriteLine("Plugins loaded");
         }
 
         public static ExtImplantService_Base GetImpServicePlugin(string pluginName)

@@ -35,7 +35,7 @@ namespace TeamServer.Controllers
                 {
                     PasswordHash = request.PasswordHash;
                 }
-                string token = await Authentication.SignIn(user, PasswordHash);
+                string token = await Authentication.SignIn(user,PasswordHash);
                 //if the user exists check if the password hash matches the one in the store
                 if (!string.IsNullOrEmpty(token))
                 {

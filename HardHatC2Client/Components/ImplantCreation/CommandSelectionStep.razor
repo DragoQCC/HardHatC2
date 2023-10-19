@@ -1,0 +1,25 @@
+﻿@using MudExtensions.Enums
+@inherits ImplantCreation;
+
+<MudStep Icon="@MaterialDesignIcons.Normal.Cog" Title="Commands">
+    <ChildContent>
+        <MudForm @ref="ImpCommandForm" @bind-IsValid="@success">
+            <MudTransferList Class="d-flex align-center justify-center" MaxItems="10" T="string" @bind-StartCollection="ImpCommandList" EndCollection="selectedImpCommandList" Color="Color.Primary"
+                              StyleListCommon="background-color: var(--mud-palette-background-grey); width: 300px" MultiSelection="true" SelectAllType="SelectAllType.Buttons"
+                                OrderFunc="@OrderCheckFunc" ButtonVariant="Variant.Text" AllowDoubleClick="false" />
+        </MudForm>
+    </ChildContent>
+</MudStep>
+
+@code {
+
+    [Parameter,EditorRequired]
+    public MudForm ImpCommandForm { get; set; }
+
+    [Parameter, EditorRequired]
+    public ICollection<string> ImpCommandList { get; set; }
+
+    [Parameter,EditorRequired]
+    public Func<ICollection<string>, ICollection<string>> OrderCheckFunc { get; set; }
+
+}

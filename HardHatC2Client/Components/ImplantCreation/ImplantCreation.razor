@@ -1,0 +1,227 @@
+﻿@using ApiModels.Plugin_BaseClasses;
+@using ApiModels.Requests;
+@using ApiModels.Shared;
+@using HardHatC2Client.Models;
+@using HardHatC2Client.Pages;
+@using HardHatC2Client.Plugin_Management;
+@using HardHatC2Client.Utilities;
+@using MudExtensions.Enums;
+@using RestSharp;
+@using System.Text;
+@using HardHatC2Client.Plugin_BaseClasses
+@using System.Collections.ObjectModel
+
+<div class="container-fluid">
+    <h3>Create New Implant</h3>
+    <hr>
+
+    <MudStepper @ref=Stepper Class="mud-width-full" HeaderSize="Size.Large" Color="Color.Primary" Variant="Variant.Filled" HeaderTextView="MudExtensions.Enums.HeaderTextView.All" PreventStepChangeAsync="stepChangeFunc">
+            <ChildContent>
+                <MudStep Icon="@MaterialDesignIcons.Normal.Wrench" Title="Implant Type">
+                    <ChildContent>
+                        <MudForm @ref="_form1" @bind-IsValid="@success">
+                            <!-- Selection of implant names to use for the rest of the build steps -->
+                            <MudSelectExtended ValuePresenter="ValuePresenter.Text" Clearable="true" Class="mb-4 mt-4" T="string" Label="Implant Type" Variant="Variant.Filled" Required="true" @bind-value="ImplantName" RequiredError="Type is required!">
+                                @foreach (var CreationPlugin in Plugin_Management.PluginService.pluginHub.ImplantCreation_Plugins)
+                                {
+                                    string displayname = CreationPlugin.Metadata.Name;
+                                    if (displayname.Equals("Default",StringComparison.CurrentCultureIgnoreCase))
+                                    {
+                                        displayname = "Engineer";
+                                    }
+                                    <MudSelectItemExtended Value="@CreationPlugin.Metadata.Name"> @displayname </MudSelectItemExtended>
+                                }
+                            </MudSelectExtended>
+                            <!-- Operating Systems the selected implant supports, is done here so if required the commands and module steps can adapt their content to the right OS -->
+                            @if (string.IsNullOrEmpty(ImplantName) is false)
+                            {
+                                impCreationData =  PluginService.GetImplantCreationPluginData(ImplantName);
+                                <MudSelectExtended ValuePresenter="ValuePresenter.Text" Clearable="true" Class="mb-4 mt-4" T="string" Label="Implant OS Target" Variant="Variant.Filled" Required="true" @bind-value="formData.implantOsType" RequiredError="Type is required!">
+                                    @foreach(var supportedOs in impCreationData.SupportedOperatingSystems)
+                                    {
+                                    <MudSelectItemExtended Value="@supportedOs"> @supportedOs </MudSelectItemExtended>
+                                    }    
+                                </MudSelectExtended>
+                            }
+                        </MudForm>
+                    </ChildContent>
+                </MudStep>
+                @if (string.IsNullOrEmpty(formData.implantOsType) is false && string.IsNullOrEmpty(ImplantName) is false)
+                {
+                    <!-- This is where the per implant specific steps are loaded from the plugins -->
+                    <DynamicComponent Type="@PluginService.GetImplantCreationPlugin(ImplantName).GetComponentType()"/>
+                }
+            </ChildContent>
+            <!-- Action content resets the forms, and stepper, and sends off the compile options to the implants page and team server-->
+            <ActionContent>
+                @if (Stepper.IsAllStepsCompleted() && success)
+                {
+                    ValidSubmitFunc();
+                    //reset each form in each step
+                    foreach (var form in stepperForms)
+                    {
+                        form.ResetAsync();
+                    }
+                    stepperForms = new List<MudForm>();
+                    selectedImpCommandList = new ObservableCollection<string>();
+                    selectedImpModuleList = new ObservableCollection<string>();
+                    ImplantName = "";
+                    Stepper.Reset();
+                }
+                <MudSpacer />
+            </ActionContent>
+        </MudStepper>
+    
+</div>
+
+@code {
+    //this is used to create a new implant
+    [Inject]
+    private IDialogService dialogService { get; set; }
+    [Inject]
+    private static RestClient _restClient { get; set; }
+
+    [Parameter]
+    public bool IsPostEx { get; set; } = false;
+
+    [CascadingParameter]
+    public MudDialogInstance Dialog { get; set; }
+
+    //a list of all the forms in the stepper, each step that requires any user input should have a form in this list so it can be reset
+    public static List<MudForm> stepperForms { get; set; } = new List<MudForm>();
+    //this is the data is passed after the stepper is complete so the implant can be created
+    public static ExtImplantCreateRequest_Base formData { get; set; } = new();
+
+    //a list of the selected commands if the implant supports command selection 
+    public static ObservableCollection<string> selectedImpCommandList { get; set; } = new ObservableCollection<string>();
+    //a list of the selected modules if the implant supports module selection
+    public static ObservableCollection<string> selectedImpModuleList { get; set; } = new ObservableCollection<string>();
+    // Metadata for the selected implant, includes things like supported OS, Comm Types, etc. 
+    public ImplantCreationBaseData impCreationData { get; set; }
+    // a func that is used so plugins may provide their own version of the submit function
+    public static Func<Task> ValidSubmitFunc { get; set; }
+    // a func that is used so plugins may provide their own version of the step change function
+    public static Func<StepChangeDirection, Task<bool>> stepChangeFunc { get; set; }
+    public static MudStepper Stepper { get; set; }
+    public MudForm _form1 { get; set; }
+    public static string ImplantName { get; set; } = "";
+    public bool success;
+    public string[] errors = { };
+    public MudMessageBox _incCommand_mbox;
+    public MudMessageBox _incModule_mbox;
+    public bool _loading;
+    // the commands for an an implant and their associated modules are loaded here so they can be used by the plugins
+    public static ICollection<string> RequiredImpCommandList;
+    public ICollection<string> ImpCommandList;
+    public static Dictionary<string, string> CommandModulePairs; 
+    public ICollection<string> ImpModuleList;
+    public static List<string> PostExCommandsThatSpawnNewImp = new();
+
+
+    public virtual async Task<bool> CheckChange(StepChangeDirection direction)
+    {
+        // Always allow stepping backwards, even if forms are invalid
+        if (direction == StepChangeDirection.Backward)
+        {
+            return false;
+        }
+        if (Stepper.GetActiveIndex() == 0)
+        {
+            _loading = true;
+            StateHasChanged();
+            await Task.Delay(100);
+            await _form1.Validate();
+            _loading = false;
+            StateHasChanged();
+            Console.WriteLine("Moving from step 1 to 2 " + _form1.IsValid);
+            return !_form1.IsValid;
+        }
+        else
+        {
+            Console.WriteLine($"Og Step check Current Index is {Stepper.GetActiveIndex()}");
+            return false;
+        }
+    }
+
+    public virtual ICollection<string> OrderMethod(ICollection<string> e)
+    {
+        return e.Order().ToList();
+    }
+
+    //check command and module pairs, if a command is in the selected list, check if its module is also selected
+    //if not return false, also check if a module is selected and its command is not, if so return false, print error in a message box
+    public virtual async Task<bool> CheckCommandModulePairs()
+    {
+        var cmdValidationPlugin = PluginService.GetCommandValidationPlugin(ImplantName);
+        var CommandModulePairs = cmdValidationPlugin.GetModuleCommandPairs();
+        foreach (var item in selectedImpCommandList)
+        {
+            if (CommandModulePairs.ContainsKey(item))
+            {
+                if (!selectedImpModuleList.Contains(CommandModulePairs[item]))
+                {
+                    await dialogService.ShowMessageBox("Error", $"You have selected a command ({item}) that requires a module, please select the module as well ({CommandModulePairs[item]})", yesText:"Ok");
+                    return false;
+                }
+            }
+        }
+        foreach (var item in selectedImpModuleList)
+        {
+            if (CommandModulePairs.ContainsValue(item))
+            {
+                if (!selectedImpCommandList.Contains(CommandModulePairs.FirstOrDefault(x => x.Value == item).Key))
+                {
+                    await dialogService.ShowMessageBox("Error", $"You have selected a module ({item}) that requires a command, please select the command as well ({CommandModulePairs.FirstOrDefault(x => x.Value == item).Key})", yesText: "Ok");
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    public virtual async Task validSubmit()
+    {
+        if (formData.managerName != null)
+        {
+            formData.implantType = ImplantName;
+            if (IsPostEx)
+            {
+                formData.IsPostEx = IsPostEx; // should be true if created via the postex dialog
+                formData.IncludedCommands = selectedImpCommandList.ToList();
+                formData.IncludedModules = selectedImpModuleList.ToList();
+
+                ImplantCreation_Dialog.PostExSpawnRequest.IsPostEx = formData.IsPostEx ?? false;
+                ImplantCreation_Dialog.PostExSpawnRequest.managerName = formData.managerName;
+                ImplantCreation_Dialog.PostExSpawnRequest.ConnectionAttempts = formData.ConnectionAttempts;
+                ImplantCreation_Dialog.PostExSpawnRequest.Sleep = formData.Sleep;
+                ImplantCreation_Dialog.PostExSpawnRequest.complieType = formData.complieType;
+                ImplantCreation_Dialog.PostExSpawnRequest.WorkingHours = formData.WorkingHours;
+                ImplantCreation_Dialog.PostExSpawnRequest.SleepType = formData.SleepType;
+                //if formData.selectedKillDate is null set to null else set to formData.selectedKillDate.Value.Date + formData.selectedKillTime
+                ImplantCreation_Dialog.PostExSpawnRequest.KillDateTime = formData.selectedKillDate is null ? null : (DateTime)(formData.selectedKillDate.Value.Date + formData.selectedKillTime);
+                ImplantCreation_Dialog.PostExSpawnRequest.IncludedCommands = formData.IncludedCommands;
+                ImplantCreation_Dialog.PostExSpawnRequest.IncludedModules = formData.IncludedModules;
+                ImplantCreation_Dialog.PostExSpawnRequest.IsChunkEnabled = formData.IsChunkEnabled ?? false;
+                ImplantCreation_Dialog.PostExSpawnRequest.ChunkSize = formData.ChunkSize ?? 0;
+                ImplantCreation_Dialog.PostExSpawnRequest.implantType = formData.implantType;
+                ImplantCreation_Dialog.PostExSpawnRequest.implantOsType = formData.implantOsType;
+                formData = new ExtImplantCreateRequest_Base();
+                Dialog.Close(DialogResult.Ok(true));
+                return;
+            }
+            await Implants.CreateImplant(formData, selectedImpCommandList.ToList(), selectedImpModuleList.ToList());
+            formData = new ExtImplantCreateRequest_Base();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if(!stepperForms.Any())
+        {
+            stepperForms.Add(_form1);
+            ValidSubmitFunc = validSubmit;
+            stepChangeFunc = CheckChange;
+        }
+    }
+    
+}

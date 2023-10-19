@@ -175,7 +175,6 @@
     <Compile Include="Commands\rportForward.cs" />
     <Compile Include="Commands\Run.cs" />
     <Compile Include="Commands\RunAs.cs" />
-    <Compile Include="Commands\Script.cs" />
     <Compile Include="Commands\Shell.cs" />
     <Compile Include="Commands\InlineShellcode.cs" />
     <Compile Include="Commands\Sleep.cs" />

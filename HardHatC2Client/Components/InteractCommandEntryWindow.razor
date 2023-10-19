@@ -15,6 +15,7 @@
 @using System.Linq;
 @using System.Diagnostics;
 @using ApiModels.Shared.TaskResultTypes;
+@using HardHatC2Client.Components.ImplantCreation
 
 
 @if (Settings._InteractInputMode == InteractInputMode.Classic)
@@ -80,6 +81,8 @@ else
     private IDialogService DialogService { get; set; }
     [Parameter]
     public ExtImplant_Base implant { get; set; }
+    [Parameter]
+    public EventCallback OnCommandSent { get; set; }
 
     public delegate Task OnWindowInteractSubmission();
     public static OnWindowInteractSubmission _onWindowInteractSubmission;
@@ -232,7 +235,7 @@ else
             }
 
             //check if createObject.Command is one of the postex that make a new implant
-            if (ImplantCreation_PluginContent.PostExCommandsThatSpawnNewImp.Contains(createObject.Command, StringComparer.InvariantCultureIgnoreCase))
+            if (ImplantCreation.ImplantCreation.PostExCommandsThatSpawnNewImp is not null && ImplantCreation.ImplantCreation.PostExCommandsThatSpawnNewImp.Contains(createObject.Command, StringComparer.InvariantCultureIgnoreCase))
             {
                 var diag_options = new DialogOptions { ClassBackground = "dialog-blur-class", MaxWidth = MaxWidth.Large, FullWidth = true, DisableBackdropClick = true };
                 //invoke async needs to used to trigger the render to work correctly from inside c# code
@@ -311,6 +314,7 @@ else
             {
                 //Console.WriteLine(resp.Content);
             });
+            ImplantInteract.RefreshImplantInteract.Invoke();
             _ = await Task.Run(() => Login._restClient.PostAsync(request));
         }
         catch (Exception ex)

@@ -65,7 +65,7 @@ public class CommandKey
 [Export(typeof(ImplantCommandValidation_Base))]
 [ExportMetadata("Name", "Default")]
 [ExportMetadata("Description", "This is the built in Implant Task Verification, override this if you neeed custom options when verifying tasks")]
-public class ImplantCommandValidation_Base
+public class ImplantCommandValidation_Base : IImplantCommandValidation
 {
     public static List<string> ManagerNames
     {
@@ -73,6 +73,36 @@ public class ImplantCommandValidation_Base
     }
 
     public static Dictionary<string,List<string>> ImplantLoadedCommands = new Dictionary<string, List<string>>();
+
+    public virtual List<string> GetRequiredCommandList()
+    {
+        return new List<string>() { "Addcommand", "AddModule", "connect", "CheckIn", "link", "FirstCheckIn", "exit", "socks", "rportforward", "canceltask", "GetCommands", "UpdateTaskKey" };
+    }
+
+    public virtual List<string> GetOptionalCommandList()
+    {
+        return CommandList.Select(x => x.Name).ToList().Except(GetRequiredCommandList(), StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    public virtual Dictionary<string,string> GetModuleCommandPairs()
+    {
+        return new Dictionary<string, string>() //keys are the command name, values are the corresponding modules
+        {
+            {"datachunking", "DataChunk" },
+            {"execute_bof", "BofExecution" }, 
+            //{ "Script","ScriptModule"} currently broken on engineer :(
+        };
+    }
+
+    public virtual List<string> GetOptionalModules()
+    {
+       return new List<string>() { "SleepEncrypt", "BofExecution", "DataChunk" };
+    }
+
+    public virtual List<string> GetPostExCommands()
+    {
+        return new List<string>() { "jump", "spawn", "inject" };
+    }
 
     public virtual List<CommandItem> DisplayHelp(Dictionary<string, string> input)
     {
@@ -1192,6 +1222,27 @@ public class ImplantCommandValidation_Base
             }
         },
     };
+    
+    public virtual List<string> GetContextChangingCommands()
+    {
+        return new List<string>() { "getsystem", "make_token", "steal_token", "rev2self" };
+    }
+
+}
+
+public interface IImplantCommandValidation
+{
+    List<CommandItem> CommandList { get; }
+
+    bool ValidateCommand(string input, out Dictionary<string, string> args, out string error);
+    List<string> GetPostExCommands();
+    List<string> GetOptionalModules();
+    Dictionary<string, string> GetModuleCommandPairs();
+    List<CommandItem> DisplayHelp(Dictionary<string, string> input);
+    List<string> GetOptionalCommandList();
+    List<string> GetRequiredCommandList();
+
+    List<string> GetContextChangingCommands();
 }
 
 public interface ImplantCommandValidationBaseData : IClientPluginData

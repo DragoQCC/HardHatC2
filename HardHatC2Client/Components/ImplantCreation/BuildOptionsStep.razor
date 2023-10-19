@@ -1,0 +1,166 @@
+﻿@using MudExtensions.Enums
+@using HardHatC2Client.Models
+@using HardHatC2Client.Pages
+@using ApiModels.Shared
+@using HardHatC2Client.Plugin_BaseClasses
+@using HardHatC2Client.Plugin_Management
+@inherits ImplantCreation;
+
+<MudStep Icon="@Icons.Material.Outlined.Construction" Title="Build Options">
+    <ChildContent>
+        <MudForm @ref="buildStepForm" @bind-IsValid="@success">
+            <MudSelectExtended ValuePresenter="ValuePresenter.Text"  T="string" Clearable="true" Label="Manager" AnchorOrigin="Origin.BottomCenter" Variant="Variant.Filled" Required="true" @bind-value="formData.managerName" RequiredError="Type is required!">
+                @if (impCreationData.SupportedCommTypes.Contains("http", StringComparer.CurrentCultureIgnoreCase))
+                {
+                    <MudSelectItemGroupExtended  T="string" Text="HTTP" Sticky="true" Nested="true">
+                        @foreach (Manager manager in @Managers.managersList.Where(x => x.Type == ManagerType.http))
+                        {
+                            <ItemTemplate>
+                                <MudStack Row="true" Justify="Justify.SpaceEvenly" AlignItems="AlignItems.Center">
+                                    <MudSelectItemExtended Value="@manager.Name" />
+                                    <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Address: @manager.ConnectionAddress</MudChip>
+                                    <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Port: @manager.ConnectionPort</MudChip>
+                                </MudStack>
+                            </ItemTemplate>
+                        }
+                    </MudSelectItemGroupExtended>
+                }
+                @if (impCreationData.SupportedCommTypes.Contains("https", StringComparer.CurrentCultureIgnoreCase))
+                {
+                    <MudSelectItemGroupExtended T="string" Text="HTTPS" Sticky="true" Nested="true">
+                        @foreach (Manager manager in @Managers.managersList.Where(x => x.Type == ManagerType.https))
+                        {
+                            <ItemTemplate>
+                                <MudStack Row="true" Justify="Justify.SpaceEvenly" AlignItems="AlignItems.Center">
+                                    <MudSelectItemExtended Value="@manager.Name" />
+                                    <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Address: @manager.ConnectionAddress</MudChip>
+                                    <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Port: @manager.ConnectionPort</MudChip>
+                                </MudStack>
+                            </ItemTemplate>
+                        }
+                    </MudSelectItemGroupExtended>
+                }
+                @if (impCreationData.SupportedCommTypes.Contains("tcp", StringComparer.CurrentCultureIgnoreCase))
+                {
+                <MudSelectItemGroupExtended T="string" Text="TCP" Sticky="true" Nested="true">
+                    @foreach (Manager manager in @Managers.managersList.Where(x => x.Type == ManagerType.tcp))
+                    {
+                        if (manager.connectionMode == ConnectionMode.reverse)
+                        {
+                            <ItemTemplate>
+                                <MudStack Row="true" Justify="Justify.SpaceEvenly" AlignItems="AlignItems.Center">
+                                    <MudSelectItemExtended Value="@manager.Name"/>
+                                    <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Direction: @manager.connectionMode</MudChip>
+                                    <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Address: @manager.ConnectionAddress</MudChip>
+                                    <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Port: @manager.ConnectionPort</MudChip>
+                                </MudStack>
+                            </ItemTemplate>
+                        }
+                        else if (manager.connectionMode == ConnectionMode.bind)
+                        {
+                            <ItemTemplate>
+                                <MudStack Row="true" Justify="Justify.SpaceEvenly" AlignItems="AlignItems.Center">
+                                    <MudSelectItemExtended Value="@manager.Name"/>
+                                    <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Direction: @manager.connectionMode</MudChip>
+                                    <MudChip Color="Color.Info" Variant="Variant.Outlined">Local Host Only ?: @manager.IsLocalHost</MudChip>
+                                    <MudChip Color="Color.Info" Variant="Variant.Outlined">Listening Port: @manager.ListenPort</MudChip>
+                                </MudStack>
+                            </ItemTemplate>
+                        }
+                    }
+                </MudSelectItemGroupExtended>
+                }
+                @if (impCreationData.SupportedCommTypes.Contains("smb", StringComparer.CurrentCultureIgnoreCase))
+                {
+                    <MudSelectItemGroupExtended T="string" Text="SMB" Sticky="true" Nested="true">
+                        @foreach (Manager manager in @Managers.managersList.Where(x => x.Type == ManagerType.smb))
+                        {
+
+                            <ItemTemplate>
+                                <MudStack Row="true" Justify="Justify.SpaceEvenly" AlignItems="AlignItems.Center">
+                                    <MudSelectItemExtended Value="@manager.Name"/>
+                                    <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Direction: @manager.connectionMode</MudChip>
+                                    <MudChip Color="Color.Info" Variant="Variant.Outlined">Named Pipe: @manager.NamedPipe</MudChip>
+                                    @if (manager.connectionMode == ConnectionMode.reverse)
+                                    {
+                                        <MudChip Color="Color.Info" Variant="Variant.Outlined">Connect Address: @manager.ConnectionAddress</MudChip>
+                                    }
+                                </MudStack>
+                            </ItemTemplate>
+                        }
+                    </MudSelectItemGroupExtended>
+                }
+            </MudSelectExtended>
+            @if (impCreationData.SupportsConnectionAttempts)
+            {
+                <MudTextField Clearable="true" Class="mb-4 mt-4" T="int?" Label="Connection Attempts" Variant="Variant.Filled" Required="true" @bind-value="formData.ConnectionAttempts" RequiredError="callback address is required!" />
+            }
+            <MudTextField Clearable="true" Class="mb-4 mt-4" T="int" Label="sleep timer" Variant="Variant.Filled" Required="true" @bind-value="formData.Sleep" RequiredError="port is required!" />
+            @if (impCreationData.SupportsKillDates)
+            {
+                <div class="d-flex">
+                    <MudDatePicker Variant="Variant.Filled" Class="mr-1 mb-4 mt-4" Clearable="true" Required="true" Label="Pick a kill date" @bind-Date="formData.selectedKillDate"></MudDatePicker>
+                <MudTimePicker Variant="Variant.Filled" Class="ml-1 mb-4 mt-4" Clearable="true" Label="Pick a time in UTC" Required="true" @bind-Time="formData.selectedKillTime"></MudTimePicker>
+            </div>
+            }
+            @if (IsPostEx && impCreationData.SupportsPostEx)
+            {
+            <MudSelectExtended Clearable="true" Class="mb-4 mt-4" T="ImpCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
+                @if (impCreationData.SupportedOutputTypes.Contains("exe", StringComparer.CurrentCultureIgnoreCase))
+                {
+                    <MudSelectItem Value="@(ImpCompileType.exe)" />
+                }
+                @if (impCreationData.SupportedOutputTypes.Contains("serviceexe", StringComparer.CurrentCultureIgnoreCase))
+                {
+                    <MudSelectItem Value="@(ImpCompileType.serviceexe)" />
+                }
+            </MudSelectExtended>
+            }
+            else
+            {
+                <MudSelectExtended Clearable="true" Class="mb-4 mt-4" T="ImpCompileType" Label="Compile Type" Variant="Variant.Filled" Required="true" @bind-value="formData.complieType" RequiredError="Type is required!">
+                @if (impCreationData.SupportedOutputTypes.Contains("exe", StringComparer.CurrentCultureIgnoreCase))
+                {
+                    <MudSelectItemExtended Value="@(ImpCompileType.exe)" />
+                }
+                @if (impCreationData.SupportedOutputTypes.Contains("serviceexe", StringComparer.CurrentCultureIgnoreCase))
+                {
+                    <MudSelectItemExtended Value="@(ImpCompileType.serviceexe)" />
+                }
+                @if (impCreationData.SupportedOutputTypes.Contains("bin", StringComparer.CurrentCultureIgnoreCase) || impCreationData.SupportedOutputTypes.Contains("shellcode",StringComparer.CurrentCultureIgnoreCase))
+                {
+                    <MudSelectItemExtended Value="@(ImpCompileType.shellcode)" />
+                }
+                @if (impCreationData.SupportedOutputTypes.Contains("dll", StringComparer.CurrentCultureIgnoreCase))
+                {
+                    <MudSelectItemExtended Value="@(ImpCompileType.dll)" />
+                }
+                @if (impCreationData.SupportedOutputTypes.Contains("powershellcmd", StringComparer.CurrentCultureIgnoreCase))
+                {
+                    <MudSelectItemExtended Value="@(ImpCompileType.powershellcmd)" />
+                }
+                </MudSelectExtended>
+            }
+            @if(formData.complieType == ImpCompileType.shellcode)
+            {
+                <MudCheckBox @bind-Checked="@formData.EncodeShellcode" Label="Encode Shellcode with SGN ?" Color="Color.Primary"></MudCheckBox>        
+            }
+        </MudForm>
+    </ChildContent>
+</MudStep>
+
+@code {
+    [Parameter, EditorRequired]
+    public MudForm buildStepForm { get; set; }
+    //private ImplantCreationBaseData impCreationData { get; set; }
+
+
+    protected override Task OnInitializedAsync()
+    {
+        if (impCreationData == null)
+        {
+            impCreationData = PluginService.GetImplantCreationPluginData(ImplantName);
+        }
+        return base.OnInitializedAsync();
+    }
+}

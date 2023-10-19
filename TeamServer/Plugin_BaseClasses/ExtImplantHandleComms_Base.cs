@@ -1,26 +1,20 @@
 ﻿using ApiModels.Plugin_BaseClasses;
 using ApiModels.Plugin_Interfaces;
 using ApiModels.Shared.TaskResultTypes;
-using Fasterflect;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.CodeAnalysis.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using TeamServer.Models;
 using TeamServer.Models.Dbstorage;
 using TeamServer.Models.Extras;
-using TeamServer.Models.TaskResultTypes;
 using TeamServer.Plugin_Interfaces.Ext_Implants;
-using TeamServer.Plugin_Management;
 using TeamServer.Services;
-using TeamServer.Services.Handle_Implants;
 using TeamServer.Utilities;
 using static SQLite.SQLite3;
 
@@ -55,7 +49,7 @@ namespace TeamServer.Plugin_BaseClasses
                     //This is where a new encryption key is made and a task is issued to the implant to update its encryption key
                     CreateNewEncKeyAndTaskUpdate(extImplant, extImplantService_Base);
                     extImplantService_Base.AddExtImplantToDatabase(extImplant);
-                    HardHatHub.InvokeNewCheckInWebhook(extImplant);
+                    await HardHatHub.InvokeNewCheckInWebhook(extImplant);
                 }
                 return extImplant;
             }
@@ -142,7 +136,7 @@ namespace TeamServer.Plugin_BaseClasses
                         byte[] encryptedC2MessageArray = new byte[0];
                         foreach (var taskedImp in TaskingImps)
                         {
-                            byte[] encryptedC2MessageArrayTemp = HandlePreProcAndPackageTasking(taskedImp);
+                            byte[] encryptedC2MessageArrayTemp = await HandlePreProcAndPackageTasking(taskedImp);
                             encryptedC2MessageArray = encryptedC2MessageArray.Concat(encryptedC2MessageArrayTemp).ToArray();
                         }
                         //Console.WriteLine($"At {DateTime.Now.ToString("dddd, dd MMMM yyyy HH:mm:ss:ff")} implant {extImplant.Metadata.Id} tasked");
@@ -150,7 +144,7 @@ namespace TeamServer.Plugin_BaseClasses
                     }
                     else if (extImplant.pendingTasks.Count() > 0)
                     {
-                        byte[] encryptedC2MessageArray = HandlePreProcAndPackageTasking(extImplant);
+                        byte[] encryptedC2MessageArray = await HandlePreProcAndPackageTasking(extImplant);
                         //Console.WriteLine($"At {DateTime.Now.ToString("dddd, dd MMMM yyyy HH:mm:ss:ff")} implant {extImplant.Metadata.Id} tasked");
                         return encryptedC2MessageArray;
                     }
@@ -161,7 +155,7 @@ namespace TeamServer.Plugin_BaseClasses
                 }
                 else if (extImplant.pendingTasks.Count() > 0)
                 {
-                    byte[] encryptedC2MessageArray = HandlePreProcAndPackageTasking(extImplant);
+                    byte[] encryptedC2MessageArray = await HandlePreProcAndPackageTasking(extImplant);
                     //Console.WriteLine($"At {DateTime.Now.ToString("dddd, dd MMMM yyyy HH:mm:ss:ff")} implant {extImplant.Metadata.Id} tasked");
                     return encryptedC2MessageArray;
                 }
@@ -279,7 +273,7 @@ namespace TeamServer.Plugin_BaseClasses
                             DatabaseService.ConnectDb();
                         }
                         await DatabaseService.AsyncConnection.InsertAsync((ExtImplantTaskResult_DAO)result);
-                        HardHatHub.AlertEventHistory(new HistoryEvent() { Event = $"Got response for task {result.Id}", Status = "Success" });
+                        await HardHatHub.AlertEventHistory(new HistoryEvent() { Event = $"Got response for task {result.Id}", Status = "Success" });
 
                         //off load the logging to a new thread so that the teamserver can continue the post request
                         Thread thread = new Thread(async () =>
@@ -346,14 +340,14 @@ namespace TeamServer.Plugin_BaseClasses
                     }
                     if (result.ImplantId == implant.Metadata.Id)
                     {
-                        implant.AddTaskResult(result);
+                        await implant.AddTaskResult(result);
                     }
                     else
                     {
                         var imp = ExtImplantService_Base._extImplants.Where(x => x.Metadata.Id == result.ImplantId).FirstOrDefault();
                         if (imp != null)
                         {
-                            imp.AddTaskResult(result);
+                            await imp.AddTaskResult(result);
                         }
                     }
                 }
@@ -370,7 +364,7 @@ namespace TeamServer.Plugin_BaseClasses
             
         }
 
-        public virtual byte[] HandlePreProcAndPackageTasking(ExtImplant_Base implant)
+        public virtual async Task<byte[]> HandlePreProcAndPackageTasking(ExtImplant_Base implant)
         {
             List<C2TaskMessage> c2TaskMessages = new List<C2TaskMessage>();
             var impTasks = implant.GetPendingTasks();
@@ -391,7 +385,7 @@ namespace TeamServer.Plugin_BaseClasses
                 {
                     task.File = new byte[0];
                 }
-                HardHatHub.AddTaskIdToPickedUpList(task.Id);
+                await HardHatHub.AddTaskIdToPickedUpList(task.Id);
                 if(extImplant_TaskPreProcess_Base.DetermineIfTaskPreProc(task))
                 {
                     extImplant_TaskPreProcess_Base.PreProcessTask(task, implant);

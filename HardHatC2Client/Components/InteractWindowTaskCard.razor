@@ -4,14 +4,18 @@
 @using HardHatC2Client.Plugin_BaseClasses
 
 <MudCardContent Style="background:#111111; color:white;">
-    @foreach (var currenttask in currentTasks)
+    @if (currentTasks is not null)
     {
-        ExtImplantTaskResult_Base? taskResult = null;
-        @if (ImplantInteract.TaskResultDic.TryGetValue(currenttask, out var _taskresult))
+        @foreach (var currenttask in currentTasks)
         {
-            taskResult = _taskresult;
+            ExtImplantTaskResult_Base? taskResult = null;
+            @if (ImplantInteract.TaskResultDic.TryGetValue(currenttask, out var _taskresult))
+            {
+                taskResult = _taskresult;
+            }
+            <InteractWindowContent @ref="@ImplantInteract.TaskPanels[currenttask.Id]" currenttask="@currenttask" commandHeaderText="@currenttask.TaskHeader" implant="@implant" CardContent="@taskResult"></InteractWindowContent>
         }
-        <InteractWindowContent @ref="@ImplantInteract.TaskPanels[currenttask.Id]" currenttask="@currenttask" commandHeaderText="@currenttask.TaskHeader" implant="@implant" CardContent="@taskResult"></InteractWindowContent>
+
     }
 </MudCardContent>
 

@@ -36,7 +36,7 @@ namespace TeamServer.Services
                 //usinf request.managerName to find the correct manager object and then get its BindAddress and BindPort from the manager object
                 //then using the BindAddress and BindPort to update the file
                 string managerName = request.managerName;
-                int connectionAttempts = request.ConnectionAttempts;
+                int connectionAttempts = request.ConnectionAttempts ?? 500;
                 int sleep = request.Sleep;
                 SleepTypes sleepType = request.SleepType;
                 string managerBindAddress = "";

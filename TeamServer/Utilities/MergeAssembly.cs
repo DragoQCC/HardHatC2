@@ -28,6 +28,5 @@ public class MergeAssembly
             Console.WriteLine(ex.Message);
             Console.WriteLine(ex.StackTrace);
         }
-      
     }
 }

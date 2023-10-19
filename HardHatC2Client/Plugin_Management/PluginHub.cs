@@ -9,7 +9,7 @@ namespace HardHatC2Client.Plugin_Management
     public class PluginHub : IPluginHub
     {
         [ImportMany]
-        public IEnumerable<Lazy<ImplantCreation_Base, ImplantCreationBaseData>> ImplantCreation_Plugins { get; set; }
+        public IEnumerable<Lazy<IimplantCreation, ImplantCreationBaseData>> ImplantCreation_Plugins { get; set; }
 
         [ImportMany]
         public IEnumerable<Lazy<ImplantCommandValidation_Base, ImplantCommandValidationBaseData>> ImplantTaskValidation_Plugins { get; set; }

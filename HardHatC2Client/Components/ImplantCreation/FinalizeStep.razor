@@ -1,0 +1,104 @@
+﻿@using ApiModels.Plugin_BaseClasses
+@inherits ImplantCreation;
+
+
+<MudStep Icon="@Icons.Material.Filled.Build" Title="Finalize & Submit">
+    <ChildContent>
+    @if(formData != null)
+    {
+        <!-- for each item in formData print the property name and its value-->
+        @foreach (var item in formData.GetType().GetProperties())
+        {
+            if (item.Name.Equals("WorkingHours", StringComparison.CurrentCultureIgnoreCase) || item.Name.Equals("selectedKillDate", StringComparison.CurrentCultureIgnoreCase) || item.Name.Equals("selectedKillTime", StringComparison.CurrentCultureIgnoreCase))
+            {
+                continue;
+            }
+            else if (item.Name.Equals("IsPostEx", StringComparison.CurrentCultureIgnoreCase))
+            {
+                <div class="d-flex">
+                    <MudText>Post Exploitation: </MudText>
+                    <MudChip Color="Color.Info" Variant="Variant.Outlined">@IsPostEx</MudChip>
+                </div>
+            }
+            else if (item.Name.Equals("ImplantType", StringComparison.CurrentCultureIgnoreCase))
+            {
+                <div class="d-flex">
+                    <MudText>Implant Type: </MudText>
+                    <MudChip Color="Color.Info" Variant="Variant.Outlined">@ImplantName</MudChip>
+                </div>
+            }
+            else if (item.Name.Equals("implantOsType", StringComparison.CurrentCultureIgnoreCase))
+            {
+                <div class="d-flex">
+                    <MudText>Target OS: </MudText>
+                    <MudChip Color="Color.Info" Variant="Variant.Outlined">@formData.implantOsType</MudChip>
+                </div>
+            }
+            else if (item.Name.Equals("encodeshellcode", StringComparison.CurrentCultureIgnoreCase) && item.GetValue(formData) == null)
+            {
+                <div class="d-flex">
+                    <MudText>Encode Shellcode: </MudText>
+                    <MudChip Color="Color.Info" Variant="Variant.Outlined">false</MudChip>
+                </div>
+            }
+            else if (item.Name.Equals("KillDateTime", StringComparison.CurrentCultureIgnoreCase) && formData.selectedKillDate != null && formData.selectedKillTime != null)
+            {
+                var KillDateTime = (DateTime)(formData.selectedKillDate.Value.Date + formData.selectedKillTime);
+                <div class="d-flex">
+                    <MudText>Kill Date: </MudText>
+                    <MudChip Color="Color.Info" Variant="Variant.Outlined">@KillDateTime</MudChip>
+                </div>
+            }
+            else if (item.Name.Equals("IncludedCommands", StringComparison.CurrentCultureIgnoreCase))
+            {
+                <div class="d-flex">
+                    <MudText>Included Commands: </MudText>
+                    <MudIconButton OnClick="() => _incCommand_mbox.Show()" Icon="@Icons.Material.Filled.Visibility" Color="@Color.Primary" aria-label="view included commands" />
+                </div>
+                <MudMessageBox @ref="_incCommand_mbox" Title="Included Commands" CancelText="Close">
+                    <MessageContent>
+                        @foreach (string command in selectedImpCommandList)
+                        {
+                            <p>@command</p>
+                        }
+                    </MessageContent>
+                </MudMessageBox>
+            }
+            else if (item.Name.Equals("IncludedModules", StringComparison.CurrentCultureIgnoreCase))
+            {
+                <div class="d-flex">
+                    <MudText>Included Modules: </MudText>
+                    <MudIconButton OnClick="() => _incModule_mbox.Show()" Icon="@Icons.Material.Filled.Visibility" Color="@Color.Primary" aria-label="view included modules" />
+                </div>
+                <MudMessageBox @ref="_incModule_mbox" Title="Included Modules" CancelText="Close">
+                    <MessageContent>
+                        @foreach (string module in selectedImpModuleList)
+                        {
+                            <p>@module</p>
+                        }
+                    </MessageContent>
+                </MudMessageBox>
+            }
+            else
+            {
+                <div class="d-flex">
+                    <MudText>@item.Name: </MudText>
+                    <MudChip Color="Color.Info" Variant="Variant.Outlined">@item.GetValue(formData)</MudChip>
+                </div>
+            }
+        }
+    }
+    </ChildContent>
+</MudStep>
+
+
+@code {
+    [Parameter,EditorRequired]
+    public ExtImplantCreateRequest_Base formData { get; set; }
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        //formData = ImplantCreation.formData;
+        return base.OnAfterRenderAsync(firstRender);
+    }
+}

@@ -1,15 +1,9 @@
 ﻿@page "/Implants"
 @using ApiModels.Plugin_BaseClasses;
-@using ApiModels.Plugin_Interfaces;
-@using ApiModels.Requests
-@using ApiModels.Responses
 @using HardHatC2Client.Components;
 @using HardHatC2Client.Plugin_BaseClasses;
-@using HardHatC2Client.Plugin_Interfaces;
-@using Models
+@using HardHatC2Client.Components.ImplantCreation;
 @using RestSharp
-@using MudBlazor
-@using System.Collections.Generic
 @using HardHatC2Client.Services
 @using System.Collections.ObjectModel
 @using System.Linq
@@ -510,12 +504,13 @@
                     complieType = formData.complieType,
                     WorkingHours = formData.WorkingHours,
                     SleepType = formData.SleepType,
-                    KillDateTime = (DateTime)(formData.selectedKillDate.Value.Date + formData.selectedKillTime),
+                    KillDateTime = formData.selectedKillDate is null ? null : (DateTime)(formData.selectedKillDate.Value.Date + formData.selectedKillTime),
                     IncludedCommands = selectedImpCommandList.ToList(),
                     IncludedModules = selectedImpModuleList.ToList(),
-                    ChunkSize = formData.ChunkSize,
-                    IsChunkEnabled = formData.IsChunkEnabled,
+                    ChunkSize = formData.ChunkSize ?? 0,
+                    IsChunkEnabled = formData.IsChunkEnabled ?? false,
                     implantType = formData.implantType,
+                    implantOsType = formData.implantOsType,
                 };
 
             var request = new RestRequest(resource, Method.Post);
