@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ApiModels.Shared
+namespace HardHatCore.ApiModels.Shared
 {
     public class Tag
     {

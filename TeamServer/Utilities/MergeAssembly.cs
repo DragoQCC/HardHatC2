@@ -2,7 +2,7 @@
 using System;
 
 
-namespace TeamServer.Utilities;
+namespace HardHatCore.TeamServer.Utilities;
 
 
 public class MergeAssembly

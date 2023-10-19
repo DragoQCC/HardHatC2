@@ -9,6 +9,7 @@
 <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
 <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
+<RootNamespace>HardHatCore.TeamServer</RootNamespace>
 </PropertyGroup>
 
   <ItemGroup>

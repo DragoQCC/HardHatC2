@@ -1,8 +1,8 @@
-﻿using ApiModels.Plugin_Interfaces;
+﻿using HardHatCore.ApiModels.Plugin_Interfaces;
 using System.Collections.Generic;
-using TeamServer.Plugin_BaseClasses;
+using HardHatCore.TeamServer.Plugin_BaseClasses;
 
-namespace TeamServer.Plugin_Interfaces.Ext_Implants
+namespace HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants
 {
     //should deal with the use of implants internally
     public interface IExtImplantService

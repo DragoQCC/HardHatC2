@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using TeamServer.Models;
+using HardHatCore.TeamServer.Models;
+
 /* allows for instructions to be called, holds no objects, or properties/ values
- * linked to controllers with dependencies injection so things can be called in other areas of the code easily. 
- * you want one service per controller 
+ * linked to controllers with dependencies injection so things can be called in other areas of the code easily.
+ * you want one service per controller
  */
 
-namespace TeamServer.Services
+namespace HardHatCore.TeamServer.Services
 {
     public interface ImanagerService
 	{

@@ -1,6 +1,6 @@
-﻿using HardHatC2Client.Pages;
+﻿using HardHatCore.HardHatC2Client.Pages;
 
-namespace HardHatC2Client.Models
+namespace HardHatCore.HardHatC2Client.Models
 {
     public class InteractiveTerminalCommand
     {

@@ -1,6 +1,6 @@
 ﻿using SQLite;
 
-namespace TeamServer.Models.Database
+namespace HardHatCore.TeamServer.Models.Database
 {
     [Table("Users")]
     public class UserInfo

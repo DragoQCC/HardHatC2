@@ -1,6 +1,6 @@
 ﻿using System.Runtime.Serialization;
 
-namespace HardHatC2Client.Models.TaskResultTypes;
+namespace HardHatCore.HardHatC2Client.Models.TaskResultTypes;
 
 [Serializable]
 public class FileSystemItem

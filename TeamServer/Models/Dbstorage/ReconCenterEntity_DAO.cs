@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
+using HardHatCore.TeamServer.Models.Extras;
 using SQLite;
-using TeamServer.Models.Extras;
-using TeamServer.Utilities;
-using static TeamServer.Models.Extras.ReconCenterEntity;
+using HardHatCore.TeamServer.Utilities;
+using static HardHatCore.TeamServer.Models.Extras.ReconCenterEntity;
 
-namespace TeamServer.Models.Dbstorage
+namespace HardHatCore.TeamServer.Models.Dbstorage
 {
     [Table("ReconCenterEntity")]
     public class ReconCenterEntity_DAO
@@ -40,7 +40,7 @@ namespace TeamServer.Models.Dbstorage
             {
                 Name = dao.Name,
                 Description = dao.Description,
-                Properties = dao.Properties.ProDeserializeForDatabase<List<ReconCenterEntityProperty>>()
+                Properties = dao.Properties.ProDeserializeForDatabase<List<ReconCenterEntity.ReconCenterEntityProperty>>()
             };
         }
     }

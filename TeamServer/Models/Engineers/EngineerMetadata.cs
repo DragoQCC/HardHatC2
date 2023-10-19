@@ -1,7 +1,7 @@
 ﻿using System;
 
 // amde to keep Engineer clean just holds list of proerties every Engineer will have.
-namespace TeamServer.Models
+namespace HardHatCore.TeamServer.Models
 {
     [Serializable]
     public class EngineerMetadata

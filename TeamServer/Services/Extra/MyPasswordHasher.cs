@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Security.Cryptography;
 using System.Text;
+using HardHatCore.TeamServer.Models.Database;
 using Microsoft.AspNetCore.Identity;
-using TeamServer.Models.Database;
 
-namespace TeamServer.Services.Extra
+namespace HardHatCore.TeamServer.Services.Extra
 {
     public class MyPasswordHasher : IPasswordHasher<UserInfo>
     {

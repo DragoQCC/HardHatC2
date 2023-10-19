@@ -3,7 +3,7 @@ using Serilog;
 using Serilog.Events;
 using System;
 
-namespace TeamServer.Services.Extra
+namespace HardHatCore.TeamServer.Services.Extra
 {
     public class MyLogger : ILogger
     {

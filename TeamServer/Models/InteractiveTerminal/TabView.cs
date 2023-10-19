@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace TeamServer.Models.InteractiveTerminal
+namespace HardHatCore.TeamServer.Models.InteractiveTerminal
 {
     public class TabView
     {

@@ -1,6 +1,7 @@
-﻿using SQLite;
-using TeamServer.Models.Extras;
-namespace TeamServer.Models.Dbstorage
+﻿using HardHatCore.TeamServer.Models.Extras;
+using SQLite;
+
+namespace HardHatCore.TeamServer.Models.Dbstorage
 {
     [Table("UploadedFile")]
     public class UploadedFile_DAO

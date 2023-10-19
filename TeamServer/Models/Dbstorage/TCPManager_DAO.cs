@@ -1,8 +1,8 @@
-﻿using ApiModels.Shared;
+﻿using HardHatCore.ApiModels.Shared;
+using HardHatCore.TeamServer.Models.Managers;
 using SQLite;
-using TeamServer.Models.Managers;
 
-namespace TeamServer.Models.Dbstorage
+namespace HardHatCore.TeamServer.Models.Dbstorage
 {
     [Table("TCPManagers")]
     public class TCPManager_DAO

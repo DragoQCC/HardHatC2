@@ -1,4 +1,4 @@
-﻿namespace TeamServer.Plugin_Interfaces
+﻿namespace HardHatCore.TeamServer.Plugin_Interfaces
 {
     public interface IPluginMetadata
     {

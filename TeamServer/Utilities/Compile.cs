@@ -9,14 +9,14 @@ using System.Linq;
 using System.Diagnostics;
 using System.CodeDom.Compiler;
 using System.Reflection.PortableExecutable;
-using ApiModels.Requests;
+using HardHatCore.ApiModels.Requests;
 using Microsoft.CSharp;
 using System.Security.Cryptography.Xml;
-using ApiModels.Shared;
+using HardHatCore.ApiModels.Shared;
 using Mono.Cecil;
 
 
-namespace TeamServer.Utilities
+namespace HardHatCore.TeamServer.Utilities
 {
     public class Compile
     {

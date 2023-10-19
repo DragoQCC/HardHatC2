@@ -1,4 +1,4 @@
-﻿namespace ApiModels.Plugin_Interfaces
+﻿namespace HardHatCore.ApiModels.Plugin_Interfaces
 {
     //this structure should allow for overrides that can add new types of responses as needed
     //public class ExtImplantTaskResponseType

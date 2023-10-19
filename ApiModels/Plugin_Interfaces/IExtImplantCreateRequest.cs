@@ -1,9 +1,9 @@
-﻿using ApiModels.Shared;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using HardHatCore.ApiModels.Shared;
 
 
-namespace ApiModels.Plugin_Interfaces
+namespace HardHatCore.ApiModels.Plugin_Interfaces
 {
     public interface IExtImplantCreateRequest
     {

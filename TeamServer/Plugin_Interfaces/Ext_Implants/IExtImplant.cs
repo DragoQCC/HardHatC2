@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System;
 using System.Threading.Tasks;
-using ApiModels.Plugin_Interfaces;
-using ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Plugin_Interfaces;
+using HardHatCore.ApiModels.Plugin_BaseClasses;
 
-namespace TeamServer.Plugin_Interfaces.Ext_Implants
+namespace HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants
 {
     public interface IExtImplant
     {

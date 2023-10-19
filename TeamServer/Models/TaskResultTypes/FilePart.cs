@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace TeamServer.Models.TaskResultTypes
+namespace HardHatCore.TeamServer.Models.TaskResultTypes
 {
     public class FilePart
     {

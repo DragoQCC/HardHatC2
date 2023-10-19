@@ -1,18 +1,18 @@
 ﻿@page "/ImplantInteract"
-@using ApiModels.Plugin_BaseClasses;
-@using ApiModels.Plugin_Interfaces;
+@using HardHatCore.ApiModels.Plugin_BaseClasses;
+@using HardHatCore.ApiModels.Plugin_Interfaces;
 @using Blazored.LocalStorage;
-@using HardHatC2Client.Components;
-@using HardHatC2Client.Plugin_BaseClasses;
-@using HardHatC2Client.Plugin_Interfaces;
-@using HardHatC2Client.Plugin_Management;
-@using HardHatC2Client.Services
-@using HardHatC2Client.Utilities
+@using HardHatCore.HardHatC2Client.Components;
+@using HardHatCore.HardHatC2Client.Plugin_BaseClasses;
+@using HardHatCore.HardHatC2Client.Plugin_Interfaces;
+@using HardHatCore.HardHatC2Client.Plugin_Management;
+@using HardHatCore.HardHatC2Client.Services
+@using HardHatCore.HardHatC2Client.Utilities
 @using RestSharp
 @using System.Collections.Generic
 @using System.Linq
 @using System.Diagnostics;
-@using ApiModels.Shared.TaskResultTypes
+@using HardHatCore.ApiModels.Shared.TaskResultTypes
 @inject NavigationManager navigationManagerDefault
 @inject ISnackbar Snackbar
 @inject IToastService toastService
@@ -599,7 +599,7 @@
         }
         if (CommandName == "seatbelt")
         {
-            commandOutput = HardHatC2Client.Utilities.CommandOutputParsing.ParseSeatbelt(outputParse);
+            commandOutput = HardHatCore.HardHatC2Client.Utilities.CommandOutputParsing.ParseSeatbelt(outputParse);
         }
         if (commandOutput.Count > 0)
         {

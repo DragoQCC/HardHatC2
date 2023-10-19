@@ -11,14 +11,14 @@ using Microsoft.AspNetCore.Server.Kestrel.Https;
 using System.Net.Security;
 using System.IO;
 using System.Security;
-using TeamServer.Models.Extras;
+using HardHatCore.TeamServer.Models.Extras;
 using System.Linq;
 using System.Collections.Generic;
 using System.Security.Authentication;
 using Microsoft.Extensions.Options;
-using ApiModels.Shared;
+using HardHatCore.ApiModels.Shared;
 
-namespace TeamServer.Models
+namespace HardHatCore.TeamServer.Models
 {
     public class Httpmanager : manager
     {
@@ -160,14 +160,14 @@ namespace TeamServer.Models
             {
                 app.UseEndpoints(e =>
                 {
-                e.MapControllerRoute(url, url, new { controller = "httpmanager", action = "HandleImplant" });
+                e.MapControllerRoute(url, url, new { controller = "Httpmanager", action = "HandleImplant" });
                 });
             }
             foreach (string url in eventurls)
             {
                 app.UseEndpoints(e =>
                 {
-                    e.MapControllerRoute(url, url, new { controller = "httpmanager", action = "HandleImplantEvent" });
+                    e.MapControllerRoute(url, url, new { controller = "Httpmanager", action = "HandleImplantEvent" });
                 });
             }
             app.UseStaticFiles();

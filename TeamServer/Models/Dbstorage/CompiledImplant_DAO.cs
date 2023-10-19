@@ -1,10 +1,10 @@
 ﻿using System;
-using TeamServer.Models.Extras;
 using SQLite;
 using System.Collections.Generic;
-using TeamServer.Utilities;
+using HardHatCore.TeamServer.Models.Extras;
+using HardHatCore.TeamServer.Utilities;
 
-namespace TeamServer.Models.Dbstorage
+namespace HardHatCore.TeamServer.Models.Dbstorage
 {
     [Table("CompiledImplant")]
     public class CompiledImplant_DAO

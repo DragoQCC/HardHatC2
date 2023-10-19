@@ -1,29 +1,30 @@
-﻿using ApiModels.Requests;
+﻿using HardHatCore.ApiModels.Requests;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using TeamServer.Models;
-using TeamServer.Services;
+using HardHatCore.TeamServer.Models;
 using System.Linq;
-using TeamServer.Models.Extras;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using TeamServer.Models.Managers;
-using TeamServer.Utilities;
+using HardHatCore.TeamServer.Models.Managers;
+using HardHatCore.TeamServer.Utilities;
 using Microsoft.AspNetCore.Authorization;
-using ApiModels.Shared;
-using TeamServer.Plugin_Interfaces.Ext_Implants;
-using ApiModels.Plugin_BaseClasses;
-using ApiModels.Plugin_Interfaces;
-using TeamServer.Plugin_BaseClasses;
-using TeamServer.Plugin_Management;
-using TeamServer.Models.Dbstorage;
+using HardHatCore.ApiModels.Shared;
+using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Plugin_Interfaces;
+using HardHatCore.TeamServer.Models.Dbstorage;
+using HardHatCore.TeamServer.Models.Extras;
+using HardHatCore.TeamServer.Plugin_BaseClasses;
+using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
+using HardHatCore.TeamServer.Plugin_Management;
+using HardHatCore.TeamServer.Services;
+
 //using DynamicEngLoading;
 
-namespace TeamServer.Controllers
+namespace HardHatCore.TeamServer.Controllers
 {
 	[Authorize(Roles ="Operator,TeamLead")]
 	[ApiController]

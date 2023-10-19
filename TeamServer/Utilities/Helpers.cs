@@ -3,9 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using TeamServer.Plugin_Interfaces;
+using HardHatCore.TeamServer.Plugin_Interfaces;
 
-namespace TeamServer.Utilities
+namespace HardHatCore.TeamServer.Utilities
 {
     public static class Helpers
     {

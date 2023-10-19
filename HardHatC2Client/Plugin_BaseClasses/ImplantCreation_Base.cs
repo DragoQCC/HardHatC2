@@ -1,10 +1,10 @@
-﻿using HardHatC2Client.Components;
-using HardHatC2Client.Plugin_Interfaces;
+﻿using HardHatCore.HardHatC2Client.Components;
 using System.ComponentModel.Composition;
-using HardHatC2Client.Components.ImplantCreation;
+using HardHatCore.HardHatC2Client.Components.ImplantCreation;
+using HardHatCore.HardHatC2Client.Plugin_Interfaces;
 using Microsoft.AspNetCore.Components;
 
-namespace HardHatC2Client.Plugin_BaseClasses
+namespace HardHatCore.HardHatC2Client.Plugin_BaseClasses
 {
     //this base class is also the implementation for the Engineer as an example of how to create a plugin
     [Export(typeof(IimplantCreation))]

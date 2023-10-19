@@ -1,6 +1,6 @@
-﻿using ApiModels.Shared;
+﻿using HardHatCore.ApiModels.Shared;
 
-namespace ApiModels.Requests
+namespace HardHatCore.ApiModels.Requests
 {
     public class StartTCPManagerRequest
     {

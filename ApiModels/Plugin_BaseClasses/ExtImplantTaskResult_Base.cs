@@ -1,11 +1,11 @@
-﻿using ApiModels.Plugin_Interfaces;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using HardHatCore.ApiModels.Plugin_Interfaces;
 
-namespace ApiModels.Plugin_BaseClasses
+namespace HardHatCore.ApiModels.Plugin_BaseClasses
 {
     public class ExtImplantTaskResult_Base : IExtImplantTaskResult
     {

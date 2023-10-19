@@ -1,7 +1,7 @@
-﻿using ApiModels.Plugin_BaseClasses;
-using ApiModels.Plugin_Interfaces;
+﻿using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Plugin_Interfaces;
 
-namespace HardHatC2Client.Plugin_Interfaces
+namespace HardHatCore.HardHatC2Client.Plugin_Interfaces
 {
     public interface IExtImplant
     {

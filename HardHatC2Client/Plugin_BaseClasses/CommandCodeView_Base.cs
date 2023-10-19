@@ -1,7 +1,7 @@
-﻿using HardHatC2Client.Plugin_Interfaces;
-using System.ComponentModel.Composition;
+﻿using System.ComponentModel.Composition;
+using HardHatCore.HardHatC2Client.Plugin_Interfaces;
 
-namespace HardHatC2Client.Plugin_BaseClasses
+namespace HardHatCore.HardHatC2Client.Plugin_BaseClasses
 {
     // [Export(typeof(CommandCodeView_Base))]
     [Export(typeof(ICommandCodeView))] // example where this class has a property that its exported type does not 

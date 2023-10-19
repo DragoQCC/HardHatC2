@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using TeamServer.Models.Database;
+using HardHatCore.TeamServer.Models.Database;
 
-namespace TeamServer.Services.Extra
+namespace HardHatCore.TeamServer.Services.Extra
 {
     public class RoleStore : IRoleStore<RoleInfo>
     {

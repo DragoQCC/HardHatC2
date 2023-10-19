@@ -1,10 +1,10 @@
-﻿using ApiModels.Plugin_BaseClasses;
-using ApiModels.Plugin_Interfaces;
-using HardHatC2Client.Pages;
-using HardHatC2Client.Plugin_Interfaces;
+﻿using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Plugin_Interfaces;
+using HardHatCore.HardHatC2Client.Pages;
 using System.Diagnostics.CodeAnalysis;
+using HardHatCore.HardHatC2Client.Plugin_Interfaces;
 
-namespace HardHatC2Client.Plugin_BaseClasses
+namespace HardHatCore.HardHatC2Client.Plugin_BaseClasses
 {
     public class ExtImplant_Base : IExtImplant
     {

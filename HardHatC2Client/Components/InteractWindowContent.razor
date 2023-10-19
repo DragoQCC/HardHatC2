@@ -1,17 +1,17 @@
-﻿@using ApiModels.Plugin_BaseClasses;
-@using ApiModels.Plugin_Interfaces;
-@using ApiModels.Responses;
-@using ApiModels.Shared.TaskResultTypes;
-@using HardHatC2Client.Models;
-@using HardHatC2Client.Pages;
+﻿@using HardHatCore.ApiModels.Plugin_BaseClasses;
+@using HardHatCore.ApiModels.Plugin_Interfaces;
+@using HardHatCore.ApiModels.Responses;
+@using HardHatCore.ApiModels.Shared.TaskResultTypes;
+@using HardHatCore.HardHatC2Client.Models;
+@using HardHatCore.HardHatC2Client.Pages;
 @using System.Collections.Concurrent
-@using HardHatC2Client.Plugin_BaseClasses;
-@using HardHatC2Client.Plugin_Interfaces;
-@using HardHatC2Client.Services;
-@using HardHatC2Client.Utilities
+@using HardHatCore.HardHatC2Client.Plugin_BaseClasses;
+@using HardHatCore.HardHatC2Client.Plugin_Interfaces;
+@using HardHatCore.HardHatC2Client.Services;
+@using HardHatCore.HardHatC2Client.Utilities
 @using System.Diagnostics;
-@using ApiModels.Shared;
-@using static HardHatC2Client.Pages.ImplantInteract;
+@using HardHatCore.ApiModels.Shared;
+@using static HardHatCore.HardHatC2Client.Pages.ImplantInteract;
 @inject IJSRuntime JSRuntime
 
 <MudExpansionPanel Style="background:#32333d; color:white;" @ref="@interactConPanel" IsExpandedChanged="(e)=>ExpandedChanged(e,implant,currenttask.Id,this)">

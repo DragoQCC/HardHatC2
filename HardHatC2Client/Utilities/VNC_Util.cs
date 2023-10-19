@@ -1,8 +1,8 @@
-﻿using ApiModels.Shared;
-using ApiModels.Shared.TaskResultTypes;
-using HardHatC2Client.Components;
+﻿using HardHatCore.ApiModels.Shared;
+using HardHatCore.ApiModels.Shared.TaskResultTypes;
+using HardHatCore.HardHatC2Client.Components;
 
-namespace HardHatC2Client.Utilities
+namespace HardHatCore.HardHatC2Client.Utilities
 {
     public class VNC_Util
     {

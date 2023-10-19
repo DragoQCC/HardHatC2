@@ -1,9 +1,9 @@
-﻿using ApiModels.Plugin_Interfaces;
+﻿using HardHatCore.ApiModels.Plugin_Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
-namespace TeamServer.Plugin_Interfaces.Ext_Implants
+namespace HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants
 {
     //should deal with communication with implants externally both incoming and outgoing 
     public interface IExtimplantHandleComms

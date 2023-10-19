@@ -1,8 +1,8 @@
-﻿using SQLite;
-using TeamServer.Models;
-using TeamServer.Models.Extras;
+﻿using HardHatCore.TeamServer.Models.Extras;
+using SQLite;
+using HardHatCore.TeamServer.Models;
 
-namespace TeamServer.Models.Dbstorage
+namespace HardHatCore.TeamServer.Models.Dbstorage
 {
     [Table("PivotProxy")]
     public class PivotProxy_DAO

@@ -2,10 +2,10 @@
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Reflection;
-using TeamServer.Plugin_BaseClasses;
-using TeamServer.Utilities;
+using HardHatCore.TeamServer.Plugin_BaseClasses;
+using HardHatCore.TeamServer.Utilities;
 
-namespace TeamServer.Plugin_Management
+namespace HardHatCore.TeamServer.Plugin_Management
 {
     public class PluginService
     {

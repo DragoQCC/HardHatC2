@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
-using ApiModels.Plugin_BaseClasses;
-using ApiModels.Shared;
+using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Shared;
 using SQLite;
-using TeamServer.Utilities;
+using HardHatCore.TeamServer.Utilities;
 //using DynamicEngLoading;
 
-namespace TeamServer.Models.Dbstorage
+namespace HardHatCore.TeamServer.Models.Dbstorage
 {
     [Table("ExtImplantTask")]
     public class ExtImplantTask_DAO

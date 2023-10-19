@@ -1,16 +1,16 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading;
-using TeamServer.Models.Database;
-using TeamServer.Services.Extra;
-using TeamServer.Services;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
-using ApiModels.Shared;
+using HardHatCore.ApiModels.Shared;
+using HardHatCore.TeamServer.Models.Database;
+using HardHatCore.TeamServer.Services;
+using HardHatCore.TeamServer.Services.Extra;
 
-namespace TeamServer.Controllers
+namespace HardHatCore.TeamServer.Controllers
 {
     [ApiController]
     [Route("[Controller]")]

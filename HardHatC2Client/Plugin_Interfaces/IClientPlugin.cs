@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 
-namespace HardHatC2Client.Plugin_Interfaces
+namespace HardHatCore.HardHatC2Client.Plugin_Interfaces
 {
     public interface IClientPlugin
     {

@@ -1,4 +1,4 @@
-﻿using ApiModels.Responses;
+﻿using HardHatCore.ApiModels.Responses;
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json.Linq;
 using System;
@@ -8,32 +8,32 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using TeamServer.Controllers;
-using TeamServer.Models;
-using TeamServer.Models.Extras;
-using TeamServer.Models.Database;
-using TeamServer.Services.Extra;
+using HardHatCore.TeamServer.Controllers;
 using System.Threading;
 using System.Text;
-using TeamServer.Models.Dbstorage;
-using TeamServer.Utilities;
-using TeamServer.Models.InteractiveTerminal;
 using Microsoft.AspNet.SignalR.Messaging;
-using TeamServer.Models.Managers;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using ApiModels.Shared;
+using HardHatCore.ApiModels.Shared;
 using System.Net.Http;
-using TeamServer.Plugin_Interfaces.Ext_Implants;
-using TeamServer.Plugin_BaseClasses;
-using ApiModels.Plugin_BaseClasses;
-using TeamServer.Plugin_Management;
-using ApiModels.Shared.TaskResultTypes;
+using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Shared.TaskResultTypes;
 using Microsoft.AspNet.SignalR.Hosting;
 using System.Net;
 using System.Runtime.CompilerServices;
+using HardHatCore.TeamServer.Models;
+using HardHatCore.TeamServer.Models.Database;
+using HardHatCore.TeamServer.Models.Dbstorage;
+using HardHatCore.TeamServer.Models.Extras;
+using HardHatCore.TeamServer.Models.InteractiveTerminal;
+using HardHatCore.TeamServer.Models.Managers;
+using HardHatCore.TeamServer.Plugin_BaseClasses;
+using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
+using HardHatCore.TeamServer.Plugin_Management;
+using HardHatCore.TeamServer.Services.Extra;
+using HardHatCore.TeamServer.Utilities;
 
-namespace TeamServer.Services
+namespace HardHatCore.TeamServer.Services
 {
     public class HardHatHub : Hub
     {

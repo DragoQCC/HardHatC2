@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using TeamServer.Models.Database;
 using SQLite;
 using System;
 using Microsoft.Owin.Security.Provider;
 using System.Timers;
+using HardHatCore.TeamServer.Models.Database;
 
-namespace TeamServer.Services.Extra
+namespace HardHatCore.TeamServer.Services.Extra
 {
     public class UserStore : IUserStore<UserInfo>, IUserRoleStore<UserInfo>, IUserPasswordStore<UserInfo>
     {

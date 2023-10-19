@@ -6,20 +6,20 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using System;
 using System.Linq;
-using TeamServer.Services;
-using TeamServer.Utilities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using RestSharp;
-using TeamServer.Services.Extra;
-using TeamServer.Models.Database;
-using TeamServer.Plugin_Management;
-using TeamServer.Plugin_Interfaces.Ext_Implants;
-using TeamServer.Plugin_BaseClasses;
 using System.Threading.Tasks;
+using HardHatCore.TeamServer.Models.Database;
+using HardHatCore.TeamServer.Plugin_BaseClasses;
+using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
+using HardHatCore.TeamServer.Plugin_Management;
+using HardHatCore.TeamServer.Services;
+using HardHatCore.TeamServer.Services.Extra;
+using HardHatCore.TeamServer.Utilities;
 
-namespace TeamServer
+namespace HardHatCore.TeamServer
 {
     public class Startup
     {

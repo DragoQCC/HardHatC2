@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 
 
-namespace ApiModels.Plugin_Interfaces
+namespace HardHatCore.ApiModels.Plugin_Interfaces
 {
     public interface ITaskExtImplantRequest
     {

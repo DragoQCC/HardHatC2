@@ -1,4 +1,4 @@
-﻿namespace TeamServer.Models.Database
+﻿namespace HardHatCore.TeamServer.Models.Database
 {
     public class LoginRequest
     {

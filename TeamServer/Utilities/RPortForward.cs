@@ -3,16 +3,17 @@ using System.Net.Sockets;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using TeamServer.Models;
+using HardHatCore.TeamServer.Models;
 using System.Collections.Generic;
 using System.IO;
 using System;
-using ApiModels.Shared;
-using TeamServer.Plugin_BaseClasses;
-using ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Shared;
+using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.TeamServer.Plugin_BaseClasses;
+
 //using DynamicEngLoading;
 
-namespace TeamServer.Utilities
+namespace HardHatCore.TeamServer.Utilities
 {
     public class RPortForward
     {

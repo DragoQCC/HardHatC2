@@ -1,9 +1,9 @@
-﻿using HardHatC2Client.Plugin_BaseClasses;
-using HardHatC2Client.Utilities;
-using System.ComponentModel.Composition.Hosting;
+﻿using System.ComponentModel.Composition.Hosting;
 using System.Reflection;
+using HardHatCore.HardHatC2Client.Plugin_BaseClasses;
+using HardHatCore.HardHatC2Client.Utilities;
 
-namespace HardHatC2Client.Plugin_Management
+namespace HardHatCore.HardHatC2Client.Plugin_Management
 {
     public class PluginService
     {

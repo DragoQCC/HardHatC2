@@ -1,4 +1,4 @@
-﻿namespace HardHatC2Client.Models.TaskResultTypes
+﻿namespace HardHatCore.HardHatC2Client.Models.TaskResultTypes
 {
     public class MessageData
     {

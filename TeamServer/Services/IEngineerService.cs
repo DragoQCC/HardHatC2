@@ -5,15 +5,15 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
-using ApiModels.Shared;
-using TeamServer.Models;
-using TeamServer.Models.Extras;
-using TeamServer.Models.Managers;
-using TeamServer.Utilities;
-using ApiModels.Plugin_Interfaces;
+using HardHatCore.ApiModels.Shared;
+using HardHatCore.ApiModels.Plugin_Interfaces;
+using HardHatCore.TeamServer.Models;
+using HardHatCore.TeamServer.Models.Extras;
+using HardHatCore.TeamServer.Models.Managers;
+using HardHatCore.TeamServer.Utilities;
 using Microsoft.AspNetCore.Mvc.Formatters;
 
-namespace TeamServer.Services
+namespace HardHatCore.TeamServer.Services
 {
 
     public class EngineerService

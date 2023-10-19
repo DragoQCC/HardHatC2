@@ -1,8 +1,8 @@
-﻿using ApiModels.Shared;
+﻿using HardHatCore.ApiModels.Shared;
 using SQLite;
-using TeamServer.Utilities;
+using HardHatCore.TeamServer.Utilities;
 
-namespace TeamServer.Models.Dbstorage
+namespace HardHatCore.TeamServer.Models.Dbstorage
 {
     [Table("HttpManager")]
     public class HttpManager_DAO

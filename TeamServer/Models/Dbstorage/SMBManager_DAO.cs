@@ -1,7 +1,7 @@
 ﻿using SQLite;
-using ApiModels.Shared;
+using HardHatCore.ApiModels.Shared;
 
-namespace TeamServer.Models.Dbstorage
+namespace HardHatCore.TeamServer.Models.Dbstorage
 {
     [Table("SMBManager")]
     public class SMBManager_DAO

@@ -1,12 +1,12 @@
 ﻿@using System.Runtime.InteropServices.Marshalling
-@using HardHatC2Client.Models
-@using HardHatC2Client.Pages
+@using HardHatCore.HardHatC2Client.Models
+@using HardHatCore.HardHatC2Client.Pages
 @using System.Collections.Concurrent
 @using System.Collections.ObjectModel
-@using ApiModels.Shared.TaskResultTypes;
-@using HardHatC2Client.Plugin_BaseClasses;
-@using HardHatC2Client.Plugin_Interfaces;
-@using HardHatC2Client.Utilities
+@using HardHatCore.ApiModels.Shared.TaskResultTypes;
+@using HardHatCore.HardHatC2Client.Plugin_BaseClasses;
+@using HardHatCore.HardHatC2Client.Plugin_Interfaces;
+@using HardHatCore.HardHatC2Client.Utilities
 @inject IToastService toastDefault
  <MudDynamicTabs @ref="@DynamicTabs" Elevation="4" PanelClass="px-4 py-6" Rounded="true" ApplyEffectsToContainer="true" CloseTab="@((panel) => CloseTabCallback(panel))" @bind-ActivePanelIndex="UserIndex">
      @foreach(var tab in Tabs)

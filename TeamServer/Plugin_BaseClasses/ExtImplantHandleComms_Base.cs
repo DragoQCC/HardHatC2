@@ -1,6 +1,6 @@
-﻿using ApiModels.Plugin_BaseClasses;
-using ApiModels.Plugin_Interfaces;
-using ApiModels.Shared.TaskResultTypes;
+﻿using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Plugin_Interfaces;
+using HardHatCore.ApiModels.Shared.TaskResultTypes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -10,15 +10,15 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using TeamServer.Models;
-using TeamServer.Models.Dbstorage;
-using TeamServer.Models.Extras;
-using TeamServer.Plugin_Interfaces.Ext_Implants;
-using TeamServer.Services;
-using TeamServer.Utilities;
+using HardHatCore.TeamServer.Models;
+using HardHatCore.TeamServer.Models.Dbstorage;
+using HardHatCore.TeamServer.Models.Extras;
+using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
+using HardHatCore.TeamServer.Services;
+using HardHatCore.TeamServer.Utilities;
 using static SQLite.SQLite3;
 
-namespace TeamServer.Plugin_BaseClasses
+namespace HardHatCore.TeamServer.Plugin_BaseClasses
 {
     [Export(typeof(ExtImplantHandleComms_Base))]
     [ExportMetadata("Name", "Default")]

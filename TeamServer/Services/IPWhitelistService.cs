@@ -7,7 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace TeamServer.Services
+namespace HardHatCore.TeamServer.Services
 {
     public class IPWhitelistService
     {

@@ -1,17 +1,17 @@
-﻿using ApiModels.Plugin_BaseClasses;
-using ApiModels.Plugin_Interfaces;
+﻿using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Plugin_Interfaces;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
-using TeamServer.Models.Dbstorage;
-using TeamServer.Plugin_Interfaces.Ext_Implants;
-using TeamServer.Services;
+using HardHatCore.TeamServer.Models.Dbstorage;
+using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
+using HardHatCore.TeamServer.Services;
 using static SQLite.SQLite3;
 
-namespace TeamServer.Plugin_BaseClasses
+namespace HardHatCore.TeamServer.Plugin_BaseClasses
 {
     [Export(typeof(ExtImplant_Base))]
     [ExportMetadata("Name", "Default")]
