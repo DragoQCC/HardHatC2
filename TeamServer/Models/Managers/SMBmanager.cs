@@ -1,8 +1,8 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using ApiModels.Shared;
+using HardHatCore.ApiModels.Shared;
 
-namespace TeamServer.Models
+namespace HardHatCore.TeamServer.Models
 {
     public class SMBmanager : manager
     {

@@ -1,4 +1,4 @@
-﻿namespace ApiModels.Shared.TaskResultTypes
+﻿namespace HardHatCore.ApiModels.Shared.TaskResultTypes
 {
     public class MessageData
     {

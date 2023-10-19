@@ -1,4 +1,4 @@
-﻿using ApiModels.Plugin_Interfaces;
+﻿using HardHatCore.ApiModels.Plugin_Interfaces;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
@@ -9,15 +9,15 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.Xml;
 using System.Text;
 using System.Threading.Tasks;
-using TeamServer.Models;
-using TeamServer.Models.Dbstorage;
-using TeamServer.Models.Extras;
-using TeamServer.Plugin_Interfaces.Ext_Implants;
-using TeamServer.Plugin_Management;
-using TeamServer.Services;
-using TeamServer.Utilities;
+using HardHatCore.TeamServer.Models;
+using HardHatCore.TeamServer.Models.Dbstorage;
+using HardHatCore.TeamServer.Models.Extras;
+using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
+using HardHatCore.TeamServer.Plugin_Management;
+using HardHatCore.TeamServer.Services;
+using HardHatCore.TeamServer.Utilities;
 
-namespace TeamServer.Plugin_BaseClasses
+namespace HardHatCore.TeamServer.Plugin_BaseClasses
 {
     [Export(typeof(ExtImplantService_Base))]
     [ExportMetadata("Name","Default")]

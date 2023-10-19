@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>11</LangVersion>
+    <RootNamespace>HardHatCore.HardHatC2Client</RootNamespace>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -26,7 +27,6 @@
     <PackageReference Include="Blazored.Toast" Version="4.1.0" />
     <PackageReference Include="Blazored.Toast.TestExtensions" Version="4.1.0" />
     <PackageReference Include="BlazorMonaco" Version="3.1.0" />
-    <PackageReference Include="BlazorXTabs" Version="1.9.0" />
     <PackageReference Include="Bootstrap.Switch" Version="3.3.4" />
     <PackageReference Include="Bromix.MudBlazor.MaterialDesignIcons" Version="7.2.96.50" />
     <PackageReference Include="CodeBeam.MudBlazor.Extensions" Version="6.5.10" />

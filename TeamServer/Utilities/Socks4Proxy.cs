@@ -1,5 +1,5 @@
-﻿using ApiModels.Plugin_BaseClasses;
-using ApiModels.Shared;
+﻿using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Shared;
 using Microsoft.Owin.BuilderProperties;
 using System;
 using System.Collections.Concurrent;
@@ -13,12 +13,13 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using TeamServer.Models;
-using TeamServer.Plugin_BaseClasses;
-using TeamServer.Services.Handle_Implants;
+using HardHatCore.TeamServer.Plugin_BaseClasses;
+using HardHatCore.TeamServer.Services.Handle_Implants;
+using HardHatCore.TeamServer.Models;
+
 //using DynamicEngLoading;
 
-namespace TeamServer.Utilities
+namespace HardHatCore.TeamServer.Utilities
 {
     public class Socks4Proxy
     {

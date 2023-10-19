@@ -1,8 +1,8 @@
 ﻿using System;
-using TeamServer.Models.Extras;
+using HardHatCore.TeamServer.Models.Extras;
 using SQLite;
 
-namespace TeamServer.Models.Dbstorage
+namespace HardHatCore.TeamServer.Models.Dbstorage
 {
     [Table("Cred")]
     public class Cred_DAO

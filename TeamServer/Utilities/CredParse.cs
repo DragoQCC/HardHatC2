@@ -6,7 +6,7 @@ using System;
 // Author: Ryan Cobb (@cobbr_io) <3 
 // Project: Covenant (https://github.com/cobbr/Covenant)
 // License: GNU GPLv3
-namespace TeamServer.Utilities
+namespace HardHatCore.TeamServer.Utilities
 {
     public enum CredentialType
     {

@@ -1,0 +1,31 @@
+﻿@using HardHatCore.ApiModels.Shared
+
+
+@if (ImplantCreation.selectedImpModuleList.Contains("SleepEncrypt"))
+{
+    <MudSelect Clearable="true" Class="mb-4 mt-4" T="SleepTypes" Label="Sleep Encryption Type" Variant="Variant.Filled" Required="true" @bind-value="ImplantCreation.formData.SleepType" RequiredError="Type is required!">
+        <MudSelectItem Value="@(SleepTypes.None)" />
+        <MudSelectItem Value="@(SleepTypes.Custom_RC4)" />
+    </MudSelect>
+}
+@if (ImplantCreation.selectedImpModuleList.Contains("DataChunk"))
+{
+    <MudTextField Clearable="true" T="int?" Required="true" Class="mb-4 mt-4" Label="Chunk Size (In Bytes ex. 1000 is 1kb)" Variant="Variant.Filled" RequiredError="Size of Data chunk is required" @bind-Value="ImplantCreation.formData.ChunkSize" />
+    ImplantCreation.formData.IsChunkEnabled = true;
+}
+
+
+@code {
+
+    public async Task SelectedModuleChangedRefresh()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    //monitor the selected modules and activate a refresh when they change
+    protected override void OnInitialized()
+    {
+        ImplantCreation.selectedImpModuleList.CollectionChanged += (sender, args) => SelectedModuleChangedRefresh();
+    }
+
+}

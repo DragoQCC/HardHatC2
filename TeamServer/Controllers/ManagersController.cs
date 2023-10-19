@@ -1,21 +1,21 @@
 ﻿using System;
 using Microsoft.AspNetCore.Mvc;
-using TeamServer.Models;
-using TeamServer.Services;
-using ApiModels.Requests;
-using TeamServer.Models.Extras;
-using TeamServer.Models.Managers;
+using HardHatCore.ApiModels.Requests;
 using Microsoft.AspNetCore.Authorization;
-using TeamServer.Models.Dbstorage;
 using System.Collections.Generic;
-using ApiModels.Shared;
+using HardHatCore.ApiModels.Shared;
+using HardHatCore.TeamServer.Models;
+using HardHatCore.TeamServer.Models.Dbstorage;
+using HardHatCore.TeamServer.Models.Extras;
+using HardHatCore.TeamServer.Models.Managers;
+using HardHatCore.TeamServer.Services;
 
 /*
  A controller is responsible for controlling the way that a user interacts with an MVC application.
  A controller contains the flow control logic & determines what response to send back to a user when a user makes a browser request
 It then uses Models & services as needed to run those checks, grab data, store new data, etc. 
  */
-namespace TeamServer.Controllers
+namespace HardHatCore.TeamServer.Controllers
 {
     [Authorize(Roles ="Operator,TeamLead")]
     [ApiController]         

@@ -1,7 +1,7 @@
-﻿using ApiModels.Plugin_BaseClasses;
-using ApiModels.Plugin_Interfaces;
-using ApiModels.Shared;
-using ApiModels.Shared.TaskResultTypes;
+﻿using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Plugin_Interfaces;
+using HardHatCore.ApiModels.Shared;
+using HardHatCore.ApiModels.Shared.TaskResultTypes;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNetCore.Http;
 using System;
@@ -11,15 +11,15 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using TeamServer.Models.Extras;
-using TeamServer.Plugin_Interfaces;
-using TeamServer.Plugin_Interfaces.Ext_Implants;
-using TeamServer.Plugin_Management;
-using TeamServer.Services;
-using TeamServer.Services.Handle_Implants;
-using TeamServer.Utilities;
+using HardHatCore.TeamServer.Models.Extras;
+using HardHatCore.TeamServer.Plugin_Interfaces;
+using HardHatCore.TeamServer.Services;
+using HardHatCore.TeamServer.Services.Handle_Implants;
+using HardHatCore.TeamServer.Utilities;
+using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
+using HardHatCore.TeamServer.Plugin_Management;
 
-namespace TeamServer.Plugin_BaseClasses
+namespace HardHatCore.TeamServer.Plugin_BaseClasses
 {
     [Export(typeof(ExtImplant_TaskPreProcess_Base))]
     [ExportMetadata("Name", "Default")]

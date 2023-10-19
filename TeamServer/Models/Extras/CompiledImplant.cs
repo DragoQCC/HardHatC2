@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace TeamServer.Models.Extras
+namespace HardHatCore.TeamServer.Models.Extras
 {
     public class CompiledImplant
     {

@@ -9,9 +9,9 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using TeamServer.Models.Database;
+using HardHatCore.TeamServer.Models.Database;
 
-namespace TeamServer.Services
+namespace HardHatCore.TeamServer.Services
 {
     public class Authentication
     {

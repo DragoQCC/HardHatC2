@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ApiModels.Shared.TaskResultTypes
+namespace HardHatCore.ApiModels.Shared.TaskResultTypes
 {
     public class VncInteractionResponse
     {

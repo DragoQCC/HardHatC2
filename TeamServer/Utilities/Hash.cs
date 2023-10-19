@@ -2,7 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace TeamServer.Utilities;
+namespace HardHatCore.TeamServer.Utilities;
 
 public class Hash
 {

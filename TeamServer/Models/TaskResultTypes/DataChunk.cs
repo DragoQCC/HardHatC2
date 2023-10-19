@@ -1,7 +1,7 @@
-﻿using ApiModels.Plugin_Interfaces;
-using ApiModels.Shared;
+﻿using HardHatCore.ApiModels.Plugin_Interfaces;
+using HardHatCore.ApiModels.Shared;
 
-namespace TeamServer.Models.TaskResultTypes
+namespace HardHatCore.TeamServer.Models.TaskResultTypes
 {
     public class DataChunk
     {

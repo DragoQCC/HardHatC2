@@ -1,17 +1,17 @@
-﻿@using ApiModels.Plugin_BaseClasses;
-@using ApiModels.Plugin_Interfaces;
-@using ApiModels.Responses;
-@using ApiModels.Shared.TaskResultTypes;
-@using HardHatC2Client.Models;
-@using HardHatC2Client.Pages;
+﻿@using HardHatCore.ApiModels.Plugin_BaseClasses;
+@using HardHatCore.ApiModels.Plugin_Interfaces;
+@using HardHatCore.ApiModels.Responses;
+@using HardHatCore.ApiModels.Shared.TaskResultTypes;
+@using HardHatCore.HardHatC2Client.Models;
+@using HardHatCore.HardHatC2Client.Pages;
 @using System.Collections.Concurrent
-@using HardHatC2Client.Plugin_BaseClasses;
-@using HardHatC2Client.Plugin_Interfaces;
-@using HardHatC2Client.Services;
-@using HardHatC2Client.Utilities
+@using HardHatCore.HardHatC2Client.Plugin_BaseClasses;
+@using HardHatCore.HardHatC2Client.Plugin_Interfaces;
+@using HardHatCore.HardHatC2Client.Services;
+@using HardHatCore.HardHatC2Client.Utilities
 @using System.Diagnostics;
-@using ApiModels.Shared;
-@using static HardHatC2Client.Pages.ImplantInteract;
+@using HardHatCore.ApiModels.Shared;
+@using static HardHatCore.HardHatC2Client.Pages.ImplantInteract;
 @inject IJSRuntime JSRuntime
 
 <MudExpansionPanel Style="background:#32333d; color:white;" @ref="@interactConPanel" IsExpandedChanged="(e)=>ExpandedChanged(e,implant,currenttask.Id,this)">
@@ -38,20 +38,21 @@
             }
             else
             {
+                Console.WriteLine($"Card result is in panel should be setting status to {CardContent.Status.ToString()}");
                 <div class="d-flex">
-                    @if (ImplantInteract.PanelExpandedOnce.ContainsKey(currenttask.Id))
-                    {
+                @if (ImplantInteract.PanelExpandedOnce.ContainsKey(currenttask.Id))
+                {
+                    <MudIcon Icon=@setIcon(CardContent) Color=@SetColor(CardContent) class="mr-3"></MudIcon>
+                }
+                else
+                {
+                    <MudBadge Dot="true" Color="Color.Primary" Class="mr-3">
                         <MudIcon Icon=@setIcon(CardContent) Color=@SetColor(CardContent) class="mr-3"></MudIcon>
-                    }
-                    else
-                    {
-                        <MudBadge Dot="true" Color="Color.Primary" Class="mr-3">
-                            <MudIcon Icon=@setIcon(CardContent) Color=@SetColor(CardContent) class="mr-3"></MudIcon>
-                        </MudBadge>
-                    }
-                    <MudText>@commandHeaderText</MudText>
-                    <MudIconButton Class="mx-5" Icon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" Color="Color.Primary" OnClick="() => CopyTaskCommand(commandHeaderText)"></MudIconButton>
-                    <MudSpacer/>
+                    </MudBadge>
+                }
+                <MudText>@commandHeaderText</MudText>
+                <MudIconButton Class="mx-5" Icon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" Color="Color.Primary" OnClick="() => CopyTaskCommand(commandHeaderText)"></MudIconButton>
+                <MudSpacer/>
                     @if(Tag.Existing_Tags.Count >0)
                     {
                         string taskChipName = GetKeyByValue(Tag.Task_Tags, currenttask.Id);
@@ -67,18 +68,11 @@
         else
         {
             <div class="d-flex">
-                @if (ImplantInteract.PanelExpandedOnce.ContainsKey(currenttask.Id))
-                {
-                    <MudIcon Icon=@setIcon(CardContent) Color=@SetColor(CardContent) class="mr-3"></MudIcon>
-                }
-                else
-                {
-                    <MudIcon Icon=@setIcon(CardContent) Color=@SetColor(CardContent) class="mr-3"></MudIcon>
-                }
+                <MudIcon Icon=@setIcon(CardContent) Color=@SetColor(CardContent) class="mr-3"></MudIcon>
                 <MudText>@commandHeaderText</MudText>
+                <MudIconButton Class="mx-5" Icon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" Color="Color.Primary" OnClick="() => CopyTaskCommand(commandHeaderText)"></MudIconButton>
             </div>
         }
-
     </TitleContent>
     <ChildContent>
         <InteractWindowContentChildComponent @ref=childcard currenttask="@currenttask" implant="@implant" CardContent="@CardContent"></InteractWindowContentChildComponent>
@@ -93,7 +87,7 @@
 
 @code {
 
-    private bool shouldRender = true;
+    // private bool shouldRender = true;
     [Inject]
     private IDialogService DialogService { get; set; }
     [Parameter]
@@ -108,25 +102,25 @@
     public MudExpansionPanel? interactConPanel { get; set; }
     private InteractWindowContentChildComponent childcard;
     private bool isInitialized = false;
-    private bool pendingUpdate = false;
+    private bool pendingUpdate = true;
 
     public async Task UpdateAsync()
     {
-        shouldRender = true;
-        //Console.WriteLine("UpdateAsync called");
         //check if this panel has been initialized before if not then initialize it
         if (isInitialized)
         {
-            //Console.WriteLine("UpdateAsync called and isInitialized is true rendering panel");
-            if (CardContent != null && IsTaskResultInFinalState(CardContent) == false)
+            if (CardContent != null && IsTaskResultInFinalState(CardContent))
             {
-                pendingUpdate = true;
+                //should be the final refresh before should render starts returning false 
+                await InvokeAsync(StateHasChanged);
+                Console.WriteLine("should render is now false");
+                pendingUpdate = false;
             }
             else
             {
-                pendingUpdate = false;
+                pendingUpdate = true;
+                await InvokeAsync(StateHasChanged);
             }
-            await InvokeAsync(StateHasChanged);
         }
     }
 
@@ -319,8 +313,6 @@
     {
         if (firstRender && pendingUpdate)
         {
-            await UpdateAsync();
-            await base.OnAfterRenderAsync(firstRender);
             while(pendingUpdate)
             {
                 //sleep the thread for 2 seconds, then run the update again
@@ -332,11 +324,10 @@
 
     protected override bool ShouldRender()
     {
-        if (!shouldRender) 
+        if (!pendingUpdate)
         {
             return false;
         }
-        shouldRender = false;
         return true;
     }
    

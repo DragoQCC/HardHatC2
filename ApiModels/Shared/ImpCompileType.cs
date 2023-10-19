@@ -1,4 +1,4 @@
-﻿namespace ApiModels.Shared
+﻿namespace HardHatCore.ApiModels.Shared
 {
     public enum ImpCompileType
     {

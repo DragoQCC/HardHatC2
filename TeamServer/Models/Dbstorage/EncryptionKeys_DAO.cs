@@ -1,6 +1,6 @@
 ﻿using SQLite;
 
-namespace TeamServer.Models.Dbstorage
+namespace HardHatCore.TeamServer.Models.Dbstorage
 {
 
     [Table("EncryptionKeys")]

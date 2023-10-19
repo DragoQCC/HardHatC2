@@ -1,6 +1,6 @@
-﻿using ApiModels.Shared;
+﻿using HardHatCore.ApiModels.Shared;
 
-namespace HardHatC2Client.Models
+namespace HardHatCore.HardHatC2Client.Models
 {
     public class Manager
 	{

@@ -1,26 +1,17 @@
 ﻿@page "/Managers"
-@using ApiModels.Requests
-@using ApiModels.Responses
-@using ApiModels.Shared;
-@using HardHatC2Client.Components;
-@using HardHatC2Client.Services;
+@using HardHatCore.ApiModels.Requests
+@using HardHatCore.ApiModels.Responses
+@using HardHatCore.ApiModels.Shared;
+@using HardHatCore.HardHatC2Client.Components;
+@using HardHatCore.HardHatC2Client.Services;
 @using Models
 @using RestSharp
-@using System.Collections.Generic
-@using System.Net
 @using System.Text.RegularExpressions
-@using BlazorXTabs
-@using System.Diagnostics
 @using RestSharp.Authenticators
 @using Blazored.LocalStorage
-@using MudBlazor.Extensions
-@using MudBlazor.Extensions.Components
-@using MudExtensions.Utilities
 @using MudExtensions.Enums
-@using Bromix.MudBlazor.MaterialDesignIcons
-@using System.Text;
 @using System.Reflection;
-@using HardHatC2Client.Utilities;
+@using HardHatCore.HardHatC2Client.Utilities;
 @inject RestClient _restClient
 @inject IToastService toastService
 @inject ISnackbar Snackbar

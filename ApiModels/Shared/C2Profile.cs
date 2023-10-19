@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace ApiModels.Shared
+namespace HardHatCore.ApiModels.Shared
 {
     [Serializable]
     public class C2Profile

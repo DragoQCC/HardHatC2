@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 
-namespace ApiModels.Shared.TaskResultTypes;
+namespace HardHatCore.ApiModels.Shared.TaskResultTypes;
 
 [Serializable]
 public class FileSystemItem

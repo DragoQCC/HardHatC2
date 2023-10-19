@@ -1,11 +1,11 @@
-﻿using HardHatC2Client.Plugin_Interfaces;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using System.Reflection.Metadata;
-using ApiModels.Plugin_BaseClasses;
-using ApiModels.Plugin_Interfaces;
+using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Plugin_Interfaces;
 using System.Security;
+using HardHatCore.HardHatC2Client.Plugin_Interfaces;
 
-namespace HardHatC2Client.Utilities
+namespace HardHatCore.HardHatC2Client.Utilities
 {
     public static class HelperFunctions
     {

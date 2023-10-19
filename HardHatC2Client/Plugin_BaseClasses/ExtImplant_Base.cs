@@ -1,9 +1,10 @@
-﻿using ApiModels.Plugin_BaseClasses;
-using ApiModels.Plugin_Interfaces;
-using HardHatC2Client.Plugin_Interfaces;
+﻿using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Plugin_Interfaces;
+using HardHatCore.HardHatC2Client.Pages;
 using System.Diagnostics.CodeAnalysis;
+using HardHatCore.HardHatC2Client.Plugin_Interfaces;
 
-namespace HardHatC2Client.Plugin_BaseClasses
+namespace HardHatCore.HardHatC2Client.Plugin_BaseClasses
 {
     public class ExtImplant_Base : IExtImplant
     {
@@ -18,6 +19,25 @@ namespace HardHatC2Client.Plugin_BaseClasses
         public DateTime FirstSeen { get; set; }
         public string Status { get; set; }
 
+
+        //can be overridden by a plugin
+        public virtual void ModifyNoteFromContextChange(string command)
+        {
+            if (command.Equals("rev2self", StringComparison.CurrentCultureIgnoreCase))
+            {
+                Note = "";
+                Metadata.Integrity = Metadata.Integrity;
+            }
+            else if (command.Equals("getsystem", StringComparison.CurrentCultureIgnoreCase))
+            {
+                Note = "Context: NT AUTHORITY\\SYSTEM";
+                Metadata.Integrity = "SYSTEM";
+            }
+            else
+            {
+                Note = "Impersonating";
+            }
+        }
 
         public override int GetHashCode()
         {

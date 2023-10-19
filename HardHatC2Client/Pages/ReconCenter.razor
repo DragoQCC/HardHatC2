@@ -1,10 +1,10 @@
 ﻿@page "/ReconCenter"
 @inject ISnackbar Snackbar
 @inject IToastService toastService
-@using HardHatC2Client.Models
-@using HardHatC2Client.Components
+@using HardHatCore.HardHatC2Client.Models
+@using HardHatCore.HardHatC2Client.Components
 @using System.Text;
-@using HardHatC2Client.Services;
+@using HardHatCore.HardHatC2Client.Services;
 
 <CascadingAuthenticationState>
     <AuthorizeView Roles="Operator,TeamLead">

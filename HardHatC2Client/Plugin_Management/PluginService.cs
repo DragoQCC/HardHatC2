@@ -1,9 +1,9 @@
-﻿using HardHatC2Client.Plugin_BaseClasses;
-using HardHatC2Client.Utilities;
-using System.ComponentModel.Composition.Hosting;
+﻿using System.ComponentModel.Composition.Hosting;
 using System.Reflection;
+using HardHatCore.HardHatC2Client.Plugin_BaseClasses;
+using HardHatCore.HardHatC2Client.Utilities;
 
-namespace HardHatC2Client.Plugin_Management
+namespace HardHatCore.HardHatC2Client.Plugin_Management
 {
     public class PluginService
     {
@@ -45,12 +45,19 @@ namespace HardHatC2Client.Plugin_Management
             return taskVal_base;
         }
 
-        public static ImplantCreation_Base GetImplantCreationPlugin(string pluginName)
+        public static IimplantCreation GetImplantCreationPlugin(string pluginName)
         {
             var creation_plugins = pluginHub.ImplantCreation_Plugins;
             var creation_plugin = creation_plugins.GetPluginEnumerableResult(pluginName);
             var creation_base = creation_plugin.Value;
             return creation_base;
+        }
+        public static ImplantCreationBaseData GetImplantCreationPluginData(string pluginName)
+        {
+            var creation_plugins = pluginHub.ImplantCreation_Plugins;
+            var creation_plugin = creation_plugins.GetPluginEnumerableResult(pluginName);
+            var creation_baseData = creation_plugin.Metadata;
+            return creation_baseData;
         }
     }
 }

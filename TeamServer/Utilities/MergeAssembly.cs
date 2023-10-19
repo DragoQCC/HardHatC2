@@ -2,7 +2,7 @@
 using System;
 
 
-namespace TeamServer.Utilities;
+namespace HardHatCore.TeamServer.Utilities;
 
 
 public class MergeAssembly
@@ -28,6 +28,5 @@ public class MergeAssembly
             Console.WriteLine(ex.Message);
             Console.WriteLine(ex.StackTrace);
         }
-      
     }
 }

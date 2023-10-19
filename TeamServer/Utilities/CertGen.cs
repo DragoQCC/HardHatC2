@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
-namespace TeamServer.Utilities
+namespace HardHatCore.TeamServer.Utilities
 {
     public class CertGen
     {

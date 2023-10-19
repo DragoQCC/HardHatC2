@@ -1,10 +1,10 @@
-﻿using ApiModels.Shared;
-using ApiModels.Shared.TaskResultTypes;
+﻿using HardHatCore.ApiModels.Shared;
+using HardHatCore.ApiModels.Shared.TaskResultTypes;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace TeamServer.Utilities
+namespace HardHatCore.TeamServer.Utilities
 {
     public class VNC_Util
     {

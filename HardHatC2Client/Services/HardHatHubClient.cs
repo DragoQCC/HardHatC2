@@ -1,20 +1,20 @@
-﻿using ApiModels.Plugin_BaseClasses;
-using ApiModels.Plugin_Interfaces;
-using ApiModels.Responses;
-using ApiModels.Shared;
-using ApiModels.Shared.TaskResultTypes;
-using HardHatC2Client.Components;
-using HardHatC2Client.Models;
-using HardHatC2Client.Pages;
-using HardHatC2Client.Plugin_BaseClasses;
-using HardHatC2Client.Plugin_Interfaces;
-using HardHatC2Client.Utilities;
+﻿using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Plugin_Interfaces;
+using HardHatCore.ApiModels.Responses;
+using HardHatCore.ApiModels.Shared;
+using HardHatCore.ApiModels.Shared.TaskResultTypes;
+using HardHatCore.HardHatC2Client.Components;
+using HardHatCore.HardHatC2Client.Pages;
+using HardHatCore.HardHatC2Client.Plugin_Interfaces;
 using ICSharpCode.Decompiler.CSharp.Syntax;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Security;
+using HardHatCore.HardHatC2Client.Models;
+using HardHatCore.HardHatC2Client.Plugin_BaseClasses;
+using HardHatCore.HardHatC2Client.Utilities;
 
-namespace HardHatC2Client.Services
+namespace HardHatCore.HardHatC2Client.Services
 {
     public class HardHatHubClient
     {

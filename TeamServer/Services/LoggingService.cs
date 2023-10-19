@@ -14,17 +14,17 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
-using TeamServer.Services.Extra;
+using HardHatCore.TeamServer.Services.Extra;
 using System.Text;
 using Serilog.Sinks.File;
 using Microsoft.Extensions.Logging;
-using ApiModels.Plugin_Interfaces;
-using ApiModels.Plugin_BaseClasses;
-using ApiModels.Shared.TaskResultTypes;
+using HardHatCore.ApiModels.Plugin_Interfaces;
+using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Shared.TaskResultTypes;
 using System.Collections.Generic;
-using TeamServer.Utilities;
+using HardHatCore.TeamServer.Utilities;
 
-namespace TeamServer.Services    
+namespace HardHatCore.TeamServer.Services    
 {
     public class LoggingService
     {

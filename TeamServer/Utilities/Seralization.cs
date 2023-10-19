@@ -3,12 +3,12 @@ using System.IO;
 using System.Text.Json;
 using NetSerializer;
 using System.Collections.Generic;
-using TeamServer.Models.Extras;
-using ApiModels.Requests;
+using HardHatCore.ApiModels.Requests;
 using System.Text;
-using ApiModels.Shared;
+using HardHatCore.ApiModels.Shared;
+using HardHatCore.TeamServer.Models.Extras;
 
-namespace TeamServer.Utilities
+namespace HardHatCore.TeamServer.Utilities
 {
     public static class Seralization
     {

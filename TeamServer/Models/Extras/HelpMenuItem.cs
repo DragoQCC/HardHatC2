@@ -1,4 +1,4 @@
-﻿namespace TeamServer.Models.Extras;
+﻿namespace HardHatCore.TeamServer.Models.Extras;
 
 
 public class HelpMenuItem

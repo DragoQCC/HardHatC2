@@ -4,10 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
-using TeamServer.Models.Extras;
-using TeamServer.Services;
+using HardHatCore.TeamServer.Models.Extras;
+using HardHatCore.TeamServer.Services;
 
-namespace TeamServer.Controllers
+namespace HardHatCore.TeamServer.Controllers
 {
     [Authorize(Roles = "Operator,TeamLead")]
     [ApiController]

@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 
-namespace HardHatC2Client.Utilities
+namespace HardHatCore.HardHatC2Client.Utilities
 {
     public class Hash
     {

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace TeamServer.Models.Extras
+namespace HardHatCore.TeamServer.Models.Extras
 {
     [Serializable]
     public class C2TaskMessage

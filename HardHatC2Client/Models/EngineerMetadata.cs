@@ -1,5 +1,5 @@
 ﻿
-namespace HardHatC2Client.Models
+namespace HardHatCore.HardHatC2Client.Models
 {
     
     public class EngineerMetadata

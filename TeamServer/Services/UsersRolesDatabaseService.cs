@@ -3,12 +3,12 @@ using System;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using TeamServer.Models.Database;
-using TeamServer.Services.Extra;
-using TeamServer.Utilities;
 using System.Runtime;
+using HardHatCore.TeamServer.Models.Database;
+using HardHatCore.TeamServer.Services.Extra;
+using HardHatCore.TeamServer.Utilities;
 
-namespace TeamServer.Services
+namespace HardHatCore.TeamServer.Services
 {
     //holds all the funxtions for working with the DB in regrads to users and roles
     public class UsersRolesDatabaseService

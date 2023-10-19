@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace TeamServer.Models.InteractiveTerminal
+namespace HardHatCore.TeamServer.Models.InteractiveTerminal
 {
     //these should only ever be created from the client and are filled here for propigation and backup
     public class InteractiveTerminalCommand

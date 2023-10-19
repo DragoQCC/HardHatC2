@@ -1,8 +1,8 @@
-﻿using HardHatC2Client.Models.TaskResultTypes;
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
+using HardHatCore.HardHatC2Client.Models.TaskResultTypes;
 
-namespace HardHatC2Client.Utilities
+namespace HardHatCore.HardHatC2Client.Utilities
 {
     public static class Seralization
     {

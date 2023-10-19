@@ -1,4 +1,6 @@
-﻿namespace HardHatC2Client.Plugin_Interfaces
+﻿using Microsoft.AspNetCore.Components;
+
+namespace HardHatCore.HardHatC2Client.Plugin_Interfaces
 {
     public interface IClientPlugin
     {

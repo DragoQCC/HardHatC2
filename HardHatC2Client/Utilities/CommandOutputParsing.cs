@@ -1,4 +1,4 @@
-﻿namespace HardHatC2Client.Utilities
+﻿namespace HardHatCore.HardHatC2Client.Utilities
 {
     public class CommandOutputParsing
     {

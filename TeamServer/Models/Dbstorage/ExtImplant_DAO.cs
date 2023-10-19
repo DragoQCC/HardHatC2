@@ -1,10 +1,10 @@
 ﻿using System;
-using ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.TeamServer.Plugin_BaseClasses;
 using SQLite;
-using TeamServer.Plugin_BaseClasses;
-using TeamServer.Utilities;
+using HardHatCore.TeamServer.Utilities;
 
-namespace TeamServer.Models.Dbstorage
+namespace HardHatCore.TeamServer.Models.Dbstorage
 {
     [Table("ExtImplant")]
     public class ExtImplant_DAO

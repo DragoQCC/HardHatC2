@@ -1,8 +1,9 @@
-﻿@using ApiModels.Plugin_BaseClasses;
-@using HardHatC2Client.Pages;
-@using HardHatC2Client.Plugin_BaseClasses;
-@using HardHatC2Client.Plugin_Management;
-@using HardHatC2Client.Utilities;
+﻿@using HardHatCore.ApiModels.Plugin_BaseClasses;
+@using HardHatCore.HardHatC2Client.Components.ImplantCreation
+@using HardHatCore.HardHatC2Client.Pages;
+@using HardHatCore.HardHatC2Client.Plugin_BaseClasses;
+@using HardHatCore.HardHatC2Client.Plugin_Management;
+@using HardHatCore.HardHatC2Client.Utilities;
 <MudDialog>
     <DialogContent>
         <MudTextField @bind-Value=@newCommandText Label="NewCommand To Run example whoami /groups" Variant="Variant.Filled" />

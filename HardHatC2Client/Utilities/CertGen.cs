@@ -3,7 +3,7 @@ using System.Security;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
-namespace HardHatC2Client.Utilities;
+namespace HardHatCore.HardHatC2Client.Utilities;
 
 public class CertGen
 {

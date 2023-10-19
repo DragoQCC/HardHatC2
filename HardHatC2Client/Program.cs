@@ -1,12 +1,12 @@
 using System.Security.Cryptography.X509Certificates;
 using Blazored.LocalStorage;
 using Blazored.Toast;
-using HardHatC2Client.Services;
-using HardHatC2Client.Utilities;
+using HardHatCore.HardHatC2Client.Services;
+using HardHatCore.HardHatC2Client.Utilities;
 using RestSharp;
 using MudBlazor.Services;
 using Microsoft.AspNetCore.Components.Authorization;
-using HardHatC2Client.Plugin_Management;
+using HardHatCore.HardHatC2Client.Plugin_Management;
 using MudBlazor.Extensions;
 using MudBlazor;
 using System.Diagnostics;

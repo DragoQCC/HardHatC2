@@ -1,13 +1,13 @@
-﻿using ApiModels.Plugin_BaseClasses;
-using ApiModels.Plugin_Interfaces;
-using ApiModels.Shared;
+﻿using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Plugin_Interfaces;
+using HardHatCore.ApiModels.Shared;
 using SQLite;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using TeamServer.Models;
-using TeamServer.Utilities;
+using HardHatCore.TeamServer.Models;
+using HardHatCore.TeamServer.Utilities;
 
-namespace TeamServer.Models.Dbstorage
+namespace HardHatCore.TeamServer.Models.Dbstorage
 {
     [Table("ExtImplantTaskResult")]
     public class ExtImplantTaskResult_DAO

@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 
-namespace TeamServer.Utilities
+namespace HardHatCore.TeamServer.Utilities
 {
     public static class Shellcode
     {

@@ -5,21 +5,21 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using TeamServer.Models;
-using TeamServer.Models.Database;
-using TeamServer.Models.Dbstorage;
-using TeamServer.Models.Extras;
-using TeamServer.Models.Managers;
 using System.Threading;
-using TeamServer.Utilities;
-using ApiModels.Shared;
-using TeamServer.Plugin_BaseClasses;
-using ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Shared;
+using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.TeamServer.Models;
+using HardHatCore.TeamServer.Models.Database;
+using HardHatCore.TeamServer.Models.Dbstorage;
+using HardHatCore.TeamServer.Models.Extras;
+using HardHatCore.TeamServer.Models.Managers;
+using HardHatCore.TeamServer.Plugin_BaseClasses;
+using HardHatCore.TeamServer.Utilities;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Newtonsoft.Json.Linq;
 //using DynamicEngLoading;
 
-namespace TeamServer.Services
+namespace HardHatCore.TeamServer.Services
 {
     public class DatabaseService
     {

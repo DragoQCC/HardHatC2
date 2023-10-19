@@ -1,4 +1,4 @@
-﻿namespace TeamServer.Models.TaskResultTypes
+﻿namespace HardHatCore.TeamServer.Models.TaskResultTypes
 {
 //    public class MessageData
 //    {

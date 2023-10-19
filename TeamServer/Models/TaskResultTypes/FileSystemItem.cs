@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TeamServer.Models.TaskResultTypes;
+namespace HardHatCore.TeamServer.Models.TaskResultTypes;
 
 [Serializable]
 public class FileSystemItem

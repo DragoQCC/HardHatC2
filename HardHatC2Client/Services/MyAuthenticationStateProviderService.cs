@@ -1,10 +1,10 @@
-﻿using HardHatC2Client.Pages;
+﻿using HardHatCore.HardHatC2Client.Pages;
 using Microsoft.AspNetCore.Components.Authorization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Blazored.LocalStorage;
 
-namespace HardHatC2Client.Services
+namespace HardHatCore.HardHatC2Client.Services
 {
     public class MyAuthenticationStateProviderService : AuthenticationStateProvider
     {

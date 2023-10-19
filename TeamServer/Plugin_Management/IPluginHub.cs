@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System;
-using TeamServer.Plugin_BaseClasses;
-using TeamServer.Plugin_Interfaces.Ext_Implants;
+using HardHatCore.TeamServer.Plugin_BaseClasses;
+using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
 
-namespace TeamServer.Plugin_Management
+namespace HardHatCore.TeamServer.Plugin_Management
 {
     public interface IPluginHub
     {

@@ -4,10 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using TeamServer.Models.Dbstorage;
-using TeamServer.Services;
+using HardHatCore.TeamServer.Models.Dbstorage;
+using HardHatCore.TeamServer.Services;
 
-  namespace TeamServer.Utilities
+namespace HardHatCore.TeamServer.Utilities
 {
     public class Encryption
     {

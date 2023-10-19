@@ -4,7 +4,7 @@ using System.IO;
 using System.Reflection.PortableExecutable;
 using System.Text;
 
-namespace HardHatC2Client.Utilities
+namespace HardHatCore.HardHatC2Client.Utilities
 {
     public class terminalCommandRecording
     {

@@ -1,7 +1,7 @@
-﻿@using HardHatC2Client.Pages;
+﻿@using HardHatCore.HardHatC2Client.Pages;
 @using System.Collections.Concurrent
-@using HardHatC2Client.Models.TaskResultTypes
-@using HardHatC2Client.Utilities
+@using HardHatCore.HardHatC2Client.Models.TaskResultTypes
+@using HardHatCore.HardHatC2Client.Utilities
 
 <MudTable T="CommandItem" @ref=@_table Items="BodyContent.Values" HorizontalScrollbar="false" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Outlined="true" Striped="true" Filter="new Func<CommandItem,bool>(FilterFunc1)" RowStyleFunc=SetOpacity SortLabel="Sort By">
     <ToolBarContent>

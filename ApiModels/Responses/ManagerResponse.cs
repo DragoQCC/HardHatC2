@@ -1,7 +1,7 @@
-﻿using ApiModels.Shared;
-using System;
+﻿using System;
+using HardHatCore.ApiModels.Shared;
 
-namespace ApiModels.Responses
+namespace HardHatCore.ApiModels.Responses
 {
     public class ManagerResponse
     {

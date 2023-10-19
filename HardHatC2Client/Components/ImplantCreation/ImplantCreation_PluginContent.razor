@@ -1,0 +1,155 @@
+﻿@using HardHatCore.ApiModels.Shared;
+@using HardHatCore.HardHatC2Client.Plugin_Management;
+@using MudExtensions.Enums;
+@using System.Text;
+@inherits ImplantCreation;
+
+
+<CommandSelectionStep ImpCommandForm="_form2" ImpCommandList="@ImpCommandList" OrderCheckFunc="@OrderMethod"></CommandSelectionStep>
+<ModuleSelectionStep ImpModuleForm="_form3" ImpModuleList="@ImpModuleList" OrderCheckFunc="@OrderMethod"></ModuleSelectionStep>
+<BuildOptionsStep buildStepForm="@_form4"></BuildOptionsStep>
+<FinalizeStep formData="formData"></FinalizeStep>
+@* 
+<br>
+<br>
+<div>
+
+@if (formData.complieType == ImpCompileType.powershellcmd)
+{
+    <MudTextField @bind-Value="PsCmd" Label="Powershell Commmand" ReadOnly="true" Variant="Variant.Outlined"/>
+}
+</div> *@
+
+@code {
+
+    [Inject]
+    public IDialogService dialogService { get; set; }
+
+    public MudForm _form2 { get; set; } = new MudForm();
+    public MudForm _form3 { get; set; } = new MudForm();
+    public MudForm _form4 { get; set; } = new MudForm();
+    public static string PsCmd { get; set; }
+
+
+    private EventCallback<int> OnStepChangeCallback => EventCallback.Factory.Create<int>(this, HandleStepChange);
+
+
+    //event to subscribe to when the Stepper changes steps
+
+
+
+    //overridden because each implant may have a different number of steps
+    public override async Task<bool> CheckChange(StepChangeDirection direction)
+    {
+        // Always allow stepping backwards, even if forms are invalid
+        if (direction == StepChangeDirection.Backward)
+        {
+            return false;
+        }
+        if (Stepper.GetActiveIndex() == 1)
+        {
+            _loading = true;
+            StateHasChanged();
+            await Task.Delay(100);
+            await _form2.Validate();
+            //check that all the required commands are selected
+            if (selectedImpCommandList.Intersect(RequiredImpCommandList).Count() != RequiredImpCommandList.Count())
+            {
+                _loading = false;
+                StateHasChanged();
+                StringBuilder sb = new();
+                foreach (var item in RequiredImpCommandList)
+                {
+                    if (!selectedImpCommandList.Contains(item))
+                    {
+                        sb.Append(item + ", ");
+                    }
+                }
+                await dialogService.ShowMessageBox("Error", $"You must select all the required commands\n {sb.ToString()}", yesText: "OK");
+                return true;
+            }
+            _loading = false;
+            StateHasChanged();
+            Console.WriteLine("Moving from step 2 to 3 " + _form2.IsValid);
+            return !_form2.IsValid;
+        }
+        else if (Stepper.GetActiveIndex() == 2)
+        {
+            _loading = true;
+            StateHasChanged();
+            await Task.Delay(100);
+            await _form3.Validate();
+            bool CommandsAndModulesPaired = await CheckCommandModulePairs();
+            if (!CommandsAndModulesPaired)
+            {
+                _loading = false;
+                StateHasChanged();
+                return true;
+            }
+            _loading = false;
+            StateHasChanged();
+            Console.WriteLine("Moving from step 3 to 4 " + _form3.IsValid);
+            return !_form3.IsValid;
+        }
+        else if (Stepper.GetActiveIndex() == 3)
+        {
+            _loading = true;
+            StateHasChanged();
+            await Task.Delay(100);
+            await _form4.Validate();
+            _loading = false;
+            StateHasChanged();
+            Console.WriteLine("Moving from step 4 to 5 " + _form4.IsValid);
+            return !_form4.IsValid;
+        }
+        else if (Stepper.GetActiveIndex() == 4)
+        {
+            _loading = true;
+            StateHasChanged();
+            await Task.Delay(100);
+            _loading = false;
+            StateHasChanged();
+            return false;
+        }
+        else
+        {
+            Console.WriteLine($"Custom Step check Current Index is {Stepper.GetActiveIndex()}");
+            return false;
+        }
+    }
+
+    private void HandleStepChange(int newIndex)
+    {
+        //we do it this way so we know the step has changed to where we want to start using our custom step check
+        if(Stepper.GetActiveIndex() == 1)
+        {
+            Stepper.PreventStepChangeAsync = CheckChange;
+        }
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if(stepperForms.Count() < 4)
+        {
+            Stepper.ActiveStepChanged = OnStepChangeCallback;
+            stepperForms.Add(_form2);
+            stepperForms.Add(_form3);
+            stepperForms.Add(_form4);
+            var commandValid = PluginService.GetCommandValidationPlugin(ImplantName);
+            if (commandValid != null)
+            {
+                RequiredImpCommandList = commandValid.GetRequiredCommandList();
+                foreach(var item in RequiredImpCommandList)
+                {
+                    selectedImpCommandList.Add(item);
+                }
+                ImpCommandList = commandValid.GetOptionalCommandList();
+                CommandModulePairs = commandValid.GetModuleCommandPairs();
+                PostExCommandsThatSpawnNewImp = commandValid.GetPostExCommands();
+                ImpModuleList = commandValid.GetOptionalModules();
+            }
+        }
+    }
+
+}

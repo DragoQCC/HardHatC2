@@ -5,24 +5,24 @@ using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 using System.Threading.Tasks;
-using TeamServer.Utilities;
-using TeamServer.Models;
-using ApiModels.Plugin_Interfaces;
-using TeamServer.Plugin_BaseClasses;
-using ApiModels.Plugin_BaseClasses;
+using HardHatCore.TeamServer.Models;
+using HardHatCore.ApiModels.Plugin_Interfaces;
+using HardHatCore.ApiModels.Plugin_BaseClasses;
 using System.Diagnostics;
 using System.Collections;
 using System.IO;
 using System.Net.Http;
-using TeamServer.Plugin_Management;
+using HardHatCore.TeamServer.Plugin_BaseClasses;
+using HardHatCore.TeamServer.Plugin_Management;
+using HardHatCore.TeamServer.Utilities;
 
 
 /* used to interact with http managers that are created
  * these are hosted by the application which is why this controller looks diff from the others  those control interactions with the API/teamserver backend itself
- * Still responsible for any IActionResult stuff from web based interactions 
+ * Still responsible for any IActionResult stuff from web based interactions
  */
 
-namespace TeamServer.Services.Handle_Implants
+namespace HardHatCore.TeamServer.Services.Handle_Implants
 {
     [Controller]
     public class HttpmanagerController : ControllerBase

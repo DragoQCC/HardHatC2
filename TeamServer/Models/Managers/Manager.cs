@@ -1,13 +1,13 @@
-﻿using ApiModels.Shared;
+﻿using HardHatCore.ApiModels.Shared;
 using System;
 using System.Threading.Tasks;
-using TeamServer.Services;
+using HardHatCore.TeamServer.Services;
 
 /* models are just normal classes, that can hold properties and functions we want for an object.
  * can be called from controllers, or services as needed
  * cant be used with depenecy injection like a service can
  */
-namespace TeamServer.Models
+namespace HardHatCore.TeamServer.Models
 {
     public abstract class manager
     {
