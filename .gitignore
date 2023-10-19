@@ -372,7 +372,7 @@ RivetAsset/.idea/workspace.xml
 
 #other
 /.idea/ 
-Assets/
+Assets/*/
 TeamServer/temp/
 TeamServer/wwwroot/
 TeamServer/Certificates/
