@@ -17,6 +17,7 @@ using HardHatCore.TeamServer.Plugin_BaseClasses;
 using HardHatCore.TeamServer.Utilities;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Newtonsoft.Json.Linq;
+using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
 //using DynamicEngLoading;
 
 namespace HardHatCore.TeamServer.Services
@@ -181,7 +182,7 @@ namespace HardHatCore.TeamServer.Services
                 managerService._managers.AddRange(await GetSMBManagers());
                 DownloadFile.downloadFiles = await GetDownloadedFiles();
                 UploadedFile.uploadedFileList = await GetUploadedFiles();
-                ExtImplantService_Base._extImplants.AddRange(await GetExtImplants());
+                IExtImplantService._extImplants.AddRange(await GetExtImplants());
                 
                 List<EncryptionKeys_DAO> encryptionKeys = await GetEncryptionKeys();
                 foreach (EncryptionKeys_DAO key in encryptionKeys)
@@ -409,7 +410,7 @@ namespace HardHatCore.TeamServer.Services
                 var storedExtImplants = AsyncConnection.Table<ExtImplant_DAO>().ToListAsync().Result.Select(x => (ExtImplant_Base)x);
                 List<ExtImplant_Base> extimplantList = new List<ExtImplant_Base>(storedExtImplants);
                 Console.WriteLine($"restored {extimplantList.Count} implants from the database");
-                ExtImplantService_Base.ImplantNumber = extimplantList.Count;
+                IExtImplantService.ImplantNumber = extimplantList.Count;
                 return extimplantList;
             }
             catch (Exception ex)

@@ -30,12 +30,8 @@
     public MudForm _form4 { get; set; } = new MudForm();
     public static string PsCmd { get; set; }
 
-
-    private EventCallback<int> OnStepChangeCallback => EventCallback.Factory.Create<int>(this, HandleStepChange);
-
-
     //event to subscribe to when the Stepper changes steps
-
+    private EventCallback<int> OnStepChangeCallback => EventCallback.Factory.Create<int>(this, HandleStepChange);
 
 
     //overridden because each implant may have a different number of steps

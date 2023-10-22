@@ -4,6 +4,7 @@
 @using HardHatCore.HardHatC2Client.Pages;
 @using HardHatCore.HardHatC2Client.Plugin_BaseClasses;
 @using HardHatCore.HardHatC2Client.Utilities;
+@using HardHatCore.HardHatC2Client.Components;
 @using static HardHatCore.HardHatC2Client.Pages.ImplantInteract;
 
 <MudCard Class="" Style="background:var(--background);" Outlined="true">
@@ -18,7 +19,7 @@
                 {
                     currenttask.Arguments.TryGetValue("/path", out string pathValue);
                     List<FileSystemItem> resultItems = (List<FileSystemItem>)CardContent.ResultObject;
-                    <HardHatC2Client.Components.DirectoryListingTable Outputs="@resultItems" />
+                    <DirectoryListingTable Outputs="@resultItems" />
                     if (pathValue != null)
                     {
                         pathValue = pathValue.TrimStart(' ').TrimEnd(' ');
@@ -28,7 +29,7 @@
                 else if (CardContent.ResponseType == ExtImplantTaskResponseType.ProcessItem)
                 {
                     var result = CardContent.ResultObject as List<ProcessItem>;
-                    <HardHatC2Client.Components.ProcessListingTable Outputs="@result" />
+                    <ProcessListingTable Outputs="@result" />
                 }
                 else if (CardContent.ResponseType == ExtImplantTaskResponseType.HelpMenuItem)
                 {
@@ -52,24 +53,24 @@
                 else if (currenttask.Command.Equals("getprivs", StringComparison.CurrentCultureIgnoreCase) && CardContent.Status == ExtImplantTaskStatus.Complete)
                 {
                     var result = ((CardContent.ResultObject as string).Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)).ToList();
-                    <HardHatC2Client.Components.GetPrivsTable Outputs="@result" />
+                    <GetPrivsTable Outputs="@result" />
                 }
                 else if (currenttask.Command.Equals("print-env", StringComparison.CurrentCultureIgnoreCase) && CardContent.Status == ExtImplantTaskStatus.Complete)
                 {
                     var result = ((CardContent.ResultObject as string).Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None)).ToList();
-                    <HardHatC2Client.Components.PrintEnvTable Outputs="@result" />
+                    <PrintEnvTable Outputs="@result" />
                 }
                 else if (currenttask.Command.Equals("GetCommands", StringComparison.CurrentCultureIgnoreCase) && CardContent.Status == ExtImplantTaskStatus.Complete)
                 {
                     var resultItem = CardContent.ResultObject as string;
                     var resultList = resultItem.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None).ToList();
-                    if (ImplantCommandValidation_Base.ImplantLoadedCommands.Keys.Contains(implant.Metadata.Id))
+                    if (IImplantCommandValidation.ImplantLoadedCommands.Keys.Contains(implant.Metadata.Id))
                     {
                         foreach (string commandName in resultList)
                         {
-                            if (!ImplantCommandValidation_Base.ImplantLoadedCommands[implant.Metadata.Id].Contains(commandName))
+                            if (!IImplantCommandValidation.ImplantLoadedCommands[implant.Metadata.Id].Contains(commandName))
                             {
-                                ImplantCommandValidation_Base.ImplantLoadedCommands[implant.Metadata.Id].Add(commandName);
+                                IImplantCommandValidation.ImplantLoadedCommands[implant.Metadata.Id].Add(commandName);
                             }
                         }
                     }
@@ -114,7 +115,7 @@
                     <MudSwitch @bind-Checked="@IsTableView" Label="Toggle Table View" Color="Color.Success" />
                     if (IsTableView == true)
                     {
-                        <HardHatC2Client.Components.AutpParsedCommandTable Outputs="ParsedCommandOutputDic[currenttask.Id]"></HardHatC2Client.Components.AutpParsedCommandTable>
+                        <AutpParsedCommandTable Outputs="ParsedCommandOutputDic[currenttask.Id]"></AutpParsedCommandTable>
                     }
                     else
                     {

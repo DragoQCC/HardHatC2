@@ -84,7 +84,7 @@ namespace HardHatCore.TeamServer.Services
                     GetExistingHttpManagers(httpManagersList, Context.ConnectionId);
                     GetExistingSMBManagers(smbManagersList, Context.ConnectionId);
                     GetExistingTCPManagers(tcpManagersList, Context.ConnectionId);
-                    foreach (ExtImplant_Base imp in ExtImplantService_Base._extImplants)
+                    foreach (ExtImplant_Base imp in IExtImplantService._extImplants)
                     {
                         UpdateOutgoingTaskDic(imp, imp.GetTasks().Result.ToList(), Context.ConnectionId);
                     }
@@ -151,7 +151,7 @@ namespace HardHatCore.TeamServer.Services
             //make a new implantTask for the engid and use the taskid in an argument with the key /TaskId
             ExtImplantTask_Base task = new ExtImplantTask_Base(Guid.NewGuid().ToString(), "cancelTask", new Dictionary<string, string>() { { "/TaskId", taskid } }, null, false,false,false, null, "",eng);
             //find the implant with the matching engid and add the task to the implants task list
-            ExtImplant_Base implant = ExtImplantService_Base._extImplants.Where(e => e.Metadata.Id == eng).FirstOrDefault();
+            ExtImplant_Base implant = IExtImplantService._extImplants.Where(e => e.Metadata.Id == eng).FirstOrDefault();
             implant.QueueTask(task);
             return task.Id;
         }
@@ -357,7 +357,7 @@ namespace HardHatCore.TeamServer.Services
         public async Task AddNoteToImplant(string implantId, string note)
         {
               //find the implant in the list of implants 
-            ExtImplant_Base implant = ExtImplantService_Base._extImplants.Where(x => x.Metadata.Id == implantId).ToList()[0];
+            ExtImplant_Base implant = IExtImplantService._extImplants.Where(x => x.Metadata.Id == implantId).ToList()[0];
             implant.Note = note;
             //update the implant in the database 
             await DatabaseService.AsyncConnection.UpdateAsync((ExtImplant_DAO)implant);
@@ -394,7 +394,7 @@ namespace HardHatCore.TeamServer.Services
         {
             //find the task in the list of tasks and add the username to the list of users who have seen the response
             //find the implant in the list of implants
-            ExtImplant_Base implant = ExtImplantService_Base._extImplants.Where(x => x.Metadata.Id == implantId).ToList()[0];
+            ExtImplant_Base implant = IExtImplantService._extImplants.Where(x => x.Metadata.Id == implantId).ToList()[0];
             //find the task result in the list of task results
             ExtImplantTaskResult_Base? taskResult = implant.GetTaskResult(taskid);
             if(taskResult == null)

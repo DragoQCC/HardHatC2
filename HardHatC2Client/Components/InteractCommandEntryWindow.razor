@@ -22,7 +22,7 @@
 {
     <EditForm Context="EditFormContext" Model="implant" OnValidSubmit="@Send">
         <div class="d-flex mb-5">
-            <MudAutocomplete style="background:#111111; color:white;" MaxItems="@((AutocompleteSearchShowAllItems) ? (int?)null : 10)" Strict="false" OnKeyDown="OnShowCommandHistory" @bind-Value=@placeHolder T="string" ResetValueOnEmptyText="false" SearchFunc="@CommandSelection.SearchCommand"
+            <MudAutocomplete style="background:#111111; color:white;" MaxItems="@((AutocompleteSearchShowAllItems) ? (int?)null : 10)" Strict="false" OnKeyDown="OnShowCommandHistory" @bind-Value=@placeHolder T="string" ResetValueOnEmptyText="false" SearchFunc="@commandSelector.SearchCommand"
                              Dense="true" Margin="Margin.Dense" SelectValueOnTab="true" SelectOnClick="false" CoerceText="false" CoerceValue="true"
                              InputMode="InputMode.text" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentText="[COMMAND]> " Immediate="true" Clearable="true" KeyDownPreventDefault="true" KeyUpPreventDefault="true" TextUpdateSuppression="@TextSuppersion">
             </MudAutocomplete>
@@ -52,7 +52,7 @@ else if (Settings._InteractInputMode == InteractInputMode.NoAutoComplete)
             }
         </div>
         <div class="d-flex mb-5">
-            <MudAutocomplete style="background:#111111; color:white;" @bind-Value=@placeHolder MaxItems="null" Strict="false" T="string" ResetValueOnEmptyText="true" SearchFunc="@CommandSelection.SearchCommand"
+            <MudAutocomplete style="background:#111111; color:white;" @bind-Value=@placeHolder MaxItems="null" Strict="false" T="string" ResetValueOnEmptyText="true" SearchFunc="@commandSelector.SearchCommand"
                              Dense="true" Margin="Margin.Dense" SelectValueOnTab="true" SelectOnClick="true" CoerceText="true"
                              InputMode="InputMode.text" Variant="Variant.Outlined" Label="Search Commands" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Immediate="true" Clearable="true" TextUpdateSuppression="@TextSuppersion">
             </MudAutocomplete>
@@ -91,8 +91,7 @@ else
     private string selectedHistoryCommand = null;
     private static int HistoryIndex = -1;
     public static bool TextSuppersion = true;
-    private CommandSelection commandSelector;
-
+    private CommandSelection commandSelector = new CommandSelection();
 
 
     private bool IsEnterkey { get; set; } = false;
@@ -391,6 +390,12 @@ else
         placeHolder = PreviousCommands[HistoryIndex];
         await Task.Delay(500);
         TextSuppersion = true; // reset so textbox can be typed in without autoclearing until submission
+    }
+
+    protected override Task OnParametersSetAsync()
+    {
+        commandSelector = new CommandSelection(implant.ImplantType);
+        return base.OnParametersSetAsync();
     }
 
     protected override async Task OnInitializedAsync()

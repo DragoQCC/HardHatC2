@@ -62,18 +62,11 @@ public class CommandKey
     }   
 }
 
-[Export(typeof(ImplantCommandValidation_Base))]
+[Export(typeof(IImplantCommandValidation))]
 [ExportMetadata("Name", "Default")]
-[ExportMetadata("Description", "This is the built in Implant Task Verification, override this if you neeed custom options when verifying tasks")]
+[ExportMetadata("Description", "This is the built in Implant Task Verification, override this if you need custom options when verifying tasks")]
 public class ImplantCommandValidation_Base : IImplantCommandValidation
 {
-    public static List<string> ManagerNames
-    {
-        get { return Managers.managersList.Select(manager => manager.Name).ToList(); }
-    }
-
-    public static Dictionary<string,List<string>> ImplantLoadedCommands = new Dictionary<string, List<string>>();
-
     public virtual List<string> GetRequiredCommandList()
     {
         return new List<string>() { "Addcommand", "AddModule", "connect", "CheckIn", "link", "FirstCheckIn", "exit", "socks", "rportforward", "canceltask", "GetCommands", "UpdateTaskKey" };
@@ -90,7 +83,6 @@ public class ImplantCommandValidation_Base : IImplantCommandValidation
         {
             {"datachunking", "DataChunk" },
             {"execute_bof", "BofExecution" }, 
-            //{ "Script","ScriptModule"} currently broken on engineer :(
         };
     }
 
@@ -201,6 +193,11 @@ public class ImplantCommandValidation_Base : IImplantCommandValidation
         }
         error = null;
         return true;
+    }
+
+    public virtual List<string> GetContextChangingCommands()
+    {
+        return new List<string>() { "getsystem", "make_token", "steal_token", "rev2self" };
     }
 
     public virtual List<CommandItem> CommandList { get; } = new List<CommandItem>()
@@ -605,7 +602,7 @@ public class ImplantCommandValidation_Base : IImplantCommandValidation
             RequiresPostProc = false,
             Keys = new List<CommandKey>()
                     {
-                        new CommandKey("/manager","",true,CommandKey.InputType.Manager, ManagerNames,  true),
+                        new CommandKey("/manager","",true,CommandKey.InputType.Manager, IImplantCommandValidation.ManagerNames,  true),
                         new CommandKey("/pid","",true,CommandKey.InputType.Text, null,  true)
                     }
         },
@@ -690,7 +687,7 @@ public class ImplantCommandValidation_Base : IImplantCommandValidation
                     {
                         new CommandKey("/method","",true,CommandKey.InputType.DropDown, new List<string>(){"psexec","wmi","wmi-ps","winrm","dcom"},  true),
                         new CommandKey("/target","",true,CommandKey.InputType.Text, null,  true),
-                        new CommandKey("/manager","",true,CommandKey.InputType.Manager, ManagerNames,  true)
+                        new CommandKey("/manager","",true,CommandKey.InputType.Manager, IImplantCommandValidation.ManagerNames,  true)
                     }
         },
         new CommandItem()
@@ -1094,7 +1091,7 @@ public class ImplantCommandValidation_Base : IImplantCommandValidation
             RequiresPostProc = false,
             Keys = new List<CommandKey>()
             {
-                new CommandKey("/manager","",true,CommandKey.InputType.Manager, ManagerNames,  true)
+                new CommandKey("/manager","",true,CommandKey.InputType.Manager, IImplantCommandValidation.ManagerNames,  true)
             }
         },
         new CommandItem()
@@ -1222,18 +1219,18 @@ public class ImplantCommandValidation_Base : IImplantCommandValidation
             }
         },
     };
-    
-    public virtual List<string> GetContextChangingCommands()
-    {
-        return new List<string>() { "getsystem", "make_token", "steal_token", "rev2self" };
-    }
-
 }
 
 public interface IImplantCommandValidation
 {
-    List<CommandItem> CommandList { get; }
+    public static List<string> ManagerNames
+    {
+        get { return Managers.managersList.Select(manager => manager.Name).ToList(); }
+    }
 
+    public static Dictionary<string, List<string>> ImplantLoadedCommands = new Dictionary<string, List<string>>();
+
+    List<CommandItem> CommandList { get; }
     bool ValidateCommand(string input, out Dictionary<string, string> args, out string error);
     List<string> GetPostExCommands();
     List<string> GetOptionalModules();
@@ -1241,7 +1238,6 @@ public interface IImplantCommandValidation
     List<CommandItem> DisplayHelp(Dictionary<string, string> input);
     List<string> GetOptionalCommandList();
     List<string> GetRequiredCommandList();
-
     List<string> GetContextChangingCommands();
 }
 
