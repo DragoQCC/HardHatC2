@@ -245,7 +245,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
                 {
                     if (result.ResponseType == ExtImplantTaskResponseType.DataChunk)
                     {
-                        await extImplant_TaskPostProcess_Base.HandleDataChunking(result);
+                        await ((ExtImplant_TaskPostProcess_Base)extImplant_TaskPostProcess_Base).HandleDataChunking(result);
                     }
                     //get the task from the implant
                     var implantTasks = await implant.GetTasks();
@@ -365,9 +365,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
 
             bool IsTaskUpdatingKey = false;
             //gets the task preproc plugin for the implant type
-            var taskpre_plugins = Plugin_Management.PluginService.pluginHub.implant_preProcPlugins;
-            var taskPre_plugin = taskpre_plugins.GetPluginEnumerableResult(implant.ImplantType);
-            ExtImplant_TaskPreProcess_Base extImplant_TaskPreProcess_Base = taskPre_plugin.Value;
+            var extImplant_TaskPreProcess_Base = PluginService.GetImpPreProcPlugin(implant.ImplantType);
             //gets the implant service plugin for the implant type
             var svc_plugins = Plugin_Management.PluginService.pluginHub.implant_servicePlugins;
             var svc_plugin = svc_plugins.GetPluginEnumerableResult(implant.ImplantType);
