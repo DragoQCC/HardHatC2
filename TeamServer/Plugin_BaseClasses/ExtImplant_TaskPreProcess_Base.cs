@@ -1,15 +1,9 @@
 ﻿using HardHatCore.ApiModels.Plugin_BaseClasses;
-using HardHatCore.ApiModels.Plugin_Interfaces;
-using HardHatCore.ApiModels.Shared;
-using HardHatCore.ApiModels.Shared.TaskResultTypes;
-using Microsoft.AspNet.SignalR;
-using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using HardHatCore.TeamServer.Models.Extras;
 using HardHatCore.TeamServer.Plugin_Interfaces;
@@ -17,14 +11,13 @@ using HardHatCore.TeamServer.Services;
 using HardHatCore.TeamServer.Services.Handle_Implants;
 using HardHatCore.TeamServer.Utilities;
 using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
-using HardHatCore.TeamServer.Plugin_Management;
 
 namespace HardHatCore.TeamServer.Plugin_BaseClasses
 {
-    [Export(typeof(ExtImplant_TaskPreProcess_Base))]
+    [Export(typeof(IExtImplant_TaskPreProcess))]
     [ExportMetadata("Name", "Default")]
     [ExportMetadata("Description", "Default pre processing for the Engineer Implant")]
-    public class ExtImplant_TaskPreProcess_Base
+    public class ExtImplant_TaskPreProcess_Base : IExtImplant_TaskPreProcess
     {
 
         public virtual bool DetermineIfTaskPreProc(ExtImplantTask_Base task)

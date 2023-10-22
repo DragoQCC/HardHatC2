@@ -181,12 +181,12 @@ namespace HardHatCore.TeamServer
                 }
 
                 //make a timer that every 30 seconds runs the ManageImplantStatusUpdate() function in the implant service
-                await ExtImplantService_Base.ManageImplantStatusUpdate();
+                await IExtImplantService.ManageImplantStatusUpdate();
                 System.Timers.Timer timer = new System.Timers.Timer();
                 timer.Interval = 30000;
                 timer.Start();
                 timer.AutoReset = true;
-                timer.Elapsed += (sender, e) => { ExtImplantService_Base.ManageImplantStatusUpdate(); };
+                timer.Elapsed += (sender, e) => { IExtImplantService.ManageImplantStatusUpdate(); };
             }
             catch (Exception e)
             {

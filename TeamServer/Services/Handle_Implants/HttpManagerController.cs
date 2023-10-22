@@ -15,6 +15,7 @@ using System.Net.Http;
 using HardHatCore.TeamServer.Plugin_BaseClasses;
 using HardHatCore.TeamServer.Plugin_Management;
 using HardHatCore.TeamServer.Utilities;
+using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
 
 
 /* used to interact with http managers that are created
@@ -45,7 +46,7 @@ namespace HardHatCore.TeamServer.Services.Handle_Implants
                 var comm_base = PluginService.GetImpCommsPlugin(implant_name);
                 if (implantMetadata != null)
                 {
-                    ExtImplantService_Base extImplantService_Base = Plugin_Management.PluginService.GetImpServicePlugin(implant_name);
+                    IExtImplantService extImplantService_Base = Plugin_Management.PluginService.GetImpServicePlugin(implant_name);
                     ExtImplant_Base implant = await comm_base.GetCheckingInImplant(implantMetadata, HttpContext , extImplantService_Base, implant_name);
                     //make a copy of the context so we can use it even after the request has been handled
                     //var _httpContext = await CaptureData(HttpContext);

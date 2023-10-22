@@ -37,7 +37,7 @@ namespace HardHatCore.HardHatC2Client.Plugin_Management
             Console.WriteLine("Plugins Loaded");
         }
 
-        public static ImplantCommandValidation_Base GetCommandValidationPlugin(string pluginName)
+        public static IImplantCommandValidation GetCommandValidationPlugin(string pluginName)
         {
             var taskVal_plugins = pluginHub.ImplantTaskValidation_Plugins;
             var taskVal_plugin = taskVal_plugins.GetPluginEnumerableResult(pluginName);

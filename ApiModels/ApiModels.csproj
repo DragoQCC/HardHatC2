@@ -5,6 +5,7 @@
     <Platforms>AnyCPU;x64</Platforms>
     <LangVersion>latestmajor</LangVersion>
     <Nullable>enable</Nullable>
+    <RootNamespace>HardHatCore.ApiModels</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

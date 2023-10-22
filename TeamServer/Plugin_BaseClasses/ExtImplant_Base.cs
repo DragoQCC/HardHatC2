@@ -38,7 +38,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
         {
             ExtImplant_Base implant_Base = new();
             implant_Base.Metadata = (ExtImplantMetadata_Base)imp_meta;
-            implant_Base.Number = ExtImplantService_Base.ImplantNumber;
+            implant_Base.Number = IExtImplantService.ImplantNumber;
             implant_Base.FirstSeen = DateTime.UtcNow;
             return implant_Base;
         }

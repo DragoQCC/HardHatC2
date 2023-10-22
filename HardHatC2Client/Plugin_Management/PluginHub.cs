@@ -12,7 +12,7 @@ namespace HardHatCore.HardHatC2Client.Plugin_Management
         public IEnumerable<Lazy<IimplantCreation, ImplantCreationBaseData>> ImplantCreation_Plugins { get; set; }
 
         [ImportMany]
-        public IEnumerable<Lazy<ImplantCommandValidation_Base, ImplantCommandValidationBaseData>> ImplantTaskValidation_Plugins { get; set; }
+        public IEnumerable<Lazy<IImplantCommandValidation, ImplantCommandValidationBaseData>> ImplantTaskValidation_Plugins { get; set; }
 
         [ImportMany]
         public IEnumerable<Lazy<ICommandCodeView, CommandCodeViewBaseData>> CommandCodeView_Plugins { get; set; }

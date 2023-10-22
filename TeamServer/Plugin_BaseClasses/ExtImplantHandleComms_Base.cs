@@ -17,19 +17,16 @@ using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
 using HardHatCore.TeamServer.Services;
 using HardHatCore.TeamServer.Utilities;
 using static SQLite.SQLite3;
+using HardHatCore.TeamServer.Plugin_Management;
 
 namespace HardHatCore.TeamServer.Plugin_BaseClasses
 {
-    [Export(typeof(ExtImplantHandleComms_Base))]
+    [Export(typeof(IExtimplantHandleComms))]
     [ExportMetadata("Name", "Default")]
     public class ExtImplantHandleComms_Base : ControllerBase, IExtimplantHandleComms
     {
-        // key is the implantId, Value is a list of parent ids and ends with its own id, making its path. The path is a list where element 0 is the http implant, and each new element is a P2P implant a level deeper
-        public static Dictionary<string, List<string>> P2P_PathStorage = new Dictionary<string, List<string>>(); 
-        //the key is a parent id, the value is a list of child ids
-        public static Dictionary<string,List<string>> ParentToChildTracker = new Dictionary<string, List<string>>();
 
-        public virtual async Task<ExtImplant_Base> GetCheckingInImplant(IExtImplantMetadata extImplantmetadata, HttpContext httpContext, ExtImplantService_Base extImplantService_Base,string pluginName)
+        public virtual async Task<ExtImplant_Base> GetCheckingInImplant(IExtImplantMetadata extImplantmetadata, HttpContext httpContext, IExtImplantService extImplantService_Base,string pluginName)
         {
             try
             {
@@ -61,7 +58,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
             }
         }
 
-        public virtual async Task HandleImplantRequest(ExtImplant_Base extImplant, ExtImplantService_Base extImplantService_Base, HttpContext httpContext)
+        public virtual async Task HandleImplantRequest(ExtImplant_Base extImplant, IExtImplantService extImplantService_Base, HttpContext httpContext)
         {
             try
             {
@@ -88,7 +85,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
             }
         }
 
-        public virtual async Task<IActionResult> RespondToImplant(ExtImplant_Base extImplant, ExtImplantService_Base extImplantService_Base)
+        public virtual async Task<IActionResult> RespondToImplant(ExtImplant_Base extImplant, IExtImplantService extImplantService_Base)
         {
             try
             {
@@ -112,16 +109,16 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
             }
         }
 
-        public virtual async Task<byte[]> ReturnImplantTasking(ExtImplant_Base extImplant, ExtImplantService_Base extImplantService_Base)
+        public virtual async Task<byte[]> ReturnImplantTasking(ExtImplant_Base extImplant, IExtImplantService extImplantService_Base)
         {
             try
             {
-                if (ParentToChildTracker.ContainsKey(extImplant.Metadata.Id))
+                if (IExtimplantHandleComms.ParentToChildTracker.ContainsKey(extImplant.Metadata.Id))
                 {
                     List<ExtImplant_Base> TaskingImps = new List<ExtImplant_Base>();
                     //find all the items in the P2Pstorage that have the current implant id as the value in its list
 
-                    foreach (var item in P2P_PathStorage.Where(x => x.Value[0].Equals(extImplant.Metadata.Id)))
+                    foreach (var item in IExtimplantHandleComms.P2P_PathStorage.Where(x => x.Value[0].Equals(extImplant.Metadata.Id)))
                     {
                         //check if the implant that is the item.Key has any pending tasks if so add it to the list of tasking imps
                         var possibleTaskedImp = extImplantService_Base.GetExtImplant(item.Key);
@@ -189,7 +186,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
 
         public virtual void CreateNewP2PPath(string implantId)
         {
-            P2P_PathStorage.Add(implantId, new List<string>() { implantId });
+            IExtimplantHandleComms.P2P_PathStorage.Add(implantId, new List<string>() { implantId });
         }
 
         public virtual async Task HandleGetRequest(ExtImplant_Base implant)
@@ -197,7 +194,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
             await HardHatHub.ImplantCheckIn(implant);
         }
 
-        public virtual async Task HandlePostRequest(ExtImplant_Base implant, ExtImplantService_Base extImpService_base, HttpContext copiedHttpContext)
+        public virtual async Task HandlePostRequest(ExtImplant_Base implant, IExtImplantService extImpService_base, HttpContext copiedHttpContext)
         {
             try
             {
@@ -242,10 +239,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
         {
             try
             {
-                //Console.WriteLine($"{DateTime.UtcNow} processing {taskResults.Count()} task results");
-                var taskpost_plugins = Plugin_Management.PluginService.pluginHub.implant_postProcPlugins;
-                var taskPost_plugin = taskpost_plugins.GetPluginEnumerableResult(implant.ImplantType);
-                ExtImplant_TaskPostProcess_Base extImplant_TaskPostProcess_Base = taskPost_plugin.Value;
+                var extImplant_TaskPostProcess_Base = PluginService.GetImpPostProcPlugin(implant.ImplantType);
                 List<ExtImplantTaskResult_Base> taskResultsToReturn = new List<ExtImplantTaskResult_Base>();
                 foreach (var result in taskResults)
                 {
@@ -344,7 +338,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
                     }
                     else
                     {
-                        var imp = ExtImplantService_Base._extImplants.Where(x => x.Metadata.Id == result.ImplantId).FirstOrDefault();
+                        var imp = IExtImplantService._extImplants.Where(x => x.Metadata.Id == result.ImplantId).FirstOrDefault();
                         if (imp != null)
                         {
                             await imp.AddTaskResult(result);
@@ -377,7 +371,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
             //gets the implant service plugin for the implant type
             var svc_plugins = Plugin_Management.PluginService.pluginHub.implant_servicePlugins;
             var svc_plugin = svc_plugins.GetPluginEnumerableResult(implant.ImplantType);
-            ExtImplantService_Base extImplantService_Base = svc_plugin.Value;
+            var extImplantService_Base = PluginService.GetImpServicePlugin(implant.ImplantType);
 
             foreach (var task in impTasks)
             {
@@ -407,18 +401,18 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
                 encryptedTaskArray = extImplantService_Base.EncryptImplantTaskData(taskArray, Encryption.UniversalTaskEncryptionKey);
                 //Console.WriteLine($"emcrypted task with universial key {Encryption.UniversalTaskEncryptionKey}");
             }
-            if (!P2P_PathStorage.ContainsKey(implant.Metadata.Id))
+            if (!IExtimplantHandleComms.P2P_PathStorage.ContainsKey(implant.Metadata.Id))
             {
-                P2P_PathStorage.Add(implant.Metadata.Id, new List<string>() { implant.Metadata.Id });
+                IExtimplantHandleComms.P2P_PathStorage.Add(implant.Metadata.Id, new List<string>() { implant.Metadata.Id });
             }
-            var c2Message = new C2TaskMessage() { PathMessage = P2P_PathStorage[implant.Metadata.Id], TaskData = encryptedTaskArray };
+            var c2Message = new C2TaskMessage() { PathMessage = IExtimplantHandleComms.P2P_PathStorage[implant.Metadata.Id], TaskData = encryptedTaskArray };
             c2TaskMessages.Add(c2Message);
             var enc_c2TaskMessages = extImplantService_Base.EncryptImplantTaskData(c2TaskMessages.Serialize(), Encryption.UniversialMessagePathKey);
             //Console.WriteLine($"Sending {c2TaskMessages.Count} C2 Message to {implant.Metadata.Id}, encrypted with key {Encryption.UniversialMessagePathKey}");
             return enc_c2TaskMessages;
         }
 
-        public void CreateNewEncKeyAndTaskUpdate(ExtImplant_Base implant, ExtImplantService_Base extImplantService_Base )
+        public void CreateNewEncKeyAndTaskUpdate(ExtImplant_Base implant, IExtImplantService extImplantService_Base )
         {
             extImplantService_Base.GenerateUniqueEncryptionKeys(implant.Metadata.Id);
             ExtImplantTask_Base updateTaskKey = new ExtImplantTask_Base

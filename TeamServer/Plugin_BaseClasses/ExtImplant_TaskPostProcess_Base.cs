@@ -24,10 +24,10 @@ using HardHatCore.TeamServer.Utilities;
 
 namespace HardHatCore.TeamServer.Plugin_BaseClasses
 {
-    [Export(typeof(ExtImplant_TaskPostProcess_Base))]
+    [Export(typeof(IExtImplant_TaskPostProcess))]
     [ExportMetadata("Name", "Default")]
     [ExportMetadata("Description", "Default post processing for the ExtImplant_Base Implant")]
-    public class ExtImplant_TaskPostProcess_Base
+    public class ExtImplant_TaskPostProcess_Base : IExtImplant_TaskPostProcess
     {
         public virtual bool DetermineIfTaskPostProc(ExtImplantTask_Base task)
         {
@@ -277,26 +277,26 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
 
             var svcPlugin_base = PluginService.GetImpServicePlugin(HttpImp.ImplantType);
 
-            if(!ExtImplantHandleComms_Base.ParentToChildTracker.ContainsKey(parentId))
+            if(!IExtimplantHandleComms.ParentToChildTracker.ContainsKey(parentId))
             {
-                ExtImplantHandleComms_Base.ParentToChildTracker.Add(parentId, new List<string>() {result.ImplantId});
+                IExtimplantHandleComms.ParentToChildTracker.Add(parentId, new List<string>() {result.ImplantId});
             }
             else
             {
-                ExtImplantHandleComms_Base.ParentToChildTracker[parentId].Add(result.ImplantId);
+                IExtimplantHandleComms.ParentToChildTracker[parentId].Add(result.ImplantId);
             }
 
-            if (!ExtImplantHandleComms_Base.P2P_PathStorage.ContainsKey(result.ImplantId))
+            if (!IExtimplantHandleComms.P2P_PathStorage.ContainsKey(result.ImplantId))
             {
                 // new implamt, key is its id, value is its path, if its parent id is equal to the http implamt then just the http implamt id is its path, otherwise check if its parent is in the HttpmanagerController.PathStorage 
                 if (parentId == HttpImp.Metadata.Id)
                 {
                     Console.WriteLine($"adding new path of {HttpImp.Metadata.Id} -> {result.ImplantId}");
-                    ExtImplantHandleComms_Base.P2P_PathStorage.Add(result.ImplantId, new List<string> { HttpImp.Metadata.Id, result.ImplantId });
+                    IExtimplantHandleComms.P2P_PathStorage.Add(result.ImplantId, new List<string> { HttpImp.Metadata.Id, result.ImplantId });
                 }
                 else
                 {
-                    foreach (var kvp in ExtImplantHandleComms_Base.P2P_PathStorage)
+                    foreach (var kvp in IExtimplantHandleComms.P2P_PathStorage)
                     {
                         if (kvp.Key == parentId)
                         {
@@ -306,8 +306,8 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
                             Console.WriteLine($"adding new path of {string.Join("->", path)} -> {result.ImplantId}");
                             var temp = new List<string>();
                             path.ForEach(x => temp.Add(x));
-                            ExtImplantHandleComms_Base.P2P_PathStorage.Add(result.ImplantId, temp);
-                            ExtImplantHandleComms_Base.P2P_PathStorage[result.ImplantId].Add(result.ImplantId); // I was adding path here and then adding to it which updated path in both spots.
+                            IExtimplantHandleComms.P2P_PathStorage.Add(result.ImplantId, temp);
+                            IExtimplantHandleComms.P2P_PathStorage[result.ImplantId].Add(result.ImplantId); // I was adding path here and then adding to it which updated path in both spots.
                             break;
                         }
                     }
@@ -319,7 +319,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
             if (p2pimplamt is null)                              // if Engineer is null then this is the first time connecting so send metadata and add to list
             {
                 // use the parent id to get the parents pid@address 
-                var parentImp = svcPlugin_base.GetExtImplant(ExtImplantHandleComms_Base.P2P_PathStorage[p2pEngMetadata.Id][0]);
+                var parentImp = svcPlugin_base.GetExtImplant(IExtimplantHandleComms.P2P_PathStorage[p2pEngMetadata.Id][0]);
                 var extralAddressP2PString = parentImp.Metadata.ProcessId + "@" + parentImp.Metadata.Address;
 
                 p2pimplamt = svcPlugin_base.InitImplantObj(p2pEngMetadata, HttpImp.ImplantType);

@@ -19,64 +19,18 @@ using HardHatCore.TeamServer.Utilities;
 
 namespace HardHatCore.TeamServer.Plugin_BaseClasses
 {
-    [Export(typeof(ExtImplantService_Base))]
+    [Export(typeof(IExtImplantService))]
     [ExportMetadata("Name","Default")]
     public class ExtImplantService_Base : IExtImplantService
     {
-        public static int ImplantNumber = 1;
-        public static List<ExtImplant_Base> _extImplants = new();
-        //public static Dictionary<string, string> Encryption.UniqueTaskEncryptionKey = new Dictionary<string, string>();
-
-        public static async Task ManageImplantStatusUpdate()
-        {
-            //for each implant if it has not checked in for 3 times the checkin interval then mark it as offline
-            foreach (var implant in _extImplants)
-            {
-                    if (implant.Metadata.Sleep > 0 && implant.LastSeen.AddSeconds(implant.Metadata.Sleep * 3) < DateTime.UtcNow && implant.Status is not "Offline")
-                    {
-                        implant.Status = "Offline";
-                        HardHatHub.AlertEventHistory(new HistoryEvent()
-                        {
-                            Event = $"Implant ({implant.ImplantType}) {implant.Metadata.Id} Offline",
-                            Status = "Warning",
-                        });
-                        LoggingService.EventLogger.ForContext("Implant Metadata", implant.Metadata, true).ForContext("connection Type", implant.ConnectionType)
-                            .Warning($"Implant ({implant.ImplantType}) {implant.Metadata.Id} Offline");
-
-                        //update the implant in the database
-                        if(DatabaseService.Connection != null)
-                        {
-                            DatabaseService.Connection.Update((ExtImplant_DAO)implant);
-                        }
-                        else
-                        {
-                            DatabaseService.Init();
-                            DatabaseService.Connection.Update((ExtImplant_DAO)implant);
-                        }
-                    }
-                    else
-                    {
-                        if(implant.LastSeen.AddSeconds(60) < DateTime.UtcNow && implant.Status is not "Offline")
-                        {
-                            implant.Status = "Offline";
-                            HardHatHub.AlertEventHistory(new HistoryEvent()
-                            {
-                                Event = $"Implant ({implant.ImplantType}) {implant.Metadata.Id} Offline",
-                                Status = "Warning",
-                            });
-                            LoggingService.EventLogger.ForContext("Implant Metadata", implant.Metadata, true).ForContext("connection Type", implant.ConnectionType)
-                                .Warning($"Implant ({implant.ImplantType}) {implant.Metadata.Id} Offline");
-                        }
-                    }
-            }
-        }
+        
         public virtual void AddExtImplant(ExtImplant_Base Implant)
         {
-            _extImplants.Add(Implant);
+            IExtImplantService._extImplants.Add(Implant);
         }
         public virtual void RemoveExtImplant(ExtImplant_Base Implant)
         {
-            _extImplants.Remove(Implant);
+            IExtImplantService._extImplants.Remove(Implant);
         }
 
         public virtual bool CreateExtImplant(IExtImplantCreateRequest request, out string result_message)
@@ -98,18 +52,18 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
         }
         public virtual IEnumerable<ExtImplant_Base> GetExtImplants()
         {
-            return _extImplants;
+            return IExtImplantService._extImplants;
         }
 
         public virtual ExtImplant_Base GetExtImplant(string id)
         {
-            return _extImplants.FirstOrDefault(x => x.Metadata.Id == id);
+            return IExtImplantService._extImplants.FirstOrDefault(x => x.Metadata.Id == id);
         }
 
         public virtual ExtImplant_Base InitImplantObj(IExtImplantMetadata implantMeta, ref HttpContext httpcontentxt,string pluginName)
         {
             var model = PluginService.GetImpPlugin(pluginName);
-            ImplantNumber++;
+            IExtImplantService.ImplantNumber++;
             var temp = model.GetNewIExtImplant(implantMeta);
             temp.ConnectionType = httpcontentxt.Request.Scheme;
             temp.ExternalAddress = httpcontentxt.Connection.RemoteIpAddress.ToString();
@@ -276,9 +230,9 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
         public virtual byte[] HandleP2PDataDecryption(IExtImplant implant, byte[] encryptedData)
         {
             byte[] decryptedBytes = null;
-            if (ExtImplantHandleComms_Base.P2P_PathStorage.ContainsKey(implant.Metadata.Id))
+            if (IExtimplantHandleComms.P2P_PathStorage.ContainsKey(implant.Metadata.Id))
             {
-                foreach (string key in ExtImplantHandleComms_Base.P2P_PathStorage[implant.Metadata.Id])
+                foreach (string key in IExtimplantHandleComms.P2P_PathStorage[implant.Metadata.Id])
                 {
                     if (Encryption.UniqueTaskEncryptionKey.ContainsKey(key))
                     {
