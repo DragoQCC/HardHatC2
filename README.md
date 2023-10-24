@@ -24,11 +24,12 @@ HardHat has three main components:
 
 1. An ASP.NET teamserver
 2. A Blazor .NET client
-3. C# based implants
+3. Built-in C# based implants
+  1. Support for 3rd party implants in other languages   
 
 Full documentation is available at [https://docs.hardhat-c2.net/](https://docs.hardhat-c2.net/).
 
-**NOTE**: HardHat is in Alpha release; it will have bugs, missing features, and unexpected things will happen. Thank you for trying it, and please report back any issues or missing features so they can be addressed.
+**NOTE**: HardHat is in an Alpha release; it will have bugs, missing features, and unexpected things will happen. Thank you for trying it, and please report back any issues or missing features so they can be addressed.
 
 ## Community
 
@@ -37,6 +38,9 @@ Join our [Discord][Discord] community to talk about HardHat C2, programming, red
 Code contributions are welcome! Feel free to submit feature requests, pull requests, or send me your ideas on [Discord][Discord].
 
 ## Features
+### Custom Asset Support 
+- Assets are the Implants and associated plugins for the team server and client. 
+To see the available ones and learn how to create more, check out the [HardHat Toolbox](https://github.com/HardHatToolbox)
 
 ### Teamserver & Client
 
