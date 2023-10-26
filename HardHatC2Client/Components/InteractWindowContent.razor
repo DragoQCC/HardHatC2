@@ -38,7 +38,7 @@
             }
             else
             {
-                Console.WriteLine($"Card result is in panel should be setting status to {CardContent.Status.ToString()}");
+               // Console.WriteLine($"Card result is in panel should be setting status to {CardContent.Status.ToString()}");
                 <div class="d-flex">
                 @if (ImplantInteract.PanelExpandedOnce.ContainsKey(currenttask.Id))
                 {
@@ -113,7 +113,7 @@
             {
                 //should be the final refresh before should render starts returning false 
                 await InvokeAsync(StateHasChanged);
-                Console.WriteLine("should render is now false");
+               // Console.WriteLine("should render is now false");
                 pendingUpdate = false;
             }
             else

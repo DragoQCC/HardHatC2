@@ -1,5 +1,6 @@
 ﻿@page "/Index"
 @inject IDialogService DialogService
+@using HardHatCore.HardHatC2Client.Components;
 
 <PageTitle>Index</PageTitle>
 <!--Insert table with 2 rows -->
@@ -53,7 +54,7 @@
         </Authorizing>
         <NotAuthorized>
             <h1 class="text-center">Not Authorized</h1>
-        <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+        <UnAuthorizedDialogBox></UnAuthorizedDialogBox>
         </NotAuthorized>
     </AuthorizeView>
 </CascadingAuthenticationState>

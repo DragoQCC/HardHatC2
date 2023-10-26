@@ -97,13 +97,12 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
         public virtual ExtImplantTaskResult_Base GetTaskResult(string taskId)
         {
             //check the database for the task result
-            if(DatabaseService.AsyncConnection is not null)
+            if(DatabaseService.AsyncConnection is null)
             {
-                return DatabaseService.AsyncConnection.Table<ExtImplantTaskResult_DAO>().FirstOrDefaultAsync(x => x.TaskId == taskId).Result;
+                DatabaseService.ConnectDb();
             }
-            DatabaseService.ConnectDb();
-            return DatabaseService.AsyncConnection.Table<ExtImplantTaskResult_DAO>().FirstOrDefaultAsync(x => x.TaskId == taskId).Result;
-
+            var returnedItem = DatabaseService.AsyncConnection.Table<ExtImplantTaskResult_DAO>().FirstOrDefaultAsync(x => x.TaskId == taskId).Result;
+            return returnedItem ?? null;
         }
 
         public virtual async Task<IEnumerable<ExtImplantTaskResult_Base>> GetTaskResults()

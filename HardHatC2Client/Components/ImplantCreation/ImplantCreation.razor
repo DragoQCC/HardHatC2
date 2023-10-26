@@ -133,12 +133,12 @@
             await _form1.Validate();
             _loading = false;
             StateHasChanged();
-            Console.WriteLine("Moving from step 1 to 2 " + _form1.IsValid);
+           // Console.WriteLine("Moving from step 1 to 2 " + _form1.IsValid);
             return !_form1.IsValid;
         }
         else
         {
-            Console.WriteLine($"Og Step check Current Index is {Stepper.GetActiveIndex()}");
+           // Console.WriteLine($"Og Step check Current Index is {Stepper.GetActiveIndex()}");
             return false;
         }
     }

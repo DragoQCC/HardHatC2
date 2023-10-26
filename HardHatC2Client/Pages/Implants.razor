@@ -8,8 +8,8 @@
 @using System.Collections.ObjectModel
 @using System.Linq
 @using System.Diagnostics;
+@using Blazored.LocalStorage
 @using RestSharp.Authenticators;
-@using Blazored.LocalStorage;
 @inject RestClient restClientDefault
 @inject IToastService toastDefault
 @inject NavigationManager navigationManagerDefault
@@ -149,12 +149,12 @@
                 <br>
                 <MudTabPanel Text="Graph View">
                     <MudPaper Height="1100px" Width="100%">
-                        <HardHatC2Client.Components.ImplantGraph></HardHatC2Client.Components.ImplantGraph>
+                        <ImplantGraph></ImplantGraph>
                     </MudPaper>
                 </MudTabPanel>
                 <br>
                 <MudTabPanel Text="Compiled Implants">
-                    <HardHatC2Client.Components.CompiledImplantTable></HardHatC2Client.Components.CompiledImplantTable>
+                    <CompiledImplantTable></CompiledImplantTable>
                 </MudTabPanel>
             </MudTabs>
         </Authorized>
@@ -162,7 +162,7 @@
     <AuthorizeView Roles="Guest,Operator,TeamLead,Administrator">
         <NotAuthorized>
             <h1 class="text-center">Not Authorized</h1>
-            <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+            <UnAuthorizedDialogBox></UnAuthorizedDialogBox>
         </NotAuthorized>
     </AuthorizeView>
 </CascadingAuthenticationState>
@@ -420,6 +420,7 @@
                 break;
             case 3:
                 //exit
+                ShowInfoToast("Exit is not implemented yet");
                 break;
         }
     }

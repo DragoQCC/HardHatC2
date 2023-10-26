@@ -1,6 +1,7 @@
 ﻿@page "/HostedFiles"
 @using HardHatCore.HardHatC2Client.Services
 @using HardHatCore.HardHatC2Client.Models
+@using HardHatCore.HardHatC2Client.Components;
 
 <CascadingAuthenticationState>
 	<AuthorizeView Roles="Operator,TeamLead">
@@ -58,7 +59,7 @@
 	<AuthorizeView Roles="TeamLead,Operator,Guest">
                    <NotAuthorized>
                         <h1 class="text-center">Not Authorized</h1>
-                        <HardHatC2Client.Components.UnAuthorizedDialogBox></HardHatC2Client.Components.UnAuthorizedDialogBox>
+                        <UnAuthorizedDialogBox></UnAuthorizedDialogBox>
                     </NotAuthorized>
         </AuthorizeView>
 </CascadingAuthenticationState>

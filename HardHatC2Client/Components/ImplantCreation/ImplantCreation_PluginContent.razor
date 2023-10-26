@@ -66,7 +66,7 @@
             }
             _loading = false;
             StateHasChanged();
-            Console.WriteLine("Moving from step 2 to 3 " + _form2.IsValid);
+           // Console.WriteLine("Moving from step 2 to 3 " + _form2.IsValid);
             return !_form2.IsValid;
         }
         else if (Stepper.GetActiveIndex() == 2)
@@ -84,7 +84,7 @@
             }
             _loading = false;
             StateHasChanged();
-            Console.WriteLine("Moving from step 3 to 4 " + _form3.IsValid);
+           // Console.WriteLine("Moving from step 3 to 4 " + _form3.IsValid);
             return !_form3.IsValid;
         }
         else if (Stepper.GetActiveIndex() == 3)
@@ -95,7 +95,7 @@
             await _form4.Validate();
             _loading = false;
             StateHasChanged();
-            Console.WriteLine("Moving from step 4 to 5 " + _form4.IsValid);
+           // Console.WriteLine("Moving from step 4 to 5 " + _form4.IsValid);
             return !_form4.IsValid;
         }
         else if (Stepper.GetActiveIndex() == 4)
@@ -109,7 +109,7 @@
         }
         else
         {
-            Console.WriteLine($"Custom Step check Current Index is {Stepper.GetActiveIndex()}");
+           // Console.WriteLine($"Custom Step check Current Index is {Stepper.GetActiveIndex()}");
             return false;
         }
     }
