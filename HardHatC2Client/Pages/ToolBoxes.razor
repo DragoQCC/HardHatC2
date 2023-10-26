@@ -55,7 +55,7 @@
 <Authorized>
     <MudTabs>
         <MudTabPanel Text="Commands">
-                    <MudSelectExtended ValuePresenter="MudExtensions.Enums.ValuePresenter.ItemContent" Clearable="true" Class="mb-4 mt-4" T="Lazy<CommandCodeView_Base, CommandCodeViewBaseData>" Label="Implant Type" Variant="Variant.Filled" Required="true" @bind-value="CodeViewPlugin" RequiredError="Type is required!">
+                    <MudSelectExtended ValuePresenter="MudExtensions.Enums.ValuePresenter.ItemContent" Clearable="true" Class="mb-4 mt-4" T="Lazy<ICommandCodeView, CommandCodeViewBaseData>" Label="Implant Type" Variant="Variant.Filled" Required="true" @bind-value="CodeViewPlugin" RequiredError="Type is required!">
 	    @foreach (var _codeViewPlugin in Plugin_Management.PluginService.pluginHub.CommandCodeView_Plugins)
 	    {
 		    string displayname = _codeViewPlugin.Metadata.Name;
@@ -126,7 +126,7 @@
     private MudDataGrid<ToolboxCommand> _table;
     private List<string> editEvents = new();
     private static Dictionary<string, CommandItem.OpsecStatus> CommandSelectedOpsecLevel { get; set; } = new();
-    private static Lazy<CommandCodeView_Base, CommandCodeViewBaseData> CodeViewPlugin { get; set; }
+    private static Lazy<ICommandCodeView, CommandCodeViewBaseData> CodeViewPlugin { get; set; }
 
     public class ToolboxCommand
     {
