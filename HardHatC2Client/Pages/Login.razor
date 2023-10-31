@@ -23,7 +23,7 @@
             <MudTabPanel Text="Login">
                 <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
                     <MudTextField Variant="Variant.Outlined" T="string" @bind-Value="UserName" Label="Username" Required="true" RequiredError="User name is required!" />
-                    <MudTextField Variant="Variant.Outlined" T="string" @bind-Value="Password" Label="Password" HelperText="Choose a strong password" @ref="pwField1" InputType="InputType.Password" Required="true" RequiredError="Password is required!" />
+                    <MudTextField Variant="Variant.Outlined" T="string" @bind-Value="Password" Label="Password" @ref="pwField1" InputType="InputType.Password" Required="true" RequiredError="Password is required!" />
                     <div class="d-flex align-center justify-space-between">
                         <MudButton DisableElevation="true" Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" Class="ml-auto" @onclick="@handleValidLogin">Login</MudButton>
                     </div>
