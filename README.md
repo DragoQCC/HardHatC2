@@ -25,7 +25,7 @@ HardHat has three main components:
 1. An ASP.NET teamserver
 2. A Blazor .NET client
 3. Built-in C# based implants
-  1. Support for 3rd party implants in other languages   
+   - Support for 3rd party implants in other languages   
 
 Full documentation is available at [https://docs.hardhat-c2.net/](https://docs.hardhat-c2.net/).
 
