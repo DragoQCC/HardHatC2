@@ -25,8 +25,8 @@
                                 <MudTextField Variant="Variant.Outlined" @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
                             </ToolBarContent>
     <Columns>
-        <PropertyColumn HeaderStyle="@setStyle(Settings.IsCheckedBox)" Property="x => x.commandName" Title="Command Name" CellStyleFunc="@_styleFunc" IsEditable="false"/>
-                    <TemplateColumn CellClass="d-flex" HeaderStyle="@setStyle(Settings.IsCheckedBox)" Title="Opsec Status" CellStyleFunc="@_styleFunc" IsEditable="true">
+        <PropertyColumn HeaderStyle="@setStyle(MainLayout.IsDarkMode)" Property="x => x.commandName" Title="Command Name" CellStyleFunc="@_styleFunc" IsEditable="false"/>
+                    <TemplateColumn CellClass="d-flex" HeaderStyle="@setStyle(MainLayout.IsDarkMode)" Title="Opsec Status" CellStyleFunc="@_styleFunc" IsEditable="true">
             <CellTemplate Context="cellcontext">
                             <MudSelect Variant="Variant.Outlined" ValueChanged="(e)=>OpsecChanged(selectedItem1.commandName,e)" T="CommandItem.OpsecStatus">
                                 @foreach (CommandItem.OpsecStatus opsec in Enum.GetValues(typeof(CommandItem.OpsecStatus)))
@@ -36,8 +36,8 @@
             </MudSelect>
             </CellTemplate>
         </TemplateColumn>
-        <PropertyColumn HeaderStyle="@setStyle(Settings.IsCheckedBox)" Property="x=>x.MitreTechnique" Title="Mitre ATT&CK Map" CellStyleFunc="@_styleFunc" IsEditable="true"/>
-        <TemplateColumn HeaderStyle="@setStyle(Settings.IsCheckedBox)" CellStyleFunc="@_styleFunc" CellClass="d-flex">
+        <PropertyColumn HeaderStyle="@setStyle(MainLayout.IsDarkMode)" Property="x=>x.MitreTechnique" Title="Mitre ATT&CK Map" CellStyleFunc="@_styleFunc" IsEditable="true"/>
+        <TemplateColumn HeaderStyle="@setStyle(MainLayout.IsDarkMode)" CellStyleFunc="@_styleFunc" CellClass="d-flex">
             <CellTemplate Context="editCellContext">
                 <MudIconButton Icon="@Icons.Material.Outlined.Edit" OnClick="@editCellContext.Actions.StartEditingItemAsync" />
             </CellTemplate>
@@ -81,8 +81,8 @@
                                 <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
                             </ToolBarContent>
     <Columns>
-        <PropertyColumn HeaderStyle="@setStyle(Settings.IsCheckedBox)" Property="x => x.commandName" Title="Command Name" CellStyleFunc="@_styleFunc" IsEditable="false"/>
-                    <TemplateColumn CellClass="d-flex" HeaderStyle="@setStyle(Settings.IsCheckedBox)" Title="Opsec Status" CellStyleFunc="@_styleFunc" IsEditable="false">
+        <PropertyColumn HeaderStyle="@setStyle(MainLayout.IsDarkMode)" Property="x => x.commandName" Title="Command Name" CellStyleFunc="@_styleFunc" IsEditable="false"/>
+                    <TemplateColumn CellClass="d-flex" HeaderStyle="@setStyle(MainLayout.IsDarkMode)" Title="Opsec Status" CellStyleFunc="@_styleFunc" IsEditable="false">
             <CellTemplate Context="cellcontext">
                             <MudSelect ValueChanged="(e)=>OpsecChanged(selectedItem1.commandName,e)" T="CommandItem.OpsecStatus">
                                 @foreach (CommandItem.OpsecStatus opsec in Enum.GetValues(typeof(CommandItem.OpsecStatus)))
@@ -92,8 +92,8 @@
             </MudSelect>
             </CellTemplate>
         </TemplateColumn>
-        <PropertyColumn HeaderStyle="@setStyle(Settings.IsCheckedBox)" Property="x=>x.MitreTechnique" Title="Mitre ATT&CK Map" CellStyleFunc="@_styleFunc" IsEditable="false"/>
-        <TemplateColumn HeaderStyle="@setStyle(Settings.IsCheckedBox)" CellStyleFunc="@_styleFunc" CellClass="d-flex">
+        <PropertyColumn HeaderStyle="@setStyle(MainLayout.IsDarkMode)" Property="x=>x.MitreTechnique" Title="Mitre ATT&CK Map" CellStyleFunc="@_styleFunc" IsEditable="false"/>
+        <TemplateColumn HeaderStyle="@setStyle(MainLayout.IsDarkMode)" CellStyleFunc="@_styleFunc" CellClass="d-flex">
             <CellTemplate Context="editCellContext">
                 <MudIconButton Icon="@Icons.Material.Outlined.Edit" OnClick="@editCellContext.Actions.StartEditingItemAsync" />
             </CellTemplate>

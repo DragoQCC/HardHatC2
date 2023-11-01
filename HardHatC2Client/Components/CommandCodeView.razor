@@ -69,7 +69,7 @@
                 Language = GetCodeLanguage(selectedCodeFile.Key),
                 Value = File.ReadAllText(selectedCodeFile.Value)
             };
-        if (Settings.IsCheckedBox)
+        if (MainLayout.IsDarkMode)
         {
             editorInstance.Theme = "vs-dark";
         }

@@ -29,13 +29,13 @@
             </style>
                         <MudTable Virtualize="true" Items="@DownloadedFiles" HorizontalScrollbar="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Outlined="true" Striped="true" RowClassFunc="@SelectedRowClassFunc" OnRowClick="RowClickEvent" @ref="mudTable" T="DownloadFile">
                             <HeaderContent>
-                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Name </MudTh>
-                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Host</MudTh>
-                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Original Path </MudTh>
-                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Saved Location</MudTh>
-                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Download Time</MudTh>
-                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Download</MudTh>
-                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">View</MudTh>
+                                <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Name </MudTh>
+                                <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Host</MudTh>
+                                <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Original Path </MudTh>
+                                <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Saved Location</MudTh>
+                                <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Download Time</MudTh>
+                                <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Download</MudTh>
+                                <MudTh Style="@setStyle(MainLayout.IsDarkMode)">View</MudTh>
                             </HeaderContent>
                             <RowTemplate Context="Rowcontext">
                                 <MudTd>@Rowcontext.Name</MudTd>
@@ -88,11 +88,11 @@
                 </style>
                         <MudTable Virtualize="true" Items="@DownloadedFiles" HorizontalScrollbar="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Outlined="true" Striped="true" RowClassFunc="@SelectedRowClassFunc" OnRowClick="RowClickEvent" @ref="mudTable" T="DownloadFile">
                             <HeaderContent>
-                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Name </MudTh>
-                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Host</MudTh>
-                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Original Path </MudTh>
-                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Saved Location</MudTh>
-                                <MudTh Style="@setStyle(Settings.IsCheckedBox)">Download Time</MudTh>
+                                <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Name </MudTh>
+                                <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Host</MudTh>
+                                <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Original Path </MudTh>
+                                <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Saved Location</MudTh>
+                                <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Download Time</MudTh>
                             </HeaderContent>
                             <RowTemplate Context="Rowcontext">
                                 <MudTd>@Rowcontext.Name</MudTd>

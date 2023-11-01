@@ -11,12 +11,12 @@
 
     </ToolBarContent>
     <HeaderContent>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(0))">Name</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(1))">Description</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(2))">Usage</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(3))">NeedsAdmin</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(4))">Opsec</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(6))">Keys</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(0))">Name</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(1))">Description</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(2))">Usage</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(3))">NeedsAdmin</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(4))">Opsec</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(6))">Keys</MudTableSortLabel></MudTh>
     </HeaderContent>
     <RowTemplate>
         <MudTd>@context.Name</MudTd>

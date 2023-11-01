@@ -24,18 +24,18 @@
             <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
         </ToolBarContent>
         <HeaderContent>
-            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.Id)">Id</MudTableSortLabel></MudTh>
-            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.ImplantType)">Implant Type</MudTableSortLabel></MudTh>
-            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.Name)">Name</MudTableSortLabel></MudTh>
-            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.ManagerName)">Manager Name</MudTableSortLabel></MudTh>
-            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.CompileDateTime)">Compile DateTime</MudTableSortLabel></MudTh>
-            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.KillDateTime)">KillDateTime</MudTableSortLabel></MudTh>
-            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.ConnectionAttempts)">ConnectionAttempts</MudTableSortLabel></MudTh>
-            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.IncludedCommands)">Included Commands</MudTableSortLabel></MudTh>
-            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.IncludedModules)">Included Modules</MudTableSortLabel></MudTh>
-            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.Sleep)">Sleep</MudTableSortLabel></MudTh>
-            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.SleepType)">Sleep Type</MudTableSortLabel></MudTh>
-            <MudTh Style="@setStyle(Settings.IsCheckedBox)">Download</MudTh>
+            <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.Id)">Id</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.ImplantType)">Implant Type</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.Name)">Name</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.ManagerName)">Manager Name</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.CompileDateTime)">Compile DateTime</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.KillDateTime)">KillDateTime</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.ConnectionAttempts)">ConnectionAttempts</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.IncludedCommands)">Included Commands</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.IncludedModules)">Included Modules</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.Sleep)">Sleep</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<CompiledImplant, object>(x=>x.SleepType)">Sleep Type</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Download</MudTh>
         </HeaderContent>
         <RowTemplate Context="Rowcontext">
             <MudTd>@Rowcontext.Id</MudTd>

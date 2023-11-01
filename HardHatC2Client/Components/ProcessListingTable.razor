@@ -9,13 +9,13 @@
         
     </ToolBarContent>
     <HeaderContent>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(0))">Process Name</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(1))">Process Path</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(2))">Owner</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(3))">PID</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(4))">PPID</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(5))">SessionID</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(6))">Arch</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(0))">Process Name</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(1))">Process Path</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(2))">Owner</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(3))">PID</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(4))">PPID</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(5))">SessionID</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<ProcessItem>, ProcessItem>(x=>x.ElementAt(6))">Arch</MudTableSortLabel></MudTh>
     </HeaderContent>
     <RowTemplate>
         <MudTd>@context.ProcessName</MudTd>

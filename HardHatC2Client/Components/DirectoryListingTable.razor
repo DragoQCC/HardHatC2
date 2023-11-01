@@ -25,14 +25,14 @@
         
     </ToolBarContent>
     <HeaderContent>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(0))">Name</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(1))">Length</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(2))">Owner</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(3))">Item Count</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(4))">CreationTimeUtc</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(5))">LastAccessTimeUtc</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(6))">LastWriteTimeUtc</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(7))">ACLs</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(0))">Name</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(1))">Length</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(2))">Owner</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(3))">Item Count</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(4))">CreationTimeUtc</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(5))">LastAccessTimeUtc</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(6))">LastWriteTimeUtc</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<List<FileSystemItem>, FileSystemItem>(x=>x.ElementAt(7))">ACLs</MudTableSortLabel></MudTh>
     </HeaderContent>
     <RowTemplate>
         <MudTd><MudIcon Size="Size.Small" Class="m-2" Color=@GetColor(context.Name) Icon=@getIcon(context.Name)></MudIcon> @context.Name</MudTd>
@@ -52,10 +52,10 @@
                     {
                         <MudTable T="ACL" @ref=@_child_table Items="context.ACLs" HorizontalScrollbar="false" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Outlined="true" Striped="true" SortLabel="Sort By">
                             <HeaderContent>
-                                <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x => x.ElementAt(0))">Name</MudTableSortLabel></MudTh>
-                                <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x => x.ElementAt(1))">Type</MudTableSortLabel></MudTh>
-                                <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x => x.ElementAt(2))">Rights</MudTableSortLabel></MudTh>
-                                <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x => x.ElementAt(3))">Is Inherited</MudTableSortLabel></MudTh>
+                                <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<string[], string>(x => x.ElementAt(0))">Name</MudTableSortLabel></MudTh>
+                                <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<string[], string>(x => x.ElementAt(1))">Type</MudTableSortLabel></MudTh>
+                                <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<string[], string>(x => x.ElementAt(2))">Rights</MudTableSortLabel></MudTh>
+                                <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<string[], string>(x => x.ElementAt(3))">Is Inherited</MudTableSortLabel></MudTh>
                             </HeaderContent>
                             <RowTemplate Context="childcontext">
                                 <MudTd>@childcontext.IdentityRef</MudTd>

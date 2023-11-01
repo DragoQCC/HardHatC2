@@ -270,7 +270,7 @@
         //find the tag with the name of the chip
         Tag tag = Tag.Existing_Tags.Find(x => x.Name.Equals(chipName, StringComparison.CurrentCultureIgnoreCase));
 
-        if(Settings.IsCheckedBox)
+        if(MainLayout.IsDarkMode)
         {
             //dark mode 
              return $"background:{tag.Color}; color:white;";
