@@ -72,28 +72,20 @@ namespace HardHatCore.TeamServer.Utilities
             {
                 if (data is not null && data.Length > 0)
                 {
+                    //if the last byte is a 0 then remove it
+                    if (data.Length >= 1 && data[^1] == 0)
+                    {
+                        data = data[..^1];
+                    }
+
                     json = Encoding.UTF8.GetString(data);
                     //Console.WriteLine(json);
-                    if (IsValidJson(json))
-                    {
-                        JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions();
-                        jsonSerializerOptions.AllowTrailingCommas = true;
-                        return JsonSerializer.Deserialize<T>(data, jsonSerializerOptions);
-                    }
-                    else if (typeof(T) == typeof(string))
-                    {
-                        return (T)(object)json;
-                    }
-                    else
-                    {
-                        string? fixedJson =  TryToFixJson(json);
-                        if (fixedJson != null)
-                        {
-                            return JsonSerializer.Deserialize<T>(fixedJson);
-                        }
-                        Console.WriteLine("Input data is not a valid JSON & is not a normal string, returning default value");
-                        return default;
-                    }
+                    JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions();
+                    jsonSerializerOptions.AllowTrailingCommas = true;
+                    jsonSerializerOptions.PropertyNameCaseInsensitive = true;
+                    jsonSerializerOptions.ReadCommentHandling = JsonCommentHandling.Skip;
+                    
+                    return JsonSerializer.Deserialize<T>(json, jsonSerializerOptions);
                 }
                 else
                 {
@@ -103,10 +95,22 @@ namespace HardHatCore.TeamServer.Utilities
             }
             catch (Exception ex)
             {
-                //Console.WriteLine(Encoding.UTF8.GetString(data));
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
-                return default;
+                if (typeof(T) == typeof(string))
+                {
+                    return (T)(object)json;
+                }
+                else
+                {
+                    string? fixedJson = TryToFixJson(json);
+                    if (fixedJson != null)
+                    {
+                        return JsonSerializer.Deserialize<T>(fixedJson);
+                    }
+                    Console.WriteLine("Input data is not a valid JSON & is not a normal string, returning default value");
+                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(ex.StackTrace);
+                    return default;
+                }
             }
         }
 

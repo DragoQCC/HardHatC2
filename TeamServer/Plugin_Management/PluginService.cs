@@ -2,12 +2,25 @@
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Loader;
 using HardHatCore.TeamServer.Plugin_BaseClasses;
 using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
 using HardHatCore.TeamServer.Utilities;
 
 namespace HardHatCore.TeamServer.Plugin_Management
 {
+    //should make it so that plugins can be reloaded at runtime
+    class CustomAssemblyLoadContext : AssemblyLoadContext
+    {
+        public CustomAssemblyLoadContext() : base(isCollectible: true)
+        {
+        }
+        protected override Assembly Load(AssemblyName assemblyName)
+        {
+            return null;
+        }
+    }
+
     public class PluginService
     {
         public static CompositionContainer _container;
@@ -18,11 +31,39 @@ namespace HardHatCore.TeamServer.Plugin_Management
 
         public static void RefreshPlugins()
         {
-            _container.Dispose();
-            directoryCatalog.Refresh();
-            _container = new CompositionContainer(catalog);
-            pluginHub = _container.GetExportedValue<IPluginHub>();
-            Console.WriteLine("Plugins Refreshed");
+            try
+            {
+                // Dispose of the existing container
+                if (_container != null)
+                {
+                    _container.Dispose();
+                }
+
+                // Recreate the DirectoryCatalog to ensure it picks up new changes
+                char allPlatformPathSeperator = Path.DirectorySeparatorChar;
+                string assemblyBasePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                string[] pathSplit = assemblyBasePath.Split("bin");
+                pathSplit[0] = pathSplit[0].Replace("\\", allPlatformPathSeperator.ToString());
+                string PluginFolderfilepath = pathSplit[0] + "Plugins";
+
+                directoryCatalog = new DirectoryCatalog(PluginFolderfilepath, "*.dll");
+
+                // Recreate the AggregateCatalog
+                catalog = new AggregateCatalog();
+                catalog.Catalogs.Add(new AssemblyCatalog(typeof(Program).Assembly));
+                catalog.Catalogs.Add(directoryCatalog);
+
+                // Create a new CompositionContainer
+                _container = new CompositionContainer(catalog);
+
+                // Get the exported value again
+                pluginHub = _container.GetExportedValue<IPluginHub>();
+                Console.WriteLine("Plugins Refreshed");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error refreshing plugins: " + e.Message);
+            }
         }
 
         public static void InitPlugins()
