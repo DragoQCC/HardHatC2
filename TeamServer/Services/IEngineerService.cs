@@ -68,7 +68,6 @@ namespace HardHatCore.TeamServer.Services
                             }
                             //update some C2 Profile stuff 
                             file = file.Replace("{{REPLACE_URLS}}", string.Join(",", manager.c2Profile.Urls));
-                            file = file.Replace("{{REPLACE_EVENT_URLS}}", string.Join(",", manager.c2Profile.EventUrls));
                             file = file.Replace("{{REPLACE_COOKIES}}", string.Join(",", manager.c2Profile.Cookies));
                             file = file.Replace("{{REPLACE_REQUEST_HEADERS}}", string.Join(",", manager.c2Profile.RequestHeaders));
                             file = file.Replace("{{REPLACE_USERAGENT}}", manager.c2Profile.UserAgent);

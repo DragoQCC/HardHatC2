@@ -81,14 +81,15 @@ namespace HardHatCore.TeamServer.Services.Handle_Implants
                 //we need to extract the length and the implant name from the metadata it will be the bytes after the length bytes 
                 //the length bytes will be the first 4 bytes of the metadata
                 int length = BitConverter.ToInt32(Convert.FromBase64String(encryptedencodedMetadata).Take(4).ToArray(), 0);
+                Console.WriteLine($"length of implant name is {length}");
                 //the implant name will be the bytes after the length bytes
                 string XORED_implantName = Encoding.UTF8.GetString(Convert.FromBase64String(encryptedencodedMetadata).Skip(4).Take(length).ToArray());
-                //Console.WriteLine($"XORED implant name is {XORED_implantName}");
+                Console.WriteLine($"XORED implant name is {XORED_implantName}");
                 string implant_name = Encryption.DecryptImplantName(XORED_implantName);
-                //Console.WriteLine($"Implant name is {implant_name}");
+                Console.WriteLine($"Implant name is {implant_name}");
                 if (implant_name == "")
                 {
-                    #if DEBUG
+#if DEBUG
                     Console.WriteLine("Failed to extract implant name, debugging, setting to Engineer");
                     implant_name = "Engineer";
                     #endif
