@@ -373,6 +373,7 @@ RivetAsset/.idea/workspace.xml
 #other
 /.idea/ 
 Assets/*/
+!/Assets/BuildTools/
 TeamServer/temp/
 TeamServer/wwwroot/
 TeamServer/Certificates/
