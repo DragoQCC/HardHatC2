@@ -10,11 +10,11 @@
         <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
     </ToolBarContent>
     <HeaderContent>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<IOCFile, object>(x=>x.Name)">Name</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<IOCFile, object>(x=>x.UploadedHost)">Uploaded Host</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<IOCFile, object>(x=>x.UploadedPath)">Uploaded Path</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<IOCFile, object>(x=>x.Uploadtime)">Upload time</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<IOCFile, object>(x=>x.md5Hash)">md5 Hash</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<IOCFile, object>(x=>x.Name)">Name</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<IOCFile, object>(x=>x.UploadedHost)">Uploaded Host</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<IOCFile, object>(x=>x.UploadedPath)">Uploaded Path</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<IOCFile, object>(x=>x.Uploadtime)">Upload time</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<IOCFile, object>(x=>x.md5Hash)">md5 Hash</MudTableSortLabel></MudTh>
     </HeaderContent>
     <RowTemplate>
         <MudTd>@context.Name</MudTd>

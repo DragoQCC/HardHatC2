@@ -11,9 +11,9 @@
 
 			<MudTable Items="@_hostedFiles" HorizontalScrollbar="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Outlined="true" Striped="true">
 				<HeaderContent>
-					<MudTh Style="@setStyle(Settings.IsCheckedBox)">Name</MudTh>
-					<MudTh Style="@setStyle(Settings.IsCheckedBox)">Upload Time</MudTh>
-					<MudTh Style="@setStyle(Settings.IsCheckedBox)">File Size</MudTh>
+					<MudTh Style="@setStyle(MainLayout.IsDarkMode)">Name</MudTh>
+					<MudTh Style="@setStyle(MainLayout.IsDarkMode)">Upload Time</MudTh>
+					<MudTh Style="@setStyle(MainLayout.IsDarkMode)">File Size</MudTh>
 				</HeaderContent>
 				<RowTemplate Context="Rowcontext">
 					<MudTd>@Rowcontext.Name</MudTd>
@@ -42,9 +42,9 @@
     
 			<MudTable Items="@_hostedFiles" HorizontalScrollbar="true" FixedHeader="true" Height="400px" Hover="true" Dense="true" Outlined="true" Striped="true">
 				<HeaderContent>
-					<MudTh Style="@setStyle(Settings.IsCheckedBox)">Name</MudTh>
-					<MudTh Style="@setStyle(Settings.IsCheckedBox)">Upload Time</MudTh>
-					<MudTh Style="@setStyle(Settings.IsCheckedBox)">File Size</MudTh>
+					<MudTh Style="@setStyle(MainLayout.IsDarkMode)">Name</MudTh>
+					<MudTh Style="@setStyle(MainLayout.IsDarkMode)">Upload Time</MudTh>
+					<MudTh Style="@setStyle(MainLayout.IsDarkMode)">File Size</MudTh>
 				</HeaderContent>
 				<RowTemplate Context="Rowcontext">
 					<MudTd>@Rowcontext.Name</MudTd>

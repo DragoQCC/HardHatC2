@@ -28,16 +28,16 @@
 
             <MudTable Items="@managersList" Virtualize="true" HorizontalScrollbar="true" FixedHeader="true" Height="30vh" Hover="true" Dense="true" Outlined="true" Striped="true">
                 <HeaderContent>
-                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Name</MudTh>
-                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Type</MudTh>
-                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Connection Address</MudTh>
-                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Connection Port</MudTh>
-                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Bind Address</MudTh>
-                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Bind Port</MudTh>
-                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Created Time</MudTh>
-                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Active</MudTh>
-                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">C2 Profile</MudTh>
-                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Options</MudTh>
+                    <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Name</MudTh>
+                    <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Type</MudTh>
+                    <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Connection Address</MudTh>
+                    <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Connection Port</MudTh>
+                    <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Bind Address</MudTh>
+                    <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Bind Port</MudTh>
+                    <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Created Time</MudTh>
+                    <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Active</MudTh>
+                    <MudTh Style="@setStyle(MainLayout.IsDarkMode)">C2 Profile</MudTh>
+                    <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Options</MudTh>
                 </HeaderContent>
                 <RowTemplate Context="rowContext">
                     <MudTd>@rowContext.Name</MudTd>
@@ -251,13 +251,13 @@
                             
             <MudTable Items="@managersList" Virtualize="true" HorizontalScrollbar="true" FixedHeader="true" Height="30vh" Hover="true" Dense="true" Outlined="true" Striped="true">
                 <HeaderContent>
-                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Name</MudTh>
-                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Type</MudTh>
-                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Connection Address</MudTh>
-                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Connection Port</MudTh>
-                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Created Time</MudTh>
-                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Active</MudTh>
-                    <MudTh Style="@setStyle(Settings.IsCheckedBox)">Options</MudTh>
+                    <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Name</MudTh>
+                    <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Type</MudTh>
+                    <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Connection Address</MudTh>
+                    <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Connection Port</MudTh>
+                    <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Created Time</MudTh>
+                    <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Active</MudTh>
+                    <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Options</MudTh>
                 </HeaderContent>
                 <RowTemplate Context="rowContext">
                     <MudTd>@rowContext.Name</MudTd>

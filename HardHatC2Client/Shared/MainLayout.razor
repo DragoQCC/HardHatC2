@@ -6,28 +6,27 @@
 @using MudBlazor.Extensions.Helper;
 @inherits LayoutComponentBase
 @inject IJSRuntime js
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorageService
 
 
-<BlazoredToasts 
-    Position="ToastPosition.BottomRight"
-    IconType="IconType.FontAwesome"
-				
-	SuccessIcon="fas fa-thumbs-up"
-	ErrorIcon="fas fa-bug"
-	InfoIcon="fas fa-info-circle"
-	WarningIcon="fas fa-exclamation-triangle"
-    SuccessClass="success-toast-override"
-    Timeout="6"
-	ShowCloseButton="true"
-    ShowProgressBar="true"/>
+<BlazoredToasts Position="ToastPosition.BottomRight"
+                IconType="IconType.FontAwesome"
+                SuccessIcon="fas fa-thumbs-up"
+                ErrorIcon="fas fa-bug"
+                InfoIcon="fas fa-info-circle"
+                WarningIcon="fas fa-exclamation-triangle"
+                SuccessClass="success-toast-override"
+                Timeout="6"
+                ShowCloseButton="true"
+                ShowProgressBar="true" />
 
-<MudThemeProvider Theme="MyCustomTheme" @bind-IsDarkMode="@Settings.IsCheckedBox"/>
-<MudDialogProvider/>
-<MudSnackbarProvider/>
-   
-@if(Login.isVisible)
+<MudThemeProvider Theme="@customTheme" @bind-IsDarkMode="@IsDarkMode" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+@if (Login.isVisible)
 {
-    @if(Login.IsLoggedIn)
+    @if (Login.IsLoggedIn)
     {
         Login.isVisible = false;
     }
@@ -36,85 +35,94 @@
     </MudOverlay>
 }
 
-@if(Login.IsLoggedIn)
+@if (Login.IsLoggedIn)
 {
-<MudLayout>
-    <MudAppBar Color="MudBlazor.Color.Dark" Dense="true" Elevation="5">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
-        <MudSpacer/>
-        @if (TeamServerStatus.Equals("online", StringComparison.CurrentCultureIgnoreCase))
-        {
+    <MudLayout>
+        <MudAppBar Color="Color.Dark" Dense="true" Elevation="5">
+            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
+            <MudImage Src="Images/hardhat c2-orange - just helmet large.svg" Width="50"></MudImage>
+            <MudText Color="Color.Primary" Typo="Typo.h6">HardHat C2</MudText>
+            <MudSpacer />
+            @if (TeamServerStatus.Equals("online", StringComparison.CurrentCultureIgnoreCase))
+            {
                 <MudIcon Class="mx-2" Title="Teamserver Status" Icon="@Icons.Material.Outlined.CheckCircle" Color="Color.Success"></MudIcon>
-        }
-        else if(TeamServerStatus.Equals("offline", StringComparison.CurrentCultureIgnoreCase))
-        {
+            }
+            else if (TeamServerStatus.Equals("offline", StringComparison.CurrentCultureIgnoreCase))
+            {
                 <MudIcon Class="mx-2" Title="Teamserver Status" Icon="@Icons.Material.Filled.ErrorOutline" Color="Color.Error"></MudIcon>
+            }
+            else
+            {
+                <MudIcon Class="mx-2" Title="Teamserver Status" Icon="@Icons.Material.Filled.ErrorOutline" Color="Color.Warning"></MudIcon>
+            }
+
+            <MudIconButton Title="Github" Class="mx-2" Href="https://github.com/DragoQCC/HardHatC2"
+                           Target="_blank"
+                           Variant="Variant.Filled"
+                           Icon="@Icons.Custom.Brands.GitHub"
+                           Color="Color.Primary">
+            </MudIconButton>
+
+            <MudIconButton Title="Discord Community" Class="mx-2" Href="https://discord.gg/npW2yy7JFK"
+                           Target="_blank"
+                           Variant="Variant.Filled"
+                           Icon="@Icons.Custom.Brands.Discord"
+                           Color="Color.Primary">
+            </MudIconButton>
+
+            <MudIconButton Icon="@Icons.Material.Filled.LightMode"
+                           Size="Size.Large"
+                           Color="IsDarkMode ? Color.Primary : Color.Default"
+                           OnClick="ChangeThemeAsync">
+            </MudIconButton>
+
+            <MudMenu Class="mx-2" ActivationEvent="@MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopRight">
+                <ActivatorContent>
+                    <MudAvatar>
+                        <MudIcon Icon="@MaterialDesignIcons.Normal.AccountHardHat" />
+                    </MudAvatar>
+                </ActivatorContent>
+                <ChildContent>
+                    <MudMenuItem Disabled="true">Welcome @Login.SignedInUser</MudMenuItem>
+                    <MudMenuItem OnClick="NavigateToSettings">Settings</MudMenuItem>
+                    <MudMenuItem OnClick="Login.HandleSignOut">Sign Out</MudMenuItem>
+                </ChildContent>
+            </MudMenu>
+        </MudAppBar>
+        @if (Login._hhUser != null && Login._hhUser.Roles.Contains("Administrator", StringComparer.OrdinalIgnoreCase))
+        {
+            <MudDrawer ClipMode="DrawerClipMode.Docked" @bind-Open="@isDrawerOpen" Elevation="10" Variant="@DrawerVariant.Mini" OpenMiniOnHover="false">
+                <MudNavMenu Color="Color.Warning" Margin="Margin.Dense" Bordered="true">
+                    <MudNavLink Class="py-2" href="Index" Icon="@Icons.Material.Outlined.Home" Match="NavLinkMatch.All">Home</MudNavLink>
+                    <MudNavLink Class="py-2" href="Objectives" Icon="@Icons.Material.Outlined.Checklist" Match="NavLinkMatch.All">Objectives</MudNavLink>
+                    <MudNavLink Class="py-2" href="Settings" Icon="@Icons.Material.Outlined.Settings" Match="NavLinkMatch.All">Settings</MudNavLink>
+                </MudNavMenu>
+            </MudDrawer>
         }
         else
         {
-                <MudIcon Class="mx-2" Title="Teamserver Status" Icon="@Icons.Material.Filled.ErrorOutline" Color="Color.Warning"></MudIcon>
+            <MudDrawer ClipMode="DrawerClipMode.Docked" @bind-Open="@isDrawerOpen" Elevation="10" Variant="@DrawerVariant.Mini" OpenMiniOnHover="false">
+                <MudNavMenu Color="Color.Warning" Margin="Margin.Dense" Bordered="true">
+                    <MudNavLink Class="py-2" href="Index" Icon="@Icons.Material.Outlined.Home" Match="NavLinkMatch.All">Home</MudNavLink>
+                    <MudNavLink Class="py-2" href="Managers" Icon="@Icons.Material.Outlined.Headphones" Match="NavLinkMatch.All">Managers</MudNavLink>
+                    <MudNavLink Class="py-2" href="Implants" Icon="@Icons.Material.Outlined.Construction" Match="NavLinkMatch.All">Implants</MudNavLink>
+                    <MudNavLink Class="py-2" href="ImplantInteract" Icon="@Icons.Material.Outlined.Engineering" Match="NavLinkMatch.All">ImplantInteract</MudNavLink>
+                    <MudNavLink Class="py-2" href="Notes" Icon="@Icons.Material.Outlined.Note" Match="NavLinkMatch.All">Notes</MudNavLink>
+                    <MudNavLink Class="py-2" href="ReconCenter" Icon="@Icons.Material.Outlined.Keyboard" Match="NavLinkMatch.All">Recon Center</MudNavLink>
+                    <MudNavLink Class="py-2" href="ToolBoxes" Icon="@Icons.Material.Outlined.BuildCircle" Match="NavLinkMatch.All">ToolBoxes</MudNavLink>
+                    <MudNavLink Class="py-2" href="PivotProxy" Icon="@Icons.Material.Outlined.CompareArrows" Match="NavLinkMatch.All">Pivot Proxy</MudNavLink>
+                    <MudNavLink Class="py-2" href="EventHistory" Icon="@Icons.Material.Outlined.History" Match="NavLinkMatch.All">Event History</MudNavLink>
+                    <MudNavLink Class="py-2" href="Credentials" Icon="@Icons.Material.Outlined.CreditCard" Match="NavLinkMatch.All">Credentials</MudNavLink>
+                    <MudNavLink Class="py-2" href="Downloads" Icon="@Icons.Material.Outlined.Download" Match="NavLinkMatch.All">Downloads</MudNavLink>
+                    <MudNavLink Class="py-2" href="HostedFiles" Icon="@Icons.Material.Outlined.Upload" Match="NavLinkMatch.All">Hosted Files</MudNavLink>
+                    <MudNavLink Class="py-2" href="Objectives" Icon="@Icons.Material.Outlined.Checklist" Match="NavLinkMatch.All">Objectives</MudNavLink>
+                    <MudNavLink Class="py-2" href="Settings" Icon="@Icons.Material.Outlined.Settings" Match="NavLinkMatch.All">Settings</MudNavLink>
+                </MudNavMenu>
+            </MudDrawer>
         }
-
-        <MudIconButton Title="Github" Class="mx-2" Href="https://github.com/DragoQCC/HardHatC2"
-                   Target="_blank"
-                   Variant="Variant.Filled"
-                   Icon="@Icons.Custom.Brands.GitHub"
-                   Color="Color.Primary">
-        </MudIconButton>
-        
-        <MudIconButton Title="Discord Community" Class="mx-2" Href="https://discord.gg/npW2yy7JFK"
-                   Target="_blank"
-                   Variant="Variant.Filled"
-                   Icon="@Icons.Custom.Brands.Discord"
-                   Color="Color.Primary">
-        </MudIconButton>
-            <MudMenu Class="mx-2" ActivationEvent="@MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopRight">
-            <ActivatorContent>
-                <MudAvatar>
-                    <MudIcon Icon="@MaterialDesignIcons.Normal.AccountHardHat" />
-                </MudAvatar>
-            </ActivatorContent>
-            <ChildContent>
-                <MudMenuItem Disabled="true" >Welcome @Login.SignedInUser</MudMenuItem>
-                <MudMenuItem OnClick="NavigateToSettings">Settings</MudMenuItem>
-                <MudMenuItem OnClick="Login.HandleSignOut">Sign Out</MudMenuItem>
-            </ChildContent>
-        </MudMenu>
-    </MudAppBar>
-    @if(Login._hhUser != null && Login._hhUser.Roles.Contains("Administrator",StringComparer.OrdinalIgnoreCase))
-    {
-        <MudDrawer ClipMode="DrawerClipMode.Docked" @bind-Open="@open" Elevation="10" Variant="@DrawerVariant.Mini" OpenMiniOnHover="false">
-            <MudNavMenu Color="Color.Warning" Margin="Margin.Dense" Bordered="true">
-                <MudNavLink Class="py-2" href="Index" Icon="@Icons.Material.Outlined.Home" Match="NavLinkMatch.All">Home</MudNavLink>
-                <MudNavLink Class="py-2" href="Objectives" Icon="@Icons.Material.Outlined.Checklist" Match="NavLinkMatch.All">Objectives</MudNavLink>
-                <MudNavLink Class="py-2" href="Settings" Icon="@Icons.Material.Outlined.Settings" Match="NavLinkMatch.All">Settings</MudNavLink>
-            </MudNavMenu>
-        </MudDrawer>
-    }
-    else
-    {
-        <MudDrawer  ClipMode="DrawerClipMode.Docked" @bind-Open="@open" Elevation="10" Variant="@DrawerVariant.Mini" OpenMiniOnHover="false">
-            <MudNavMenu Color="Color.Warning" Margin="Margin.Dense" Bordered="true">
-                <MudNavLink Class="py-2" href="Index" Icon="@Icons.Material.Outlined.Home" Match="NavLinkMatch.All">Home</MudNavLink>
-                <MudNavLink Class="py-2" href="Managers" Icon="@Icons.Material.Outlined.Headphones" Match="NavLinkMatch.All">Managers</MudNavLink>
-                <MudNavLink Class="py-2" href="Implants" Icon="@Icons.Material.Outlined.Construction" Match="NavLinkMatch.All">Implants</MudNavLink>
-                <MudNavLink Class="py-2" href="ImplantInteract" Icon="@Icons.Material.Outlined.Engineering" Match="NavLinkMatch.All">ImplantInteract</MudNavLink>
-                <MudNavLink Class="py-2" href="Notes" Icon="@Icons.Material.Outlined.Note" Match="NavLinkMatch.All">Notes</MudNavLink>
-                <MudNavLink Class="py-2" href="ReconCenter" Icon="@Icons.Material.Outlined.Keyboard" Match="NavLinkMatch.All">Recon Center</MudNavLink>
-                <MudNavLink Class="py-2" href="ToolBoxes" Icon="@Icons.Material.Outlined.BuildCircle" Match="NavLinkMatch.All">ToolBoxes</MudNavLink>
-                <MudNavLink Class="py-2" href="PivotProxy" Icon="@Icons.Material.Outlined.CompareArrows" Match="NavLinkMatch.All">Pivot Proxy</MudNavLink>
-                <MudNavLink Class="py-2" href="EventHistory" Icon="@Icons.Material.Outlined.History" Match="NavLinkMatch.All">Event History</MudNavLink>
-                <MudNavLink Class="py-2" href="Credentials" Icon="@Icons.Material.Outlined.CreditCard" Match="NavLinkMatch.All">Credentials</MudNavLink>
-                <MudNavLink Class="py-2" href="Downloads" Icon="@Icons.Material.Outlined.Download" Match="NavLinkMatch.All">Downloads</MudNavLink>
-                <MudNavLink Class="py-2" href="HostedFiles" Icon="@Icons.Material.Outlined.Upload" Match="NavLinkMatch.All">Hosted Files</MudNavLink>
-                <MudNavLink Class="py-2" href="Objectives" Icon="@Icons.Material.Outlined.Checklist" Match="NavLinkMatch.All">Objectives</MudNavLink>
-                <MudNavLink Class="py-2"  href="Settings" Icon="@Icons.Material.Outlined.Settings" Match="NavLinkMatch.All">Settings</MudNavLink>
-            </MudNavMenu>
-        </MudDrawer>
-    }
-    <MudMainContent Class="px-4">
-        @Body
-    </MudMainContent>
+        <MudMainContent Class="px-4">
+            @Body
+        </MudMainContent>
     </MudLayout>
 }
 else
@@ -124,106 +132,102 @@ else
     </MudMainContent>
 }
 
-@code{
+@code {
     [Inject]
     public NavigationManager Nav { get; set; }
     public static string TeamServerStatus { get; set; } = "Unknown";
-    public static bool open { get; set; } = false;
-    MudTheme MyCustomTheme = new MudTheme()
-        {
-            Palette = new Palette()
-            {
-                Primary = "#FB8C00",
-                Warning = "#FB8C00",
-            },
-            PaletteDark = new Palette()
-            {
-                Black = "#27272f",
-                Background = "#32333d",
-                BackgroundGrey = "#27272f",
-                Surface = "#373740",
-                DrawerBackground = "#2d2d38", //Custom = #2d2d38 , original = #27272f
-                DrawerText = "rgba(255,255,255, 0.50)",
-                DrawerIcon = "rgba(255,255,255, 0.50)",
-                AppbarBackground = "#27272f",
-                AppbarText = "rgba(255,255,255, 0.70)",
-                TextPrimary = "rgba(255,255,255, 0.70)",
-                TextSecondary = "rgba(255,255,255, 0.50)",
-                ActionDefault = "#adadb1",
-                ActionDisabled = "rgba(255,255,255, 0.26)",
-                ActionDisabledBackground = "rgba(255,255,255, 0.12)",
-                Primary = "#FB8C00",
-                Warning = "#FB8C00",
-            }
-        };
+    private bool isDrawerOpen = true;
+    // We need to make the setter private to disallow outsiders from changing its value
+    public static bool IsDarkMode { get; private set; } = true;
 
-    private async Task NavigateToSettings()
+    private MudTheme customTheme = new MudTheme()
+    {
+        Palette = new PaletteLight()
+        {
+            Primary = "#FB8C00",
+            Warning = "#FB8C00",
+        },
+        PaletteDark = new PaletteDark()
+        {
+            Black = "#27272f",
+            Background = "#32333d",
+            BackgroundGrey = "#27272f",
+            Surface = "#373740",
+            DrawerBackground = "#2d2d38", //Custom = #2d2d38 , original = #27272f
+            DrawerText = "rgba(255,255,255, 0.50)",
+            DrawerIcon = "rgba(255,255,255, 0.50)",
+            AppbarBackground = "#27272f",
+            AppbarText = "rgba(255,255,255, 0.70)",
+            TextPrimary = "rgba(255,255,255, 0.70)",
+            TextSecondary = "rgba(255,255,255, 0.50)",
+            ActionDefault = "#adadb1",
+            ActionDisabled = "rgba(255,255,255, 0.26)",
+            ActionDisabledBackground = "rgba(255,255,255, 0.12)",
+            Primary = "#FB8C00",
+            Warning = "#FB8C00",
+        }
+    };
+
+    private void NavigateToSettings()
     {
         Nav.NavigateTo("/Settings");
     }
-    
-    public static async Task ToggleDrawer()
+
+    private void ToggleDrawer()
     {
-        if (open)
-        {
-            open = false;
-        }
-        else
-        {
-            open = true;
-        }
+        isDrawerOpen = !isDrawerOpen;
     }
-    
+
+    private async Task ChangeThemeAsync()
+    {
+        IsDarkMode = !IsDarkMode ? true : false;
+
+        await LocalStorageService.SetItemAsStringAsync("IsDarkMode", IsDarkMode.ToString());
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-            await js.InitializeMudBlazorExtensionsAsync();
-        await base.OnAfterRenderAsync(firstRender);
+        if (await LocalStorageService.ContainKeyAsync("IsDarkMode"))
+        {
+            IsDarkMode = Convert.ToBoolean(await LocalStorageService.GetItemAsStringAsync("IsDarkMode"));
+        }
     }
 
     protected override async Task OnInitializedAsync()
     {
         var TeamserverIp = HardHatHubClient.TeamserverIp;
-        HttpClient http = new HttpClient( new HttpClientHandler { ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true });
+        HttpClient http = new HttpClient(new HttpClientHandler { ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true });
         HttpResponseMessage response;
         try
         {
             //every 30 seconds using a timer make a Get request to TeamserverIp/swagger to get the status of the teamserver
             var timer = new Timer(async (state) =>
             {
-            try
-            {
-                response = await http.GetAsync($"{TeamserverIp}/swagger");
-                if (response.StatusCode == HttpStatusCode.OK)
+                try
                 {
-                    TeamServerStatus = "Online";
+                    response = await http.GetAsync($"{TeamserverIp}/swagger");
+                    TeamServerStatus = response.StatusCode == HttpStatusCode.OK ? "Online" : "Offline";
                 }
-                else
+                catch (Exception)
                 {
-                    TeamServerStatus = "Offline";
+                    TeamServerStatus = "Unknown";
                 }
-            }
-            catch (Exception)
-            {
-                TeamServerStatus = "Unknown";
-            }
             }, null, 0, 30000);
         }
         catch (Exception)
         {
             TeamServerStatus = "Unknown";
         }
-        
+
         if (Login.SignedInUser == null && Nav.Uri != Nav.BaseUri)
         {
             try
             {
-                Nav.NavigateTo(Nav.BaseUri,true,true);
+                Nav.NavigateTo(Nav.BaseUri, true, true);
             }
             catch (Exception ex)
             {
             }
-
         }
     }
 }

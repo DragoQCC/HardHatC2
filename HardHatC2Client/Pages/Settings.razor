@@ -2,150 +2,135 @@
 @using HardHatCore.HardHatC2Client.Services
 @using HardHatCore.HardHatC2Client.Components
 @inject IJSRuntime js
+
 <h3 class="text-center">Settings</h3>
 <hr>
 <CascadingAuthenticationState>
-	<AuthorizeView Roles="Operator,TeamLead,Administrator,Guest">
-	<Authorized>
-		<h4>Theme</h4> 
-		<MudSwitch @bind-Checked="@IsCheckedBox" ThumbIcon="@Icons.Material.Filled.LightMode" Color="Color.Success" Class="ma-4" T="bool" Label="Toggle Light/Dark Mode"/>
-		<MudSelect @bind-Value="_InteractInputMode" T="InteractCommandEntryWindow.InteractInputMode" Label="Interact Input Mode" AnchorOrigin="Origin.BottomCenter">
-			@foreach (InteractCommandEntryWindow.InteractInputMode value in Enum.GetValues(typeof(InteractCommandEntryWindow.InteractInputMode)))
+    <AuthorizeView Roles="Operator,TeamLead,Administrator,Guest">
+        <Authorized>
+            <MudSelect @bind-Value="_InteractInputMode" T="InteractCommandEntryWindow.InteractInputMode" Label="Interact Input Mode" AnchorOrigin="Origin.BottomCenter">
+                @foreach (InteractCommandEntryWindow.InteractInputMode value in Enum.GetValues(typeof(InteractCommandEntryWindow.InteractInputMode)))
+                {
+                    <MudSelectItem Value="@value" />
+                }
+            </MudSelect>
+            <MudSwitch @bind-Checked="@InteractCommandEntryWindow.AutocompleteSearchShowAllItems" Color="Color.Success" Class="ma-4" T="bool" Label="Interact Autocomplete ShowAll" />
+
+            <MudButton style="background:var(--font-color);color:var(--background)" OnClick=@RefreshClientPlugins Disabled=@context.User.IsInRole("Guest")><MudText>Refresh Client Plugins</MudText></MudButton>
+            <br>
+            <br>
+            <MudButton style="background:var(--font-color);color:var(--background)" OnClick=@RefreshTeamServerPlugins Disabled=@context.User.IsInRole("Guest")><MudText>Refresh Server Plugins</MudText></MudButton>
+            <br>
+            <br>
+
+            @if (context.User.IsInRole("Administrator") || context.User.IsInRole("TeamLead"))
             {
-                <MudSelectItem Value="@value" />
+                <h3 class="text-center">Admin Dashboard</h3>
+                <hr>
+                <MudContainer MaxWidth="MaxWidth.Medium">
+                    <MudTabs>
+                        <MudPaper Height="500px" Width="100%" Square="true" Class="pa-4">
+                            @if (context.User.IsInRole("Administrator"))
+                            {
+                                <MudTabPanel Text="User Management">
+                                    <MudTabs Elevation="5" Rounded="true" PanelClass="pa-6" Centered="true" Color="@Color.Primary">
+                                        <MudTabPanel Text="Create User">
+                                            <h4>Create User Form</h4>
+                                            <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+                                                <MudTextField T="string" @bind-Value="UserName" Label="Username" Required="true" RequiredError="User name is required!" />
+                                                <MudTextField T="string" @bind-Value="Password" Label="Password" HelperText="Choose a strong password" @ref="pwField1" InputType="InputType.Password" Required="true" RequiredError="Password is required!" />
+                                                <MudTextField T="string" Label="Confirm Password" HelperText="Repeat the password" InputType="InputType.Password" Validation="@(new Func<string, string>(PasswordMatch))" />
+                                                <MudSelect Class="mb-4 mt-4" T="string" Label="Role" Required="true" @bind-value="Role" RequiredError="Role is required!">
+                                                    <MudSelectItem Value=@("Operator")>Operator</MudSelectItem>
+                                                    <MudSelectItem Value=@("TeamLead")>TeamLead</MudSelectItem>
+                                                    <MudSelectItem Value=@("Guest")>Guest</MudSelectItem>
+                                                </MudSelect>
+                                                <div class="d-flex align-center justify-space-between">
+                                                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" Class="ml-auto" @onclick="@handleValidCreateUser">Create</MudButton>
+                                                </div>
+                                            </MudForm>
+                                        </MudTabPanel>
+                                    </MudTabs>
+                                </MudTabPanel>
+                            }
+                            @if (context.User.IsInRole("Administrator") || context.User.IsInRole("TeamLead"))
+                            {
+                                <MudTabPanel Text="Webhooks">
+                                    <Webhooks></Webhooks>
+                                </MudTabPanel>
+                            }
+                        </MudPaper>
+                    </MudTabs>
+                </MudContainer>
             }
-		</MudSelect>
-		<MudSwitch @bind-Checked="@InteractCommandEntryWindow.AutocompleteSearchShowAllItems" Color="Color.Success" Class="ma-4" T="bool" Label="Interact Autocomplete ShowAll" />
-
-		@if (IsCheckedBox == false)
-		{
-			selectedTheme = "Light";
-		}
-		else
-		{
-			selectedTheme = "Dark";
-		}
-			<MudButton style="background:var(--font-color);color:var(--background)" OnClick=@RefreshClientPlugins Disabled=@context.User.IsInRole("Guest") ><MudText>Refresh Client Plugins</MudText></MudButton>
-		<br>
-		<br>
-			<MudButton style="background:var(--font-color);color:var(--background)" OnClick=@RefreshTeamServerPlugins Disabled=@context.User.IsInRole("Guest")><MudText>Refresh Server Plugins</MudText></MudButton>
-		<br>
-		<br>
-
-		@if (context.User.IsInRole("Administrator") || context.User.IsInRole("TeamLead"))
-		{
-			<h3 class="text-center">Admin Dashboard</h3>
-			<hr>
-			<MudContainer MaxWidth="MaxWidth.Medium">
-				<MudTabs>
-					<MudPaper Height="500px" Width="100%" Square="true" Class="pa-4">
-						@if (context.User.IsInRole("Administrator"))
-						{
-							<MudTabPanel Text="User Management">
-								<MudTabs Elevation="5" Rounded="true" PanelClass="pa-6" Centered="true" Color="@Color.Primary">
-									<MudTabPanel Text="Create User">
-										<h4>Create User Form</h4>
-										<MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
-											<MudTextField T="string" @bind-Value="UserName" Label="Username" Required="true" RequiredError="User name is required!" />
-											<MudTextField T="string" @bind-Value="Password" Label="Password" HelperText="Choose a strong password" @ref="pwField1" InputType="InputType.Password" Required="true" RequiredError="Password is required!" />
-											<MudTextField T="string" Label="Confirm Password" HelperText="Repeat the password" InputType="InputType.Password" Validation="@(new Func<string, string>(PasswordMatch))" />
-											<MudSelect Class="mb-4 mt-4" T="string" Label="Role" Required="true" @bind-value="Role" RequiredError="Role is required!">
-												<MudSelectItem Value=@("Operator")>Operator</MudSelectItem>
-												<MudSelectItem Value=@("TeamLead")>TeamLead</MudSelectItem>
-												<MudSelectItem Value=@("Guest")>Guest</MudSelectItem>
-											</MudSelect>
-											<div class="d-flex align-center justify-space-between">
-												<MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" Class="ml-auto" @onclick="@handleValidCreateUser">Create</MudButton>
-											</div>
-										</MudForm>
-									</MudTabPanel>
-								</MudTabs>
-							</MudTabPanel>
-						}
-						@if (context.User.IsInRole("Administrator") || context.User.IsInRole("TeamLead"))
-						{
-							<MudTabPanel Text="Webhooks">
-								<Webhooks></Webhooks>
-							</MudTabPanel>
-						}
-					</MudPaper>
-				</MudTabs>
-			</MudContainer>
-		}
-	</Authorized>
-	<NotAuthorized>
-        <h1 class="text-center">Not Authorized</h1>
+        </Authorized>
+        <NotAuthorized>
+            <h1 class="text-center">Not Authorized</h1>
             <UnAuthorizedDialogBox></UnAuthorizedDialogBox>
-    </NotAuthorized>
-	</AuthorizeView>
+        </NotAuthorized>
+    </AuthorizeView>
 </CascadingAuthenticationState>
 
+@code {
 
-@code{
+    #region Settings
 
-	#region Settings
+    public static InteractCommandEntryWindow.InteractInputMode _InteractInputMode { get; set; } = InteractCommandEntryWindow.InteractInputMode.Classic;
 
-	public static string selectedTheme = "Dark";
-	private static List<string> themes = new List<string> { "Light", "Dark" };
-	public static bool IsCheckedBox = true;
-	public static InteractCommandEntryWindow.InteractInputMode _InteractInputMode { get; set; } = InteractCommandEntryWindow.InteractInputMode.Classic;
-
-	#endregion
+    #endregion
 
 
-	#region Admin Dashboard
+    #region Admin Dashboard
 
-	private MudForm form;
-	private string UserName { get; set; }
-	private string Password { get; set; }
-	private string Role { get; set; }
-	private bool success;
-	private string[] errors;
-	private MudTextField<string> pwField1;
-	private MudTextField<string> pwField2;
+    private MudForm form;
+    private string UserName { get; set; }
+    private string Password { get; set; }
+    private string Role { get; set; }
+    private bool success;
+    private string[] errors;
+    private MudTextField<string> pwField1;
+    private MudTextField<string> pwField2;
 
-	private async Task handleValidCreateUser()
-	{
-		try
-		{
-			bool CreateResult = await HardHatHubClient._hub.CreateUser(UserName, Password,Role);
-			if(CreateResult)
-			{
-				Login.ShowSuccessToast($"User {UserName} Created! Please provide operator with credentials!");
-			}
-			else
-			{
-				Login.ShowErrorToast("User Creation Failed, user may already exist try logging in!");
-			}
+    private async Task handleValidCreateUser()
+    {
+        try
+        {
+            bool CreateResult = await HardHatHubClient._hub.CreateUser(UserName, Password, Role);
+            if (CreateResult)
+            {
+                Login.ShowSuccessToast($"User {UserName} Created! Please provide operator with credentials!");
+            }
+            else
+            {
+                Login.ShowErrorToast("User Creation Failed, user may already exist try logging in!");
+            }
 
-		}
-		catch (Exception e)
-		{
-			Console.WriteLine(e.Message);
-			Login.ShowErrorToast($"User Creation Failed, {e.Message}");
-		}
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+            Login.ShowErrorToast($"User Creation Failed, {e.Message}");
+        }
+    }
 
-	}
+    private static async Task RefreshClientPlugins()
+    {
+        Plugin_Management.PluginService.RefreshPlugins();
+        Login.ShowSuccessToast("Client Plugins Refreshed!");
+    }
 
-	private static async Task RefreshClientPlugins()
-	{
-		Plugin_Management.PluginService.RefreshPlugins();
-		Login.ShowSuccessToast("Client Plugins Refreshed!");
-	}
+    private static async Task RefreshTeamServerPlugins()
+    {
+        await HardHatHubClient._hub.RefreshTeamserverPlugins();
+        Login.ShowSuccessToast("Teamserver Plugins Refreshed!");
+    }
 
-	private static async Task RefreshTeamServerPlugins()
-	{
-		await HardHatHubClient._hub.RefreshTeamserverPlugins();
-		Login.ShowSuccessToast("Teamserver Plugins Refreshed!");
-	}
+    private string PasswordMatch(string value)
+    {
+        if (value != pwField1.Value)
+            return "Passwords do not match!";
+        return null;
+    }
 
-	private string PasswordMatch(string value)
-	{
-		if (value != pwField1.Value)
-			return "Passwords do not match!";
-		return null;
-	}
-
-#endregion
-	
+    #endregion
 }

@@ -85,25 +85,25 @@
                             <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
                         </ToolBarContent>
                     <HeaderContent>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"Number")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x => x.Number)">#</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"")"></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"Status")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Status)">Status</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"ExternalAddress")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.ExternalAddress)">External Address</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"ManagerName")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.ManagerName)">Manager</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"ConnectionType")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.ConnectionType)">Connection Type</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"Address")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Address)">Address</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"Hostname")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Hostname)">hostname</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"Username")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Username)">username</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"Note")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Note)">note</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"ProcessName")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.ProcessName)">process</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"ProcessId")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.ProcessId)">pid</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"Integrity")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Integrity)">Integrity</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"Arch")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Arch)">arch</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"Sleep")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Sleep)">Sleep Time</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"LastSeen")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.LastSeen)">lastseen</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"FirstSeen")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.FirstSeen)">firstseen</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"ImplantType")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.ImplantType)">Implant Type</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(Settings.IsCheckedBox,"")">Options</MudTh>
+                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"Number")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x => x.Number)">#</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"")"></MudTh>
+                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"Status")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Status)">Status</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"ExternalAddress")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.ExternalAddress)">External Address</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"ManagerName")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.ManagerName)">Manager</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"ConnectionType")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.ConnectionType)">Connection Type</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"Address")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Address)">Address</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"Hostname")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Hostname)">hostname</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"Username")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Username)">username</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"Note")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Note)">note</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"ProcessName")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.ProcessName)">process</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"ProcessId")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.ProcessId)">pid</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"Integrity")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Integrity)">Integrity</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"Arch")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Arch)">arch</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"Sleep")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Sleep)">Sleep Time</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"LastSeen")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.LastSeen)">lastseen</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"FirstSeen")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.FirstSeen)">firstseen</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"ImplantType")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.ImplantType)">Implant Type</MudTableSortLabel></MudTh>
+                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"")">Options</MudTh>
                     </HeaderContent>
                     <RowTemplate Context="Rowcontext">
                                     <MudTd Style="@GetCellStyle("Number",Rowcontext)">@Rowcontext.Number</MudTd>

@@ -8,8 +8,8 @@
 
     </ToolBarContent>
     <HeaderContent>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(0))">Enviornment Var</MudTableSortLabel></MudTh>
-        <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(1))">Value</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(0))">Enviornment Var</MudTableSortLabel></MudTh>
+        <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<string[], string>(x=>x.ElementAt(1))">Value</MudTableSortLabel></MudTh>
     </HeaderContent>
     <RowTemplate>
         <MudTd>@context[0]</MudTd>

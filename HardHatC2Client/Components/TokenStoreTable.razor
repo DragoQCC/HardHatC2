@@ -10,11 +10,11 @@
             <MudSpacer />
         </ToolBarContent>
         <HeaderContent>
-            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<TokenStoreItem, object>(x=>x.Index)">#</MudTableSortLabel></MudTh>
-            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<TokenStoreItem, object>(x=>x.Username)">Username</MudTableSortLabel></MudTh>
-            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<TokenStoreItem, object>(x=>x.SID)">SID</MudTableSortLabel></MudTh>
-            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<TokenStoreItem, object>(x=>x.PID)">PID</MudTableSortLabel></MudTh>
-            <MudTh Style="@setStyle(Settings.IsCheckedBox)"><MudTableSortLabel SortBy="new Func<TokenStoreItem, object>(x=>x.IsCurrent)">Current</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<TokenStoreItem, object>(x=>x.Index)">#</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<TokenStoreItem, object>(x=>x.Username)">Username</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<TokenStoreItem, object>(x=>x.SID)">SID</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<TokenStoreItem, object>(x=>x.PID)">PID</MudTableSortLabel></MudTh>
+            <MudTh Style="@setStyle(MainLayout.IsDarkMode)"><MudTableSortLabel SortBy="new Func<TokenStoreItem, object>(x=>x.IsCurrent)">Current</MudTableSortLabel></MudTh>
         </HeaderContent>
         <RowTemplate Context="Rowcontext">
             <MudTd>@Rowcontext.Index</MudTd>
