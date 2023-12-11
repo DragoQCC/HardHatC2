@@ -1,26 +1,19 @@
-﻿using HardHatCore.ApiModels.Responses;
-using Microsoft.AspNetCore.SignalR;
-using Newtonsoft.Json.Linq;
+﻿using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using System.Xml.Linq;
-using HardHatCore.TeamServer.Controllers;
 using System.Threading;
 using System.Text;
-using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using HardHatCore.ApiModels.Shared;
 using System.Net.Http;
 using HardHatCore.ApiModels.Plugin_BaseClasses;
 using HardHatCore.ApiModels.Shared.TaskResultTypes;
-using Microsoft.AspNet.SignalR.Hosting;
 using System.Net;
-using System.Runtime.CompilerServices;
 using HardHatCore.TeamServer.Models;
 using HardHatCore.TeamServer.Models.Database;
 using HardHatCore.TeamServer.Models.Dbstorage;
@@ -35,7 +28,7 @@ using HardHatCore.TeamServer.Utilities;
 
 namespace HardHatCore.TeamServer.Services
 {
-    public class HardHatHub : Hub
+    public class HardHatHub : Hub<IHardHatHub>
     {
 
         //make a list of hub clients and add them on connect
@@ -102,7 +95,7 @@ namespace HardHatCore.TeamServer.Services
                 Console.WriteLine(ex.Message);
                 return base.OnConnectedAsync();
             }
-            
+
         }
 
         //hub client invokable methods 
@@ -149,7 +142,7 @@ namespace HardHatCore.TeamServer.Services
         {
             Console.WriteLine("ts cancel running task called, creating task to send to implant");
             //make a new implantTask for the engid and use the taskid in an argument with the key /TaskId
-            ExtImplantTask_Base task = new ExtImplantTask_Base(Guid.NewGuid().ToString(), "cancelTask", new Dictionary<string, string>() { { "/TaskId", taskid } }, null, false,false,false, null, "",eng);
+            ExtImplantTask_Base task = new ExtImplantTask_Base(Guid.NewGuid().ToString(), "cancelTask", new Dictionary<string, string>() { { "/TaskId", taskid } }, null, false, false, false, null, "", eng);
             //find the implant with the matching engid and add the task to the implants task list
             ExtImplant_Base implant = IExtImplantService._extImplants.Where(e => e.Metadata.Id == eng).FirstOrDefault();
             implant.QueueTask(task);
@@ -159,8 +152,8 @@ namespace HardHatCore.TeamServer.Services
         public async Task<string> CreateReconCenterEntity(ReconCenterEntity reconCenterEntity)
         {
             //send the updated recon center entity to all clients
-           // Console.WriteLine("teamserver invoking push reconCenter Entity");
-            await Clients.All.SendAsync("PushReconCenterEntity", reconCenterEntity);
+            // Console.WriteLine("teamserver invoking push reconCenter Entity");
+            await Clients.All.PushReconCenterEntity(reconCenterEntity);
             if (DatabaseService.AsyncConnection == null)
             {
                 DatabaseService.ConnectDb();
@@ -173,7 +166,7 @@ namespace HardHatCore.TeamServer.Services
         {
             //send the updated recon center property to all clients
             //Console.WriteLine("teamserver invoking push reconCenter Property");
-            await Clients.All.SendAsync("PushReconCenterProperty", entityName, reconCenterProperty);
+            await Clients.All.PushReconCenterProperty(entityName, reconCenterProperty);
             if (DatabaseService.AsyncConnection == null)
             {
                 DatabaseService.ConnectDb();
@@ -191,7 +184,7 @@ namespace HardHatCore.TeamServer.Services
         {
             //send the updated recon center property to all clients
             //Console.WriteLine("teamserver invoking push reconCenter Property Update");
-            await Clients.All.SendAsync("PushReconCenterPropertyUpdate", oldProperty, newProperty);
+            await Clients.All.PushReconCenterPropertyUpdate(oldProperty, newProperty);
             if (DatabaseService.AsyncConnection == null)
             {
                 DatabaseService.ConnectDb();
@@ -202,7 +195,7 @@ namespace HardHatCore.TeamServer.Services
             return "Success: Updated Recon Center Property";
         }
 
-        public async Task<bool> CreateUser(string username, string passwordHash, byte[] salt,string role)
+        public async Task<bool> CreateUser(string username, string passwordHash, byte[] salt, string role)
         {
             try
             {
@@ -307,8 +300,8 @@ namespace HardHatCore.TeamServer.Services
                 DatabaseService.AsyncConnection.InsertAsync((Cred_DAO)cred);
             }
 
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.All.SendAsync("AddCreds", new List<Cred> { cred });
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.All.AddCreds(new List<Cred> { cred });
         }
 
         public async Task PrettyLogs()
@@ -347,23 +340,23 @@ namespace HardHatCore.TeamServer.Services
             }
         }
 
-        public async Task UpdateCommandOpsecLevelAndMitre(string commandName, HelpMenuItem.OpsecStatus opsecStatus,string mitreTechnique)
+        public async Task UpdateCommandOpsecLevelAndMitre(string commandName, HelpMenuItem.OpsecStatus opsecStatus, string mitreTechnique)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.All.SendAsync("UpdateCommandOpsecLevelAndMitre", commandName, opsecStatus,mitreTechnique);
-            
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.All.UpdateCommandOpsecLevelAndMitre(commandName, opsecStatus, mitreTechnique);
+
         }
 
         public async Task AddNoteToImplant(string implantId, string note)
         {
-              //find the implant in the list of implants 
+            //find the implant in the list of implants 
             ExtImplant_Base implant = IExtImplantService._extImplants.Where(x => x.Metadata.Id == implantId).ToList()[0];
             implant.Note = note;
             //update the implant in the database 
             await DatabaseService.AsyncConnection.UpdateAsync((ExtImplant_DAO)implant);
             //send the updated implant to the client 
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.All.SendAsync("UpdateImplantNote", implantId,note);
+            IHubContext<HardHatHub, IHardHatHub> hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.All.UpdateImplantNote(implantId, note);
         }
 
         public async Task<HardHatUser> RegisterHardHatUserAfterSignin(string username)
@@ -376,9 +369,9 @@ namespace HardHatCore.TeamServer.Services
             var user = await userStore.FindByNameAsync(username, new CancellationToken());
             //get the users role
             List<string> roles = userStore.GetRolesAsync(user, new CancellationToken()).Result.ToList();
-            
-            HardHatUser newuser =  new HardHatUser { Username = username, SignalRClientId = connectionId, Roles = roles };
-            if(SignalRUsers.ContainsKey(newuser.Username))
+
+            HardHatUser newuser = new HardHatUser { Username = username, SignalRClientId = connectionId, Roles = roles };
+            if (SignalRUsers.ContainsKey(newuser.Username))
             {
                 //update incase roles or connection id changed
                 SignalRUsers[newuser.Username] = newuser;
@@ -397,11 +390,11 @@ namespace HardHatCore.TeamServer.Services
             ExtImplant_Base implant = IExtImplantService._extImplants.Where(x => x.Metadata.Id == implantId).ToList()[0];
             //find the task result in the list of task results
             ExtImplantTaskResult_Base? taskResult = implant.GetTaskResult(taskid);
-            if(taskResult == null)
+            if (taskResult == null)
             {
                 return;
             }
-            if(taskResult.UsersThatHaveReadResult == null)
+            if (taskResult.UsersThatHaveReadResult == null)
             {
                 taskResult.UsersThatHaveReadResult = new List<string>();
             }
@@ -453,7 +446,7 @@ namespace HardHatCore.TeamServer.Services
 
         public async Task<bool> CreateOrUpdateWebhook(Webhook webhook)
         {
-            if(Webhook.ExistingWebhooks.Where(x => x.Id == webhook.Id).ToList().Count > 0)
+            if (Webhook.ExistingWebhooks.Where(x => x.Id == webhook.Id).ToList().Count > 0)
             {
                 //update the webhook 
                 Webhook.ExistingWebhooks.Where(x => x.Id == webhook.Id).ToList()[0] = webhook;
@@ -491,8 +484,8 @@ namespace HardHatCore.TeamServer.Services
         public async Task NotifySharedNoteUpdate(string content)
         {
             //send the updated note to all users 
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.All.SendAsync("SharedNoteUpdated", content);
+            IHubContext<HardHatHub, IHardHatHub> hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.All.SharedNoteUpdated(content);
         }
 
         //public async Task VNCsendHeartbeatToServer(string implantId, string vncSessionId, string IssuingUser)
@@ -602,35 +595,32 @@ namespace HardHatCore.TeamServer.Services
 
         }
 
-
-//end of hub client invokable methods 
         #endregion
-
-
+        //end of hub client invokable methods
 
         //teamserver side invokable methods 
         #region teamserver_side_invoke_Methods
         public static async Task StoreTaskHeader(ExtImplantTask_Base mytask)
         {
-            if(DatabaseService.AsyncConnection == null)
+            if (DatabaseService.AsyncConnection == null)
             {
                 DatabaseService.ConnectDb();
             }
             DatabaseService.AsyncConnection.InsertAsync((ExtImplantTask_DAO)mytask);
         }
 
-        public static async Task CheckIn(ExtImplant_Base implant)
-        {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;            
-            await hubContext.Clients.All.SendAsync("CheckInExtImplant_Base",implant);
-        }
+        //public static async Task CheckIn(ExtImplant_Base implant)
+        //{
+        //    var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, ITeamServer>)) as IHubContext<HardHatHub, ITeamServer>;            
+        //    await hubContext.Clients.All.SendAsync("CheckInExtImplant_Base",implant);
+        //}
 
         public static async Task ImplantCheckIn(ExtImplant_Base implant)
         {
             try
             {
-                var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-                await hubContext.Clients.All.SendAsync("CheckInImplant", implant);
+                var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+                await hubContext.Clients.All.CheckInImplant(implant);
             }
             catch (Exception ex)
             {
@@ -644,92 +634,92 @@ namespace HardHatCore.TeamServer.Services
         //    var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
         //    await hubContext.Clients.All.SendAsync("ShowExtImplant_BaseTaskResponse", implantid, tasksIds);
         //}
-        
+
         public static async Task UpdateOutgoingTaskDic(ExtImplant_Base implant, List<ExtImplantTask_Base> task, string connectionId)
         {
             //should execute whenever a task is queued
             if (String.IsNullOrEmpty(connectionId))
             {
-                var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-                await hubContext.Clients.All.SendAsync("UpdateOutgoingTaskDic", implant, task);
+                var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+                await hubContext.Clients.All.UpdateOutgoingTaskDic(implant, task);
             }
             //should execute whenever a new client connects for the first time and needs to be updated with the current task list
             else
             {
-                var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-                await hubContext.Clients.Client(connectionId).SendAsync("UpdateOutgoingTaskDic", implant, task);
+                var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+                await hubContext.Clients.Client(connectionId).UpdateOutgoingTaskDic(implant, task);
             }
         }
-        
+
         public static async Task UpdateManagerList(manager manager)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.All.SendAsync("UpdateManagerList", manager);
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.All.UpdateManagerList(manager);
         }
 
-        public static async Task GetExistingHttpManagers(List<Httpmanager> managers,string clientId)
+        public static async Task GetExistingHttpManagers(List<Httpmanager> managers, string clientId)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.Client(clientId).SendAsync("GetExistingManagerList", managers);
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.Client(clientId).GetExistingManagerList(managers);
         }
-        
+
         public static async Task GetExistingSMBManagers(List<SMBmanager> managers, string clientId)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.Client(clientId).SendAsync("GetExistingManagerList", managers);
-        }
-        
-        public static async Task GetExistingTCPManagers(List<TCPManager> managers, string clientId)
-        {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.Client(clientId).SendAsync("GetExistingManagerList", managers);
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.Client(clientId).GetExistingManagerList(managers);
         }
 
-        public static async Task GetExistingTaskInfo(ExtImplant_Base implant, List<ExtImplantTask_Base> results,string clientId)
+        public static async Task GetExistingTCPManagers(List<TCPManager> managers, string clientId)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.Client(clientId).SendAsync("GetExistingTaskInfo", implant,results);
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.Client(clientId).GetExistingManagerList(managers);
+        }
+
+        public static async Task GetExistingTaskInfo(ExtImplant_Base implant, List<ExtImplantTask_Base> results, string clientId)
+        {
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.Client(clientId).GetExistingTaskInfo(implant, results);
         }
 
         public static async Task GetExistingHistoryEvents(List<HistoryEvent> historyEvents, string clientId)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.Client(clientId).SendAsync("GetExistingHistoryEvents", historyEvents);
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.Client(clientId).GetExistingHistoryEvents(historyEvents);
         }
 
         public static async Task GetExistingDownloadedFiles(string clientId)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.Client(clientId).SendAsync("GetExistingDownloadedFiles", DownloadFile.downloadFiles);
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.Client(clientId).GetExistingDownloadedFiles(DownloadFile.downloadFiles);
         }
 
         public static async Task GetExistingUploadedFile(string clientId)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.Client(clientId).SendAsync("GetExistingUploadedFiles", UploadedFile.uploadedFileList);
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.Client(clientId).GetExistingUploadedFiles(UploadedFile.uploadedFileList);
         }
-        
+
         public static async Task GetExistingPivotProxies(string clientId)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.Client(clientId).SendAsync("GetExistingPivotProxies", PivotProxy.PivotProxyList);
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.Client(clientId).GetExistingPivotProxies(PivotProxy.PivotProxyList);
         }
 
         public static async Task GetExistingCreds(string clientId)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.Client(clientId).SendAsync("GetExistingCreds", Cred.CredList);
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.Client(clientId).GetExistingCreds(Cred.CredList);
 
         }
 
         public static async Task AlertDownload(DownloadFile file)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.All.SendAsync("AlertDownloadFile", file);
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.All.AlertDownloadFile(file);
             DownloadFile.downloadFiles.Add(file);
             DatabaseService.AsyncConnection.InsertAsync((DownloadFile_DAO)file);
             AlertEventHistory(new HistoryEvent() { Event = $"Downloaded File: {file.Name} from {file.Host} @ {file.downloadedTime} ", Status = "Success" });
-            LoggingService.EventLogger.ForContext("File", file,true).Information($"Downloaded File: {file.Name} from {file.Host} @ {file.downloadedTime} ");
+            LoggingService.EventLogger.ForContext("File", file, true).Information($"Downloaded File: {file.Name} from {file.Host} @ {file.downloadedTime} ");
         }
 
         public static async Task AlertEventHistory(HistoryEvent histEvent)
@@ -738,19 +728,19 @@ namespace HardHatCore.TeamServer.Services
             {
                 DatabaseService.ConnectDb();
             }
-            
+
             //add the creds to the database
             DatabaseService.AsyncConnection.InsertAsync((HistoryEvent_DAO)histEvent);
             HistoryEvent.HistoryEventList.Add(histEvent);
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.All.SendAsync("AlertEventHistory", histEvent);
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.All.AlertEventHistory(histEvent);
         }
-       
+
         public static async Task AddCreds(List<Cred> creds, bool AddToDB)
         {
             try
             {
-                
+
                 if (AddToDB)
                 {
                     //check if database connection is not null 
@@ -768,63 +758,63 @@ namespace HardHatCore.TeamServer.Services
                     }
                 }
                 HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"Added {creds.Count()} Creds added to the cred store", Status = "success" });
-                LoggingService.EventLogger.Information("Added {CredCount} creds added to the cred store",creds.Count());
-                
-                var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-                await hubContext.Clients.All.SendAsync("AddCreds", creds);
+                LoggingService.EventLogger.Information("Added {CredCount} creds added to the cred store", creds.Count());
+
+                var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+                await hubContext.Clients.All.AddCreds(creds);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(ex.StackTrace);
             }
-           
+
         }
-        
+
         public static async Task AddPsCommand(string pscmd)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.All.SendAsync("AddPsCommand", pscmd);
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.All.AddPsCommand(pscmd);
         }
 
         //should handle sending the PivotProxy object to the clients 
         public static async Task AddPivotProxy(PivotProxy pivotProxy)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.All.SendAsync("AddPivotProxy", pivotProxy);
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.All.AddPivotProxy(pivotProxy);
         }
-        
+
         public static async Task AddTaskIdToPickedUpList(string taskId)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.All.SendAsync("AddTaskToPickedUpList", taskId);
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.All.AddTaskToPickedUpList(taskId);
         }
 
         public static async Task UpdateTabContent(InteractiveTerminalCommand command)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.All.SendAsync("UpdateTabContent", command);
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.All.UpdateTabContent(command);
         }
-        
+
         public static async Task AddIOCFile(IOCFile iocFile)
         {
             if (DatabaseService.AsyncConnection == null)
             {
                 DatabaseService.ConnectDb();
             }
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+
             //if the iocFile.Id matches any in the IOCFile.IOCFiles list then we got it from the db and can just send it to the clients 
             if (IOCFile.IOCFiles.Any(x => x.ID == iocFile.ID))
             {
-                await hubContext.Clients.All.SendAsync("AddIOCFile", iocFile);
+                await hubContext.Clients.All.AddIOCFile(iocFile);
                 return;
             }
             // otherwise this is new and add the ioc file to the database and tracking list and logging 
             DatabaseService.AsyncConnection.InsertAsync((IOCFIle_DAO)iocFile);
             IOCFile.IOCFiles.Add(iocFile);
-            LoggingService.EventLogger.ForContext("IOC_File", iocFile,true).Information($"Uploaded File to target: {iocFile.Name} on host {iocFile.UploadedHost} to {iocFile.UploadedPath} @ {iocFile.Uploadtime} ");
-            await hubContext.Clients.All.SendAsync("AddIOCFile", iocFile);
+            LoggingService.EventLogger.ForContext("IOC_File", iocFile, true).Information($"Uploaded File to target: {iocFile.Name} on host {iocFile.UploadedHost} to {iocFile.UploadedPath} @ {iocFile.Uploadtime} ");
+            await hubContext.Clients.All.AddIOCFile(iocFile);
         }
 
         public static async Task AddCompiledImplant(CompiledImplant compImp)
@@ -833,9 +823,9 @@ namespace HardHatCore.TeamServer.Services
             {
                 DatabaseService.ConnectDb();
             }
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
 
-            await hubContext.Clients.All.SendAsync("AddCompiledImplant", compImp);
+            await hubContext.Clients.All.AddCompiledImplant(compImp);
             DatabaseService.AsyncConnection.InsertAsync((CompiledImplant_DAO)compImp);
             return;
         }
@@ -852,7 +842,7 @@ namespace HardHatCore.TeamServer.Services
                 //replace the properties with the implant object properties
                 foreach (var prop in implant.GetType().GetProperties())
                 {
-                    if(prop.GetValue(implant) != null)
+                    if (prop.GetValue(implant) != null)
                     {
                         temp_data = temp_data.Replace($"{{{{REPLACE_{prop.Name.ToUpper()}}}}}", prop.GetValue(implant).ToString());
                     }
@@ -949,8 +939,8 @@ namespace HardHatCore.TeamServer.Services
 
         public static async Task SendTaskResults(ExtImplant_Base implant, List<string> implantTaskIds)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.All.SendAsync("SendTaskResults", implant, implantTaskIds);
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.All.SendTaskResults(implant, implantTaskIds);
         }
 
         public static async Task<bool> CreateUserTS(string username, string password, string role)
@@ -958,7 +948,7 @@ namespace HardHatCore.TeamServer.Services
             try
             {
                 //create a new salt and hash the password
-                string passwordHash =  Hash.HashPassword(password, out byte[] salt);
+                string passwordHash = Hash.HashPassword(password, out byte[] salt);
                 //create an instance of the UserInfo Class and set these properties, makes the Id a new guid , then make an instance of the UserStore and add the user to the store 
                 UserInfo user = new UserInfo { Id = Guid.NewGuid().ToString(), UserName = username, NormalizedUserName = username.Normalize().ToUpperInvariant(), PasswordHash = passwordHash };
                 UserStore userStore = new UserStore();
@@ -987,17 +977,17 @@ namespace HardHatCore.TeamServer.Services
 
         public static async Task NotifyTaskDeletion(string implantId, string taskId)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.All.SendAsync("NotifyTaskDeletion", implantId, taskId);
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.All.NotifyTaskDeletion(implantId, taskId);
         }
 
         public static async Task AddVNCInteractionResponse(VncInteractionResponse response, VNCSessionMetadata vncSessionMetadata)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
-            await hubContext.Clients.All.SendAsync("NotifyVNCInteractionResponse", response, vncSessionMetadata);
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.All.NotifyVNCInteractionResponse(response, vncSessionMetadata);
         }
 
-        //end of teamserver side invokable methods 
         #endregion
+        //end of teamserver side invokable methods 
     }
 }
