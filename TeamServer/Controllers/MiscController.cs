@@ -30,6 +30,20 @@ namespace HardHatCore.TeamServer.Controllers
             }
         }
 
+        //get existing creds 
+        [HttpGet("/getcreds", Name = "GetCreds")]
+        public async Task<IEnumerable<Cred>> GetCreds()
+        {
+            try
+            {
+                return Cred.CredList;
+            }
+            catch(Exception ex) 
+            { 
+                Console.WriteLine("error in get creds api: " + ex.Message);
+                return null;
+            }
+        }
 
     }
 }
