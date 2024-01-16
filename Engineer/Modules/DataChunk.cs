@@ -22,6 +22,10 @@ namespace Engineer.Modules
                 {
                     position++;
                     var size = Math.Min(chunkSize, data.Length - offset);
+                    if(size < 1)
+                    {
+                        size = 1000;
+                    }
                     var chunk = new byte[size];
                     Array.Copy(data, offset, chunk, 0, size);
                     DataChunks.Add(new DataChunk { Type = 1,Position = position, Length = chunk.Length, Data = chunk, RealResponseType = realResponseType });

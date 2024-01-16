@@ -1,9 +1,8 @@
 ﻿@using HardHatCore.ApiModels.Shared
 
-
 @if (ImplantCreation.selectedImpModuleList.Contains("SleepEncrypt"))
 {
-    <MudSelect Clearable="true" Class="mb-4 mt-4" T="SleepTypes" Label="Sleep Encryption Type" Variant="Variant.Filled" Required="true" @bind-value="ImplantCreation.formData.SleepType" RequiredError="Type is required!">
+    <MudSelect PopoverClass="custom-select" Clearable="true" Class="mb-4 mt-4" T="SleepTypes" Label="Sleep Encryption Type" Variant="Variant.Filled" Required="true" @bind-value="ImplantCreation.formData.SleepType" RequiredError="Type is required!">
         <MudSelectItem Value="@(SleepTypes.None)" />
         <MudSelectItem Value="@(SleepTypes.Custom_RC4)" />
     </MudSelect>

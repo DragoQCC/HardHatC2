@@ -1,17 +1,15 @@
-﻿using Microsoft.AspNetCore.Components;
-
-namespace HardHatCore.HardHatC2Client.Plugin_Interfaces
+﻿namespace HardHatCore.HardHatC2Client.Plugin_Interfaces
 {
     public interface IClientPlugin
     {
-        Type GetComponentType();
+        string Name { get; set; }
     }
 
     public interface IClientPluginData
     {
         //name of the plugin, needs to be unique
-        string Name { get; }       
+        string Name { get; set; }       
         //details about the plugin 
-        string Description { get; }
+        string Description { get; set; }
     }
 }

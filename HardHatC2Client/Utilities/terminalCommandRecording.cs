@@ -1,7 +1,5 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.IO;
-using System.Reflection.PortableExecutable;
 using System.Text;
 
 namespace HardHatCore.HardHatC2Client.Utilities

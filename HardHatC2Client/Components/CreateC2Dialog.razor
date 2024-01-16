@@ -26,25 +26,6 @@
                 }
             </PopoverEndContent>
         </MudComboBox>
-        <MudComboBox T="List<string>" @bind-values="profile.EventUrls" Variant="Variant.Filled" Label="Callback URIs" MultiSelection="true" Editable="true"
-                     ShowCheckbox="true" Bordered="true" Dense="Dense.Slim" Color="@Color.Primary" Clearable="true">
-            <ChildContent>
-                @foreach (string item in profile.EventUrls)
-                {
-                    <MudComboBoxItem Value="@item" Text="@item"></MudComboBoxItem>
-                }
-            </ChildContent>
-            <PopoverEndContent>
-                @if (true)
-                {
-
-                    <div class="d-flex gap-4 pa-4">
-                        <MudIconButton Icon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="@Color.Primary" OnClick="(()=>profile.EventUrls.Add(_eventurlToAdd))" />
-                        <MudTextFieldExtended @bind-Value="_eventurlToAdd" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                    </div>
-                }
-            </PopoverEndContent>
-        </MudComboBox>
         <MudComboBox T="List<string>" @bind-values="profile.Cookies" Variant="Variant.Filled" Label="cookies" MultiSelection="true" Editable="true"
                      ShowCheckbox="true" Bordered="true" Dense="Dense.Slim" Color="@Color.Primary" Clearable="true">
             <ChildContent>

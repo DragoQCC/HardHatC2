@@ -1,16 +1,6 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.OpenApi.Models;
 using System;
 using System.Linq;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using RestSharp;
-using System.Threading.Tasks;
+using FastEndpoints;
 using HardHatCore.TeamServer.Models.Database;
 using HardHatCore.TeamServer.Plugin_BaseClasses;
 using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
@@ -18,6 +8,18 @@ using HardHatCore.TeamServer.Plugin_Management;
 using HardHatCore.TeamServer.Services;
 using HardHatCore.TeamServer.Services.Extra;
 using HardHatCore.TeamServer.Utilities;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using RestSharp;
+using FastEndpoints.Swagger;
+using FastEndpoints.Security;
 
 namespace HardHatCore.TeamServer
 {
@@ -37,56 +39,46 @@ namespace HardHatCore.TeamServer
         public void ConfigureServices(IServiceCollection services)
         {
 
-            services.AddSignalR();
-            services.AddControllers();
-            services.AddSwaggerGen(c =>
+            services.AddSignalR(c => 
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "TeamServer", Version = "v1" });
-                c.CustomSchemaIds(type => type.ToString());
-
-                // Configure Swagger to use OAuth2
-                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-                {
-                    Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
-                    Name = "Authorization",
-                    In = ParameterLocation.Header,
-                    Type = SecuritySchemeType.ApiKey,
-                    Scheme = "Bearer"
-                });
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement
-                {
-                    {
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference
-                            {
-                                Type = ReferenceType.SecurityScheme,
-                                Id = "Bearer"
-                            }
-                        },
-                        new string[] {}
-                    }
-                });
+                c.EnableDetailedErrors = true;
+                c.MaximumParallelInvocationsPerClient = 100;
+                c.StreamBufferCapacity = 100;
+                c.MaximumReceiveMessageSize = int.MaxValue;
             });
+            services.AddFastEndpoints(c=>
+            {
+                //take all endpoints except the HandleAsset endpoint
+                c.Filter = (x =>
+                {
+                    if (x.Name.Contains("HandleAsset")) { return false; }
+                    return true;
+                });
+
+            }).SwaggerDocument(c =>
+            {
+                c.DocumentSettings = s =>
+                {
+                    s.Title = "TeamServer";
+                    s.Version = "v1";
+                    s.Description = "TeamServer API";
+                };
+                c.EnableGetRequestsWithBody = false;
+                c.EnableJWTBearerAuth = true;
+
+
+            });
+            //services.AddControllers();
+            
             services.AddSingleton<ImanagerService, managerService>();
-            //services.AddSingleton<IEngineerService, EngineerService>();
             services.AddSingleton<IExtImplantService, ExtImplantService_Base>();
-
-            string sqliteConnectionString = DatabaseService.ConnectionString;
-
 
             services.AddTransient<IUserStore<UserInfo>, UserStore>();
             services.AddTransient<IRoleStore<RoleInfo>, RoleStore>();
             services.AddTransient<UserManager<UserInfo>, MyUserManager>();
             
-
             services.AddIdentity<UserInfo, RoleInfo>().AddDefaultTokenProviders();
-
             services.Configure<IPWhitelistOptions>(Configuration.GetSection("IPWhitelistOptions"));
-
-            
-            
-
 
             //add role-based authorization services
             services.AddAuthentication(o =>
@@ -111,10 +103,6 @@ namespace HardHatCore.TeamServer
             Authentication.SignInManager = services.BuildServiceProvider().GetService<SignInManager<UserInfo>>();
             Authentication.UserManager = services.BuildServiceProvider().GetService<UserManager<UserInfo>>();
             Authentication.Configuration = Configuration;
-
-
-            
-
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -122,20 +110,12 @@ namespace HardHatCore.TeamServer
         {
             try
             {
-                PluginService.InitPlugins();
+                PluginService.InitPluginsWithCustomContext();
                 if (env.IsDevelopment())
                 {
                     app.UseDeveloperExceptionPage();
-                    app.UseSwagger();
-                    app.UseSwaggerUI(c =>
-                    {
-                        c.SwaggerEndpoint("/swagger/v1/swagger.json", "TeamServer v1");
-                        // Enable OAuth2 in Swagger UI
-                        c.OAuthUsePkce();
-                    });
                     Console.WriteLine("TeamServer is running in development mode.");
                 }
-
                 app.UseRouting();
                 app.UseAuthentication();
                 app.UseAuthorization();
@@ -143,9 +123,11 @@ namespace HardHatCore.TeamServer
 
                 app.UseEndpoints(endpoints =>
                 {
-                    endpoints.MapControllers();
+                    endpoints.MapFastEndpoints();
+                    //endpoints.MapControllers();
                     endpoints.MapHub<HardHatHub>("/HardHatHub");
                 });
+                app.UseSwaggerGen();
                 Seralization.Init();
                 //add a check to make sure the Microsoft.AspNetCore.Hosting.Server.Features.IServerAddressesFeature>().Addresses is not empty
                 if(String.IsNullOrEmpty(TeamserverIP))
@@ -174,9 +156,9 @@ namespace HardHatCore.TeamServer
                 await UsersRolesDatabaseService.CreateDefaultAdmin();
                 Console.WriteLine("Filling teamserver from database");
                 await DatabaseService.FillTeamserverFromDatabase();
-                if (String.IsNullOrEmpty(Encryption.UniversialMetadataKey))
+                if (String.IsNullOrEmpty(Encryption.UniversialMessageKey))
                 {
-                    Console.WriteLine("Generating unique encryption keys for pathing and metadata id");
+                    Console.WriteLine("Generating unique encryption keys for server");
                     Encryption.GenerateUniversialKeys();
                 }
 
@@ -190,7 +172,7 @@ namespace HardHatCore.TeamServer
             }
             catch (Exception e)
             {
-                Console.WriteLine("An error occured during startup");
+                Console.WriteLine("An error occurred during startup");
                 Console.WriteLine(e);
                 throw;
             }

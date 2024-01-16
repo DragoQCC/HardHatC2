@@ -367,12 +367,12 @@ namespace Engineer.Models
                         IsDataInTransit = true;
                         if (!Program.IsEncrypted)
                         {
-                            byte[] ParentData = await client.ReceiveData(_tokenSource.Token); // should always be a C2TaskMessage[] , but the data is seralized & encrypted  NEED TO CHANGE so we can process this C2TaskMessage
+                            byte[] ParentData = await client.ReceiveData(_tokenSource.Token); // should always be a C2Message[] , but the data is seralized & encrypted  NEED TO CHANGE so we can process this C2Message
                             //Console.WriteLine($"{DateTime.UtcNow} reading C2 Task from Parent");
 
                             byte[] seralizedParentData = Encryption.AES_Decrypt(ParentData, Program.MessagePathKey);
-                            C2TaskMessage incomingMessage = seralizedParentData.JsonDeserialize<C2TaskMessage>();
-                            //check the C2TaskMessage PathMessage Count if its highrt then 0, read the first item and if that matches the current engineers id add the message to the queue
+                            C2Message incomingMessage = seralizedParentData.JsonDeserialize<C2Message>();
+                            //check the C2Message PathMessage Count if its highrt then 0, read the first item and if that matches the current engineers id add the message to the queue
                             if (incomingMessage.PathMessage.ElementAt(0) == Program._metadata.Id)
                             {
                                 incomingMessage.PathMessage.RemoveAt(0);
@@ -386,7 +386,7 @@ namespace Engineer.Models
                                 //else this task is for this current engineer and should be added to the taskQueue
                                 else
                                 {
-                                    byte[] decryptedTaskData = Encryption.AES_Decrypt(incomingMessage.TaskData.ToArray(), "", Program.UniqueTaskKey);
+                                    byte[] decryptedTaskData = Encryption.AES_Decrypt(incomingMessage.Data.ToArray(), "", Program.UniqueTaskKey);
                                     HandleResponse(decryptedTaskData);
                                 }
                             }
@@ -487,12 +487,12 @@ namespace Engineer.Models
                         IsDataInTransit = true;
                         if (!Program.IsEncrypted)
                         {
-                            byte[] ParentData = await client.ReceiveData(_tokenSource.Token); // should always be a C2TaskMessage[] , but the data is seralized & encrypted NEED TO CHANGE so we can process this C2TaskMessage
+                            byte[] ParentData = await client.ReceiveData(_tokenSource.Token); // should always be a C2Message[] , but the data is seralized & encrypted NEED TO CHANGE so we can process this C2Message
                             //Console.WriteLine($"{DateTime.Now} reading C2 Task from Parent");                                                                  
                                                                                                                                                            
                             byte[] seralizedParentData = Encryption.AES_Decrypt(ParentData, Program.MessagePathKey);
-                            C2TaskMessage incomingMessage = seralizedParentData.JsonDeserialize<C2TaskMessage>();
-                            //check the C2TaskMessage PathMessage Count if its highrt then 0, read the first item and if that matches the current engineers id add the message to the queue
+                            C2Message incomingMessage = seralizedParentData.JsonDeserialize<C2Message>();
+                            //check the C2Message PathMessage Count if its highrt then 0, read the first item and if that matches the current engineers id add the message to the queue
                             if (incomingMessage.PathMessage.ElementAt(0) == Program._metadata.Id)
                             {
                                 incomingMessage.PathMessage.RemoveAt(0);
@@ -506,7 +506,7 @@ namespace Engineer.Models
                                 //else this task is for this current engineer and should be added to the taskQueue
                                 else
                                 {
-                                    byte[] decryptedTaskData = Encryption.AES_Decrypt(incomingMessage.TaskData.ToArray(), "", Program.UniqueTaskKey);
+                                    byte[] decryptedTaskData = Encryption.AES_Decrypt(incomingMessage.Data.ToArray(), "", Program.UniqueTaskKey);
                                     HandleResponse(decryptedTaskData);
                                 }
                             }
@@ -564,7 +564,7 @@ namespace Engineer.Models
                 {
                     foreach (var task in tasks)
                     {
-                        Inbound.Enqueue(task);
+                        InboundTasks.Enqueue(task);
                     }
                     return true;
                 }

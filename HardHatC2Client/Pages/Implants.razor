@@ -23,27 +23,7 @@
             <MudTabs>
                 <MudTabPanel Text="Table View / Creation">
             <br>
-            <div oncontextmenu="return false;" @onclick="HandleClick" @onmouseup="HandleMouseUp">
-            <div class="container-fluid d-flex flex-grow-1" style="height:500px; overflow-y:scroll">
-           <style>
-            .selected 
-            {
-                background-color: #1E88E5 !important;
-            }
-            .selected > td 
-            {
-                color: white !important;
-            }   
-            .selected > td .mud-input 
-            {
-                color: white !important;
-            }
-
-            .dialog-blur-class {
-                backdrop-filter: blur(10px);
-            }
-            </style>
-                           
+            <div class="container-fluid d-flex flex-grow-1" style="height:50vh; overflow-y:scroll">            
                 @if (HideOfflineImplants)
                 {
                     ImplantDisplayList = ImplantList.Where(x => x.Status == "Active").ToList();
@@ -52,97 +32,53 @@
                 {
                     ImplantDisplayList = ImplantList.ToList();
                 }
-                            
-                <MudDialog IsVisible="@OpenDialog">
-                    <DialogContent>
-                                <MudCheckBox Label="Implant Number" Checked="@ColumnVisibility["Number"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => ToggleColumnVisibility("Number"))"></MudCheckBox>
-                        <MudCheckBox Label="Status" Checked="@ColumnVisibility["Status"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("Status"))"></MudCheckBox>
-                        <MudCheckBox Label="External Address" Checked="@ColumnVisibility["ExternalAddress"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("ExternalAddress"))"></MudCheckBox>
-                                <MudCheckBox Label="Manager" Checked="@ColumnVisibility["ManagerName"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("ManagerName"))"></MudCheckBox>
-                                <MudCheckBox Label="Connection Type" Checked="@ColumnVisibility["ConnectionType"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("ConnectionType"))"></MudCheckBox>
-                                <MudCheckBox Label="Address" Checked="@ColumnVisibility["Address"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("Address"))"></MudCheckBox>
-                                <MudCheckBox Label="Hostname" Checked="@ColumnVisibility["Hostname"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("Hostname"))"></MudCheckBox>
-                        <MudCheckBox Label="Username" Checked="@ColumnVisibility["Username"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("Username"))"></MudCheckBox>
-                        <MudCheckBox Label="Note" Checked="@ColumnVisibility["Note"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("Note"))"></MudCheckBox>
-                                <MudCheckBox Label="Process Name" Checked="@ColumnVisibility["ProcessName"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("ProcessName"))"></MudCheckBox>
-                                <MudCheckBox Label="Process Id" Checked="@ColumnVisibility["ProcessId"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("ProcessId"))"></MudCheckBox>
-                                <MudCheckBox Label="Integrity" Checked="@ColumnVisibility["Integrity"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("Integrity"))"></MudCheckBox>
-                                <MudCheckBox Label="Arch" Checked="@ColumnVisibility["Arch"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("Arch"))"></MudCheckBox>
-                                <MudCheckBox Label="Sleep" Checked="@ColumnVisibility["Sleep"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("Sleep"))"></MudCheckBox>
-                                <MudCheckBox Label="Last Seen" Checked="@ColumnVisibility["LastSeen"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("LastSeen"))"></MudCheckBox>
-                                <MudCheckBox Label="First Seen" Checked="@ColumnVisibility["FirstSeen"]" CheckedChanged="@EventCallback.Factory.Create(this, (bool isChecked) => @ToggleColumnVisibility("FirstSeen"))"></MudCheckBox>
-                            </DialogContent>
-                    <DialogActions>
-                        <MudButton OnClick="@(() => OpenDialog = false)">Close</MudButton>
-                    </DialogActions>
-                </MudDialog>
-                            <MudTable Style="width:100%;" Height="400px" Class="flex-auto" Breakpoint="Breakpoint.None" Items="@ImplantDisplayList" HorizontalScrollbar="true" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Elevation="10" Outlined="true" Striped="true" RowClassFunc="@SelectedRowClassFunc" @ref="mudTable" Filter="new Func<ExtImplant_Base,bool>(FilterFunc1)" SortLabel="Sort By">
+                <MudDataGrid Style="width:100%; height:50vh;" Class="flex-auto" HeaderClass="@GetHeaderClass()" Items="@ImplantDisplayList" T="ExtImplant_Base" ShowMenuIcon="true" QuickFilter="@FilterFunc1" FilterMode="DataGridFilterMode.ColumnFilterMenu" HorizontalScrollbar="true" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Elevation="10" Outlined="true" DragDropColumnReordering="@true" ApplyDropClassesOnDragStarted="@true" Hideable="true" ColumnResizeMode="ResizeMode.Container" ColumnsPanelReordering="true" RowContextMenuClick="RowRightClicked" ShowColumnOptions="false" DragIndicatorIcon="" @ref="implantDataGrid">
                     <ToolBarContent>
-                            <MudText Typo="Typo.h6">Implants</MudText>
-                            <MudSpacer />
-                            <MudToggleIconButton @bind-Toggled="@HideOfflineImplants" Color="Color.Primary" Icon="@Icons.Material.Filled.Visibility" ToggledIcon="@Icons.Material.Filled.VisibilityOff" Title="Hide Offline Implants"  ToggledTitle="Hide Offline Implants" />
-                            <MudIconButton Title="Show/Hide Fields" Icon="@Icons.Material.Filled.FilterAlt" Color="Color.Primary" OnClick="@(() => OpenDialog = true)"></MudIconButton>
-                            <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
-                        </ToolBarContent>
-                    <HeaderContent>
-                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"Number")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x => x.Number)">#</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"")"></MudTh>
-                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"Status")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Status)">Status</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"ExternalAddress")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.ExternalAddress)">External Address</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"ManagerName")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.ManagerName)">Manager</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"ConnectionType")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.ConnectionType)">Connection Type</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"Address")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Address)">Address</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"Hostname")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Hostname)">hostname</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"Username")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Username)">username</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"Note")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Note)">note</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"ProcessName")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.ProcessName)">process</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"ProcessId")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.ProcessId)">pid</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"Integrity")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Integrity)">Integrity</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"Arch")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Arch)">arch</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"Sleep")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Sleep)">Sleep Time</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"LastSeen")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.LastSeen)">lastseen</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"FirstSeen")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.FirstSeen)">firstseen</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"ImplantType")"><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.ImplantType)">Implant Type</MudTableSortLabel></MudTh>
-                                    <MudTh Style="@setStyle(MainLayout.IsDarkMode,"")">Options</MudTh>
-                    </HeaderContent>
-                    <RowTemplate Context="Rowcontext">
-                                    <MudTd Style="@GetCellStyle("Number",Rowcontext)">@Rowcontext.Number</MudTd>
-                        <MudTd>
-                            <MudBadge Bordered="true" Overlap="true" Content=@ImplantInteract.SetPanelBadgeCount(Rowcontext) Color="Color.Primary">
-                                            <MudIcon Size="Size.Small" Class="mb-2 ms-2" Icon=@Icons.Material.Outlined.DesktopWindows Color=@SetColor(Rowcontext.Metadata.Integrity)></MudIcon>
-                            </MudBadge>
-                        </MudTd>
-                        <MudTd Style="@GetImplantStatus(Rowcontext)">@Rowcontext.Status</MudTd>
-                                    <MudTd Style="@GetCellStyle("ExternalAddress",Rowcontext)">@Rowcontext.ExternalAddress</MudTd>
-                                    <MudTd Style="@GetCellStyle("ManagerName",Rowcontext)">@Rowcontext.Metadata.ManagerName</MudTd>
-                                    <MudTd Style="@GetCellStyle("ConnectionType",Rowcontext)">@Rowcontext.ConnectionType @FindManager(Rowcontext,Rowcontext.Metadata.ManagerName)</MudTd>
-                                    <MudTd Style="@GetCellStyle("Address",Rowcontext)">@Rowcontext.Metadata.Address</MudTd>
-                                    <MudTd Style="@GetCellStyle("Hostname",Rowcontext)">@Rowcontext.Metadata.Hostname</MudTd>
-                                    <MudTd Style="@GetCellStyle("Username",Rowcontext)">@Rowcontext.Metadata.Username</MudTd>
-                                <MudTd Style="@GetCellStyle("Note",Rowcontext)">@Rowcontext.Note</MudTd>
-                                <MudTd Style="@GetCellStyle("ProcessName",Rowcontext)">@Rowcontext.Metadata.ProcessName</MudTd>
-                                    <MudTd Style="@GetCellStyle("ProcessId",Rowcontext)">@Rowcontext.Metadata.ProcessId</MudTd>
-                                    <MudTd Style="@GetCellStyle("Integrity",Rowcontext)">@Rowcontext.Metadata.Integrity</MudTd>
-                                <MudTd Style="@GetCellStyle("Arch",Rowcontext)">@Rowcontext.Metadata.Arch</MudTd>
-                                    <MudTd Style="@GetCellStyle("Sleep",Rowcontext)">@Rowcontext.Metadata.Sleep sec</MudTd>
-                                <MudTd Style="@GetCellStyle("LastSeen",Rowcontext)">@LastSeenTimer(Rowcontext)</MudTd>
-                                    <MudTd Style="@GetCellStyle("FirstSeen",Rowcontext)">@Rowcontext.FirstSeen</MudTd>
-                                    <MudTd Style="@GetCellStyle("ImplantType",Rowcontext)">@Rowcontext.ImplantType</MudTd>
-                        <MudTd> 
-                            <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
-                                <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown">
-                                    <MudMenuItem OnClick="() =>ContextMenuItems(0,Rowcontext)">Interact</MudMenuItem>
-                                    <MudMenuItem OnClick="() =>ContextMenuItems(1,Rowcontext)">Note</MudMenuItem>
-                                    <MudMenuItem OnClick="() =>ContextMenuItems(2,Rowcontext)">Color</MudMenuItem>
-                                    <MudMenuItem OnClick="() =>ContextMenuItems(3,Rowcontext)">Exit</MudMenuItem>
-                                </MudMenu>
-                            </MudButtonGroup>
-                        </MudTd>
-                    </RowTemplate>
-                </MudTable>
+                        <MudText Typo="Typo.h6">Implants</MudText>
+                        <MudSpacer />
+                        <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                        <MudToggleIconButton @bind-Toggled="@HideOfflineImplants" Color="Color.Primary" Icon="@Icons.Material.Filled.Visibility" ToggledIcon="@Icons.Material.Filled.VisibilityOff" Title="Hide Offline Implants" ToggledTitle="Hide Offline Implants" />
+                    </ToolBarContent>
+                    <Columns>
+                        <PropertyColumn Property="x => x.Number" Title="#" />
+                        <TemplateColumn Context="Rowcontext">
+                            <CellTemplate>
+                                <MudBadge Class="mud-badge-implant-table" Bordered="false" Overlap="false" Content=@ImplantInteract.SetPanelBadgeCount(Rowcontext.Item) Color="Color.Primary">
+                                    <MudIcon Size="Size.Small" Class="mb-2 ms-2" Icon=@Icons.Material.Outlined.DesktopWindows Color=@SetColor(Rowcontext.Item.Metadata.Integrity)></MudIcon>
+                                </MudBadge>
+                            </CellTemplate>
+                        </TemplateColumn>
+                        <PropertyColumn Property="x => x.Status" Title="Status" />
+                        <PropertyColumn Property="x => x.ExternalAddress" Title="External Address" />
+                        <PropertyColumn Property="x => x.Metadata.ManagerName" Title="Manager" />
+                        <PropertyColumn Property="x => x.ConnectionType" Title="Connection Type" />
+                        <PropertyColumn Property="x => x.Metadata.Address" Title="Address" />
+                        <PropertyColumn Property="x => x.Metadata.Hostname" Title="Hostname" />
+                        <PropertyColumn Property="x => x.Metadata.Username" Title="Username" />
+                        <PropertyColumn Property="x => x.Note" Title="Note" />
+                        <PropertyColumn Property="x => x.Metadata.ProcessName" Title="Process Name" />
+                        <PropertyColumn Property="x => x.Metadata.ProcessId" Title="Process Id" />
+                        <PropertyColumn Property="x => x.Metadata.Integrity" Title="Integrity" />
+                        <PropertyColumn Property="x => x.Metadata.Arch" Title="Arch" />
+                        <PropertyColumn Property="x => x.Metadata.Sleep" Title="Sleep" />
+                        <PropertyColumn Property="x => x.LastSeen" Title="Last Seen" />
+                        <PropertyColumn Property="x => x.FirstSeen" Title="First Seen" />
+                        <PropertyColumn Property="x => x.ImplantType" Title="Implant Type" />
+                        <TemplateColumn Context="Rowcontext" Title="Options">
+                            <CellTemplate>
+                                <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined">
+                                    <MudMenu @ref="implantTableMenu" Icon="@Icons.Material.Filled.ArrowDropDown">
+                                                <MudMenuItem OnClick="() =>ContextMenuItems(0,SelectedImplantRow)">Interact</MudMenuItem>
+                                                <MudMenuItem OnClick="() =>ContextMenuItems(1,SelectedImplantRow)">Note</MudMenuItem>
+                                                <MudMenuItem OnClick="() =>ContextMenuItems(2,SelectedImplantRow)">Color</MudMenuItem>
+                                                <MudMenuItem OnClick="() =>ContextMenuItems(3,SelectedImplantRow)">Exit</MudMenuItem>
+                                    </MudMenu>
+                                </MudButtonGroup>
+                            </CellTemplate>
+                        </TemplateColumn>
+                    </Columns>
+                </MudDataGrid>
             </div>
-            </div>
-
             <br>
             <ImplantCreation></ImplantCreation>
                 </MudTabPanel>
@@ -170,8 +106,8 @@
 @code {
     [Inject]
     private IDialogService dialogService { get; set; }
-    [Inject]
-    private static RestClient _restClient { get; set; }
+    // [Inject]
+    // private static RestClient _restClient { get; set; }
     [Inject]
     private static IToastService toastService { get; set; }
     [Inject]
@@ -184,12 +120,14 @@
     //private static Dictionary<string, int> ImplantNumbers = new();
     //private static Dictionary<string, DateTime> ImplantFirstSeenDict = new();
     protected internal static List<ExtImplant_Base> ImplantDisplayList = new List<ExtImplant_Base>();
+    protected internal ExtImplant_Base SelectedImplantRow { get; set; }
     private string ImplantTestID { get; set; }
     public Double OpacityValue { get; set; }
     private static bool Initialized = false;
     private bool success;
     private string[] errors = { };
-    public MudTable<ExtImplant_Base> mudTable;
+    public MudDataGrid<ExtImplant_Base> implantDataGrid;
+    private MudMenu implantTableMenu {get; set;}
     private int selectedRowNumber = -1;
     public static string PsCmd { get; set; }
     private static Stopwatch stopwatch = new Stopwatch();
@@ -200,54 +138,18 @@
     private static DateTime? LastRefresh { get; set; } = null;
     private string searchString1 = "";
     private bool OpenDialog { get; set; } = false;
-    private Dictionary<string, bool> ColumnVisibility = new Dictionary<string, bool>
-    {
-        { "Number", true},
-        {"ImplantId",true },
-        { "Status", true },
-        { "ExternalAddress", true },
-        { "ManagerName", true },
-        { "ConnectionType", true },
-        { "Address", true },
-        { "Hostname", true },
-        { "Username", true },
-        { "Note",true},
-        { "ProcessName", true },
-        { "ProcessId", true },
-        { "Integrity", true },
-        { "Arch", true },
-        { "Sleep", true },
-        { "LastSeen", true },
-        {"FirstSeen",true },
-        {"ImplantType",true },
-    };
+    
 
     public static async Task SetPsCommand(string command)
     {
         PsCmd = command;
     }
 
-    private string setStyle(bool IsDark, string fieldName)
-    {
-        if (!String.IsNullOrEmpty(fieldName))
-        {
-            if (!ColumnVisibility[fieldName])
-            {
-                return "display:none;";
-            }
-        }
-        if (IsDark)
-        {
-            return "background:white; color:black;";
-        }
-        return "background:#333333; color:white;";
-    }
-
     public static Color SetColor(string integrity)
     {
         if (integrity.Equals("high", StringComparison.CurrentCultureIgnoreCase))
         {
-            return Color.Warning;
+            return Color.Primary;
         }
         if (integrity.Equals("system", StringComparison.CurrentCultureIgnoreCase))
         {
@@ -261,65 +163,50 @@
         {
             return Color.Tertiary;
         }
-        return Color.Primary;
+        return Color.Info;
     }
 
-    private void ToggleColumnVisibility(string columnName)
-    {
-        if (ColumnVisibility.ContainsKey(columnName))
-        {
-            ColumnVisibility[columnName] = !ColumnVisibility[columnName];
-        }
-    }
 
     public string GetCellStyle(string columnName, ExtImplant_Base implant)
     {
-        if (ColumnVisibility.ContainsKey(columnName) && ColumnVisibility[columnName])
+        if (implant.Status.Equals("offline",StringComparison.CurrentCultureIgnoreCase))
         {
-            if (implant.Status.Equals("offline",StringComparison.CurrentCultureIgnoreCase))
-            {
-                return "opacity:.4";
-            }
-            else
-            {
-                return "opactity:1";
-            }
+            return "opacity:.4";
         }
         else
         {
-            return "display:none;";
+            return "opactity:1";
         }
     }
 
 
-    void HandleClick(MouseEventArgs args)
+    public void HandleLeftClick(MouseEventArgs args)
     {
         //can handle left click inside the table
     }
-
-    void HandleMouseUp(MouseEventArgs args)
+    
+    public async Task RowRightClicked(DataGridRowClickEventArgs<ExtImplant_Base> args)
     {
-        if (args.Button == 2)
+        await InvokeAsync(() =>
         {
-            //can handle right click inside the table
-            if (mudTable.SelectedItem != null)
-            {
-                mudTable.SelectedItem = null;
-            }
-        }
+            SelectedImplantRow = args.Item;
+            implantTableMenu.ActivationEvent = MouseEvent.RightClick;
+            implantTableMenu.Style = $"position:fixed !important; top:{args.MouseEventArgs.ClientY}px !important; left:{args.MouseEventArgs.ClientX}px !important; opacity:0;";
+            implantTableMenu.ToggleMenu(args.MouseEventArgs);
+            Console.WriteLine("Right Clicked");
+            Console.WriteLine($"menu toggled, is open? {implantTableMenu.IsOpen}");
+        });
     }
 
-
-    private string SelectedRowClassFunc(ExtImplant_Base implant, int rowNumber)
+    internal static string GetHeaderClass()
     {
-        if (mudTable.SelectedItem != null && mudTable.SelectedItem.Equals(implant))
+        if(MainLayout.IsDarkMode)
         {
-            selectedRowNumber = rowNumber;
-            return "selected";
+            return "implant-table-header-dark";
         }
         else
         {
-            return string.Empty;
+            return "implant-table-header";
         }
     }
 
@@ -492,27 +379,12 @@
         return "";
     }
 
-    public static async Task CreateImplant(ExtImplantCreateRequest_Base formData, List<string> selectedImpCommandList, List<string> selectedImpModuleList)
+    public static async Task CreateImplant(ExtImplantCreateRequest_Base formData)
     {
         try
         {
             string resource = "/implants";
-            var createObject = new ExtImplantCreateRequest_Base
-                {
-                    managerName = formData.managerName,
-                    ConnectionAttempts = formData.ConnectionAttempts,
-                    Sleep = formData.Sleep,
-                    complieType = formData.complieType,
-                    WorkingHours = formData.WorkingHours,
-                    SleepType = formData.SleepType,
-                    KillDateTime = formData.selectedKillDate is null ? null : (DateTime)(formData.selectedKillDate.Value.Date + formData.selectedKillTime),
-                    IncludedCommands = selectedImpCommandList.ToList(),
-                    IncludedModules = selectedImpModuleList.ToList(),
-                    ChunkSize = formData.ChunkSize ?? 0,
-                    IsChunkEnabled = formData.IsChunkEnabled ?? false,
-                    implantType = formData.implantType,
-                    implantOsType = formData.implantOsType,
-                };
+            var createObject = formData.Clone();
 
             var request = new RestRequest(resource, Method.Post);
             request.AddJsonBody(createObject);
@@ -522,7 +394,7 @@
             // {
             //     Console.WriteLine(resp.Content);
             // };
-            var requestResponse = await _restClient.PostAsync<string>(request);
+            var requestResponse = await Login._restClient.PostAsync<string>(request);
             if (requestResponse != null)
             {
                 ShowSuccessToast(requestResponse);
@@ -545,7 +417,7 @@
         var request = new RestRequest(resource, Method.Get);
         try
         {
-            var requestResponse = await _restClient.GetAsync<List<ExtImplant_Base>>(request);
+            var requestResponse = await Login._restClient.GetAsync<List<ExtImplant_Base>>(request);
             if (requestResponse != null)
             {
                 foreach (ExtImplant_Base implantresponse in requestResponse)
@@ -691,13 +563,13 @@
     {
         if (firstRender)
         {
-            _restClient = restClientDefault;
-            string jwtToken = await localStorage.GetItemAsync<string>("bearerToken");
-            RestClientOptions options = new RestClientOptions();
-            options.BaseUrl = _restClient.Options.BaseUrl;
-            options.RemoteCertificateValidationCallback = _restClient.Options.RemoteCertificateValidationCallback;
-            options.Authenticator = new JwtAuthenticator(jwtToken);
-            _restClient = new RestClient(options);
+            // _restClient = restClientDefault;
+            // string jwtToken = await localStorage.GetItemAsync<string>("bearerToken");
+            // RestClientOptions options = new RestClientOptions();
+            // options.BaseUrl = _restClient.Options.BaseUrl;
+            // options.RemoteCertificateValidationCallback = _restClient.Options.RemoteCertificateValidationCallback;
+            // options.Authenticator = new JwtAuthenticator(jwtToken);
+            // _restClient = new RestClient(options);
             await Implants.GetAllImplants();
         }
     }

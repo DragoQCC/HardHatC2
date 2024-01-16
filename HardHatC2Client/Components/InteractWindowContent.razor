@@ -14,7 +14,7 @@
 @using static HardHatCore.HardHatC2Client.Pages.ImplantInteract;
 @inject IJSRuntime JSRuntime
 
-<MudExpansionPanel Style="background:#32333d; color:white;" @ref="@interactConPanel" IsExpandedChanged="(e)=>ExpandedChanged(e,implant,currenttask.Id,this)">
+<MudExpansionPanel Class="command-panel" @ref="@interactConPanel" IsExpandedChanged="(e)=>ExpandedChanged(e,implant,currenttask.Id,this)">
     <TitleContent>
         @if (PickedUpTasks.Contains(currenttask.Id) && !(TaskResultDic.ContainsKey(currenttask)))
         {
@@ -104,25 +104,25 @@
     private bool isInitialized = false;
     private bool pendingUpdate = true;
 
-    public async Task UpdateAsync()
-    {
-        //check if this panel has been initialized before if not then initialize it
-        if (isInitialized)
-        {
-            if (CardContent != null && IsTaskResultInFinalState(CardContent))
-            {
-                //should be the final refresh before should render starts returning false 
-                await InvokeAsync(StateHasChanged);
-               // Console.WriteLine("should render is now false");
-                pendingUpdate = false;
-            }
-            else
-            {
-                pendingUpdate = true;
-                await InvokeAsync(StateHasChanged);
-            }
-        }
-    }
+    // public async Task UpdateAsync()
+    // {
+    //     //check if this panel has been initialized before if not then initialize it
+    //     if (isInitialized)
+    //     {
+    //         if (CardContent != null && IsTaskResultInFinalState(CardContent))
+    //         {
+    //             //should be the final refresh before should render starts returning false 
+    //             await InvokeAsync(StateHasChanged);
+    //            // Console.WriteLine("should render is now false");
+    //             pendingUpdate = false;
+    //         }
+    //         else
+    //         {
+    //             pendingUpdate = true;
+    //             await InvokeAsync(StateHasChanged);
+    //         }
+    //     }
+    // }
 
     public async Task ExpandedChanged(bool IsExpanded, ExtImplant_Base implant, string taskId, InteractWindowContent interactWindow)
     {
@@ -311,15 +311,15 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && pendingUpdate)
-        {
-            while(pendingUpdate)
-            {
-                //sleep the thread for 2 seconds, then run the update again
-                await Task.Delay(2000);
-                await UpdateAsync();
-            }
-        }
+        // if (firstRender && pendingUpdate)
+        // {
+        //     while(pendingUpdate)
+        //     {
+        //         //sleep the thread for 2 seconds, then run the update again
+        //         await Task.Delay(2000);
+        //         await UpdateAsync();
+        //     }
+        // }
     }
 
     protected override bool ShouldRender()
@@ -334,5 +334,23 @@
     protected override void OnInitialized()
     {
         isInitialized = true;
+        TaskResultDic.ItemAdded += (sender, args) =>
+        {
+            if (args.Key.Id == currenttask.Id)
+            {
+                Console.WriteLine($"Task result add triggered in per task window for task {currenttask.Id}");
+                CardContent = args.Value;
+                InvokeAsync(StateHasChanged);
+            }
+        };
+        TaskResultDic.ItemUpdated += (sender, args) =>
+        {
+            if (args.Key.Id == currenttask.Id)
+            {
+                Console.WriteLine($"Task result update triggered in per task window for task {currenttask.Id}");
+                CardContent = args.Value;
+                InvokeAsync(StateHasChanged);
+            }
+        };
     }
 }

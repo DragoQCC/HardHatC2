@@ -1,11 +1,8 @@
-﻿using HardHatCore.ApiModels.Plugin_BaseClasses;
+﻿using System.Collections.Generic;
+using HardHatCore.ApiModels.Plugin_BaseClasses;
 using HardHatCore.ApiModels.Plugin_Interfaces;
-using HardHatCore.ApiModels.Shared;
-using SQLite;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using HardHatCore.TeamServer.Models;
 using HardHatCore.TeamServer.Utilities;
+using SQLite;
 
 namespace HardHatCore.TeamServer.Models.Dbstorage
 {
@@ -40,6 +37,10 @@ namespace HardHatCore.TeamServer.Models.Dbstorage
         //create an implcit operator to convert from model to dao
         public static implicit operator ExtImplantTaskResult_DAO(ExtImplantTaskResult_Base model)
         {
+            if (model is null)
+            {
+                return null;
+            }
             return new ExtImplantTaskResult_DAO
             {
                 TaskId = model.Id,
@@ -56,6 +57,10 @@ namespace HardHatCore.TeamServer.Models.Dbstorage
         //create an implcit operator to convert from dao to model
         public static implicit operator ExtImplantTaskResult_Base(ExtImplantTaskResult_DAO dao)
         {
+            if (dao is null)
+            {
+                return null;
+            }
             return new ExtImplantTaskResult_Base
             {
                 Id = dao.TaskId,

@@ -1,7 +1,7 @@
 ﻿
 namespace HardHatCore.HardHatC2Client.Models
 {
-    
+
     public class EngineerMetadata
     {
         public string Id { get; set; }

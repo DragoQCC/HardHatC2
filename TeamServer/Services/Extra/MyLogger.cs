@@ -1,7 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
-using Serilog;
+﻿using Serilog;
 using Serilog.Events;
-using System;
 
 namespace HardHatCore.TeamServer.Services.Extra
 {

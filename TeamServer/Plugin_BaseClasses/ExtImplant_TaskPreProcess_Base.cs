@@ -1,24 +1,20 @@
-﻿using HardHatCore.ApiModels.Plugin_BaseClasses;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using HardHatCore.ApiModels.Plugin_BaseClasses;
 using HardHatCore.TeamServer.Models.Extras;
-using HardHatCore.TeamServer.Plugin_Interfaces;
-using HardHatCore.TeamServer.Services;
-using HardHatCore.TeamServer.Services.Handle_Implants;
-using HardHatCore.TeamServer.Utilities;
 using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
+using HardHatCore.TeamServer.Services;
+using HardHatCore.TeamServer.Utilities;
 
 namespace HardHatCore.TeamServer.Plugin_BaseClasses
 {
-    [Export(typeof(IExtImplant_TaskPreProcess))]
-    [ExportMetadata("Name", "Default")]
-    [ExportMetadata("Description", "Default pre processing for the Engineer Implant")]
     public class ExtImplant_TaskPreProcess_Base : IExtImplant_TaskPreProcess
     {
+        public string Name { get; } = "Default";
+        public string Description { get; } = "Default pre processing for the Engineer Implant";
 
         public virtual bool DetermineIfTaskPreProc(ExtImplantTask_Base task)
         {
@@ -144,11 +140,11 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
                 LoggingService.EventLogger.Error("socks server on {port} already exists", port);
                 return;
             }
-            HttpmanagerController.Proxy.Add(port, new Socks4Proxy(bindPort: int.Parse(port))); // gives the user supplied value as the port to start the socks server on :) 
-                                                                                               //HttpmanagerController.testProxy = new Socks4Proxy(bindPort: int.Parse(port));
+            IExtimplantHandleComms.Proxy.TryAdd(port, new Socks4Proxy(bindPort: int.Parse(port))); // gives the user supplied value as the port to start the socks server on :) 
+                                                                                               
 
             //call proxy.Start() but dont block execution 
-            Task.Run(() => HttpmanagerController.Proxy[port].Start(implant));
+            Task.Run(() => IExtimplantHandleComms.Proxy[port].Start(implant));
             //Task.Run(() => HttpmanagerController.testProxy.Start(engineer));
             //Console.WriteLine("Socks proxy started on port " + port);
             await HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"socks server started on {port}", Status = "success" });
@@ -157,7 +153,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
             //if /stop is in the arguments, stop the proxy
             if (task.Arguments.ContainsKey("/stop"))
             {
-                HttpmanagerController.Proxy[port].Stop();
+                IExtimplantHandleComms.Proxy[port].Stop();
                 await HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"socks server on {port} stopped", Status = "info" });
                 LoggingService.EventLogger.Warning("socks server stopped on teamserver port {port}", port);
             }
@@ -166,14 +162,14 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
         private void PreProcess_spawn(ExtImplantTask_Base task, ExtImplant_Base implant)
         {
             //split the arguments into two strings at the first space
-            if (!task.Arguments.TryGetValue("/manager", out string manager))
+            if (!task.Arguments.TryGetValue("/Manager", out string manager))
             {
                 manager = implant.Metadata.ManagerName;
             }
             manager = manager.TrimStart(' ');
             string arguments = "";
 
-            // find the file in the base directory of the project named "engineer_{manager}" and save its filepath to a string
+            // find the file in the base directory of the project named "engineer_{Manager}" and save its filepath to a string
             string basepath = Helpers.GetBaseFolderLocation();
             string filepath = Directory.GetFiles(basepath + Helpers.PathingTraverseUpString, $"PostExEngineer_{manager}.exe").FirstOrDefault();
 
@@ -251,14 +247,14 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
         private void PreProcess_jump(ExtImplantTask_Base task, ExtImplant_Base implant)
         {
             //split the arguments into two strings at the first space
-            if (!task.Arguments.TryGetValue("/manager", out string manager))
+            if (!task.Arguments.TryGetValue("/Manager", out string manager))
             {
                 manager = implant.Metadata.ManagerName;
             }
             manager = manager.TrimStart(' ');
             string arguments = "";
 
-            // find the file in the base directory of the project named "engineer_{manager}" and save its filepath to a string
+            // find the file in the base directory of the project named "engineer_{Manager}" and save its filepath to a string
             string basepath = Helpers.GetBaseFolderLocation();
             string filepath = "";
 
@@ -285,14 +281,14 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
         private void PreProcess_inject(ExtImplantTask_Base task, ExtImplant_Base implant)
         {
             //split the arguments into two strings at the first space
-            if (!task.Arguments.TryGetValue("/manager", out string manager))
+            if (!task.Arguments.TryGetValue("/Manager", out string manager))
             {
                 manager = implant.Metadata.ManagerName;
             }
             manager = manager.TrimStart(' ');
             string arguments = "";
 
-            // find the file in the base directory of the project named "engineer_{manager}" and save its filepath to a string
+            // find the file in the base directory of the project named "engineer_{Manager}" and save its filepath to a string
             string basepath = Helpers.GetBaseFolderLocation();
             string filepath = Directory.GetFiles(basepath + ".." + $"{Helpers.PlatPathSeperator}", $"PostExEngineer_{manager}.exe").FirstOrDefault();
 
@@ -311,7 +307,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
             //if filepath is not a real file path then use the default programs folder 
             if (!File.Exists(filepath))
             {
-                // find the file in the base directory of the project named "engineer_{manager}" and save its filepath to a string
+                // find the file in the base directory of the project named "engineer_{Manager}" and save its filepath to a string
                 string basepath = Helpers.GetBaseFolderLocation();
                 filepath = basepath + "Programs" + Helpers.PlatPathSeperator + "Users" + Helpers.PlatPathSeperator + filepath;
             }
@@ -355,7 +351,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
                 //if filepath is not a real file path then use the default programs folder 
                 if (!File.Exists(filepath))
                 {
-                    // find the file in the base directory of the project named "engineer_{manager}" and save its filepath to a string
+                    // find the file in the base directory of the project named "engineer_{Manager}" and save its filepath to a string
                     //this should be location/HardHatC2/Teamserver/
                     string basepath = Helpers.GetBaseFolderLocation();
                     filepath = basepath + "Programs" + Helpers.PlatPathSeperator + "Users" + Helpers.PlatPathSeperator + filepath;
@@ -385,7 +381,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
                 //if filepath is not a real file path then use the default programs folder 
                 if (!File.Exists(filepath))
                 {
-                    // find the file in the base directory of the project named "engineer_{manager}" and save its filepath to a string
+                    // find the file in the base directory of the project named "engineer_{Manager}" and save its filepath to a string
                     string basepath = Helpers.GetBaseFolderLocation();
                     filepath = basepath + "Programs" + Helpers.PlatPathSeperator + "Users" + Helpers.PlatPathSeperator + filepath;
                 }
@@ -488,7 +484,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
                 }
                 if (!File.Exists(program))
                 {
-                    // find the file in the base directory of the project named "engineer_{manager}" and save its filepath to a string
+                    // find the file in the base directory of the project named "engineer_{Manager}" and save its filepath to a string
                     string basepath = Helpers.GetBaseFolderLocation();
                     program = basepath + "Programs" + Helpers.PlatPathSeperator + "Users" + Helpers.PlatPathSeperator + program;
                 }
@@ -604,9 +600,5 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
         //        Console.WriteLine($"Error in pre proc VNC interation: {ex.Message}");
         //    }
         //}
-    }
-
-    public interface IExtImplant_TaskPreProcessData : IPluginMetadata
-    {
     }
 }

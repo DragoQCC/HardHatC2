@@ -1,30 +1,23 @@
-﻿using Microsoft.AspNetCore.Routing.Constraints;
-using Microsoft.AspNetCore.Routing.Template;
-using Newtonsoft.Json.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Plugin_Interfaces;
+using HardHatCore.ApiModels.Shared.TaskResultTypes;
+using HardHatCore.TeamServer.Utilities;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Expressions;
 using Serilog.Formatting;
-using Serilog.Formatting.Json;
 using Serilog.Templates;
-using Serilog.Parsing;
-using System;
-using System.IO;
-using System.Reflection;
-using System.Text.Json;
-using HardHatCore.TeamServer.Services.Extra;
-using System.Text;
-using Serilog.Sinks.File;
-using Microsoft.Extensions.Logging;
-using HardHatCore.ApiModels.Plugin_Interfaces;
-using HardHatCore.ApiModels.Plugin_BaseClasses;
-using HardHatCore.ApiModels.Shared.TaskResultTypes;
-using System.Collections.Generic;
-using HardHatCore.TeamServer.Utilities;
 
-namespace HardHatCore.TeamServer.Services    
+namespace HardHatCore.TeamServer.Services
 {
     public class LoggingService
     {

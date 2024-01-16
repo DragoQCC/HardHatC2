@@ -4,7 +4,7 @@ using HardHatCore.ApiModels.Shared;
 
 namespace HardHatCore.TeamServer.Models.Managers
 {
-    public class TCPManager : manager
+    public class TCPManager : Manager
     {
         public override string Name { get; set; }
         public string ConnectionAddress { get; set; }

@@ -1,0 +1,45 @@
+﻿@using HardHatCore.HardHatC2Client.Utilities
+
+<MudExDialog @ref="@_dialog" OnBackdropClick="@(() => GlobalPalette.DialogOpen = !(GlobalPalette.DialogOpen))" IsVisibleChanged="HandleVisChange">
+    <DialogContent>
+        <MudExSplitPanel UpdateSizesInPercentage="true" Style="width: 100%; height: 100%">
+            <Left>
+                <MudExSplitPanelItem Style="width: 30%; height:100%">
+                    <GlobalPalette @ref="@_dialogSearch"></GlobalPalette>
+                    <br>
+                </MudExSplitPanelItem>
+            </Left>
+            <Right>
+                <MudExSplitPanelItem Style="width: 70%; height:100%">
+                    <MudMarkdown Value="@File.ReadAllText(selectedDoc)"></MudMarkdown>
+                </MudExSplitPanelItem>
+            </Right>
+       </MudExSplitPanel>
+    </DialogContent>
+</MudExDialog>
+
+@code {
+    [Parameter]
+    public string selectedDoc { get; set; } = "";
+    private MudExDialog _dialog;
+    private GlobalPalette _dialogSearch { get; set; } = new();
+
+    public async Task searchChanged(object sender,string path)
+    {
+        await _dialogSearch._textField.Clear();
+        _dialogSearch.docSearchUtil.GlobalSearch = "";
+        selectedDoc = path;
+        StateHasChanged();
+    }
+
+    public async Task HandleVisChange(bool changed)
+    {
+        Console.WriteLine($"Dialog is now {(changed ? "visible" : "hidden")}");
+        GlobalPalette.DialogOpen = changed;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        _dialogSearch._DocSearchSelectedFileChanged += (async (sender,e) => await(searchChanged(sender,e)));
+    }
+}

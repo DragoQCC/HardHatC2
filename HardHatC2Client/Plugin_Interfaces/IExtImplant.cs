@@ -1,5 +1,4 @@
 ﻿using HardHatCore.ApiModels.Plugin_BaseClasses;
-using HardHatCore.ApiModels.Plugin_Interfaces;
 
 namespace HardHatCore.HardHatC2Client.Plugin_Interfaces
 {

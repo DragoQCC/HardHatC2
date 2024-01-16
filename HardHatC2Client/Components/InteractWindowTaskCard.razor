@@ -3,7 +3,7 @@
 @using HardHatCore.HardHatC2Client.Pages
 @using HardHatCore.HardHatC2Client.Plugin_BaseClasses
 
-<MudCardContent Style="background:#111111; color:white;">
+<MudCardContent Style="">
     @if (currentTasks is not null)
     {
         @foreach (var currenttask in currentTasks)
@@ -15,30 +15,36 @@
             }
             <InteractWindowContent @ref="@ImplantInteract.TaskPanels[currenttask.Id]" currenttask="@currenttask" commandHeaderText="@currenttask.TaskHeader" implant="@implant" CardContent="@taskResult"></InteractWindowContent>
         }
-
     }
 </MudCardContent>
 
 @code {
     [Parameter]
-    public List<ExtImplantTask_Base>? currentTasks { get; set; } = new List<ExtImplantTask_Base>();
+    public ObservableCollection<ExtImplantTask_Base>? currentTasks { get; set; } = new();
 
     [Parameter]
     public ExtImplant_Base implant { get; set; }
 
     private bool isInitialized { get; set; } = false;
 
-    public async Task ForceListUpdate(List<ExtImplantTask_Base> newCurrentTasks)
-    {
-        currentTasks = newCurrentTasks;
-        if (isInitialized)
-        {
-            await InvokeAsync(StateHasChanged);
-        }
-    }
+    // public async Task ForceListUpdate(List<ExtImplantTask_Base> newCurrentTasks)
+    // {
+    //     currentTasks = newCurrentTasks;
+    //     if (isInitialized)
+    //     {
+    //         await InvokeAsync(StateHasChanged);
+    //     }
+    // }
 
     protected override void OnInitialized()
     {
-       isInitialized = true;
+        isInitialized = true;
+        if (ImplantInteract.OutGoingTasks.ContainsKey(implant))
+        {
+            ImplantInteract.OutGoingTasks[implant].CollectionChanged += (sender, args) =>
+            {
+                InvokeAsync(StateHasChanged);
+            };
+        }
     }
 }

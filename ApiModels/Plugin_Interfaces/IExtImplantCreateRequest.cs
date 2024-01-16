@@ -25,5 +25,6 @@ namespace HardHatCore.ApiModels.Plugin_Interfaces
         public bool? IsPostEx { get; set; }
         public bool? IsChunkEnabled { get; set; }
         public int? ChunkSize { get; set; }
+        public List<SerializedExtras>? Extras { get; set; } //can be used for extra build options that is not part of the base class, if a stock UI element is needed set the ClientUIType property to the desired UI element type
     }
 }

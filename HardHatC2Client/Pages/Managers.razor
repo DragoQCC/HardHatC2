@@ -12,7 +12,7 @@
 @using MudExtensions.Enums
 @using System.Reflection;
 @using HardHatCore.HardHatC2Client.Utilities;
-@inject RestClient _restClient
+@using System.Collections.ObjectModel
 @inject IToastService toastService
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
@@ -26,7 +26,7 @@
             <h3>Managers</h3>
             <br>
 
-            <MudTable Items="@managersList" Virtualize="true" HorizontalScrollbar="true" FixedHeader="true" Height="30vh" Hover="true" Dense="true" Outlined="true" Striped="true">
+            <MudTable Items="@managersList" Virtualize="true" HorizontalScrollbar="true" FixedHeader="true" Height="30vh" Hover="true" Dense="true" Outlined="true" Striped="false">
                 <HeaderContent>
                     <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Name</MudTh>
                     <MudTh Style="@setStyle(MainLayout.IsDarkMode)">Type</MudTh>
@@ -125,13 +125,13 @@
                     IsTcpSelected = false;
                 }
                 
-                    <MudStepper @ref="_stepper" Class="mud-width-full" HeaderSize="Size.Large" Color="Color.Primary" Variant="Variant.Filled" HeaderTextView="MudExtensions.Enums.HeaderTextView.All" PreventStepChangeAsync="new Func<StepChangeDirection, Task<bool>>(CheckChange)"  >
+                    <MudStepper @ref="_stepper" Class="mud-width-full" HeaderSize="Size.Large" Color="Color.Primary" Variant="Variant.Filled" HeaderTextView="MudExtensions.Enums.HeaderTextView.All" PreventStepChangeAsync="new Func<StepChangeDirection,int, Task<bool>>(CheckChange)"  >
                     <ChildContent>
                         <MudStep Icon="@Icons.Material.Filled.Headphones" Title="Name & type">
                             <ChildContent>
                                 <MudForm @ref="_form" @bind-IsValid="@success">
                                 <MudTextField @ref="managerNameFormEntry" Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Name" Required="true" @bind-value="formSubmitManager.Name" RequiredError="manager name is required!" />
-                                <MudSelectExtended @ref="managerTypeFormSelect" Class="mb-4" T="ManagerType" Variant="Variant.Filled" Clearable="true" Label="Manager Type" Required="true" @bind-value="formSubmitManager.Type" RequiredError="Type is required!">
+                                    <MudSelectExtended @ref="managerTypeFormSelect" Class="mb-4" PopoverClass="custom-select" T="ManagerType" Variant="Variant.Filled" Clearable="true" Label="Manager Type" Required="true" @bind-value="formSubmitManager.Type" RequiredError="Type is required!">
                                     <MudSelectItemExtended Value="@(ManagerType.http)" />
                                     <MudSelectItemExtended Value="@(ManagerType.https)" />
                                     <MudSelectItemExtended Value="@(ManagerType.tcp)" />
@@ -148,9 +148,9 @@
                                 <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Connection Address" Required=@IsHttpSelected @bind-value="formSubmitManager.ConnectionAddress" RequiredError="callback address is required!" />
                                 <MudTextField Class="mb-4 mt-4" T="int?"  Variant="Variant.Filled" Clearable="true" Label="Connection Port" Required=@IsHttpSelected @bind-value="formSubmitManager.ConnectionPort" RequiredError="port is required!" />
                                         @*<MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Bind Address" Required=@IsHttpSelected @bind-value="formSubmitManager.BindAddress" RequiredError="bind address is required!" />*@
-    
-                                <MudComboBox T=string Required=@IsHttpSelected @bind-value="formSubmitManager.BindAddress" RequiredError="bind address is required!" Variant="Variant.Filled" Label="Bind Address" MultiSelection="false" Editable="true"
-                                                ShowCheckbox="true" Bordered="true" Dense="Dense.Slim" Color="@Color.Primary" Clearable="true">
+
+                                <MudComboBox PopoverClass="custom-select" T=string Required=@IsHttpSelected @bind-value="formSubmitManager.BindAddress" RequiredError="bind address is required!" Variant="Variant.Filled" Label="Bind Address" MultiSelection="false" Editable="true"
+                                                ShowCheckbox="true" Bordered="true" Dense="Dense.Comfort" Color="@Color.Primary" Clearable="true">
                                     <ChildContent>
                                         @foreach (string item in bindableIpAddresses)
                                         {
@@ -166,7 +166,7 @@
                                 </MudComboBox>
                                 <MudTextField Class="mb-4 mt-4" T="int?"  Variant="Variant.Filled" Clearable="true" Label="Bind Port" Required=@IsHttpSelected @bind-value="formSubmitManager.BindPort" RequiredError="bind port is required!" />
                                 <div class="d-flex align-center justify-space-between">
-                                    <MudSelectExtended ValuePresenter="ValuePresenter.ItemContent" Class="mb-4" T="C2Profile" Variant="Variant.Filled" Clearable="true" Label="C2 Profile" Required="true" @bind-value="formSubmitManager.C2profile" RequiredError="C2 Profile required!">
+                                            <MudSelectExtended ValuePresenter="ValuePresenter.ItemContent" Class="mb-4" PopoverClass="custom-select" T="C2Profile" Variant="Variant.Filled" Clearable="true" Label="C2 Profile" Required="true" @bind-value="formSubmitManager.C2profile" RequiredError="C2 Profile required!">
                                         @foreach(C2Profile profile in C2profiles)
                                         {
                                             <MudSelectItemExtended Value="@(profile)">@profile.Name</MudSelectItemExtended>
@@ -194,7 +194,7 @@
                                 <MudTextField Class="mb-4 mt-4" T="int?" Variant="Variant.Filled" Clearable="true" Label="Connect Port" Required=@IsReverse Disabled=@IsBind @bind-value="formSubmitManager.BindPort" RequiredError="bind port is required!" />
                                 <MudTextField Class="mb-4 mt-4" T="int?" Variant="Variant.Filled" Clearable="true" Label="Listen Port" Required=@IsBind Disabled=@IsReverse @bind-value="formSubmitManager.ListenPort" RequiredError="listen port is required!" />
                                 <MudTextField Class="mb-4 mt-4" T="bool?" Variant="Variant.Filled" Clearable="true" Label="Listen on Local host only?" Required=@IsBind Disabled=@IsReverse @bind-value="formSubmitManager.IsLocalHost" RequiredError="is localhost only required!" />
-                                <MudSelectExtended Class="mb-4" T="ConnectionMode" Variant="Variant.Filled" Clearable="true" Label="Connection Direction" Required=@IsTcpSelected @bind-value="formSubmitManager.connectionMode" RequiredError="connection mode is required!">
+                                        <MudSelectExtended Class="mb-4" PopoverClass="custom-select" T="ConnectionMode" Variant="Variant.Filled" Clearable="true" Label="Connection Direction" Required=@IsTcpSelected @bind-value="formSubmitManager.connectionMode" RequiredError="connection mode is required!">
                                     <MudSelectItemExtended Value="@(ConnectionMode.bind)" />
                                     <MudSelectItemExtended Value="@(ConnectionMode.reverse)" />
                                 </MudSelectExtended>
@@ -216,7 +216,7 @@
                                 }
                                 <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Named Pipe" Required=@IsSmbSelected @bind-value="formSubmitManager.NamedPipe" RequiredError="namedpipe is required!" />
                                 <MudTextField Class="mb-4 mt-4" T="string" Variant="Variant.Filled" Clearable="true" Label="Connection Address" Required=@IsReverse Disabled=@IsBind @bind-value="formSubmitManager.ConnectionAddress" RequiredError="callback address is required!" />
-                                <MudSelectExtended Class="mb-4" T="ConnectionMode" Variant="Variant.Filled" Clearable="true" Label="Connection Direction" Required=@IsSmbSelected @bind-value="formSubmitManager.connectionMode" RequiredError="connection mode is required!">
+                                        <MudSelectExtended Class="mb-4" PopoverClass="custom-select" T="ConnectionMode" Variant="Variant.Filled" Clearable="true" Label="Connection Direction" Required=@IsSmbSelected @bind-value="formSubmitManager.connectionMode" RequiredError="connection mode is required!">
                                     <MudSelectItemExtended Value="@(ConnectionMode.bind)" />
                                     <MudSelectItemExtended Value="@(ConnectionMode.reverse)" />
                                 </MudSelectExtended>
@@ -293,7 +293,7 @@
 
 @code {
     private Manager formSubmitManager = new Manager();
-    public static List<Manager> managersList = new List<Manager>();
+    public static ObservableCollection<Manager> managersList = new ObservableCollection<Manager>();
     private static ToastService _toastService;
     private bool success;
     private string[] errors = { };
@@ -315,6 +315,8 @@
     private IDialogService DialogService { get; set; }
     [Inject]
     public ILocalStorageService LocalStorage { get; set; }
+
+    public static bool FirstExecution { get; set; } = true;
 
     private static Timer timer = null;
 
@@ -366,7 +368,7 @@
         formSubmitManager= new Manager();
     }
 
-    private async Task<bool> CheckChange(StepChangeDirection direction)
+    private async Task<bool> CheckChange(StepChangeDirection direction, int targetIndex)
     {
         // Always allow stepping backwards, even if forms are invalid
         if (direction == StepChangeDirection.Backward)
@@ -376,21 +378,21 @@
         if (_stepper.GetActiveIndex() == 0)
         {
             _loading = true;
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);
             await Task.Delay(1000);
             await _form.Validate();
             _loading = false;
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);
             return !_form.IsValid;
         }
         else if (_stepper.GetActiveIndex() == 1)
         {
             _loading = true;
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);
             await Task.Delay(1000);
             await _form2.Validate();
             _loading = false;
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);
             return !_form2.IsValid;
         }
         else
@@ -423,6 +425,7 @@
 
     public static async Task UpdateManagerList(Manager managerObject)
     {
+        Console.WriteLine("Updating Manager List");
         //if NamedPipe property is not null or empty, update the ConnectionAddress property to be the same value as the NamedPipe field
         if (!string.IsNullOrEmpty(managerObject.NamedPipe))
         {
@@ -440,13 +443,8 @@
                 managerObject.ConnectionPort = managerObject.BindPort;
             }
         }
-
-
         managersList.Add(managerObject);
-        if (managerObject != null)
-        {
-            ShowSuccessToast($"Manager named {managerObject.Name} has been created");
-        }
+        ShowSuccessToast($"Manager named {managerObject.Name} has been created");
     }
 
     public static async Task GetExistingManagerList(List<Manager> managers)
@@ -507,12 +505,15 @@
             ShowErrorToast($"Manager with connection address {formSubmitManager.ConnectionAddress} and port {formSubmitManager.ConnectionPort} already exists");
             return;
         }
+        //check if Conection address is a hostname
+        bool isHostname = Uri.CheckHostName(formSubmitManager.ConnectionAddress) != UriHostNameType.Unknown;
+
         //if Address is not in the format of xxx.xxx.xxx.xxx where each character is a number between 0 and 9 show an error toast and return
-        //if (!Regex.IsMatch(formSubmitManager.ConnectionAddress, @"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$"))
-        //{
-        //    ShowErrorToast($"Manager connection address {formSubmitManager.ConnectionAddress} is not in the correct format");
-        //    return;
-        //}
+        if (!Regex.IsMatch(formSubmitManager.ConnectionAddress, @"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$") && isHostname is false)
+        {
+           ShowErrorToast($"Manager connection address {formSubmitManager.ConnectionAddress} is not in the correct format");
+           return;
+        }
         //if port is not between 1-65535 show an error toast and return
         if (formSubmitManager.ConnectionPort < 1 || formSubmitManager.ConnectionPort > 65535)
         {
@@ -538,7 +539,7 @@
         //{
         //    Console.WriteLine(resp.Content);
         //};
-        _ = await _restClient.PostAsync<ManagerResponse>(request);
+        _ = await Login._restClient.PostAsync<ManagerResponse>(request);
     }
 
     public async Task CreateHttpsManager()
@@ -582,7 +583,8 @@
         }; 
         var request = new RestRequest(resource,Method.Post);
         request.AddJsonBody(createObject);
-        _ = await _restClient.PostAsync<ManagerResponse>(request);
+        _ = await Login._restClient.PostAsync<ManagerResponse>(request);
+        Console.WriteLine("Create Https Manager Request Sent");
     }
 
     public async Task CreateSMBManager()
@@ -625,7 +627,7 @@
         formSubmitManager = new Manager();
         var request = new RestRequest(resource,Method.Post);
         request.AddJsonBody(createObject);
-        _ = await _restClient.PostAsync<ManagerResponse>(request);
+        _ = await Login._restClient.PostAsync<ManagerResponse>(request);
     }
 
     public async Task CreateTCPManager()
@@ -658,7 +660,7 @@
         formSubmitManager = new Manager();
         var request = new RestRequest(resource, Method.Post);
         request.AddJsonBody(createObject);
-        _ = await _restClient.PostAsync<ManagerResponse>(request);
+        _ = await Login._restClient.PostAsync<ManagerResponse>(request);
     }
 
     public async Task DeleteManager(Manager manager)
@@ -666,7 +668,7 @@
         var resource = "/managers";
         var request = new RestRequest($"{resource}/{manager.Name}",Method.Delete);
         request.AddHeader("Content-Type", "application/json");
-        await _restClient.DeleteAsync(request);
+        await Login._restClient.DeleteAsync(request);
         managersList.Remove(manager);
     }
 
@@ -683,9 +685,9 @@
     {
         _toastService.ShowInfo(infoMessage);
     }
-    private static void ShowWarningToast()
+    private static void ShowWarningToast(string warningMessage)
     {
-        _toastService.ShowWarning("This is Warning message with title");
+        _toastService.ShowWarning(warningMessage);
     }
 
     private async Task OpenEditDialog(C2Profile profile)
@@ -710,14 +712,14 @@
             Console.WriteLine(ex.Message);
             Console.WriteLine(ex.StackTrace);
         }   
-        
-        
+
+
     } 
 
     private async Task OpenCreateDialog()
     {
-                  
-       
+
+
         DialogOptions options = new DialogOptions() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
 
         var dialog = DialogService.Show<CreateC2Dialog>("Create New C2 Profile", options);
@@ -734,7 +736,6 @@
     private static void PopulateC2ProfileList()
     {
         var urls = new List<string>() { "/index.html", "/" };
-        var eventUrls = new List<string>() { "/e", "/events" };
         var cookies = new List<string>(){"SESSIONID" };
         var requestHeaders = new List<string>() { "Accept,Json/Application"};
         var responseHeaders = new List<string>() { "Server,Microsoft IIS" };
@@ -743,7 +744,7 @@
         {
             //new Models.C2Profile {Name= "",Desc="", UserAgent="", Urls= new List<string> { }, Cookies= new List<string> { }, RequestHeaders= new List<string> { }, ResponseHeaders= new List<string> { }  }, empty example to add more.
             new C2Profile {Name= "default",Desc="default http profile", UserAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246", 
-                Urls=urls, EventUrls=eventUrls, Cookies=cookies , RequestHeaders=requestHeaders, ResponseHeaders=responseHeaders },
+                Urls=urls, Cookies=cookies , RequestHeaders=requestHeaders, ResponseHeaders=responseHeaders },
         };
         //compare the name of the Modles.C2Profile objects in the C2profiles list to the ones in c2list if C2Profiles does not have one with that name then update it
         foreach (var c2 in c2list)
@@ -756,29 +757,25 @@
     }
 
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+
+    private async Task RunOnce()
     {
-        if(firstRender)
+        PopulateC2ProfileList();
+        managersList.CollectionChanged += (sender, args) =>
         {
-            PopulateC2ProfileList();
-            RestClientOptions options = new RestClientOptions();
-            options.BaseUrl = _restClient.Options.BaseUrl;
-            options.RemoteCertificateValidationCallback = _restClient.Options.RemoteCertificateValidationCallback;
-            string jwtToken = await LocalStorage.GetItemAsync<string>("bearerToken");
-            options.Authenticator = new JwtAuthenticator(jwtToken);
-            _restClient = new RestClient(options);
-            bindableIpAddresses.AddRange(await HardHatHubClient._hub.GetBindableAddressesOnServer());
-        }
+            InvokeAsync(StateHasChanged);
+        };
+        bindableIpAddresses.AddRange(await HardHatHubClient._hub.GetBindableAddressesOnServer());
     }
 
     //override the Onintalized function 
     protected override async Task OnInitializedAsync()
     {
         _toastService = (ToastService)toastService;
-
-        if (timer is null)
+        if(FirstExecution)
         {
-            timer = new Timer(new TimerCallback(_ => { InvokeAsync(StateHasChanged); }), null, 100, 100);
+            await RunOnce();
+            FirstExecution = false;
         }
     }
 

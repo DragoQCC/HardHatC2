@@ -2,9 +2,10 @@
 @using HardHatCore.HardHatC2Client.Pages
 @using HardHatCore.HardHatC2Client.Services
 @using System.Net;
-@using Bromix.MudBlazor.MaterialDesignIcons
-@using MudBlazor.Extensions.Helper;
+
 @inherits LayoutComponentBase
+@implements IDisposable
+@inject HotKeys HotKeys
 @inject IJSRuntime js
 @inject Blazored.LocalStorage.ILocalStorageService LocalStorageService
 
@@ -20,7 +21,7 @@
                 ShowCloseButton="true"
                 ShowProgressBar="true" />
 
-<MudThemeProvider Theme="@customTheme" @bind-IsDarkMode="@IsDarkMode" />
+<MudThemeProvider Theme="theDefaultTheme" @bind-IsDarkMode="@IsDarkMode" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
@@ -38,10 +39,13 @@
 @if (Login.IsLoggedIn)
 {
     <MudLayout>
-        <MudAppBar Color="Color.Dark" Dense="true" Elevation="5">
+        @* <MudThemeManager Open="_themeManagerOpen" OpenChanged="OpenThemeManager" Theme="_themeManager" ThemeChanged="UpdateTheme" /> *@
+        <MudAppBar Dense="true" Elevation="5">
             <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
             <MudImage Src="Images/hardhat c2-orange - just helmet large.svg" Width="50"></MudImage>
-            <MudText Color="Color.Primary" Typo="Typo.h6">HardHat C2</MudText>
+            <MudText Color="Color.Inherit" Typo="Typo.h6">HardHat C2</MudText>
+            <MudSpacer />
+            <GlobalPalette @ref="globalPalette"></GlobalPalette>
             <MudSpacer />
             @if (TeamServerStatus.Equals("online", StringComparison.CurrentCultureIgnoreCase))
             {
@@ -60,22 +64,19 @@
                            Target="_blank"
                            Variant="Variant.Filled"
                            Icon="@Icons.Custom.Brands.GitHub"
-                           Color="Color.Primary">
+                           Color="Color.Tertiary">
             </MudIconButton>
 
             <MudIconButton Title="Discord Community" Class="mx-2" Href="https://discord.gg/npW2yy7JFK"
                            Target="_blank"
                            Variant="Variant.Filled"
                            Icon="@Icons.Custom.Brands.Discord"
-                           Color="Color.Primary">
+                           Color="Color.Tertiary">
             </MudIconButton>
 
-            <MudIconButton Icon="@Icons.Material.Filled.LightMode"
-                           Size="Size.Large"
-                           Color="IsDarkMode ? Color.Primary : Color.Default"
-                           OnClick="ChangeThemeAsync">
-            </MudIconButton>
 
+            <MudSwitch Checked="@IsDarkMode" CheckedChanged="((e) => ChangeThemeAsync(e))" 
+            ThumbIcon="@(IsDarkMode ? @Icons.Material.Filled.DarkMode : Icons.Material.Filled.LightMode)" T="bool" />
             <MudMenu Class="mx-2" ActivationEvent="@MouseEvent.MouseOver" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopRight">
                 <ActivatorContent>
                     <MudAvatar>
@@ -91,7 +92,7 @@
         </MudAppBar>
         @if (Login._hhUser != null && Login._hhUser.Roles.Contains("Administrator", StringComparer.OrdinalIgnoreCase))
         {
-            <MudDrawer ClipMode="DrawerClipMode.Docked" @bind-Open="@isDrawerOpen" Elevation="10" Variant="@DrawerVariant.Mini" OpenMiniOnHover="false">
+            <MudDrawer ClipMode="DrawerClipMode.Always" @bind-Open="@isDrawerOpen" Elevation="10" Variant="@DrawerVariant.Mini" OpenMiniOnHover="false">
                 <MudNavMenu Color="Color.Warning" Margin="Margin.Dense" Bordered="true">
                     <MudNavLink Class="py-2" href="Index" Icon="@Icons.Material.Outlined.Home" Match="NavLinkMatch.All">Home</MudNavLink>
                     <MudNavLink Class="py-2" href="Objectives" Icon="@Icons.Material.Outlined.Checklist" Match="NavLinkMatch.All">Objectives</MudNavLink>
@@ -101,7 +102,7 @@
         }
         else
         {
-            <MudDrawer ClipMode="DrawerClipMode.Docked" @bind-Open="@isDrawerOpen" Elevation="10" Variant="@DrawerVariant.Mini" OpenMiniOnHover="false">
+            <MudDrawer ClipMode="DrawerClipMode.Always" @bind-Open="@isDrawerOpen" Elevation="10" Variant="@DrawerVariant.Mini" OpenMiniOnHover="false">
                 <MudNavMenu Color="Color.Warning" Margin="Margin.Dense" Bordered="true">
                     <MudNavLink Class="py-2" href="Index" Icon="@Icons.Material.Outlined.Home" Match="NavLinkMatch.All">Home</MudNavLink>
                     <MudNavLink Class="py-2" href="Managers" Icon="@Icons.Material.Outlined.Headphones" Match="NavLinkMatch.All">Managers</MudNavLink>
@@ -139,32 +140,47 @@ else
     private bool isDrawerOpen = true;
     // We need to make the setter private to disallow outsiders from changing its value
     public static bool IsDarkMode { get; private set; } = true;
+    //public string globalSearch { get; set; }
+    public GlobalPalette globalPalette {get; set;}
+    private HotKeysContext? HotKeysContext;
 
-    private MudTheme customTheme = new MudTheme()
+    private MudTheme theDefaultTheme = new MudTheme()
     {
         Palette = new PaletteLight()
         {
-            Primary = "#FB8C00",
-            Warning = "#FB8C00",
+            Primary = "#FF8C00",
+            Secondary = "#0073FF",
+            Tertiary = "#8C73FF",
+            Warning = "#880E4F",
+            Surface = "rgba(0,0,0,0)",
+            DrawerBackground = "rgba(0,0,0,0)",
+            AppbarBackground = "#FF8C00",
+            Success = "#3DCB6C",
+            TextPrimary = "rgba(0,0,0, 0.90)",
+            TextSecondary = "rgba(0,0,0, 0.50)",
+
         },
         PaletteDark = new PaletteDark()
         {
             Black = "#27272f",
-            Background = "#32333d",
+            Background = "#1A1A27",
             BackgroundGrey = "#27272f",
-            Surface = "#373740",
-            DrawerBackground = "#2d2d38", //Custom = #2d2d38 , original = #27272f
+            Surface = "rgba(0,0,0,0)",
+            DrawerBackground = "rgba(0,0,0,0)",
             DrawerText = "rgba(255,255,255, 0.50)",
             DrawerIcon = "rgba(255,255,255, 0.50)",
-            AppbarBackground = "#27272f",
+            AppbarBackground = "#FF8C00",
             AppbarText = "rgba(255,255,255, 0.70)",
-            TextPrimary = "rgba(255,255,255, 0.70)",
+            TextPrimary = "rgba(255,255,255, 0.90)",
             TextSecondary = "rgba(255,255,255, 0.50)",
             ActionDefault = "#adadb1",
             ActionDisabled = "rgba(255,255,255, 0.26)",
             ActionDisabledBackground = "rgba(255,255,255, 0.12)",
-            Primary = "#FB8C00",
-            Warning = "#FB8C00",
+            Primary = "#FF8C00",
+            Secondary = "#0073FF",
+            Tertiary = "#8C73FF",
+            Warning = "#880E4F",
+            Success = "#3DCB6C",
         }
     };
 
@@ -178,10 +194,9 @@ else
         isDrawerOpen = !isDrawerOpen;
     }
 
-    private async Task ChangeThemeAsync()
+    private async Task ChangeThemeAsync(bool? NewSetting)
     {
-        IsDarkMode = !IsDarkMode ? true : false;
-
+        IsDarkMode = NewSetting ?? false;
         await LocalStorageService.SetItemAsStringAsync("IsDarkMode", IsDarkMode.ToString());
     }
 
@@ -198,6 +213,24 @@ else
         var TeamserverIp = HardHatHubClient.TeamserverIp;
         HttpClient http = new HttpClient(new HttpClientHandler { ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true });
         HttpResponseMessage response;
+
+        //register global keyboard shortcuts
+        HotKeysContext = HotKeys.CreateContext();
+        HotKeysContext.Add(ModCode.Ctrl, Code.P , () =>
+        {
+            globalPalette.globalPaletteMode = GlobalPalette.GlobalPaletteMode.Command;
+            globalPalette._textField.FocusAsync();
+            StateHasChanged();
+        }, 
+        "Open command palette");
+        HotKeysContext.Add(ModCode.Ctrl, Code.S , () =>
+        {
+            globalPalette.globalPaletteMode = GlobalPalette.GlobalPaletteMode.Search;
+            globalPalette._textField.FocusAsync();      
+        }, 
+            "Open command palette in doc search mode");
+
+
         try
         {
             //every 30 seconds using a timer make a Get request to TeamserverIp/swagger to get the status of the teamserver
@@ -229,5 +262,10 @@ else
             {
             }
         }
+    }
+
+    public void Dispose()
+    {
+        this.HotKeysContext?.Dispose();
     }
 }

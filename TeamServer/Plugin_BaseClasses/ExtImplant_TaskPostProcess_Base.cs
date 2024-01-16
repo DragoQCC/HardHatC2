@@ -1,34 +1,27 @@
-﻿using HardHatCore.ApiModels.Plugin_BaseClasses;
-using HardHatCore.ApiModels.Plugin_Interfaces;
+﻿using System;
 using System.Collections.Generic;
-using System;
-using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
-using static SQLite.SQLite3;
+using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Plugin_Interfaces;
 using HardHatCore.ApiModels.Shared.TaskResultTypes;
-using HardHatCore.ApiModels.Shared;
-using Microsoft.AspNet.SignalR.Hosting;
-using System.Text;
 using HardHatCore.TeamServer.Models.Dbstorage;
 using HardHatCore.TeamServer.Models.Extras;
 using HardHatCore.TeamServer.Models.TaskResultTypes;
-using HardHatCore.TeamServer.Plugin_Interfaces;
+using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
 using HardHatCore.TeamServer.Plugin_Management;
 using HardHatCore.TeamServer.Services;
-using HardHatCore.TeamServer.Services.Handle_Implants;
 using HardHatCore.TeamServer.Utilities;
 
 namespace HardHatCore.TeamServer.Plugin_BaseClasses
 {
-    [Export(typeof(IExtImplant_TaskPostProcess))]
-    [ExportMetadata("Name", "Default")]
-    [ExportMetadata("Description", "Default post processing for the ExtImplant_Base Implant")]
     public class ExtImplant_TaskPostProcess_Base : IExtImplant_TaskPostProcess
     {
+        public string Name { get; } = "Default";
+        public string Description { get; } = "Default post processing for the Engineer Implant";
+
         public virtual bool DetermineIfTaskPostProc(ExtImplantTask_Base task)
         {
             return task.RequiresPostProc;
@@ -36,15 +29,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
 
         public virtual async Task PostProcessTask(IEnumerable<ExtImplantTaskResult_Base> results, ExtImplantTaskResult_Base result, ExtImplant_Base extImplant, ExtImplantTask_Base task)
         {
-            if (result.Command.Equals("SocksConnect", StringComparison.CurrentCultureIgnoreCase))
-            {
-               await PostProcess_SocksConnect(result);
-            }
-            else if (result.Command.Equals("socksReceive", StringComparison.CurrentCultureIgnoreCase))
-            {
-                await PostProcess_SocksReceive(result);
-            }
-            else if (result.Command.Equals("download", StringComparison.CurrentCultureIgnoreCase))
+            if (result.Command.Equals("download", StringComparison.CurrentCultureIgnoreCase))
             {
                 await PostProcess_DownloadTask(result, extImplant.Metadata.Hostname, results, extImplant);
             }
@@ -64,14 +49,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
             {
                 await PostProcess_IOCFileUpload(result);
             }
-            //else if (result.Command.Equals("vnc",StringComparison.CurrentCultureIgnoreCase))
-            //{
-            //    await PostProcess_VNC(result,task);
-            //}
-            //else if (result.Command.Equals("HandleVNCClientInteraction", StringComparison.CurrentCultureIgnoreCase))
-            //{
-            //    await PostProcess_VNCInteraction(result, task);
-            //}
+           
             //TODO: Move this somewhere else as the task containing this wont ever call the parent func
             else if(task.Arguments.Any(x => x.Value.Contains("mimikatz", StringComparison.CurrentCultureIgnoreCase)) || task.Arguments.Any(x => x.Value.Contains("rubeus", StringComparison.CurrentCultureIgnoreCase)))
             {
@@ -82,10 +60,10 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
 
         public virtual async Task HandleDataChunking(IExtImplantTaskResult result)
         {
-            ExtImplantService_Base extImplantService_Base = new ExtImplantService_Base();
             DataChunk dataChunk = result.Result.Deserialize<DataChunk>();
             //get the implamt this task belongs to 
-            ExtImplant_Base taskedImp = extImplantService_Base.GetExtImplant(result.ImplantId);
+            var defaultAssetService = PluginService.GetImpServicePlugin("Default");
+            ExtImplant_Base taskedImp = defaultAssetService.GetExtImplant(result.ImplantId);
             if (dataChunk.Type == 1)
             {
                 if (taskedImp.TaskResultDataChunks.ContainsKey(result.Id))
@@ -94,7 +72,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
                 }
                 else
                 {
-                    taskedImp.TaskResultDataChunks.Add(result.Id, dataChunk.Data);
+                    taskedImp.TaskResultDataChunks.TryAdd(result.Id, dataChunk.Data);
                 }
                 await HardHatHub.ImplantCheckIn(taskedImp);
             }
@@ -102,9 +80,9 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
             else if (dataChunk.Type == 2)
             {
                 result.Result = taskedImp.TaskResultDataChunks[result.Id];
-
                 result.ResponseType = dataChunk.RealResponseType;
-                taskedImp.TaskResultDataChunks.Remove(result.Id);
+                var item = taskedImp.TaskResultDataChunks.FirstOrDefault(x => x.Key == result.Id);
+                taskedImp.TaskResultDataChunks.TryRemove(item);
             } 
         }
 
@@ -154,7 +132,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
                 FilePart part = result.Result.Deserialize<FilePart>();
                 if (!FilePart.FinalFileTracking.ContainsKey(result.Id))
                 {
-                    FilePart.FinalFileTracking.Add(result.Id, finalByteArray);
+                    FilePart.FinalFileTracking.TryAdd(result.Id, finalByteArray);
                 }
 
                 //get the download task that this result belongs to
@@ -214,46 +192,6 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
 
         }
 
-
-        public static async Task PostProcess_SocksConnect(ExtImplantTaskResult_Base result)
-        {
-            try
-            {
-                string resultString = result.Result.Deserialize<MessageData>().Message;
-                var socksConnected = resultString.Split(new[] { "\n" }, StringSplitOptions.None);
-                //find the Proxy item in the HttpmanagerController dictionary that matches the socksConnected[1] key
-                //Socks4Proxy socks4Proxy = HttpmanagerController.Proxy.Select(x => x.Value).Where(x => x.SocksDestinationConnected.ContainsKey(socksConnected[1])).FirstOrDefault();
-                //Console.WriteLine($"Socks connected to client {socksConnected[1]}");
-                string proxyID = HttpmanagerController.SocksClientToProxyCache[socksConnected[1]];
-                HttpmanagerController.Proxy[proxyID].SocksDestinationConnected[socksConnected[1]] = true;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-        }
-
-        public static async Task PostProcess_SocksReceive(ExtImplantTaskResult_Base result)
-        {
-            try
-            {
-                var socks_client_length = BitConverter.ToInt32(result.Result.Take(4).ToArray());
-                var socks_client = result.Result.Skip(4).Take(socks_client_length).ToArray().Deserialize<MessageData>().Message;
-                var socks_content = result.Result.Skip(4 + socks_client_length).Take(result.Result.Length - (4 + socks_client_length)).ToArray();
-
-                //Console.WriteLine($"teamserver received {socks_content.Length} bytes from {socks_client}");
-                //Socks4Proxy socks4Proxy = HttpmanagerController.Proxy.Select(x => x.Value).Where(x => x.SocksClientsData.ContainsKey(socks_client)).FirstOrDefault();
-                string proxyID = HttpmanagerController.SocksClientToProxyCache[socks_client];
-                HttpmanagerController.Proxy[proxyID].SocksClientsData[socks_client].Enqueue(socks_content);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-        }
-
         public static async Task PostProcess_RPortForward(ExtImplantTaskResult_Base result)
         {
             //if result.Id is rportsend take the result.Result and split it at the new line and element 0 is the data and element 1 is the guid
@@ -279,7 +217,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
 
             if(!IExtimplantHandleComms.ParentToChildTracker.ContainsKey(parentId))
             {
-                IExtimplantHandleComms.ParentToChildTracker.Add(parentId, new List<string>() {result.ImplantId});
+                IExtimplantHandleComms.ParentToChildTracker.TryAdd(parentId, new List<string>() {result.ImplantId});
             }
             else
             {
@@ -292,7 +230,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
                 if (parentId == HttpImp.Metadata.Id)
                 {
                     Console.WriteLine($"adding new path of {HttpImp.Metadata.Id} -> {result.ImplantId}");
-                    IExtimplantHandleComms.P2P_PathStorage.Add(result.ImplantId, new List<string> { HttpImp.Metadata.Id, result.ImplantId });
+                    IExtimplantHandleComms.P2P_PathStorage.TryAdd(result.ImplantId, new List<string> { HttpImp.Metadata.Id, result.ImplantId });
                 }
                 else
                 {
@@ -306,7 +244,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
                             Console.WriteLine($"adding new path of {string.Join("->", path)} -> {result.ImplantId}");
                             var temp = new List<string>();
                             path.ForEach(x => temp.Add(x));
-                            IExtimplantHandleComms.P2P_PathStorage.Add(result.ImplantId, temp);
+                            IExtimplantHandleComms.P2P_PathStorage.TryAdd(result.ImplantId, temp);
                             IExtimplantHandleComms.P2P_PathStorage[result.ImplantId].Add(result.ImplantId); // I was adding path here and then adding to it which updated path in both spots.
                             break;
                         }
@@ -324,7 +262,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
 
                 p2pimplamt = svcPlugin_base.InitImplantObj(p2pEngMetadata, HttpImp.ImplantType);
                 p2pimplamt.ExternalAddress = extralAddressP2PString;
-                p2pimplamt.ConnectionType = managerService._managers.FirstOrDefault(m => m.Name == p2pEngMetadata.ManagerName).Type.ToString();
+                p2pimplamt.ConnectionType = ImanagerService.Getmanager(p2pEngMetadata.ManagerName).Type.ToString();
                 if (DatabaseService.AsyncConnection == null)
                 {
                     DatabaseService.ConnectDb();
@@ -338,8 +276,8 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
                 Encryption.GenerateUniqueKeys(p2pimplamt.Metadata.Id);
                 ExtImplantTask_Base updateTaskKey = new ExtImplantTask_Base
                 {
-                    Command = "UpdateTaskKey",
                     Id = Guid.NewGuid().ToString(),
+                    Command = "UpdateTaskKey",
                     Arguments = new Dictionary<string, string> { { "TaskKey", Encryption.UniqueTaskEncryptionKey[p2pimplamt.Metadata.Id] } },
                     File = null,
                     IsBlocking = false
@@ -418,9 +356,5 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
         //    await HardHatHub.AddVNCInteractionResponse(response,vncSessionMetadata);
 
         //}
-    }
-
-    public interface IExtImplant_TaskPostProcessData : IPluginMetadata
-    {
     }
 }

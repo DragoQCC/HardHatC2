@@ -24,11 +24,11 @@
     [Parameter]
     public Stream fileData { get; set; }
 
-    private ZipBrowserFile? _selected;
+    private IArchivedBrowserFile? _selected;
     private string _selectedUrl;
-    private IList<ZipBrowserFile> _selectedList;
+    private IList<IArchivedBrowserFile> _selectedList;
 
-    public void OnSelectedChanged(IList<ZipBrowserFile> selectedfiles)
+    public void OnSelectedChanged(IList<IArchivedBrowserFile> selectedfiles)
     {
         if (selectedfiles.Count == 1)
         {

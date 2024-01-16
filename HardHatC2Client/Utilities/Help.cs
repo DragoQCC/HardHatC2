@@ -35,7 +35,7 @@
 //            public OpsecStatus Opsec { get; set; }
 //            public string Details { get; set; }
 //            public string Keys { get; set; }
-            
+
 //            public string MitreTechnique { get; set; }
 
 //            //enum of opsec status 

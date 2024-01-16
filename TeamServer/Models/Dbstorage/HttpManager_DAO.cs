@@ -1,6 +1,6 @@
 ﻿using HardHatCore.ApiModels.Shared;
-using SQLite;
 using HardHatCore.TeamServer.Utilities;
+using SQLite;
 
 namespace HardHatCore.TeamServer.Models.Dbstorage
 {
@@ -11,19 +11,19 @@ namespace HardHatCore.TeamServer.Models.Dbstorage
         public string Id { get; set; }
         
         [Column("Name")]
-        public string Name { get; set; } // properties allows us to get Name when manager is created later so set will go with creation functions later
+        public string Name { get; set; } // properties allows us to get Name when Manager is created later so set will go with creation functions later
         
         [Column("ConnectionPort")]
-        public int ConnectionPort { get; set; }         // bind port for http manager again set on creation 
+        public int ConnectionPort { get; set; }         // bind port for http Manager again set on creation 
         
         [Column("ConnectionAddress")]
-        public string ConnectionAddress { get; set; }   // bind address for http manager again set on creation
+        public string ConnectionAddress { get; set; }   // bind address for http Manager again set on creation
         
         [Column("BindPort")]
-        public int BindPort { get; set; }         // bind port for http manager again set on creation 
+        public int BindPort { get; set; }         // bind port for http Manager again set on creation 
         
         [Column("BindAddress")]
-        public string BindAddress { get; set; }   // bind address for http manager again set on creation
+        public string BindAddress { get; set; }   // bind address for http Manager again set on creation
         
         [Column("IsSecure")]
         public bool IsSecure { get; set; }
@@ -35,9 +35,12 @@ namespace HardHatCore.TeamServer.Models.Dbstorage
         public byte[] c2Profile { get; set; }
 
         //create a implicit operator to convert from HttpManager_DAO to HttpManager
-        public static implicit operator Httpmanager(HttpManager_DAO dao)
+        public static implicit operator HttpManager(HttpManager_DAO dao)
         {
-            return new Httpmanager
+            //var httpman = HttpManager.HttpManagerFactoryFunc(dao.Name,dao.ConnectionAddress,dao.ConnectionPort,dao.BindAddress,dao.BindPort,dao.IsSecure,dao.c2Profile.ProDeserializeForDatabase<C2Profile>());
+            //httpman.Id = dao.Id;
+            //return httpman;
+            return new HttpManager()
             {
                 Id = dao.Id,
                 Name = dao.Name,
@@ -52,7 +55,7 @@ namespace HardHatCore.TeamServer.Models.Dbstorage
         }
 
         //create a implicit operator to convert from HttpManager to HttpManager_DAO
-        public static implicit operator HttpManager_DAO(Httpmanager manager)
+        public static implicit operator HttpManager_DAO(HttpManager manager)
         {
             return new HttpManager_DAO
             {

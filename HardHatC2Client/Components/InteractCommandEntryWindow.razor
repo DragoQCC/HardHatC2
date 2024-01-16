@@ -22,7 +22,7 @@
 {
     <EditForm Context="EditFormContext" Model="implant" OnValidSubmit="@Send">
         <div class="d-flex mb-5">
-            <MudAutocomplete style="background:#111111; color:white;" MaxItems="@((AutocompleteSearchShowAllItems) ? (int?)null : 10)" Strict="false" OnKeyDown="OnShowCommandHistory" @bind-Value=@placeHolder T="string" ResetValueOnEmptyText="false" SearchFunc="@commandSelector.SearchCommand"
+            <MudAutocomplete style="@getPanelStyle()" MaxItems="@((AutocompleteSearchShowAllItems) ? (int?)null : 10)" Strict="false" OnKeyDown="OnShowCommandHistory" @bind-Value=@placeHolder T="string" ResetValueOnEmptyText="false" SearchFunc="@commandSelector.SearchCommand"
                              Dense="true" Margin="Margin.Dense" SelectValueOnTab="true" SelectOnClick="false" CoerceText="false" CoerceValue="true"
                              InputMode="InputMode.text" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentText="[COMMAND]> " Immediate="true" Clearable="true" KeyDownPreventDefault="true" KeyUpPreventDefault="true" TextUpdateSuppression="@TextSuppersion">
             </MudAutocomplete>
@@ -40,7 +40,7 @@ else if (Settings._InteractInputMode == InteractInputMode.NoAutoComplete)
 {
     <EditForm Context="EditFormContext" Model="implant" OnValidSubmit="@Send">
         <div class="d-flex mb-5">
-            <MudTextField style="background:#111111; color:white;" OnKeyDown="OnShowCommandHistory" @bind-Value=@placeHolder T="string"
+            <MudTextField style="@getPanelStyle()" OnKeyDown="OnShowCommandHistory" @bind-Value=@placeHolder T="string"
                           Margin="Margin.Dense" InputMode="InputMode.text" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentText="[COMMAND]> " Immediate="true" Clearable="true"
                           TextUpdateSuppression="@TextSuppersion">
             </MudTextField>
@@ -52,7 +52,7 @@ else if (Settings._InteractInputMode == InteractInputMode.NoAutoComplete)
             }
         </div>
         <div class="d-flex mb-5">
-            <MudAutocomplete style="background:#111111; color:white;" @bind-Value=@placeHolder MaxItems="null" Strict="false" T="string" ResetValueOnEmptyText="true" SearchFunc="@commandSelector.SearchCommand"
+            <MudAutocomplete style="@getPanelStyle()" @bind-Value=@placeHolder MaxItems="null" Strict="false" T="string" ResetValueOnEmptyText="true" SearchFunc="@commandSelector.SearchCommand"
                              Dense="true" Margin="Margin.Dense" SelectValueOnTab="true" SelectOnClick="true" CoerceText="true"
                              InputMode="InputMode.text" Variant="Variant.Outlined" Label="Search Commands" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Immediate="true" Clearable="true" TextUpdateSuppression="@TextSuppersion">
             </MudAutocomplete>
@@ -64,11 +64,9 @@ else
     <EditForm Context="EditFormContext" Model="implant" OnValidSubmit="@OnCommandSelectionEnterKeyDown">
         <div class="d-flex mb-xl-5">
             <CommandSelection @ref="commandSelector" Commands="@PluginService.GetCommandValidationPlugin(implant.ImplantType).CommandList" OnEnterKeyDown="OnCommandSelectionEnterKeyDown" />
-
             <MudButton style="background:var(--font-color);color:var(--background)" OnClick=@OnCommandSelectionEnterKeyDown> <MudText>Send</MudText></MudButton>
             @if (IsEnterkey)
             {
-                //Console.WriteLine("Enter key pressed");
                 Task.Run(async () => await SendTask(implant, UserInput));
                 IsEnterkey = false;
             }
@@ -78,7 +76,8 @@ else
 
 @code {
     [Inject]
-    private IDialogService DialogService { get; set; }
+    private IDialogService _dialogService { get; set; }
+
     [Parameter]
     public ExtImplant_Base implant { get; set; }
     [Parameter]
@@ -86,7 +85,7 @@ else
 
     public delegate Task OnWindowInteractSubmission();
     public static OnWindowInteractSubmission _onWindowInteractSubmission;
-    private string placeHolder = null;
+    private string placeHolder {get; set;} = null;
     private static List<string> PreviousCommands = new();
     private string selectedHistoryCommand = null;
     private static int HistoryIndex = -1;
@@ -104,6 +103,20 @@ else
         Inline,
         Modal_Window,
         NoAutoComplete
+    }
+
+    private string getPanelStyle()
+    {
+        string style = "";
+        if (MainLayout.IsDarkMode)
+        {
+            style += "background:#1A1A27; color:white;";
+        }
+        else
+        {
+            style += "background:white; color:black;";
+        }
+        return style;
     }
 
     private async Task OnCommandSelectionEnterKeyDown()
@@ -147,13 +160,10 @@ else
 
 
             Console.WriteLine("Starting send Task");
-            string currentTaskId = Guid.NewGuid().ToString();
-            var createObject = new TaskExtImplantRequest_Base();
-            createObject.IssuingUser = Login.SignedInUser;
-            createObject.Command = command.Split(' ')[0];
+            string commandName = command.Split(' ')[0].Trim();
 
             //if command is help then run help and return
-            if (createObject.Command.Trim().Equals("help", StringComparison.CurrentCultureIgnoreCase))
+            if (commandName.Equals("help", StringComparison.CurrentCultureIgnoreCase))
             {
                 Dictionary<string, string> helpDiction = new Dictionary<string, string>();
                 string commandCheck = "";
@@ -161,11 +171,11 @@ else
                 if (command.Split(' ').Length > 2)
                 {
                     commandCheck = command.Split(' ')[2];
-                    helpCommandheader = $"({DateTime.UtcNow}) implant instructed to {createObject.Command} {command.Split(' ')[1]} {command.Split(' ')[2]}\n";
+                    helpCommandheader = $"({DateTime.UtcNow}) implant instructed to {commandName} {command.Split(' ')[1]} {command.Split(' ')[2]}\n";
                 }
                 else
                 {
-                    helpCommandheader = $"({DateTime.UtcNow}) implant instructed to {createObject.Command}\n";
+                    helpCommandheader = $"({DateTime.UtcNow}) implant instructed to {commandName}\n";
                 }
                 if (!string.IsNullOrWhiteSpace(commandCheck))
                 {
@@ -173,12 +183,12 @@ else
                 }
                 //List<Help.HelpMenuItem> helpMenu = Help.DisplayHelp(helpDiction);
                 List<CommandItem> commandItemsHelp = taskVal_base.DisplayHelp(helpDiction);
-
-                var helpTask = new ExtImplantTask_Base { Id = currentTaskId, Command = createObject.Command, Arguments = helpDiction, File = null, TaskHeader = helpCommandheader };
+                string helpTaskId = Guid.NewGuid().ToString();
+                var helpTask = new ExtImplantTask_Base { Id = helpTaskId, Command = commandName, Arguments = helpDiction, File = null, TaskHeader = helpCommandheader };
                 await ImplantInteract.UpdateOutGoingTaskDic(implant, new List<ExtImplantTask_Base>() { helpTask });
 
                 var taskResponse = new ExtImplantTaskResult_Base();
-                taskResponse.Id = currentTaskId;
+                taskResponse.Id = helpTaskId;
                 taskResponse.Status = ExtImplantTaskStatus.Complete;
                 taskResponse.ResponseType = ExtImplantTaskResponseType.HelpMenuItem;
                 taskResponse.ResultObject = commandItemsHelp;
@@ -190,12 +200,14 @@ else
             Dictionary<string, string> commandargs = new Dictionary<string, string>();
             string error = null;
 
+            bool _requiresPostProc = false;
+            bool _requiresPreProc = false;
             //find the command in the helpMenuItems list that matches the command name
-            CommandItem? commandItem = taskVal_base.CommandList.FirstOrDefault(x => x.Name.Equals(createObject.Command, StringComparison.OrdinalIgnoreCase));
+            CommandItem? commandItem = taskVal_base.CommandList.FirstOrDefault(x => x.Name.Equals(commandName, StringComparison.OrdinalIgnoreCase));
             if (commandItem != null)
             {
-                createObject.RequiresPostProc = commandItem.RequiresPostProc;
-                createObject.RequiresPreProc = commandItem.RequiresPreProc;
+                _requiresPostProc = commandItem.RequiresPostProc;
+                _requiresPreProc = commandItem.RequiresPreProc;
                 if (commandItem.Opsec == CommandItem.OpsecStatus.Blocked)
                 {
                     error = "Command is blocked by teamlead";
@@ -206,7 +218,7 @@ else
                     bool? result = null;
                     await InvokeAsync(async () =>
                     {
-                        result = await DialogService.ShowMessageBox("Opsec Warning", "Command is set to High opsec danger level, are you sure you want to execute?", yesText: "Fire Away!", cancelText: "Cancel");
+                        result = await _dialogService.ShowMessageBox("Opsec Warning", "Command is set to High opsec danger level, are you sure you want to execute?", yesText: "Fire Away!", cancelText: "Cancel");
                     });
                     //bool? result =  messageBoxTask.Result;
                     if (result is null || result == false)
@@ -233,14 +245,16 @@ else
                 return;
             }
 
+            Dictionary<string,byte[]> _taskingExtras = new();
+
             //check if createObject.Command is one of the postex that make a new implant
-            if (ImplantCreation.ImplantCreation.PostExCommandsThatSpawnNewImp is not null && ImplantCreation.ImplantCreation.PostExCommandsThatSpawnNewImp.Contains(createObject.Command, StringComparer.InvariantCultureIgnoreCase))
+            if (ImplantCreation.ImplantCreation.PostExCommandsThatSpawnNewImp is not null && ImplantCreation.ImplantCreation.PostExCommandsThatSpawnNewImp.Contains(commandName, StringComparer.InvariantCultureIgnoreCase))
             {
                 var diag_options = new DialogOptions { ClassBackground = "dialog-blur-class", MaxWidth = MaxWidth.Large, FullWidth = true, DisableBackdropClick = true };
                 //invoke async needs to used to trigger the render to work correctly from inside c# code
                 await InvokeAsync(async () =>
                 {
-                    var diagTask = DialogService.Show<ImplantCreation_Dialog>("Create Implant for PostEx Command", diag_options);
+                    var diagTask = _dialogService.Show<ImplantCreation_Dialog>("Create Implant for PostEx Command", diag_options);
                     var result = await diagTask.Result;
                     if (result.Canceled)
                     {
@@ -248,11 +262,11 @@ else
                     }
                     else
                     {
-                        createObject.TaskingExtras.Add("PostExImplantRequest", ImplantCreation_Dialog.PostExSpawnRequest.Serialize());
+                        _taskingExtras.Add("PostExImplantRequest", ImplantCreation_Dialog.PostExSpawnRequest.Serialize());
                     }
                 });
             }
-
+            byte[] _file = null;
             //if commandargs contains a /local key we should update the file content
             if (commandargs.ContainsKey("/local"))
             {
@@ -261,60 +275,49 @@ else
                 {
                     if (File.Exists(kvp.Value))
                     {
-                        createObject.File = File.ReadAllBytes(kvp.Value);
+                        _file = File.ReadAllBytes(kvp.Value);
                     }
                 }
-                if (!(createObject.File.Length > 0))
+                if (!(_file.Length > 0))
                 {
                     Implants.ShowErrorToast("/local flag used but no matching file found on client");
                     return;
                 }
             }
-            createObject.Arguments = commandargs;
 
-            //assign the task id to the task
-            createObject.taskID = currentTaskId;
-
+            bool _isBlocking = false;
             //if arguments contains /method as a key then if the value is sync set the IsBlocking parameter to true if its async set it to false, if the key is not present set it to false
-            if (createObject.Arguments.ContainsKey("/sync"))
+            if (commandargs.ContainsKey("/sync"))
             {
                 //createObject.Arguments["/method"] = createObject.Arguments["/method"];
-                if (createObject.Arguments["/sync"].Equals("sync", StringComparison.CurrentCultureIgnoreCase))
+                if (commandargs["/sync"].Equals("sync", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    createObject.IsBlocking = true;
-                }
-                else if (createObject.Arguments["/sync"].Equals("async", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    createObject.IsBlocking = false;
-                }
-                else
-                {
-                    createObject.IsBlocking = false;
+                    _isBlocking = true;
                 }
             }
-            else
-            {
-                createObject.IsBlocking = false;
-            }
-
-            //update the local outgoing header to make it apear faster upon submit
-            var args = createObject.Arguments is null ? "" : string.Join(" ", createObject.Arguments.Select(kvp => $"{kvp.Key} {kvp.Value}"));
-            createObject.TaskHeader = $"({DateTime.UtcNow}) implant instructed to {createObject.Command + " " + args}\n";
-
-            //update the input dictionary with the new task
-            var newTask = new ExtImplantTask_Base { Id = createObject.taskID, Command = createObject.Command, Arguments = createObject.Arguments, File = null, RequiresPostProc = createObject.RequiresPostProc, RequiresPreProc = createObject.RequiresPreProc, TaskHeader = createObject.TaskHeader, IssuingUser = createObject.IssuingUser };
-            await ImplantInteract.UpdateOutGoingTaskDic(implant, new List<ExtImplantTask_Base>() { newTask });
+            
+            var requestObject = new TaskExtImplantRequest_Base(commandName,commandargs, _file, _isBlocking, _requiresPreProc, _requiresPostProc, _taskingExtras);
 
             //send the task to the server
             string resource = $"/implants/{implant.Metadata.Id}";
             var request = new RestRequest(resource, Method.Post);
-            request.AddJsonBody(createObject);
+            request.AddJsonBody(requestObject);
             request.OnBeforeDeserialization = (resp =>
             {
                 //Console.WriteLine(resp.Content);
             });
             ImplantInteract.RefreshImplantInteract.Invoke();
-            _ = await Task.Run(() => Login._restClient.PostAsync(request));
+            var taskingResult = await Task.Run(() => Login._restClient.PostAsync<ExtImplantTask_Base>(request));
+            if (taskingResult is not null)
+            {
+                Console.WriteLine("Tasking Successful");
+                await ImplantInteract.UpdateOutGoingTaskDic(implant, new List<ExtImplantTask_Base>() { taskingResult});  
+            }
+            else
+            {
+                Console.WriteLine("Tasking Failed");
+                Implants.ShowErrorToast("Tasking Failed");
+            }
         }
         catch (Exception ex)
         {

@@ -1,6 +1,5 @@
 ﻿using HardHatCore.TeamServer.Models.Extras;
 using SQLite;
-using HardHatCore.TeamServer.Models;
 
 namespace HardHatCore.TeamServer.Models.Dbstorage
 {

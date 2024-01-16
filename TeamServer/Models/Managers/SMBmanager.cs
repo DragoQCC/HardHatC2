@@ -4,7 +4,7 @@ using HardHatCore.ApiModels.Shared;
 
 namespace HardHatCore.TeamServer.Models
 {
-    public class SMBmanager : manager
+    public class SMBManager : Manager
     {
         public override string Name { get;  set; }
         public string NamedPipe { get; set; }
@@ -15,13 +15,13 @@ namespace HardHatCore.TeamServer.Models
 
         public ConnectionMode connectionMode { get; set; } // always means direction of parent -> child
 
-        public SMBmanager(string name, string namedPipe)
+        public SMBManager(string name, string namedPipe)
         {
             Name = name;
             NamedPipe = namedPipe;
             connectionMode = ConnectionMode.bind;
         }
-        public SMBmanager(string name, string namedPipe, string connectionAddress) // then then engineer being made is a client and needs the ip to know where the named pipe is hosted in the network 
+        public SMBManager(string name, string namedPipe, string connectionAddress) // then then engineer being made is a client and needs the ip to know where the named pipe is hosted in the network 
         {
             Name = name;
             NamedPipe = namedPipe;
@@ -29,7 +29,7 @@ namespace HardHatCore.TeamServer.Models
             connectionMode = ConnectionMode.reverse;
         }
 
-        public SMBmanager() { }
+        public SMBManager() { }
 
         public override Task Start()
         {

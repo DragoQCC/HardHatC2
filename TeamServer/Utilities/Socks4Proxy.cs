@@ -1,11 +1,6 @@
-﻿using HardHatCore.ApiModels.Plugin_BaseClasses;
-using HardHatCore.ApiModels.Shared;
-using Microsoft.Owin.BuilderProperties;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -13,11 +8,12 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Shared;
 using HardHatCore.TeamServer.Plugin_BaseClasses;
-using HardHatCore.TeamServer.Services.Handle_Implants;
-using HardHatCore.TeamServer.Models;
+using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
+using HardHatCore.TeamServer.Plugin_Management;
 
-//using DynamicEngLoading;
 
 namespace HardHatCore.TeamServer.Utilities
 {
@@ -81,19 +77,17 @@ namespace HardHatCore.TeamServer.Utilities
             SocksClients.TryAdd(client_guid, client);
             SocksClientsData.TryAdd(client_guid, new ConcurrentQueue<byte[]>());
             SocksDestinationConnected.TryAdd(client_guid, false);
-            HttpmanagerController.SocksClientToProxyCache.TryAdd(client_guid, _bindPort.ToString());
-            Dictionary<string, string> args = new Dictionary<string, string>
+            IExtimplantHandleComms.SocksClientToProxyCache.TryAdd(client_guid, _bindPort.ToString());
+            Dictionary<string, byte[]> sockConnectNotifArgs = new Dictionary<string, byte[]>()
             {
-                { "/Address", request.DestinationAddress.ToString() },
-                { "/Port", request.DestinationPort.ToString() },
-                { "/Client", client_guid }
+                { "/Address", request.DestinationAddress.ToString().Serialize() },
+                { "/Port", request.DestinationPort.ToString().Serialize() },
+                { "/Client", client_guid.Serialize() }
             };
             //make an implant task to connect to the client send task name of ConnectSocks with arguments /address and /port which are the request.DestinationAddress, request.DestinationPort
-            var task = new ExtImplantTask_Base(Guid.NewGuid().ToString(),"SocksConnect",args,null,false,false,true, null, "",implant.Metadata.Id);
-
-            // add the task to the engineers task queue
-            //Console.WriteLine("Sending socks connect request to implant");
-            implant.QueueTask(task);
+            var assetNotifService = PluginService.GetAssetNotifService(implant.ImplantType);
+            // add the task to the implants task queue
+            await assetNotifService.CreateAndQueueAssetNotif(implant.Metadata.Id, "SocksConnect", sockConnectNotifArgs);  
 
             // wait for the implant to connect to the client
             while (!SocksDestinationConnected[client_guid])
@@ -101,71 +95,26 @@ namespace HardHatCore.TeamServer.Utilities
                 await Task.Delay(2);
             }
 
-            //Stopwatch Clientstopwatch = new Stopwatch();
-            //decimal ClientDataSentPerSecond = 0;
-            //decimal ClientnumberOfSendsPerSecond = 0;
-
-            //Stopwatch Deststopwatch = new Stopwatch();
-            //decimal DestDataSentPerSecond = 0;
-            //decimal DestnumberOfSendsPerSecond = 0;
             while (!_tokenSource.IsCancellationRequested)
             {
                 try
                 {
-                    
                     // read from client
                     if (client.DataAvailable())
                     {
                         var req = await client.ReceiveData(_tokenSource.Token);
-                        //used to get the average amount of data and number of sends per second to me from the client end
-                        //if (!Deststopwatch.IsRunning)
-                        //{
-                        //    Deststopwatch.Start();
-                        //}
-                        //DestDataSentPerSecond += req.Length;
-                        //DestnumberOfSendsPerSecond++;
-                        //if (Deststopwatch.ElapsedMilliseconds >= 10000)
-                        //{
-                        //    //should only print every 10 seconds so we dont spam the console
-                        //    Console.WriteLine($"Data obtained from client end per second: {DestDataSentPerSecond / 10}");
-                        //    Console.WriteLine($"Number of sends obtained from client end per second: {DestnumberOfSendsPerSecond / 10}");
-                        //    DestDataSentPerSecond = 0;
-                        //    DestnumberOfSendsPerSecond = 0;
-                        //    Deststopwatch.Reset();
-                        //}
-                        // make an implant task send it the req as a base64 string in its arguments with the key of /req
-                        var task2 = new ExtImplantTask_Base(Guid.NewGuid().ToString(),"SocksSend",new Dictionary<string, string>
+                        var sockSendNotifArgs = new Dictionary<string, byte[]>
                         {
-                            {"/client", client_guid }
-                        },req, false,false,false,null, "",implant.Metadata.Id);
-                        
-                        // add the task to the engineers task queue
-                        implant.QueueTask(task2);
-                        //Console.WriteLine($"sending implant {req.Length} bytes from client {client_guid}");
+                            {"/client", client_guid.Serialize()},
+                            {"/data", req}
+                        };
+                        await assetNotifService.CreateAndQueueAssetNotif(implant.Metadata.Id, "SocksSend", sockSendNotifArgs);
                     }
 
                     // in a thread safe way find the clients with data to send and send it if the client is still connected
                     if (!SocksClientsData[client_guid].IsEmpty)
                     {
                         SocksClientsData[client_guid].TryDequeue(out var data);
-                        //start the stopwatch if it is not already running, every 10 seconds that data is sent increment the DataSentPerSecond variable,
-                        //print the amount of data in bytes sent per second and reset the stopwatch and DataSentPerSecond variables
-                        //if (!Clientstopwatch.IsRunning)
-                        //{
-                        //    Clientstopwatch.Start();
-                        //}
-                        //ClientDataSentPerSecond += data.Length;
-                        //ClientnumberOfSendsPerSecond++;
-                        //if (Clientstopwatch.ElapsedMilliseconds >= 10000)
-                        //{
-                        //    //should only print every 10 seconds so we dont spam the console
-                        //    Console.WriteLine($"Data sent to client end per second: {ClientDataSentPerSecond / 10}");
-                        //    Console.WriteLine($"Number of sends to client end per second: {ClientnumberOfSendsPerSecond / 10}");
-                        //    ClientDataSentPerSecond = 0;
-                        //    ClientnumberOfSendsPerSecond = 0;
-                        //    Clientstopwatch.Reset();
-                        //}
-                        //Console.WriteLine($"sending {data.Length} bytes to client {client_guid}");
                         await client.SendData(data, _tokenSource.Token);
                     }
 

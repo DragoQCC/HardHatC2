@@ -7,11 +7,11 @@
 @using HardHatCore.HardHatC2Client.Components;
 @using static HardHatCore.HardHatC2Client.Pages.ImplantInteract;
 
-<MudCard Class="" Style="background:var(--background);" Outlined="true">
+<MudCard Class="" Style="" Outlined="true">
 @if (ShouldLoadCard)
 {
         <!--This is the per input and output card-->
-        <MudCardContent Style="background:#111111; color:white; white-space:pre-wrap;">
+        <MudCardContent Style="@getPanelStyle()">
             <div class="scrollable-content">
             @if (CardContent != null)
             {
@@ -181,6 +181,20 @@ else
             return false;
         }
         return true;
+    }
+
+    private string getPanelStyle()
+    {
+        string style = "white-space:pre-wrap;";
+        if(MainLayout.IsDarkMode)
+        {
+            style += "background:#1A1A27; color:white;";
+        }
+        else
+        {
+            style += "background:white; color:black;";
+        }
+        return style;
     }
 
     protected override async Task OnParametersSetAsync()

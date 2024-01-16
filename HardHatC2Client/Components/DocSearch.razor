@@ -1,0 +1,38 @@
+﻿@using HardHatCore.HardHatC2Client.Utilities
+
+<MudExToggleableSearch @bind-Value="@docSearchUtil.GlobalSearch"></MudExToggleableSearch>
+@if(docSearchUtil.searchResults.Values.Count > 0)
+{
+    <MudListExtended ItemCollection="" SearchBox="true" Clickable="true" DisableGutters="false" SearchFunc="@(new Func<string, string, bool>(SearchItems))" @bind-SelectedValue="_selectedFile">
+        @foreach (var result in searchResults)
+        {
+            <MudListItemExtended Text="@result.Value" SecondaryText="@result.Key" Icon="@Icons.Material.Filled.Bookmark" />
+        }
+    </MudListExtended>
+}
+
+
+@code {
+
+    public DocSearchUtil docSearchUtil { get; set; } = new DocSearchUtil();
+    public string _selectedFile { get; set; } = "";
+    private static string DocFolderPath = HelperFunctions.GetBaseFolderLocation() + HelperFunctions.PathingTraverseUpString + "Docs";
+    public Dictionary<string, string> searchResults = new Dictionary<string, string>();
+    private static List<string> docFolderItems = Directory.GetFiles(DocFolderPath).ToList();
+
+    private bool SearchItems(string value, string searchString)
+    {
+        if (searchString == "")
+        {
+            return true;
+        }
+
+        if (value.StartsWith(searchString, StringComparison.CurrentCultureIgnoreCase))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+}

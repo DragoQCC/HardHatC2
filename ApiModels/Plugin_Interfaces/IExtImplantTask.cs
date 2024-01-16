@@ -8,7 +8,7 @@ namespace HardHatCore.ApiModels.Plugin_Interfaces
 {
     public interface IExtImplantTask
     {
-        public string Id { get; set; }
+        public string Id { get; init; }
 
         public string Command { get; set; }
 

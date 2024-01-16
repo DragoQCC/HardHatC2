@@ -172,10 +172,6 @@ namespace Engineer.Commands
 		                    acl.AccessControlType = rule.AccessControlType.ToString();
 		                    acl.FileSystemRights = rule.FileSystemRights.ToString();
 		                    acl.IsInherited = rule.IsInherited;
-		                    // sb.Append(rule.IdentityReference.Value + ",");
-		                    // sb.Append(rule.AccessControlType + ",");
-		                    // sb.Append(rule.FileSystemRights + ",");
-		                    // sb.Append(rule.IsInherited + ";");
 		                    ACLList.Add(acl);
 	                    }
 	                }
@@ -227,10 +223,6 @@ namespace Engineer.Commands
 			                acl.AccessControlType = rule.AccessControlType.ToString();
 			                acl.FileSystemRights = rule.FileSystemRights.ToString();
 			                acl.IsInherited = rule.IsInherited;
-			                // sb.Append(rule.IdentityReference.Value + ",");
-			                // sb.Append(rule.AccessControlType + ",");
-			                // sb.Append(rule.FileSystemRights + ",");
-			                // sb.Append(rule.IsInherited + ";");
 			                ACLList.Add(acl);
 		                }
 	                }

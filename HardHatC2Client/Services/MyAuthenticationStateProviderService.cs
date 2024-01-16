@@ -1,8 +1,7 @@
-﻿using HardHatCore.HardHatC2Client.Pages;
-using Microsoft.AspNetCore.Components.Authorization;
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Blazored.LocalStorage;
+using Microsoft.AspNetCore.Components.Authorization;
 
 namespace HardHatCore.HardHatC2Client.Services
 {

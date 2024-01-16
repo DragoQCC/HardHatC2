@@ -1,5 +1,5 @@
-﻿using SQLite;
-using HardHatCore.ApiModels.Shared;
+﻿using HardHatCore.ApiModels.Shared;
+using SQLite;
 
 namespace HardHatCore.TeamServer.Models.Dbstorage
 {
@@ -21,8 +21,8 @@ namespace HardHatCore.TeamServer.Models.Dbstorage
         [Column("ConnectionMode")]
         public ConnectionMode connectionMode { get; set; } // always means direction of parent -> child
 
-        //make a static implicit operator to convert from the manager object to the db object
-        public static implicit operator SMBManager_DAO(SMBmanager manager)
+        //make a static implicit operator to convert from the Manager object to the db object
+        public static implicit operator SMBManager_DAO(SMBManager manager)
         {
             return new SMBManager_DAO
             {
@@ -33,10 +33,10 @@ namespace HardHatCore.TeamServer.Models.Dbstorage
             };
         }
 
-        //make a static implicit operator to convert from the db object to the manager object
-        public static implicit operator SMBmanager(SMBManager_DAO dao)
+        //make a static implicit operator to convert from the db object to the Manager object
+        public static implicit operator SMBManager(SMBManager_DAO dao)
         {
-            return new SMBmanager
+            return new SMBManager
             {
                 Name = dao.Name,
                 NamedPipe = dao.NamedPipe,

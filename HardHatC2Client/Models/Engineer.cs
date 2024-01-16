@@ -1,10 +1,4 @@
-﻿using HardHatCore.ApiModels.Responses;
-using HardHatCore.HardHatC2Client.Pages;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
-
-namespace HardHatCore.HardHatC2Client.Models
+﻿namespace HardHatCore.HardHatC2Client.Models
 {
     public class Engineer 
     {

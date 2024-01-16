@@ -1,19 +1,17 @@
-﻿using Microsoft.AspNetCore.SignalR;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
-using System.Threading;
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using HardHatCore.ApiModels.Shared;
-using System.Net.Http;
-using HardHatCore.ApiModels.Plugin_BaseClasses;
-using HardHatCore.ApiModels.Shared.TaskResultTypes;
 using System.Net;
+using System.Net.Http;
+using System.Reflection;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Shared;
+using HardHatCore.ApiModels.Shared.TaskResultTypes;
 using HardHatCore.TeamServer.Models;
 using HardHatCore.TeamServer.Models.Database;
 using HardHatCore.TeamServer.Models.Dbstorage;
@@ -25,77 +23,68 @@ using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
 using HardHatCore.TeamServer.Plugin_Management;
 using HardHatCore.TeamServer.Services.Extra;
 using HardHatCore.TeamServer.Utilities;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.IdentityModel.Tokens;
+using Fasterflect;
 
 namespace HardHatCore.TeamServer.Services
 {
     public class HardHatHub : Hub<IHardHatHub>
     {
 
-        //make a list of hub clients and add them on connect
-        public static List<string> _clients = new List<string>();
-
-        // public static List<string> TeamLeadIds = new List<string>();
         public static Dictionary<string, HardHatUser> SignalRUsers = new();
 
-        public override Task OnConnectedAsync()
+        public override async Task OnConnectedAsync()
         {
             try
             {
-                if (!_clients.Contains(Context.ConnectionId))
+                Console.WriteLine("client connected to hub");
+                //for a new connected client call the GetExistingManagerList function passing in the clients connection id
+                var ManagerList = ImanagerService.Getmanagers().Where(h => h.Type == ManagerType.http || h.Type == ManagerType.https).ToList();
+                List<HttpManager> httpManagersList = new();
+                if (ManagerList != null)
                 {
-                    Console.WriteLine("client connected to hub");
-                    _clients.Add(Context.ConnectionId);
-                    //for a new connected client call the GetExistingManagerList function passing in the clients connection id
-                    var ManagerList = managerService._managers.Where(h => h.Type == ManagerType.http || h.Type == ManagerType.https).ToList();
-                    List<Httpmanager> httpManagersList = new();
-                    if (ManagerList != null)
+                    foreach (Manager m in ManagerList)
                     {
-                        foreach (manager m in ManagerList)
-                        {
-                            httpManagersList.Add((Httpmanager)m);
-                        }
+                        httpManagersList.Add((HttpManager)m);
                     }
-                    var ManagerList2 = managerService._managers.Where(h => h.Type == ManagerType.smb).ToList();
-                    List<SMBmanager> smbManagersList = new();
-                    if (ManagerList2 != null)
-                    {
-                        foreach (manager m in ManagerList2)
-                        {
-                            smbManagersList.Add((SMBmanager)m);
-                        }
-                    }
-                    var ManagerList3 = managerService._managers.Where(h => h.Type == ManagerType.tcp).ToList();
-                    List<TCPManager> tcpManagersList = new();
-                    if (ManagerList3 != null)
-                    {
-                        foreach (manager m in ManagerList3)
-                        {
-                            tcpManagersList.Add((TCPManager)m);
-                        }
-                    }
-                    //should be called when a client connects, list should be populated from task in Database Service on Ts startup
-                    GetExistingHttpManagers(httpManagersList, Context.ConnectionId);
-                    GetExistingSMBManagers(smbManagersList, Context.ConnectionId);
-                    GetExistingTCPManagers(tcpManagersList, Context.ConnectionId);
-                    foreach (ExtImplant_Base imp in IExtImplantService._extImplants)
-                    {
-                        UpdateOutgoingTaskDic(imp, imp.GetTasks().Result.ToList(), Context.ConnectionId);
-                    }
-                    GetExistingCreds(Context.ConnectionId);
-                    GetExistingHistoryEvents(HistoryEvent.HistoryEventList, Context.ConnectionId);
-                    GetExistingDownloadedFiles(Context.ConnectionId);
-                    GetExistingUploadedFile(Context.ConnectionId);
-                    GetExistingPivotProxies(Context.ConnectionId);
-
                 }
-                return base.OnConnectedAsync();
+                var ManagerList2 = ImanagerService.Getmanagers().Where(h => h.Type == ManagerType.smb).ToList();
+                List<SMBManager> smbManagersList = new();
+                if (ManagerList2 != null)
+                {
+                    foreach (Manager m in ManagerList2)
+                    {
+                        smbManagersList.Add((SMBManager)m);
+                    }
+                }
+                var ManagerList3 = ImanagerService.Getmanagers().Where(h => h.Type == ManagerType.tcp).ToList();
+                List<TCPManager> tcpManagersList = new();
+                if (ManagerList3 != null)
+                {
+                    foreach (Manager m in ManagerList3)
+                    {
+                        tcpManagersList.Add((TCPManager)m);
+                    }
+                }
+                //should be called when a client connects, list should be populated from task in Database Service on Ts startup
+                GetExistingHttpManagers(httpManagersList, Context.ConnectionId);
+                GetExistingSMBManagers(smbManagersList, Context.ConnectionId);
+                GetExistingTCPManagers(tcpManagersList, Context.ConnectionId);
+                foreach (ExtImplant_Base imp in IExtImplantService._extImplants)
+                {
+                    UpdateOutgoingTaskDic(imp, imp.GetTasks().Result.ToList(), Context.ConnectionId);
+                }
+                GetExistingCreds(Context.ConnectionId);
+                GetExistingHistoryEvents(HistoryEvent.HistoryEventList, Context.ConnectionId);
+                GetExistingDownloadedFiles(Context.ConnectionId);
+                GetExistingUploadedFile(Context.ConnectionId);
+                GetExistingPivotProxies(Context.ConnectionId);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                return base.OnConnectedAsync();
             }
-
         }
 
         //hub client invokable methods 
@@ -142,7 +131,7 @@ namespace HardHatCore.TeamServer.Services
         {
             Console.WriteLine("ts cancel running task called, creating task to send to implant");
             //make a new implantTask for the engid and use the taskid in an argument with the key /TaskId
-            ExtImplantTask_Base task = new ExtImplantTask_Base(Guid.NewGuid().ToString(), "cancelTask", new Dictionary<string, string>() { { "/TaskId", taskid } }, null, false, false, false, null, "", eng);
+            ExtImplantTask_Base task = new ExtImplantTask_Base( "cancelTask", new Dictionary<string, string>() { { "/TaskId", taskid } }, null, false, false, false, "", eng);
             //find the implant with the matching engid and add the task to the implants task list
             ExtImplant_Base implant = IExtImplantService._extImplants.Where(e => e.Metadata.Id == eng).FirstOrDefault();
             implant.QueueTask(task);
@@ -389,7 +378,7 @@ namespace HardHatCore.TeamServer.Services
             //find the implant in the list of implants
             ExtImplant_Base implant = IExtImplantService._extImplants.Where(x => x.Metadata.Id == implantId).ToList()[0];
             //find the task result in the list of task results
-            ExtImplantTaskResult_Base? taskResult = implant.GetTaskResult(taskid);
+            ExtImplantTaskResult_Base? taskResult = await implant.GetTaskResult(taskid);
             if (taskResult == null)
             {
                 return;
@@ -595,6 +584,18 @@ namespace HardHatCore.TeamServer.Services
 
         }
 
+        public async Task QueueAssetNotif(AssetNotification notif)
+        {
+            //find the implant in the list of implants
+            ExtImplant_Base implant = IExtImplantService._IExtImplants.FirstOrDefault(x => x.Metadata.Id == notif.AssetId);
+            if (implant != null)
+            {
+                implant.assetNotifications.Enqueue(notif);
+            }
+        }
+
+
+//end of hub client invokable methods 
         #endregion
         //end of hub client invokable methods
 
@@ -651,19 +652,28 @@ namespace HardHatCore.TeamServer.Services
             }
         }
 
-        public static async Task UpdateManagerList(manager manager)
+        public static async Task UpdateManagerList(Manager manager)
         {
-            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
-            await hubContext.Clients.All.UpdateManagerList(manager);
+            try
+            {
+                var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+                Console.WriteLine("sending manager to clients");
+                await hubContext.Clients.All.UpdateManagerList(manager);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+            }
         }
 
-        public static async Task GetExistingHttpManagers(List<Httpmanager> managers, string clientId)
+        public static async Task GetExistingHttpManagers(List<HttpManager> managers, string clientId)
         {
             var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
             await hubContext.Clients.Client(clientId).GetExistingManagerList(managers);
         }
 
-        public static async Task GetExistingSMBManagers(List<SMBmanager> managers, string clientId)
+        public static async Task GetExistingSMBManagers(List<SMBManager> managers, string clientId)
         {
             var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
             await hubContext.Clients.Client(clientId).GetExistingManagerList(managers);
@@ -937,10 +947,22 @@ namespace HardHatCore.TeamServer.Services
             }
         }
 
-        public static async Task SendTaskResults(ExtImplant_Base implant, List<string> implantTaskIds)
+        public static async Task SendTaskResultIds(ExtImplant_Base implant, List<string> implantTaskIds)
         {
             var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
-            await hubContext.Clients.All.SendTaskResults(implant, implantTaskIds);
+            await hubContext.Clients.All.SendTaskResultIds(implant, implantTaskIds);
+        }
+
+        public static async Task SendTaskResults(ExtImplant_Base implant, List<ExtImplantTaskResult_Base> taskResults)
+        {
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.All.SendTaskResults(implant, taskResults);
+        }
+
+        public static async Task SendTaskResult(ExtImplant_Base implant, ExtImplantTaskResult_Base taskResult)
+        {
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
+            await hubContext.Clients.All.SendTaskResult(implant, taskResult);
         }
 
         public static async Task<bool> CreateUserTS(string username, string password, string role)
@@ -986,6 +1008,37 @@ namespace HardHatCore.TeamServer.Services
             var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub, IHardHatHub>)) as IHubContext<HardHatHub, IHardHatHub>;
             await hubContext.Clients.All.NotifyVNCInteractionResponse(response, vncSessionMetadata);
         }
+
+        public static async Task ForwardAssetNotification(AssetNotification notification)
+        {
+            var hubContext = Program.WebHost.Services.GetService(typeof(IHubContext<HardHatHub>)) as IHubContext<HardHatHub>;
+            await hubContext.Clients.All.SendAsync("HandleAssetNotification", notification);
+        }
+
+        //public static async Task FillAllContractorSystemMarkedItems()
+        //{
+        //    List<InvocationPointItem> invocationPointItems = new List<InvocationPointItem>();
+        //    //check all functions that have the ContractorSystem.FuncCallAspect attribute and make a InvocationPointItem for each one
+        //    List<Type> ContractorSystem_MarkedFuncs =  Assembly.GetExecutingAssembly().GetTypes().Where(t => t.GetCustomAttribute(typeof(FuncCallAspect)) is FuncCallAspect attr).ToList();
+        //    foreach(Type makredFunc in ContractorSystem_MarkedFuncs)
+        //    {
+        //        InvocationPointItem _invocItem = new InvocationPointItem()
+        //        {
+        //            Name = (string)makredFunc.GetCustomAttribute(typeof(FuncCallAspect)).GetPropertyValue("contextName"),
+        //            MethodInfo = makredFunc.GetMethod(makredFunc.Name),
+        //            _ContextType = ContextType.Event
+        //        };
+        //        invocationPointItems.Add(_invocItem);
+        //    }
+
+        //    await InvocationData.FillInvocationPropertyInfo(invocationPointItems);
+
+        //}
+
+        //public static async Task<IEnumerable<IContractor>> ContractorSystem_GetContractors()
+        //{
+        //    return await ContractorSystem.Services.ContractSystemFactory.GetContractors();
+        //}
 
         #endregion
         //end of teamserver side invokable methods 

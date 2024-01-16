@@ -291,7 +291,7 @@ namespace Engineer.Models
         public async Task ReadFromPipe(PipeStream pipeserver)
         {
            // Console.WriteLine("starting read from pipe loop");
-            //read from the named pipe, if the parent is reading from the pipe then this a TaskResponse, if the child is reading from the pipe this is a C2TaskMessage
+            //read from the named pipe, if the parent is reading from the pipe then this a TaskResponse, if the child is reading from the pipe this is a C2Message
             try 
             { 
                 while(!_tokenSource.IsCancellationRequested)
@@ -331,10 +331,10 @@ namespace Engineer.Models
                         {
                             IsDataInTransit = true;
                             byte[] ParentData = new byte[size];
-                            await pipeserver.ReadAsync(ParentData, 0, size); // should always be a C2TaskMessage[] , but the data is seralized & encrypted 
+                            await pipeserver.ReadAsync(ParentData, 0, size); // should always be a C2Message[] , but the data is seralized & encrypted 
                             byte[] seralizedParentData = Encryption.AES_Decrypt(ParentData,Program.MessagePathKey);
-                            C2TaskMessage incomingMessage = seralizedParentData.JsonDeserialize<C2TaskMessage>();
-                            //check the C2TaskMessage PathMessage Count if its highrt then 0, read the first item and if that matches the current engineers id add the message to the queue
+                            C2Message incomingMessage = seralizedParentData.JsonDeserialize<C2Message>();
+                            //check the C2Message PathMessage Count if its highrt then 0, read the first item and if that matches the current engineers id add the message to the queue
                             if (incomingMessage.PathMessage.ElementAt(0) == Program._metadata.Id)
                             {
                                 incomingMessage.PathMessage.RemoveAt(0);
@@ -349,7 +349,7 @@ namespace Engineer.Models
                                 //else this task is for this current engineer and should be added to the taskQueue
                                 else
                                 {
-                                    byte[] decryptedTaskData = Encryption.AES_Decrypt(incomingMessage.TaskData.ToArray(), "", Program.UniqueTaskKey);
+                                    byte[] decryptedTaskData = Encryption.AES_Decrypt(incomingMessage.Data.ToArray(), "", Program.UniqueTaskKey);
                                     HandleResponse(decryptedTaskData);
                                     IsDataInTransit = false;
                                 }
@@ -370,14 +370,14 @@ namespace Engineer.Models
         public async Task WriteToPipe(PipeStream pipeserver)
         {
             //Console.WriteLine("starting write to pipe loop");
-            //write into the named pipe, if the parent is writing into the pipe this is a C2TaskMessage, if the child is writing into the pipe this is a TaskResponse
+            //write into the named pipe, if the parent is writing into the pipe this is a C2Message, if the child is writing into the pipe this is a TaskResponse
             try
             {
                 while (!_tokenSource.IsCancellationRequested)
                 {
                     if (IsParent)
                     {
-                        //parent writing an Encrypted C2TaskMessage to children
+                        //parent writing an Encrypted C2Message to children
                         if (ParentToChildData.TryGetValue(ChildIdString, out ConcurrentQueue<byte[]> data))
                         {
                             if (data.TryDequeue(out byte[] message))
@@ -453,7 +453,7 @@ namespace Engineer.Models
             {
                 foreach (var task in tasks)
                 {
-                    Inbound.Enqueue(task);
+                    InboundTasks.Enqueue(task);
                 }
                 return true;
             }

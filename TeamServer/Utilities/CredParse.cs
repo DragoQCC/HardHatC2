@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System;
 
 // Author: Ryan Cobb (@cobbr_io) <3 
 // Project: Covenant (https://github.com/cobbr/Covenant)

@@ -1,65 +1,50 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <LangVersion>11</LangVersion>
+    <LangVersion>12</LangVersion>
     <Platforms>AnyCPU;x64</Platforms>
     <UserSecretsId>f1390c44-136e-47f5-8d89-dedea3376548</UserSecretsId>
   </PropertyGroup>
 
 <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
 <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
 <RootNamespace>HardHatCore.TeamServer</RootNamespace>
 </PropertyGroup>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="dotnet $(ProjectDir)../CoreSystems/ContractorSystemGenerator/bin/Debug/net8.0/ContractorSystemGenerator.dll $(TargetPath)" />
+  </Target>
+  
   <ItemGroup>
     <PackageReference Include="ILRepack.Lib.NET" Version="2.0.0" />
-    <PackageReference Include="Microsoft.AspNet.SignalR.Core" Version="2.4.3" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.11" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.7.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.1" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
     <PackageReference Include="NetSerializer" Version="4.1.2" />
     <PackageReference Include="RestSharp" Version="110.2.0" />
-    <PackageReference Include="Serilog" Version="3.0.1" />
-    <PackageReference Include="Serilog.Expressions" Version="3.4.1" />
-    <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.0" />
+    <PackageReference Include="Serilog" Version="3.1.1" />
+    <PackageReference Include="Serilog.Expressions" Version="4.0.0" />
+    <PackageReference Include="Serilog.Formatting.Compact" Version="2.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
     <PackageReference Include="sqlite-net-pcl" Version="1.8.116" />
     <PackageReference Include="SQLiteNetExtensions" Version="2.1.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-    <PackageReference Include="System.ComponentModel.Composition" Version="7.0.0" />
+    <PackageReference Include="System.Linq.Async" Version="6.0.1" />
+    <PackageReference Include="xunit" Version="2.6.5" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ApiModels\ApiModels.csproj" />
+    <ProjectReference Include="..\CoreSystems\ContractorSystemGenerator\ContractorSystemGenerator.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="database\" />
+    <Folder Include="Docs\" />
     <Folder Include="Downloads\" />
     <Folder Include="wwwroot\" />
     <Folder Include="Programs\Builtin\" />
     <Folder Include="Programs\Users\" />
     <Folder Include="temp\" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="Models\Engineers\DynamicCommands\**" />
-    <Compile Remove="Models\Engineers\EngineerCommands\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Remove="Models\Engineers\DynamicCommands\**" />
-    <EmbeddedResource Remove="Models\Engineers\EngineerCommands\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="Models\Engineers\DynamicCommands\**" />
-    <None Remove="Models\Engineers\EngineerCommands\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Remove="Models\Engineers\DynamicCommands\**" />
-    <Content Remove="Models\Engineers\EngineerCommands\**" />
-  </ItemGroup>
-
 </Project>

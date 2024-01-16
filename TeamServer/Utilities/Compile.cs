@@ -1,29 +1,24 @@
-﻿using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Emit;
-using Microsoft.CodeAnalysis;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
-using System;
 using System.Linq;
-using System.Diagnostics;
-using System.CodeDom.Compiler;
-using System.Reflection.PortableExecutable;
-using HardHatCore.ApiModels.Requests;
-using Microsoft.CSharp;
-using System.Security.Cryptography.Xml;
+using System.Reflection;
 using HardHatCore.ApiModels.Shared;
-using Mono.Cecil;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Emit;
 
+//TODO: Add a better way to handle this compile time error 
 
 namespace HardHatCore.TeamServer.Utilities
 {
+#pragma warning disable LAMA0117 // this should still let me use the roslyn compiler without conflicting with MetaLama 
     public class Compile
     {
 
         public bool Confuse { get; set;}
         
-        public static byte[] GenerateEngCode(string source, ImpCompileType compileType, SleepTypes sleepType, List<string> nonIncCommandList, List<string> nonIncModuleList)
+        public static byte[] GenerateEngCode(string source, ImpCompileType compileType, SleepTypes sleepType, List<string> nonIncCommandList, List<string> nonIncModuleList, bool isDebugBuild)
         {
             bool IsEngDynLibCompiled = CompileEngDynamicLibrary();
             if (IsEngDynLibCompiled)
@@ -122,10 +117,19 @@ namespace HardHatCore.TeamServer.Utilities
             {
                 outputKind = OutputKind.ConsoleApplication;
             }
+            OptimizationLevel optiLevel; 
+            if(isDebugBuild)
+            {
+                optiLevel = OptimizationLevel.Debug;
+            }
+            else
+            {
+                optiLevel = OptimizationLevel.Release;
+            }
 
             CSharpCompilation compilation = CSharpCompilation.Create(assemblyName, syntaxTrees: trees,
                 references: references,
-                options: new CSharpCompilationOptions(outputKind: outputKind, optimizationLevel: OptimizationLevel.Release, platform: Platform.X64, allowUnsafe: true));
+                options: new CSharpCompilationOptions(outputKind: outputKind, optimizationLevel: optiLevel, platform: Platform.X64, allowUnsafe: true));
             
             using (var ms = new MemoryStream())
             {

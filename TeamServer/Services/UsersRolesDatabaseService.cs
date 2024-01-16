@@ -1,9 +1,6 @@
-﻿using SQLite;
-using System;
-using System.Security.Claims;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime;
 using HardHatCore.TeamServer.Models.Database;
 using HardHatCore.TeamServer.Services.Extra;
 using HardHatCore.TeamServer.Utilities;

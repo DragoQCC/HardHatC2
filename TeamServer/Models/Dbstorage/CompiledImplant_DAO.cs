@@ -1,8 +1,7 @@
-﻿using System;
-using SQLite;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using HardHatCore.TeamServer.Models.Extras;
 using HardHatCore.TeamServer.Utilities;
+using SQLite;
 
 namespace HardHatCore.TeamServer.Models.Dbstorage
 {

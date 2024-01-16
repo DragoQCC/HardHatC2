@@ -3,7 +3,7 @@
 @using HardHatCore.ApiModels.Shared.TaskResultTypes
 @using HardHatCore.HardHatC2Client.Utilities
 
-<MudTable T="FileSystemItem" Height="50vh" @ref=@_table Items="BodyContent.Values" HorizontalScrollbar="false" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Outlined="true" Striped="true" Filter="new Func<FileSystemItem,bool>(FilterFunc1)" SortLabel="Sort By">
+<MudTable T="FileSystemItem" @ref=@_table Items="BodyContent.Values" HorizontalScrollbar="false" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Outlined="true" Filter="new Func<FileSystemItem,bool>(FilterFunc1)" SortLabel="Sort By">
     <ToolBarContent>
         @if (Path != null)
         {

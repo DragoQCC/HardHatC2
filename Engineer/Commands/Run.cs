@@ -21,12 +21,8 @@ namespace Engineer.Commands
                 task.Arguments.TryGetValue("/command", out string command);
                 task.Arguments.TryGetValue("/args", out string argument);
                 task.Arguments.TryGetValue("/timeout", out string timeout);
-
                 command = command.Trim();
                 argument = argument.Trim();
-
-                //Console.WriteLine($"starting program {command}");
-                //Console.WriteLine($"sending it arguments {argument}");
 
                 var process = new Process
                 {
@@ -42,8 +38,6 @@ namespace Engineer.Commands
                         RedirectStandardError = true
                     }
                 };
-
-                //Console.WriteLine("Starting process");
                 process.Start();
 
                 var output = new StringBuilder();
@@ -119,7 +113,6 @@ namespace Engineer.Commands
                                 ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(newContent, task, EngTaskStatus.Running, TaskResponseType.String);
                             }
                         }
-
                         ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("[-]Task Cancelled", task, EngTaskStatus.Cancelled, TaskResponseType.String);
                         break;
                     }
@@ -129,7 +122,6 @@ namespace Engineer.Commands
                         errorResetEvent.Reset();
                         continue;
                     }
-
                     break;
                 }
 
@@ -143,7 +135,6 @@ namespace Engineer.Commands
                     output.AppendLine("Error:");
                     output.AppendLine(error.ToString());
                 }
-
                 ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(output.ToString(), task, EngTaskStatus.Complete, TaskResponseType.String);
             }
             catch (Exception ex)

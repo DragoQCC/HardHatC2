@@ -29,56 +29,49 @@ else
 }
 <MudDialog>
     <DialogContent>
-        <div class="container-fluid d-flex flex-grow-1" style="height:500px; overflow-y:scroll">
-        <MudTable Style="width:100%;" Height="400px" Class="flex-auto" Breakpoint="Breakpoint.None" Items="@ImplantDisplayList" HorizontalScrollbar="true" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Elevation="10" Outlined="true" Striped="true" Filter="new Func<ExtImplant_Base,bool>(FilterFunc1)" SortLabel="Sort By">
-            <ToolBarContent>
-                <MudText Typo="Typo.h6">Implants</MudText>
-                <MudSpacer />
-                    <MudToggleIconButton @bind-Toggled="@HideOfflineImplants" Color="Color.Primary" Icon="@Icons.Material.Filled.Visibility" ToggledIcon="@Icons.Material.Filled.VisibilityOff" Title="Hide Offline ExtImplant_Bases" ToggledTitle="Hide Offline ExtImplant_Bases" />
-                <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
-            </ToolBarContent>
-            <HeaderContent>
-                <MudTh>Add</MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x => x.Number)">#</MudTableSortLabel></MudTh>
-                <MudTh></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Status)">Status</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.ExternalAddress)">External Address</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.ManagerName)">Manager</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.ConnectionType)">Connection Type</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Address)">Address</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Hostname)">hostname</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Username)">username</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.ProcessName)">process</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.ProcessId)">pid</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Integrity)">Integrity</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Arch)">arch</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.Metadata.Sleep)">Sleep Time</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.LastSeen)">lastseen</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<ExtImplant_Base, object>(x=>x.FirstSeen)">firstseen</MudTableSortLabel></MudTh>
-            </HeaderContent>
-            <RowTemplate Context="Rowcontext">
-                <MudTd> 
-                        <MudToggleIconButton ToggledChanged="(x)=>OnImplantAddedChanged(x,Rowcontext)" Icon="@Icons.Material.Filled.Add" Color="@Color.Primary" Title="Off"
-                            ToggledIcon="@Icons.Material.Filled.Check" ToggledColor="@Color.Success" ToggledTitle="On" /> 
-                </MudTd>
-                <MudTd>@Rowcontext.Number</MudTd>
-                    <MudTd><MudIcon Size="Size.Small" Class="mb-2 ms-2" Icon=@Icons.Material.Outlined.DesktopWindows Color=@Implants.SetColor(Rowcontext.Metadata.Integrity)></MudIcon></MudTd>
-                <MudTd>@Rowcontext.Status</MudTd>
-                <MudTd>@Rowcontext.ExternalAddress</MudTd>
-                    <MudTd>@Rowcontext.Metadata.ManagerName</MudTd>
-                    <MudTd>@Rowcontext.ConnectionType @Implants.FindManager(Rowcontext,Rowcontext.Metadata.ManagerName)</MudTd>
-                    <MudTd>@Rowcontext.Metadata.Address</MudTd>
-                    <MudTd>@Rowcontext.Metadata.Hostname</MudTd>
-                    <MudTd>@Rowcontext.Metadata.Username</MudTd>
-                    <MudTd>@Rowcontext.Metadata.ProcessName</MudTd>
-                    <MudTd>@Rowcontext.Metadata.ProcessId</MudTd>
-                    <MudTd>@Rowcontext.Metadata.Integrity</MudTd>
-                    <MudTd>@Rowcontext.Metadata.Arch</MudTd>
-                    <MudTd>@Rowcontext.Metadata.Sleep sec</MudTd>
-                <MudTd>@Implants.LastSeenTimer(Rowcontext)</MudTd>
-                <MudTd>@Rowcontext.FirstSeen</MudTd>
-            </RowTemplate>
-        </MudTable>
+        <div class="container-fluid d-flex flex-grow-1" style="height:50vh; overflow-y:scroll">
+            @if (HideOfflineImplants)
+            {
+                ImplantDisplayList = Implants.ImplantList.Where(x => x.Status == "Active").ToList();
+            }
+            else
+            {
+                ImplantDisplayList = Implants.ImplantList.ToList();
+            }
+            <MudDataGrid Style="width:100%; height:50vh;" Class="flex-auto" HeaderClass="@Implants.GetHeaderClass()" Items="@ImplantDisplayList" T="ExtImplant_Base" ShowMenuIcon="true" QuickFilter="@FilterFunc1" FilterMode="DataGridFilterMode.ColumnFilterMenu" HorizontalScrollbar="true" Virtualize="true" FixedHeader="true" Hover="true" Dense="true" Elevation="10" Outlined="true" DragDropColumnReordering="@true" ApplyDropClassesOnDragStarted="@true" Hideable="true" ColumnResizeMode="ResizeMode.Container" ColumnsPanelReordering="true" ShowColumnOptions="false" DragIndicatorIcon="">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">Implants</MudText>
+                    <MudSpacer />
+                    <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                    <MudToggleIconButton @bind-Toggled="@HideOfflineImplants" Color="Color.Primary" Icon="@Icons.Material.Filled.Visibility" ToggledIcon="@Icons.Material.Filled.VisibilityOff" Title="Hide Offline Implants" ToggledTitle="Hide Offline Implants" />
+                </ToolBarContent>
+                <Columns>
+                    <PropertyColumn Property="x => x.Number" Title="#" />
+                    <TemplateColumn Context="Rowcontext">
+                        <CellTemplate>
+                            <MudBadge Class="mud-badge-implant-table" Bordered="false" Overlap="false" Content=@ImplantInteract.SetPanelBadgeCount(Rowcontext.Item) Color="Color.Primary">
+                                <MudIcon Size="Size.Small" Class="mb-2 ms-2" Icon=@Icons.Material.Outlined.DesktopWindows Color=@Implants.SetColor(Rowcontext.Item.Metadata.Integrity)></MudIcon>
+                            </MudBadge>
+                        </CellTemplate>
+                    </TemplateColumn>
+                    <PropertyColumn Property="x => x.Status" Title="Status" />
+                    <PropertyColumn Property="x => x.ExternalAddress" Title="External Address" />
+                    <PropertyColumn Property="x => x.Metadata.ManagerName" Title="Manager" />
+                    <PropertyColumn Property="x => x.ConnectionType" Title="Connection Type" />
+                    <PropertyColumn Property="x => x.Metadata.Address" Title="Address" />
+                    <PropertyColumn Property="x => x.Metadata.Hostname" Title="Hostname" />
+                    <PropertyColumn Property="x => x.Metadata.Username" Title="Username" />
+                    <PropertyColumn Property="x => x.Note" Title="Note" />
+                    <PropertyColumn Property="x => x.Metadata.ProcessName" Title="Process Name" />
+                    <PropertyColumn Property="x => x.Metadata.ProcessId" Title="Process Id" />
+                    <PropertyColumn Property="x => x.Metadata.Integrity" Title="Integrity" />
+                    <PropertyColumn Property="x => x.Metadata.Arch" Title="Arch" />
+                    <PropertyColumn Property="x => x.Metadata.Sleep" Title="Sleep" />
+                    <PropertyColumn Property="x => x.LastSeen" Title="Last Seen" />
+                    <PropertyColumn Property="x => x.FirstSeen" Title="First Seen" />
+                    <PropertyColumn Property="x => x.ImplantType" Title="Implant Type" />
+                </Columns>
+            </MudDataGrid>
         </div>
     </DialogContent>
     <DialogActions>

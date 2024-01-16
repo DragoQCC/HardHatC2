@@ -1,12 +1,9 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using SQLite;
-using System;
-using Microsoft.Owin.Security.Provider;
-using System.Timers;
 using HardHatCore.TeamServer.Models.Database;
+using Microsoft.AspNetCore.Identity;
 
 namespace HardHatCore.TeamServer.Services.Extra
 {

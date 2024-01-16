@@ -1,22 +1,21 @@
-﻿using HardHatCore.ApiModels.Plugin_BaseClasses;
-using HardHatCore.ApiModels.Plugin_Interfaces;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
+using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Plugin_Interfaces;
+using HardHatCore.ApiModels.Shared;
 using HardHatCore.TeamServer.Models.Dbstorage;
 using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
 using HardHatCore.TeamServer.Services;
-using static SQLite.SQLite3;
 
 namespace HardHatCore.TeamServer.Plugin_BaseClasses
 {
-    [Export(typeof(ExtImplant_Base))]
-    [ExportMetadata("Name", "Default")]
     public class ExtImplant_Base : IExtImplant
     {
+        public string Name { get; } = "Default";
+        public string Description { get; } = "Default Implant class";
         public ExtImplantMetadata_Base Metadata { get; set; }
         //this should be the name of the implant such as Engineer, Constructor, Rustineer, etc.
         public  string ImplantType { get; set; }
@@ -31,7 +30,8 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
         
         
         public ConcurrentQueue<ExtImplantTask_Base> pendingTasks  = new();
-        public Dictionary<string, byte[]> TaskResultDataChunks = new();
+        public ConcurrentDictionary<string, byte[]> TaskResultDataChunks = new();
+        public ConcurrentQueue<AssetNotification> assetNotifications = new();
         
         //this is used to create a new instance of the implant, and should be coded into the implant itself to return a useable instance of the implant    
         public virtual ExtImplant_Base GetNewIExtImplant(IExtImplantMetadata imp_meta)
@@ -64,7 +64,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
                 //concat if the command is not download, for download the result is already the full file and we dont want to concat it
                 existing.Result = existing.Command.Equals("download", StringComparison.CurrentCultureIgnoreCase) is false ? existing.Result.Concat(result.Result).ToArray() : result.Result;
             }
-            DatabaseService.AsyncConnection.InsertAsync((ExtImplantTaskResult_DAO)result);
+            await DatabaseService.AsyncConnection.InsertAsync((ExtImplantTaskResult_DAO)result);
         }
 
         public virtual async Task AddTask(ExtImplantTask_Base impTask)
@@ -84,24 +84,34 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
             Status = "Active";
         }
 
-        public virtual IEnumerable<ExtImplantTask_Base> GetPendingTasks()
+        public virtual async Task<IEnumerable<ExtImplantTask_Base>> GetPendingTasks()
         {
-            List<ExtImplantTask_Base> extImplantTasks = new();
+            List<ExtImplantTask_Base> outboundTasks = new();
             while (pendingTasks.TryDequeue(out ExtImplantTask_Base task))
             {
-                extImplantTasks.Add(task);
+                outboundTasks.Add(task);
             }
-            return extImplantTasks;
+            return outboundTasks;
         }
 
-        public virtual ExtImplantTaskResult_Base GetTaskResult(string taskId)
+        public virtual async Task<IEnumerable<AssetNotification>> GetAssetNotifications()
+        {
+            List<AssetNotification> notificationList = new();
+            while (this.assetNotifications.TryDequeue(out AssetNotification assetNotification))
+            {
+                notificationList.Add(assetNotification);
+            }
+            return notificationList;
+        }
+
+        public virtual async Task<ExtImplantTaskResult_Base> GetTaskResult(string taskId)
         {
             //check the database for the task result
             if(DatabaseService.AsyncConnection is null)
             {
                 DatabaseService.ConnectDb();
             }
-            var returnedItem = DatabaseService.AsyncConnection.Table<ExtImplantTaskResult_DAO>().FirstOrDefaultAsync(x => x.TaskId == taskId).Result;
+            var returnedItem = await DatabaseService.AsyncConnection.Table<ExtImplantTaskResult_DAO>().FirstOrDefaultAsync(x => x.TaskId == taskId);
             return returnedItem ?? null;
         }
 

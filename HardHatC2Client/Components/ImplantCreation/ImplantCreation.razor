@@ -21,22 +21,22 @@
                     <ChildContent>
                         <MudForm @ref="_form1" @bind-IsValid="@success">
                             <!-- Selection of implant names to use for the rest of the build steps -->
-                            <MudSelectExtended ValuePresenter="ValuePresenter.Text" Clearable="true" Class="mb-4 mt-4" T="string" Label="Implant Type" Variant="Variant.Filled" Required="true" @bind-value="ImplantName" RequiredError="Type is required!">
+                        <MudSelectExtended ValuePresenter="ValuePresenter.Text" Clearable="true" Class="mb-4 mt-4" T="string" Label="Implant Type" Variant="Variant.Filled" Required="true" @bind-value="ImplantName" RequiredError="Type is required!">
                                 @foreach (var CreationPlugin in Plugin_Management.PluginService.pluginHub.ImplantCreation_Plugins)
                                 {
-                                    string displayname = CreationPlugin.Metadata.Name;
+                                    string displayname = CreationPlugin._metadata.Name;
                                     if (displayname.Equals("Default",StringComparison.CurrentCultureIgnoreCase))
                                     {
                                         displayname = "Engineer";
                                     }
-                                    <MudSelectItemExtended Value="@CreationPlugin.Metadata.Name"> @displayname </MudSelectItemExtended>
+                                <MudSelectItemExtended Value="@CreationPlugin._metadata.Name"> @displayname </MudSelectItemExtended>
                                 }
                             </MudSelectExtended>
                             <!-- Operating Systems the selected implant supports, is done here so if required the commands and module steps can adapt their content to the right OS -->
                             @if (string.IsNullOrEmpty(ImplantName) is false)
                             {
-                                impCreationData =  PluginService.GetImplantCreationPluginData(ImplantName);
-                                <MudSelectExtended ValuePresenter="ValuePresenter.Text" Clearable="true" Class="mb-4 mt-4" T="string" Label="Implant OS Target" Variant="Variant.Filled" Required="true" @bind-value="formData.implantOsType" RequiredError="Type is required!">
+                                impCreationData =  PluginService.GetImplantCreationPlugin(ImplantName)._metadata;
+                            <MudSelectExtended ValuePresenter="ValuePresenter.Text" Clearable="true" Class="mb-4 mt-4" T="string" Label="Implant OS Target" Variant="Variant.Filled" Required="true" @bind-value="formData.implantOsType" RequiredError="Type is required!">
                                     @foreach(var supportedOs in impCreationData.SupportedOperatingSystems)
                                     {
                                     <MudSelectItemExtended Value="@supportedOs"> @supportedOs </MudSelectItemExtended>
@@ -67,6 +67,7 @@
                     selectedImpModuleList = new ObservableCollection<string>();
                     ImplantName = "";
                     Stepper.Reset();
+                    InvokeAsync(StateHasChanged);
                 }
                 <MudSpacer />
             </ActionContent>
@@ -97,11 +98,11 @@
     //a list of the selected modules if the implant supports module selection
     public static ObservableCollection<string> selectedImpModuleList { get; set; } = new ObservableCollection<string>();
     // Metadata for the selected implant, includes things like supported OS, Comm Types, etc. 
-    public ImplantCreationBaseData impCreationData { get; set; }
+    public I_ImplantCreationBaseData impCreationData { get; set; }
     // a func that is used so plugins may provide their own version of the submit function
     public static Func<Task> ValidSubmitFunc { get; set; }
     // a func that is used so plugins may provide their own version of the step change function
-    public static Func<StepChangeDirection, Task<bool>> stepChangeFunc { get; set; }
+    public static Func<StepChangeDirection,int, Task<bool>> stepChangeFunc { get; set; }
     public static MudStepper Stepper { get; set; }
     public MudForm _form1 { get; set; }
     public static string ImplantName { get; set; } = "";
@@ -118,7 +119,7 @@
     public static List<string> PostExCommandsThatSpawnNewImp = new();
 
 
-    public virtual async Task<bool> CheckChange(StepChangeDirection direction)
+    public virtual async Task<bool> CheckChange(StepChangeDirection direction, int targetIndex)
     {
         // Always allow stepping backwards, even if forms are invalid
         if (direction == StepChangeDirection.Backward)
@@ -128,17 +129,17 @@
         if (Stepper.GetActiveIndex() == 0)
         {
             _loading = true;
-            StateHasChanged();
+            await InvokeAsync(StateHasChanged);
             await Task.Delay(100);
-            await _form1.Validate();
+            await  InvokeAsync(_form1.Validate);
             _loading = false;
-            StateHasChanged();
-           // Console.WriteLine("Moving from step 1 to 2 " + _form1.IsValid);
+            await InvokeAsync(StateHasChanged);
+            // Console.WriteLine("Moving from step 1 to 2 " + _form1.IsValid);
             return !_form1.IsValid;
         }
         else
         {
-           // Console.WriteLine($"Og Step check Current Index is {Stepper.GetActiveIndex()}");
+            // Console.WriteLine($"Og Step check Current Index is {Stepper.GetActiveIndex()}");
             return false;
         }
     }
@@ -184,11 +185,14 @@
         if (formData.managerName != null)
         {
             formData.implantType = ImplantName;
+            formData.IncludedCommands = selectedImpCommandList.ToList();
+            formData.IncludedModules = selectedImpModuleList.ToList();
+            formData.KillDateTime = formData.selectedKillDate is null ? null : (DateTime)(formData.selectedKillDate.Value.Date + formData.selectedKillTime);
+            formData.IsChunkEnabled ??= false;
+            formData.ChunkSize ??= 0;
             if (IsPostEx)
             {
                 formData.IsPostEx = IsPostEx; // should be true if created via the postex dialog
-                formData.IncludedCommands = selectedImpCommandList.ToList();
-                formData.IncludedModules = selectedImpModuleList.ToList();
 
                 ImplantCreation_Dialog.PostExSpawnRequest.IsPostEx = formData.IsPostEx ?? false;
                 ImplantCreation_Dialog.PostExSpawnRequest.managerName = formData.managerName;
@@ -198,18 +202,18 @@
                 ImplantCreation_Dialog.PostExSpawnRequest.WorkingHours = formData.WorkingHours;
                 ImplantCreation_Dialog.PostExSpawnRequest.SleepType = formData.SleepType;
                 //if formData.selectedKillDate is null set to null else set to formData.selectedKillDate.Value.Date + formData.selectedKillTime
-                ImplantCreation_Dialog.PostExSpawnRequest.KillDateTime = formData.selectedKillDate is null ? null : (DateTime)(formData.selectedKillDate.Value.Date + formData.selectedKillTime);
+                ImplantCreation_Dialog.PostExSpawnRequest.KillDateTime = formData.KillDateTime;
                 ImplantCreation_Dialog.PostExSpawnRequest.IncludedCommands = formData.IncludedCommands;
                 ImplantCreation_Dialog.PostExSpawnRequest.IncludedModules = formData.IncludedModules;
-                ImplantCreation_Dialog.PostExSpawnRequest.IsChunkEnabled = formData.IsChunkEnabled ?? false;
-                ImplantCreation_Dialog.PostExSpawnRequest.ChunkSize = formData.ChunkSize ?? 0;
+                ImplantCreation_Dialog.PostExSpawnRequest.IsChunkEnabled = formData.IsChunkEnabled;
+                ImplantCreation_Dialog.PostExSpawnRequest.ChunkSize = formData.ChunkSize;
                 ImplantCreation_Dialog.PostExSpawnRequest.implantType = formData.implantType;
                 ImplantCreation_Dialog.PostExSpawnRequest.implantOsType = formData.implantOsType;
                 formData = new ExtImplantCreateRequest_Base();
                 Dialog.Close(DialogResult.Ok(true));
                 return;
             }
-            await Implants.CreateImplant(formData, selectedImpCommandList.ToList(), selectedImpModuleList.ToList());
+            await Implants.CreateImplant(formData);
             formData = new ExtImplantCreateRequest_Base();
         }
     }

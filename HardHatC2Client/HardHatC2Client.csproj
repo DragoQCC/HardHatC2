@@ -1,49 +1,65 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
-
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
+    <Platforms>AnyCPU;x64</Platforms>
+    <LangVersion>latestmajor</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <LangVersion>11</LangVersion>
+    <LangVersion>latestmajor</LangVersion>
     <RootNamespace>HardHatCore.HardHatC2Client</RootNamespace>
+    <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
   </PropertyGroup>
-
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-    <PlatformTarget>anycpu</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>full</DebugType>
   </PropertyGroup>
-
+  <ItemGroup>
+    <Compile Remove="GraphSource\**" />
+    <Content Remove="GraphSource\**" />
+    <EmbeddedResource Remove="GraphSource\**" />
+    <None Remove="GraphSource\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Remove="wwwroot\service-worker.js" />
+  </ItemGroup>
   <ItemGroup>
     <Folder Include="Data\" />
     <Folder Include="Downloads\" />
-    <Folder Include="GraphSource" />
     <Folder Include="JSON Templates\BOF\" />
     <Folder Include="JSON Templates\Webhooks\TargetTemplates\" />
     <Folder Include="wwwroot\Images\" />
   </ItemGroup>
-
+  <ItemGroup>
+    <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Blazored.LocalStorage" Version="4.4.0" />
     <PackageReference Include="Blazored.Toast" Version="4.1.0" />
     <PackageReference Include="Blazored.Toast.TestExtensions" Version="4.1.0" />
     <PackageReference Include="BlazorMonaco" Version="3.1.0" />
     <PackageReference Include="Bootstrap.Switch" Version="3.3.4" />
-    <PackageReference Include="Bromix.MudBlazor.MaterialDesignIcons" Version="7.2.96.50" />
-    <PackageReference Include="CodeBeam.MudBlazor.Extensions" Version="6.5.10" />
-    <PackageReference Include="ICSharpCode.Decompiler" Version="8.1.1.7464" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.11" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.7.0" />
-    <PackageReference Include="MudBlazor" Version="6.10.0" />
-    <PackageReference Include="MudBlazor.Extensions" Version="1.7.67" />
-    <PackageReference Include="MudBlazor.Markdown" Version="0.1.2" />
+    <PackageReference Include="Bromix.MudBlazor.MaterialDesignIcons" Version="7.4.47.56" />
+    <PackageReference Include="CodeBeam.MudBlazor.Extensions" Version="6.8.0" />
+    <PackageReference Include="ElectronNET.API" Version="23.6.1" />
+    <PackageReference Include="fasterflect.reflect" Version="3.1.0" />
+    <PackageReference Include="ICSharpCode.Decompiler" Version="8.2.0.7535" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.1" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+    <PackageReference Include="MudBlazor" Version="6.12.0" />
+    <PackageReference Include="MudBlazor.Extensions" Version="1.7.82" />
+    <PackageReference Include="MudBlazor.Markdown" Version="0.1.3" />
     <PackageReference Include="RestSharp" Version="110.2.0" />
-    <PackageReference Include="System.ComponentModel.Composition" Version="7.0.0" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.0.0" />
-    <PackageReference Include="Z.Blazor.Diagrams" Version="3.0.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.1.2" />
+    <PackageReference Include="Toolbelt.Blazor.HotKeys2" Version="3.2.1" />
+    <PackageReference Include="Z.Blazor.Diagrams" Version="3.0.1" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\ApiModels\ApiModels.csproj" />
+    <ProjectReference Include="..\CoreSystems\ContractorSystemGenerator\ContractorSystemGenerator.csproj" />
   </ItemGroup>
-
+  <ItemGroup>
+    <Content Update="electron.manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>

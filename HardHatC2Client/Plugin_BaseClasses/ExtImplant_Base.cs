@@ -1,7 +1,4 @@
 ﻿using HardHatCore.ApiModels.Plugin_BaseClasses;
-using HardHatCore.ApiModels.Plugin_Interfaces;
-using HardHatCore.HardHatC2Client.Pages;
-using System.Diagnostics.CodeAnalysis;
 using HardHatCore.HardHatC2Client.Plugin_Interfaces;
 
 namespace HardHatCore.HardHatC2Client.Plugin_BaseClasses

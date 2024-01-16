@@ -1,13 +1,10 @@
-﻿using System.Collections.Concurrent;
-using System.Net.Sockets;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using HardHatCore.TeamServer.Models;
-using System.Collections.Generic;
-using System.IO;
-using System;
-using HardHatCore.ApiModels.Shared;
 using HardHatCore.ApiModels.Plugin_BaseClasses;
 using HardHatCore.TeamServer.Plugin_BaseClasses;
 
@@ -79,7 +76,7 @@ namespace HardHatCore.TeamServer.Utilities
                     if (client.DataAvailable())
                     {
                         var dataForDestionation = await client.ReceiveData(_tokenSources[RPortForwardClients[client]].Token);
-                        var task = new ExtImplantTask_Base("rportRecieve", "rportRecieve",new Dictionary<string, string>(){{"/client", RPortForwardClients[client] }}, dataForDestionation, false,false,true, null, "",implant.Metadata.Id);
+                        var task = new ExtImplantTask_Base("rportRecieve",new Dictionary<string, string>(){{"/client", RPortForwardClients[client] }}, dataForDestionation, false,false,true, "",implant.Metadata.Id);
                         implant.QueueTask(task);
                     }
                 }

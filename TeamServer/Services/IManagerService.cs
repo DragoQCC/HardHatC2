@@ -13,44 +13,60 @@ namespace HardHatCore.TeamServer.Services
 {
     public interface ImanagerService
 	{
-		void Addmanager(manager manager);
-		IEnumerable<manager> Getmanagers();
-
-		manager Getmanager(string name);
-		void Removemanager(manager manager);
-	}
-
-	public class managerService : ImanagerService
-	{
-		public static readonly List<manager> _managers = new();
-
-		public void Addmanager(manager manager)
+        protected static readonly List<Manager> _managers = new();
+        public static void Addmanager(Manager manager)
 		{
 			_managers.Add(manager);
 		}
 
-		public IEnumerable<manager> Getmanagers()
+		public static void AddManagers(IEnumerable<Manager> managersList)
 		{
+			_managers.AddRange(managersList);
+		}
+
+		public static IEnumerable<Manager> Getmanagers()
+		{             
 			return _managers;
 		}
 
-		public manager Getmanager(string name)
+		public static Manager Getmanager(string name)
 		{
-			return Getmanagers().FirstOrDefault(l => l.Name.Equals(name, StringComparison.OrdinalIgnoreCase)); // labmda takes input, assigns it too thing left of => and the expression on the right uses it for something 
+            return Getmanagers().FirstOrDefault(l => l.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        }
+        public static void Removemanager(Manager manager)
+        {
+            _managers.Remove(manager);
+        }
+    }
+
+	public class managerService : ImanagerService
+	{
+        public void Addmanager(Manager manager)
+		{
+            ImanagerService.Addmanager(manager);
+        }
+
+		public IEnumerable<Manager> Getmanagers()
+		{
+			return ImanagerService.Getmanagers();
 		}
 
-		public void Removemanager(manager manager)
+		public Manager Getmanager(string name)
 		{
-			_managers.Remove(manager);
+			return ImanagerService.Getmanager(name);
+		}
+
+		public void Removemanager(Manager manager)
+		{
+            ImanagerService.Removemanager(manager);
 		}
 		
-		public static async Task StartManagersFromDB(List<Httpmanager> _httpmanagers)
+		public static async Task StartManagersFromDB(List<HttpManager> _httpmanagers)
 		{
 			var _EngineerService = new EngineerService();
-			foreach (Httpmanager _manager in _httpmanagers)
+			foreach (HttpManager _manager in _httpmanagers)
 			{
-				Console.WriteLine($"Calling Init on {_manager.Name}");
-				_manager.Init();
+				Console.WriteLine($"Calling start on {_manager.Name}");
 				_manager.Start();
 				Console.WriteLine($"{_manager.Name} started should be listening on {_manager.BindAddress}:{_manager.BindPort}");
 			}

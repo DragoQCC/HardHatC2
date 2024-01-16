@@ -1,13 +1,12 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
 using System.Collections.Generic;
-using System;
 using System.Threading.Tasks;
-using HardHatCore.ApiModels.Plugin_Interfaces;
 using HardHatCore.ApiModels.Plugin_BaseClasses;
+using HardHatCore.ApiModels.Shared;
 
 namespace HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants
 {
-    public interface IExtImplant
+    public interface IExtImplant : IExtImplantData
     {
         public ExtImplantMetadata_Base Metadata { get; set; }
         public string ImplantType { get; set; }
@@ -20,11 +19,11 @@ namespace HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants
         public string Status { get; set; }
 
 
-
         public Task CheckIn();
-        public IEnumerable<ExtImplantTask_Base> GetPendingTasks();
+        public Task<IEnumerable<ExtImplantTask_Base>> GetPendingTasks();
+        public Task<IEnumerable<AssetNotification>> GetAssetNotifications();
         public Task<bool> QueueTask(ExtImplantTask_Base task);
-        public ExtImplantTaskResult_Base GetTaskResult(string taskId);
+        public Task<ExtImplantTaskResult_Base> GetTaskResult(string taskId);
         public Task<IEnumerable<ExtImplantTaskResult_Base>> GetTaskResults();
         public Task AddTaskResults(IEnumerable<ExtImplantTaskResult_Base> results);
         public Task AddTaskResult(ExtImplantTaskResult_Base result);

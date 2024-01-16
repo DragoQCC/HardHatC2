@@ -17,7 +17,39 @@
     --link: #3ca4ff;
 }
 
-html, body {
+
+.mud-popover.mud-popover-open {
+    opacity: 1;
+    transition: opacity;
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(5px) !important;
+    transform-origin: top center;
+
+}
+
+.mud-badge {
+    height: 15px !important;
+    min-width: 15px !important;
+    padding: 2px 4px !important;
+}
+
+.command-panel {
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(2px) !important;
+}
+
+.implant-table-header
+{
+    background-color: white;
+    color: black;
+}
+.implant-table-header-dark
+{
+    background-color: #333333;
+    color: white;
+}
+
+    html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif,;
 }
 

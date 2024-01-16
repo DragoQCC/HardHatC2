@@ -5,7 +5,7 @@
     <ChildContent>
         <MudForm @ref="ImpCommandForm" @bind-IsValid="@success">
             <MudTransferList Class="d-flex align-center justify-center" MaxItems="10" T="string" @bind-StartCollection="ImpCommandList" EndCollection="selectedImpCommandList" Color="Color.Primary"
-                              StyleListCommon="background-color: var(--mud-palette-background-grey); width: 300px" MultiSelection="true" SelectAllType="SelectAllType.Buttons"
+                             StyleListCommon="width: 300px;" MultiSelection="true" SelectAllType="SelectAllType.Buttons"
                                 OrderFunc="@OrderCheckFunc" ButtonVariant="Variant.Text" AllowDoubleClick="false" />
         </MudForm>
     </ChildContent>

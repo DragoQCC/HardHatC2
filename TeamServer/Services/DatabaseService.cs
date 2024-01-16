@@ -1,12 +1,10 @@
-﻿using SQLite;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using System.Threading;
-using HardHatCore.ApiModels.Shared;
+using System.Threading.Tasks;
 using HardHatCore.ApiModels.Plugin_BaseClasses;
 using HardHatCore.TeamServer.Models;
 using HardHatCore.TeamServer.Models.Database;
@@ -14,11 +12,9 @@ using HardHatCore.TeamServer.Models.Dbstorage;
 using HardHatCore.TeamServer.Models.Extras;
 using HardHatCore.TeamServer.Models.Managers;
 using HardHatCore.TeamServer.Plugin_BaseClasses;
-using HardHatCore.TeamServer.Utilities;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
-using Newtonsoft.Json.Linq;
 using HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants;
-//using DynamicEngLoading;
+using HardHatCore.TeamServer.Utilities;
+using SQLite;
 
 namespace HardHatCore.TeamServer.Services
 {
@@ -172,14 +168,14 @@ namespace HardHatCore.TeamServer.Services
             {
                 Cred.CredList = await GetCreds();
                 HistoryEvent.HistoryEventList = await GetHistoryEvents();
-                //List<Httpmanager> httpManagers = await GetHttpManagers();
-                List<Httpmanager> httpManagers = await GetItemsOfType<Httpmanager>(typeof(Httpmanager), typeof(HttpManager_DAO));
-                managerService._managers.AddRange(httpManagers);
+                //List<HttpManager> httpManagers = await GetHttpManagers();
+                List<HttpManager> httpManagers = await GetItemsOfType<HttpManager>(typeof(HttpManager), typeof(HttpManager_DAO));
+                ImanagerService.AddManagers(httpManagers);
                 await managerService.StartManagersFromDB(httpManagers);
 
 
-                managerService._managers.AddRange(await GetTCPManagers());
-                managerService._managers.AddRange(await GetSMBManagers());
+                ImanagerService.AddManagers(await GetTCPManagers());
+                ImanagerService.AddManagers(await GetSMBManagers());
                 DownloadFile.downloadFiles = await GetDownloadedFiles();
                 UploadedFile.uploadedFileList = await GetUploadedFiles();
                 IExtImplantService._extImplants.AddRange(await GetExtImplants());
@@ -191,9 +187,9 @@ namespace HardHatCore.TeamServer.Services
                     {
                         Encryption.UniversialMetadataKey = key.Key;
                     }
-                    else if (key.ItemID == "UniversialMessagePathKey")
+                    else if (key.ItemID == "UniversialMessageKey")
                     {
-                        Encryption.UniversialMessagePathKey = key.Key;
+                        Encryption.UniversialMessageKey = key.Key;
                     }
                     else if (key.ItemID == "UniversalTaskEncryptionKey")
                     {
@@ -273,7 +269,7 @@ namespace HardHatCore.TeamServer.Services
         }
 
         //a function to return all httpManagers from the database
-        public static async Task<List<Httpmanager>> GetHttpManagers()
+        public static async Task<List<HttpManager>> GetHttpManagers()
         {
             try
             {
@@ -281,8 +277,8 @@ namespace HardHatCore.TeamServer.Services
                 {
                     ConnectDb();
                 }
-                var storedHttpManagers = AsyncConnection.Table<HttpManager_DAO>().ToListAsync().Result.Select(x => (Httpmanager)x);
-                List<Httpmanager> httpManagerList = new List<Httpmanager>(storedHttpManagers);
+                var storedHttpManagers = AsyncConnection.Table<HttpManager_DAO>().ToListAsync().Result.Select(x => (HttpManager)x);
+                List<HttpManager> httpManagerList = new List<HttpManager>(storedHttpManagers);
                 return httpManagerList;
             }
             catch (Exception ex)
@@ -315,7 +311,7 @@ namespace HardHatCore.TeamServer.Services
         }
 
         //a function to return all the smbManagers from the database
-        public static async Task<List<SMBmanager>> GetSMBManagers()
+        public static async Task<List<SMBManager>> GetSMBManagers()
         {
             try
             {
@@ -323,8 +319,8 @@ namespace HardHatCore.TeamServer.Services
                 {
                     ConnectDb();
                 }
-                var storedSMBManagers = AsyncConnection.Table<SMBManager_DAO>().ToListAsync().Result.Select(x => (SMBmanager)x);
-                List<SMBmanager> smbManagerList = new List<SMBmanager>(storedSMBManagers);
+                var storedSMBManagers = AsyncConnection.Table<SMBManager_DAO>().ToListAsync().Result.Select(x => (SMBManager)x);
+                List<SMBManager> smbManagerList = new List<SMBManager>(storedSMBManagers);
                 return smbManagerList;
             }
             catch (Exception ex)
@@ -412,6 +408,24 @@ namespace HardHatCore.TeamServer.Services
                 Console.WriteLine($"restored {extimplantList.Count} implants from the database");
                 IExtImplantService.ImplantNumber = extimplantList.Count;
                 return extimplantList;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
+                return null;
+            }
+        }
+        public static async Task<ExtImplant_Base> GetExtImplant(string Id)
+        {
+            try
+            {
+                if (AsyncConnection == null)
+                {
+                    ConnectDb();
+                }
+                var storedExtImplant = AsyncConnection.Table<ExtImplant_DAO>().Where(x => x.id == Id).ToListAsync().Result.Select(x => (ExtImplant_Base)x).FirstOrDefault();
+                return storedExtImplant;
             }
             catch (Exception ex)
             {

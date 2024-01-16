@@ -9,6 +9,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using DynamicEngLoading;
 using System.Reflection;
+using Engineer.Commands;
 
 namespace Engineer.Functions
 {
@@ -85,7 +86,7 @@ namespace Engineer.Functions
                 {
                     taskResult.IsHidden = ((EngineerCommand)command).IsHidden;
                     AddTaskResult(taskResult);
-                    var result = command.Execute(task);
+                    await command.Execute(task);
                 }
             }
             catch (Exception ex)
@@ -139,49 +140,52 @@ namespace Engineer.Functions
                     }
                     engTaskResultDic[task.Id].Status = taskStatus;
                     engTaskResultDic[task.Id].ResponseType = taskResponseType;
-                    
-                    //if command is download then call the Functions.DownloadTracker.SplitFileString function, get the filename from the task.Arguments, and pass the result to the function
-                    if (task.Command.Equals("download", StringComparison.CurrentCultureIgnoreCase))
+
+                    //make a new task result item to store the result so the main dictionary can be updated
+                    var NewtaskResult = new EngineerTaskResult
                     {
-                        if (engTaskResultDic[task.Id].Status == EngTaskStatus.Complete)
+                        Id = engTaskResultDic[task.Id].Id,
+                        Command = engTaskResultDic[task.Id].Command,
+                        Result = engTaskResultDic[task.Id].Result,
+                        IsHidden = engTaskResultDic[task.Id].IsHidden,
+                        Status = engTaskResultDic[task.Id].Status,
+                        ImplantId = engTaskResultDic[task.Id].ImplantId,
+                        ResponseType = engTaskResultDic[task.Id].ResponseType,
+                    };
+
+                    //if command is download then call the Functions.DownloadTracker.SplitFileString function, get the filename from the task.Arguments, and pass the result to the function
+                    if (NewtaskResult.Command.Equals("download", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        if (NewtaskResult.Status == EngTaskStatus.Complete)
                         {
-                            var fileParts = Functions.DownloadTracker.SplitFileString(engTaskResultDic[task.Id].Result);
+                            var fileParts = Functions.DownloadTracker.SplitFileString(NewtaskResult.Result);
                             //send each value from the key that matches the filename variable in _downloadedFileParts to the server
                             foreach (var value in fileParts)
                             {
-                                engTaskResultDic[task.Id].Result = value.JsonSerialize();
-                                SendTaskResult(engTaskResultDic[task.Id], true).Wait();
+                                NewtaskResult.Result = value.JsonSerialize();
+                                SendTaskResult(NewtaskResult, true).Wait();
                             }
                         }
                         else
                         {
-                            SendTaskResult(engTaskResultDic[task.Id], Program.IsDataChunked).Wait();
+                            SendTaskResult(NewtaskResult, Program.IsDataChunked).Wait();
                         }
                     }
                     else if (task.Command.Equals("P2PFirstTimeCheckIn", StringComparison.CurrentCultureIgnoreCase))
                     {
-                        engTaskResultDic[task.Id].IsHidden = true;
-                        SendTaskResult(engTaskResultDic[task.Id], Program.IsDataChunked);
-                    }
-                    else if(task.Command.Equals("socksSend",StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        engTaskResultDic.TryRemove(task.Id, out _);
-                        engTaskDic.TryRemove(task.Id, out _);
-                        //do nothing I just want to skip posting nothing to the server since this command is just for the engineer to push traffic to the sock client on this end
+                        NewtaskResult.IsHidden = true;
+                        SendTaskResult(NewtaskResult, Program.IsDataChunked);
                     }
                     else
                     {
-                        SendTaskResult(engTaskResultDic[task.Id], Program.IsDataChunked);
+                        SendTaskResult(NewtaskResult, Program.IsDataChunked);
                     }
-                    if (engTaskResultDic.ContainsKey(task.Id) && engTaskResultDic[task.Id].Status != EngTaskStatus.Running)
+                    if (engTaskResultDic.ContainsKey(task.Id) && NewtaskResult.Status != EngTaskStatus.Running)
                     {
-                        //if task is not running then remove it from the dictionary to save memory
-                        //Thread.Sleep(100);
                         engTaskResultDic.TryRemove(task.Id, out _);
                         engTaskDic.TryRemove(task.Id, out _);
                     }
                 }
-                
             }
             catch (Exception e)
             {
@@ -194,23 +198,10 @@ namespace Engineer.Functions
         {
             try
             {
-                //DEBUG
-                ///isDataChunked = false;
-                //DEBUG
-                var NewtaskResult = new EngineerTaskResult
-                {
-                    Id = taskResult.Id,
-                    Command = taskResult.Command,
-                    Result = taskResult.Result,
-                    IsHidden = taskResult.IsHidden,
-                    Status = taskResult.Status,
-                    ImplantId = taskResult.ImplantId,
-                    ResponseType = taskResult.ResponseType,
-                };
-                if (Program.ManagerType.Equals("http", StringComparison.CurrentCultureIgnoreCase))
+                if (Program.ManagerType.Equals("http", StringComparison.CurrentCultureIgnoreCase) || Program.ManagerType.Equals("https", StringComparison.CurrentCultureIgnoreCase))
                 {
                     //Console.WriteLine("is http calling send data");
-                    if (isDataChunked && NewtaskResult.Result.Length >= Program.ChunkSize)
+                    if (isDataChunked && taskResult.Result.Length >= Program.ChunkSize)
                     {
                         List<DataChunk> chunkedData = new();
                         var chunkDataModule = Program.typesWithModuleAttribute.FirstOrDefault(attr => attr.Name.Equals("DataChunk", StringComparison.OrdinalIgnoreCase));
@@ -221,44 +212,33 @@ namespace Engineer.Functions
                             if (method != null)
                             {
                                 // Call the method , first argument is null because it's a static method
-                                chunkedData = (List<DataChunk>)method.Invoke(null, new object[] { NewtaskResult.Result, Program.ChunkSize, NewtaskResult.ResponseType });
+                                chunkedData = (List<DataChunk>)method.Invoke(null, new object[] { taskResult.Result, Program.ChunkSize, taskResult.ResponseType });
                             }
                         }
                         foreach (var chunk in chunkedData)
                         {
-                            NewtaskResult.Result = chunk.JsonSerialize();
-                            NewtaskResult.ResponseType = TaskResponseType.DataChunk;
-                            Console.WriteLine($"{DateTime.UtcNow} calling SentData With ChunkedData for command {NewtaskResult.Command} data size {chunk.Length}");
-                            Program._commModule.SentData(NewtaskResult, isDataChunked);
+                            taskResult.Result = chunk.JsonSerialize();
+                            taskResult.ResponseType = TaskResponseType.DataChunk;
+                            Console.WriteLine($"{DateTime.UtcNow} calling SentData With ChunkedData for command {taskResult.Command} data size {chunk.Length}");
+                            Program._commModule.SentData(taskResult, isDataChunked);
                             //perform a sleep cycle to allow the server to process the data
                             await Task.Delay(EngCommBase.Sleep);
                         }
                     }
                     else
                     {
-                        Program._commModule.SentData(NewtaskResult, isDataChunked);
+                        Program._commModule.SentData(taskResult, isDataChunked);
                     }
                 }
-
-                else if (Program.ManagerType.Equals("tcp", StringComparison.CurrentCultureIgnoreCase))
+                else
                 {
                     //Console.WriteLine("is tcp seralizing task result");
-                    IEnumerable<EngineerTaskResult> tempResult = new List<EngineerTaskResult> { NewtaskResult };
+                    IEnumerable<EngineerTaskResult> tempResult = new List<EngineerTaskResult> { taskResult };
                     var SeraliedTaskResult = tempResult.JsonSerialize();
                     var encryptedTaskResult = Encryption.AES_Encrypt(SeraliedTaskResult,"", Program.UniqueTaskKey);
                     //Console.WriteLine($"{DateTime.UtcNow} calling p2p Sent");
-                    Task.Run(async () => await Program._commModule.P2PSent(encryptedTaskResult));
+                    await Program._commModule.P2PSent(encryptedTaskResult);
                 }
-
-                else if (Program.ManagerType.Equals("smb", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    IEnumerable<EngineerTaskResult> tempResult = new List<EngineerTaskResult> { NewtaskResult };
-                    var SeraliedTaskResult = tempResult.JsonSerialize();
-                    var encryptedTaskResult = Encryption.AES_Encrypt(SeraliedTaskResult, "", Program.UniqueTaskKey);
-                    //Console.WriteLine($"{DateTime.UtcNow} calling p2p Sent");
-                    Task.Run(async () => await Program._commModule.P2PSent(encryptedTaskResult));
-                }
-
             }
             catch (Exception e)
             {
@@ -266,6 +246,52 @@ namespace Engineer.Functions
                 Console.WriteLine(e.StackTrace);
             }
         }
-        
+
+        public static async Task CreateOutboundNotif(string assetId, string notifName, Dictionary<string, byte[]> notifData, bool forwardToClient)
+        {
+            AssetNotification notifToSend = new AssetNotification()
+            {
+                AssetId = assetId,
+                NotificationName = notifName,
+                NotificationType = null,
+                NotificationData = notifData,
+                ForwardToClient = forwardToClient,
+            };
+            if (Program.ManagerType.Equals("http", StringComparison.CurrentCultureIgnoreCase) || Program.ManagerType.Equals("https", StringComparison.CurrentCultureIgnoreCase))
+            {
+                Program._commModule.OutboundAssetNotifs.Enqueue(notifToSend);
+            }
+            else
+            {
+                IEnumerable<AssetNotification> notifs = new List<AssetNotification> { notifToSend };
+                var serializedNotifList = notifs.JsonSerialize();
+                var wencryptedNotifList = Encryption.AES_Encrypt(serializedNotifList, "", Program.UniqueTaskKey);
+                await Program._commModule.P2PSent(wencryptedNotifList);
+            }
+        }
+
+        public static async Task HandleInboundNotifs(List<AssetNotification> _notifs)
+        {
+            foreach (AssetNotification _notif in _notifs)
+            {
+                await ProcessNotif(_notif);
+            }
+        }
+
+        private static async Task ProcessNotif(AssetNotification notif)
+        {
+            if(notif.NotificationName.Equals("socksconnect",StringComparison.CurrentCultureIgnoreCase))
+            {
+                await socksConnect.Execute(notif);
+            }
+            else if(notif.NotificationName.Equals("sockssend", StringComparison.CurrentCultureIgnoreCase))
+            {
+                await SocksSend.Execute(notif);
+            }
+            else if(notif.NotificationName.Equals("vncheartbeat", StringComparison.CurrentCultureIgnoreCase))
+            { 
+
+            }
+        }
     }
 }

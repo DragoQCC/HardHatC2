@@ -1,33 +1,32 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System;
+using System.IO;
+using System.Net.Security;
+using System.Security;
+using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using Microsoft.AspNetCore.Server.Kestrel.Https;
-using System.Net.Security;
-using System.IO;
-using System.Security;
-using HardHatCore.TeamServer.Models.Extras;
-using System.Linq;
-using System.Collections.Generic;
-using System.Security.Authentication;
-using Microsoft.Extensions.Options;
+using System.Threading;
+using System.Threading.Tasks;
+using FastEndpoints;
+using HardHatCore.ApiModels.Aspects.ContractorSystem_InvocationPoints;
 using HardHatCore.ApiModels.Shared;
+using HardHatCore.TeamServer.Endpoints.ConfigModels;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.Kestrel.Https;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace HardHatCore.TeamServer.Models
 {
-    public class Httpmanager : manager
+    public class HttpManager : Manager
     {
-        public override string Name { get; set; } // properties allows us to get Name when manager is created later so set will go with creation functions later
-        public int ConnectionPort { get; set; }         // connection location for engineers created with this manager
-        public string ConnectionAddress { get; set; }   // connection location for engineers created with this manager
+        public override string Name { get; set; } // properties allows us to get Name when Manager is created later so set will go with creation functions later
+        public int ConnectionPort { get; set; }         // connection location for engineers created with this Manager
+        public string ConnectionAddress { get; set; }   // connection location for engineers created with this Manager
         public string BindAddress { get; set; }         // local teamserver address to bind to
         public int BindPort { get; set; }               // local teamserver port to bind to 
-        public bool Active => _tokenSource is not null && !_tokenSource.IsCancellationRequested;     // active is true when manager is running which is whenever the token source is not null and not cancelled
+        public bool Active => _tokenSource is not null && !_tokenSource.IsCancellationRequested;     // active is true when Manager is running which is whenever the token source is not null and not cancelled
         public bool IsSecure { get; set; }
         public string CertificatePath { get; set; }
         public string CertificatePassword { get; set; } = "p@ssw0rd";
@@ -42,7 +41,7 @@ namespace HardHatCore.TeamServer.Models
         
 
 
-        public Httpmanager(string name, string connectionAddress,int connectionPort ,string bindAddress,int bindPort, bool isSecure, C2Profile profile)    //Constructor for Httpmanager
+        private HttpManager(string name, string connectionAddress,int connectionPort ,string bindAddress,int bindPort, bool isSecure, C2Profile profile)    //Constructor for HttpManager
         {
             Name = name;
             ConnectionPort = connectionPort;
@@ -53,8 +52,19 @@ namespace HardHatCore.TeamServer.Models
             c2Profile = profile;
         }
 
-        public Httpmanager() { }
+        public HttpManager() { }
 
+        [FuncCallAspect(
+            "OnHttpManagerCreate",
+            "Fires when a new HttpManager is created. Hook on Start to get the creation args of (name, address, port, bind address, bind port, is secure, and the C2 profile). Hook the End to get the created HttpManager",
+            "TeamServer"
+            )
+        ]
+        public static HttpManager HttpManagerFactoryFunc(string name, string connectionAddress, int connectionPort, string bindAddress, int bindPort, bool isSecure, C2Profile profile)
+        {
+            return new HttpManager(name, connectionAddress, connectionPort, bindAddress, bindPort, isSecure, profile);
+        }
+        
         public override async Task Start()
         {
             try
@@ -79,7 +89,6 @@ namespace HardHatCore.TeamServer.Models
                             {
                                 listenOptions.UseHttps(new X509Certificate2(CertificatePath, CertificatePassword));
                                 listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1AndHttp2AndHttp3;
-
                             });
                             //set connectionOptions to make sure client has a cert
                             serverOptions.ConfigureHttpsDefaults(httpsOptions =>
@@ -146,32 +155,36 @@ namespace HardHatCore.TeamServer.Models
 
         private void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
-            //services.AddSingleton(EngineerService);
+            //allows the urls the endpoint should listen on to be injected automatically
+            var assetURLs = new AssetCommUrls();
+            assetURLs.Urls = c2Profile.Urls.ToArray();
+            services.AddSingleton(assetURLs);
+            //adds fast endpoints and makes sure to filter out the ones that are not needed
+            services.AddFastEndpoints(c =>
+            {
+                c.Filter = (x => 
+                { 
+                    if (x.Name.Contains("HandleAsset")) { return true; } return false; 
+                });
+            });
+            
         }
 
         private void ConfigureApp(IApplicationBuilder app)
         {
-            
             app.UseRouting();
-            List<string> urls = c2Profile.Urls;
-            List<string> eventurls = c2Profile.EventUrls;
-            foreach (string url in urls)
+            //List<string> urls = c2Profile.Urls;
+            app.UseEndpoints(e =>
             {
-                app.UseEndpoints(e =>
+                e.MapFastEndpoints(c =>
                 {
-                e.MapControllerRoute(url, url, new { controller = "Httpmanager", action = "HandleImplant" });
+                    c.Endpoints.Configurator = (x) =>
+                    {
+                        x.AllowAnonymous();
+                    };
                 });
-            }
-            foreach (string url in eventurls)
-            {
-                app.UseEndpoints(e =>
-                {
-                    e.MapControllerRoute(url, url, new { controller = "Httpmanager", action = "HandleImplantEvent" });
-                });
-            }
+            });
             app.UseStaticFiles();
-
         }
 
         public override void Stop()

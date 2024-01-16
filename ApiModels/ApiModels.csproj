@@ -1,7 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Platforms>AnyCPU;x64</Platforms>
     <LangVersion>latestmajor</LangVersion>
     <Nullable>enable</Nullable>
@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FastEndpoints" Version="5.21.2" />
+    <PackageReference Include="FastEndpoints.Security" Version="5.21.2" />
+    <PackageReference Include="FastEndpoints.Swagger" Version="5.21.2" />
+    <PackageReference Include="Metalama.Framework" Version="2024.0.6" />
     <PackageReference Include="RestSharp" Version="110.2.0" />
   </ItemGroup>
 

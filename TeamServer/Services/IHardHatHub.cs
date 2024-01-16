@@ -1,4 +1,6 @@
-﻿using HardHatCore.ApiModels.Plugin_BaseClasses;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using HardHatCore.ApiModels.Plugin_BaseClasses;
 using HardHatCore.ApiModels.Shared;
 using HardHatCore.ApiModels.Shared.TaskResultTypes;
 using HardHatCore.TeamServer.Models;
@@ -6,8 +8,6 @@ using HardHatCore.TeamServer.Models.Extras;
 using HardHatCore.TeamServer.Models.InteractiveTerminal;
 using HardHatCore.TeamServer.Models.Managers;
 using HardHatCore.TeamServer.Plugin_BaseClasses;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using static HardHatCore.TeamServer.Models.Extras.HelpMenuItem;
 using static HardHatCore.TeamServer.Models.Extras.ReconCenterEntity;
 
@@ -24,9 +24,9 @@ namespace HardHatCore.TeamServer.Services
         Task UpdateImplantNote(string engId, string note);
         Task CheckInImplant(ExtImplant_Base implant);
         Task UpdateOutgoingTaskDic(ExtImplant_Base implant, List<ExtImplantTask_Base> task);
-        Task UpdateManagerList(manager manager);
-        Task GetExistingManagerList(List<Httpmanager> httpManagers);
-        Task GetExistingManagerList(List<SMBmanager> smbManagers);
+        Task UpdateManagerList(Manager manager);
+        Task GetExistingManagerList(List<HttpManager> httpManagers);
+        Task GetExistingManagerList(List<SMBManager> smbManagers);
         Task GetExistingManagerList(List<TCPManager> tcpManagers);
         Task GetExistingTaskInfo(ExtImplant_Base implant, List<ExtImplantTask_Base> results);
         Task GetExistingHistoryEvents(List<HistoryEvent> historyEvents);
@@ -42,7 +42,9 @@ namespace HardHatCore.TeamServer.Services
         Task UpdateTabContent(InteractiveTerminalCommand interactiveTerminalCommand);
         Task AddIOCFile(IOCFile iocFile);
         Task AddCompiledImplant(CompiledImplant compiledImplant);
-        Task SendTaskResults(ExtImplant_Base implant, List<string> taskIds);
+        Task SendTaskResultIds(ExtImplant_Base implant, List<string> taskIds);
+        Task SendTaskResults(ExtImplant_Base implant, List<ExtImplantTaskResult_Base> tasksResults);
+        Task SendTaskResult(ExtImplant_Base implant, ExtImplantTaskResult_Base tasksResult);
         Task NotifyTaskDeletion(string implantId, string taskId);
         Task NotifyVNCInteractionResponse(VncInteractionResponse vncResponse, VNCSessionMetadata vncSessionMetadata);
     }

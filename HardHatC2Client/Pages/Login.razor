@@ -24,6 +24,7 @@
                 <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
                     <MudTextField Variant="Variant.Outlined" T="string" @bind-Value="UserName" Label="Username" Required="true" RequiredError="User name is required!" />
                     <MudTextField Variant="Variant.Outlined" T="string" @bind-Value="Password" Label="Password" @ref="pwField1" InputType="InputType.Password" Required="true" RequiredError="Password is required!" />
+                    <br/>
                     <div class="d-flex align-center justify-space-between">
                         <MudButton DisableElevation="true" Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" Class="ml-auto" @onclick="@handleValidLogin">Login</MudButton>
                     </div>
@@ -44,11 +45,11 @@
     public static RestClient _restClient { get; set; }
     private static ToastService _toastService;
     private static NavigationManager _Nav;
-    private MudForm form;
+    private MudForm form { get; set; }
     private string UserName { get; set; }
     private string Password { get; set; }
-    private bool success;
-    private string[] errors;
+    private bool success { get; set; }
+    private string[] errors { get; set; }
     private MudTextField<string> pwField1;
     private MudTextField<string> pwField2;
     private MudTabs tabs;

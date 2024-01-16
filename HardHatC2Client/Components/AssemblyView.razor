@@ -14,6 +14,7 @@
 @using System.Reflection.PortableExecutable;
 @inject IJSRuntime JSRuntime;
 
+
 @if (loading)
 {
     <MudPaper Style="height: 300px; position: relative;" Width=100% Outlined="true">
@@ -70,6 +71,7 @@
 
 
 @code {
+#pragma warning disable LAMA0117 // this should still let me use the roslyn compiler without conflicting with MetaLama
     [Parameter]
     public byte[] Src { get; set; }
     [Parameter]

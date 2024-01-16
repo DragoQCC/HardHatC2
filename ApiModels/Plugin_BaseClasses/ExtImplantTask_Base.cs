@@ -10,26 +10,10 @@ namespace HardHatCore.ApiModels.Plugin_BaseClasses
     [Serializable]
     public class ExtImplantTask_Base : IExtImplantTask
     {
-        public ExtImplantTask_Base(string taskID, string command, Dictionary<string, string> arguments, byte[] file, bool isBlocking, bool req_preProc, bool req_PostProc, string Taskheader, string issuingUser, string implantId)
-        {
-            Id = taskID;
-            Command = command;
-            Arguments = arguments;
-            File = file;
-            IsBlocking = isBlocking;
-            RequiresPreProc = req_preProc;
-            RequiresPostProc = req_PostProc;
-            TaskHeader = Taskheader;
-            IssuingUser = issuingUser;
-            ImplantId = implantId;
-        }
-
-        public ExtImplantTask_Base() { }
-
-        public string Id { get; set; }
+        public string Id { get; init; }
         public string Command { get; set; }
         public Dictionary<string, string> Arguments { get; set; }
-        public byte[] File { get; set; }
+        public byte[]? File { get; set; }
         public bool IsBlocking { get; set; }
         
         //these values here are for the server to use not the implant
@@ -38,6 +22,24 @@ namespace HardHatCore.ApiModels.Plugin_BaseClasses
         public string TaskHeader { get; set; }    
         public string IssuingUser { get; set; }
         public string ImplantId { get; set; }
+
+        public ExtImplantTask_Base(string command, Dictionary<string, string> arguments, byte[] file, bool isBlocking, bool req_preProc, bool req_PostProc, string issuingUser, string implantId)
+        {
+            Id = Guid.NewGuid().ToString();
+            Command = command;
+            Arguments = arguments;
+            File = file;
+            IsBlocking = isBlocking;
+            RequiresPreProc = req_preProc;
+            RequiresPostProc = req_PostProc;
+            IssuingUser = issuingUser;
+            ImplantId = implantId;
+
+            var args = arguments is null ? "" : string.Join(" ", arguments.Select(kvp => $"{kvp.Key} {kvp.Value}"));
+            TaskHeader = $"({DateTime.UtcNow.ToString("HH:mm:ss")}) {issuingUser} instructed implant to {Command + " " + args}\n";
+        }
+
+        public ExtImplantTask_Base() { }
 
 
         public override int GetHashCode()

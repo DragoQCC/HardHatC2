@@ -5,13 +5,12 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
-using HardHatCore.ApiModels.Shared;
 using HardHatCore.ApiModels.Plugin_Interfaces;
+using HardHatCore.ApiModels.Shared;
 using HardHatCore.TeamServer.Models;
 using HardHatCore.TeamServer.Models.Extras;
 using HardHatCore.TeamServer.Models.Managers;
 using HardHatCore.TeamServer.Utilities;
-using Microsoft.AspNetCore.Mvc.Formatters;
 
 namespace HardHatCore.TeamServer.Services
 {
@@ -33,7 +32,10 @@ namespace HardHatCore.TeamServer.Services
                 string filePath = pathSplit[0] + $"..{allPlatformPathSeperator}Engineer" + $"{allPlatformPathSeperator}Program.cs";
                 string file = System.IO.File.ReadAllText(filePath);
 
-                //usinf request.managerName to find the correct manager object and then get its BindAddress and BindPort from the manager object
+#if DEBUG
+                Console.WriteLine($"request has {request.Extras.Count} extra build parameters");
+#endif
+                //usinf request.managerName to find the correct Manager object and then get its BindAddress and BindPort from the Manager object
                 //then using the BindAddress and BindPort to update the file
                 string managerName = request.managerName;
                 int connectionAttempts = request.ConnectionAttempts ?? 500;
@@ -46,11 +48,11 @@ namespace HardHatCore.TeamServer.Services
                 string managerType = "";
 
 
-                foreach (manager m in managerService._managers)
+                foreach (Manager m in ImanagerService.Getmanagers())
                 {
                     if (m.Type == ManagerType.http || m.Type == ManagerType.https)
                     {
-                        Httpmanager manager = (Httpmanager)m;
+                        HttpManager manager = (HttpManager)m;
                         if (manager.Name == managerName)
                         {
                             managerType = manager.Type.ToString();
@@ -107,7 +109,7 @@ namespace HardHatCore.TeamServer.Services
 
                         if (m.Name == managerName)
                         {
-                            SMBmanager manager = (SMBmanager)m;
+                            SMBManager manager = (SMBManager)m;
                             //update file to update the BindPort, ListenPort, IsLocalHost Properties 
                             file = file.Replace("{{REPLACE_MANAGER_NAME}}", managerName);
                             file = file.Replace("{{REPLACE_MANAGER_TYPE}}", manager.Type.ToString());
@@ -143,7 +145,7 @@ namespace HardHatCore.TeamServer.Services
                 }
 
                 //update the two univerisal strings as well 
-                file = file.Replace("{{REPLACE_MESSAGE_PATH_KEY}}", Encryption.UniversialMessagePathKey); // used on C2 messages 
+                file = file.Replace("{{REPLACE_MESSAGE_PATH_KEY}}", Encryption.UniversialMessageKey); // used on C2 messages 
                 file = file.Replace("{{REPLACE_METADATA_KEY}}", Encryption.UniversialMetadataKey); // used on the metadata id header which is used to verify the implant is talking to the correct teamserver
 
                 //this gets updated after the first checkIn
@@ -178,8 +180,19 @@ namespace HardHatCore.TeamServer.Services
                         nonIncModules = Directory.GetFiles(pathSplit[0] + $"..{allPlatformPathSeperator}Engineer{allPlatformPathSeperator}Modules{allPlatformPathSeperator}", "*.cs").ToList().Where(x => !request.IncludedModules.Contains(Path.GetFileNameWithoutExtension(x), StringComparer.CurrentCultureIgnoreCase)).ToList();
                     }
                 }
-                
-                byte[] assemblyBytes = Utilities.Compile.GenerateEngCode(file, request.complieType, request.SleepType, nonIncCommands,nonIncModules);
+                bool IsDebugBuild = false;
+                if (request.Extras.Count > 0)
+                {
+                    foreach (SerializedExtras extra in request.Extras)
+                    {
+                        if (extra.ItemName.Equals("Debug Build", StringComparison.CurrentCultureIgnoreCase))
+                        {
+                            Console.WriteLine($"Debug Build supplied");
+                            IsDebugBuild = extra.ItemValue.Deserialize<bool>();
+                        }
+                    }
+                }
+                byte[] assemblyBytes = Utilities.Compile.GenerateEngCode(file, request.complieType, request.SleepType, nonIncCommands,nonIncModules,IsDebugBuild);
                 if (assemblyBytes is null)
                 {
                     result_message = "Failed to compile Engineer, check teamServer Console for errors.";

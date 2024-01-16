@@ -1,5 +1,4 @@
-﻿using System;
-using HardHatCore.TeamServer.Models.Extras;
+﻿using HardHatCore.TeamServer.Models.Extras;
 using SQLite;
 
 namespace HardHatCore.TeamServer.Models.Dbstorage

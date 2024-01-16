@@ -42,8 +42,6 @@ namespace Engineer.Commands
                         RedirectStandardError = true
                     }
                 };
-
-               // Console.WriteLine("Starting process");
                 process.Start();
 
                 string line;
@@ -51,23 +49,19 @@ namespace Engineer.Commands
                 {
                     output.AppendLine(line);
                 }
-
                 while ((line = process.StandardError.ReadLine()) != null)
                 {
                     error.AppendLine(line);
                 }
 
                 process.WaitForExit();
-
                 process.Dispose();
-                //Console.WriteLine("Shell command complete");
 
                 if (error.Length > 0)
                 {
                     output.AppendLine("Error:");
                     output.AppendLine(error.ToString());
                 }
-
                 ForwardingFunctions.ForwardingFunctionWrap.FillTaskResults(output.ToString(), task, EngTaskStatus.Complete, TaskResponseType.String);
             }
             catch (Exception ex)

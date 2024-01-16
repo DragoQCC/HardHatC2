@@ -1,9 +1,5 @@
 ﻿using HardHatCore.HardHatC2Client.Pages;
-using HardHatCore.HardHatC2Client.Plugin_BaseClasses;
-using System.ComponentModel.Composition;
 using HardHatCore.HardHatC2Client.Plugin_Interfaces;
-using static HardHatCore.HardHatC2Client.Utilities.CommandItem;
-using static HardHatCore.HardHatC2Client.Utilities.CommandKey;
 
 namespace HardHatCore.HardHatC2Client.Utilities;
 
@@ -62,11 +58,18 @@ public class CommandKey
     }   
 }
 
-[Export(typeof(IImplantCommandValidation))]
-[ExportMetadata("Name", "Default")]
-[ExportMetadata("Description", "This is the built in Implant Task Verification, override this if you need custom options when verifying tasks")]
+
 public class ImplantCommandValidation_Base : IImplantCommandValidation
 {
+    //name of the plugin, needs to be unique
+    public string Name { get; set; } = "Default";
+
+    public I_ImplantCommandValidationBaseData _metadata { get; set; } = new ImplantCommandValidationBaseData()
+    { 
+        Name = "Default",
+        Description = "This is the built in Implant Task Verification, override this if you need custom options when verifying tasks"
+    };
+
     public virtual List<string> GetRequiredCommandList()
     {
         return new List<string>() { "Addcommand", "AddModule", "connect", "CheckIn", "link", "FirstCheckIn", "exit", "socks", "rportforward", "canceltask", "GetCommands", "UpdateTaskKey" };
@@ -1219,10 +1222,20 @@ public class ImplantCommandValidation_Base : IImplantCommandValidation
             }
         },
     };
+
+
 }
 
-public interface IImplantCommandValidation
+public class ImplantCommandValidationBaseData : I_ImplantCommandValidationBaseData
 {
+    public string Name { get; set; }
+    public string Description { get; set; }
+}
+
+public interface IImplantCommandValidation : IClientPlugin
+{
+    public I_ImplantCommandValidationBaseData _metadata { get; set; }
+
     public static List<string> ManagerNames
     {
         get { return Managers.managersList.Select(manager => manager.Name).ToList(); }
@@ -1241,7 +1254,7 @@ public interface IImplantCommandValidation
     List<string> GetContextChangingCommands();
 }
 
-public interface ImplantCommandValidationBaseData : IClientPluginData
+public interface I_ImplantCommandValidationBaseData : IClientPluginData
 {
 
 }

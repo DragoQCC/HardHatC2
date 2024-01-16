@@ -120,5 +120,18 @@ namespace Engineer.Functions
                 Marshal.ZeroFreeBSTR(valuePtr);
             }
         }
+
+        //xor byte array with a key return byte array
+        public static byte[] Xor(byte[] data, string key)
+        {
+            byte[] keyBytes = Encoding.UTF8.GetBytes(key);
+            byte[] result = new byte[data.Length];
+            for (int i = 0; i < data.Length; i++)
+            {
+                result[i] = (byte)(data[i] ^ keyBytes[i % keyBytes.Length]);
+            }
+            return result;
+        }
+
     }
 }

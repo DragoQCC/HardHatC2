@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
 using HardHatCore.ApiModels.Plugin_BaseClasses;
-using HardHatCore.ApiModels.Shared;
-using SQLite;
 using HardHatCore.TeamServer.Utilities;
+using SQLite;
 //using DynamicEngLoading;
 
 namespace HardHatCore.TeamServer.Models.Dbstorage

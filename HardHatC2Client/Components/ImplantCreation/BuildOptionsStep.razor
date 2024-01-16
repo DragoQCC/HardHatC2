@@ -9,10 +9,10 @@
 <MudStep Icon="@Icons.Material.Outlined.Construction" Title="Build Options">
     <ChildContent>
         <MudForm @ref="buildStepForm" @bind-IsValid="@success">
-            <MudSelectExtended ValuePresenter="ValuePresenter.Text"  T="string" Clearable="true" Label="Manager" AnchorOrigin="Origin.BottomCenter" Variant="Variant.Filled" Required="true" @bind-value="formData.managerName" RequiredError="Type is required!">
+            <MudSelectExtended  ValuePresenter="ValuePresenter.Text" T="string" Clearable="true" Label="Manager" AnchorOrigin="Origin.BottomCenter" Variant="Variant.Filled" Required="true" @bind-value="formData.managerName" RequiredError="Type is required!">
                 @if (impCreationData.SupportedCommTypes.Contains("http", StringComparer.CurrentCultureIgnoreCase))
                 {
-                    <MudSelectItemGroupExtended  T="string" Text="HTTP" Sticky="true" Nested="true">
+                    <MudSelectItemGroupExtended   T="string" Text="HTTP" Sticky="true" Nested="true">
                         @foreach (Manager manager in @Managers.managersList.Where(x => x.Type == ManagerType.http))
                         {
                             <ItemTemplate>
@@ -100,7 +100,7 @@
             {
                 <div class="d-flex">
                     <MudDatePicker Variant="Variant.Filled" Class="mr-1 mb-4 mt-4" Clearable="true" Required="true" Label="Pick a kill date" @bind-Date="formData.selectedKillDate"></MudDatePicker>
-                <MudTimePicker Variant="Variant.Filled" Class="ml-1 mb-4 mt-4" Clearable="true" Label="Pick a time in UTC" Required="true" @bind-Time="formData.selectedKillTime"></MudTimePicker>
+                    <MudTimePicker Variant="Variant.Filled" Class="ml-1 mb-4 mt-4" Clearable="true" Label="Pick a time in UTC" Required="true" @bind-Time="formData.selectedKillTime"></MudTimePicker>
             </div>
             }
             @if (IsPostEx && impCreationData.SupportsPostEx)
@@ -145,6 +145,14 @@
             {
                 <MudCheckBox @bind-Checked="@formData.EncodeShellcode" Label="Encode Shellcode with SGN ?" Color="Color.Primary"></MudCheckBox>        
             }
+            @if(ExtraBuildOptions != null)
+            {
+                <MudCard Class="mb-4 mt-4">
+                    <MudCardContent>
+                        @ExtraBuildOptions
+                    </MudCardContent>
+                </MudCard>
+            }
         </MudForm>
     </ChildContent>
 </MudStep>
@@ -152,15 +160,25 @@
 @code {
     [Parameter, EditorRequired]
     public MudForm buildStepForm { get; set; }
-    //private ImplantCreationBaseData impCreationData { get; set; }
+    private RenderFragment ExtraBuildOptions { get; set; }
 
 
     protected override Task OnInitializedAsync()
     {
         if (impCreationData == null)
         {
-            impCreationData = PluginService.GetImplantCreationPluginData(ImplantName);
+            impCreationData = PluginService.GetImplantCreationPlugin(ImplantName)._metadata;
         }
+        ExtraBuildOptions = GetExtraBuildOptions();
         return base.OnInitializedAsync();
+    }
+
+    public virtual RenderFragment GetExtraBuildOptions()
+    {
+        return builder =>
+        {
+            builder.OpenComponent(0, typeof(ExtraBuildOptions));
+            builder.CloseComponent();
+        };
     }
 }

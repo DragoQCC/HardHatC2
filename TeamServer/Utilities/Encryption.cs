@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -12,94 +11,13 @@ namespace HardHatCore.TeamServer.Utilities
     public class Encryption
     {
         public static string UniversialMetadataKey = ""; // used to encrypt the metadata used in a header, which then can let you find the key for that implants metadata
-        public static string UniversialMessagePathKey = ""; // used to encrypt / decrypt path message info for C2 tasks
+        public static string UniversialMessageKey = ""; // used to encrypt / decrypt path message info for C2 tasks
         public static string UniversalTaskEncryptionKey = ""; // used to encrypt / decrypt the task encryption key for C2 tasks, only for the first task/ check-in
 
        public static Dictionary<string, string> UniqueTaskEncryptionKey = new Dictionary<string, string>(); // key is the implant id, value is the encrypted task encryption key
 
         public static List<string> FirstTimeEncryptionKeys = new List<string>(); // list of keys that have been used to encrypt the first time message
 
-
-        // Aes encryption is used to encrypt the data before sending it to the implant
-        public static byte[] Engineer_AES_Encrypt(byte[] bytesToBeEncrypted, string EncodedPassword)
-        {
-            try
-            {
-                //Console.WriteLine($"encrypting {bytesToBeEncrypted.Length} bytes");
-                // make passwordBytes array out of string H@rdH@tC2P@$$w0rd!
-                //byte[] passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(EncodedPassword));
-                byte[] passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes("H@rdH@tC2P@$$w0rd!"));
-
-                byte[] encryptedBytes = null;
-                byte[] saltBytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
-                using MemoryStream ms = new MemoryStream();
-                using (Aes aes = Aes.Create())
-                {
-                    aes.KeySize = 256;
-                    aes.BlockSize = 128;
-                    var key = new Rfc2898DeriveBytes(passwordBytes, saltBytes, 1000);
-                    aes.Key = key.GetBytes(aes.KeySize / 8);
-                    aes.IV = key.GetBytes(aes.BlockSize / 8);
-                    aes.Mode = CipherMode.CBC;
-                    aes.Padding = PaddingMode.PKCS7;
-                    using (var cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
-                    {
-                        cs.Write(bytesToBeEncrypted, 0, bytesToBeEncrypted.Length);
-                        cs.Close();
-                    }
-                
-                    aes.Clear();
-                }
-                
-
-                encryptedBytes = ms.ToArray();
-                return encryptedBytes;
-
-            }
-            catch (System.Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                return null;
-            }
-
-        }
-        // Aes decryption is used to decrypt the data after it has been received from the implant
-        public static byte[] Engineer_AES_Decrypt(byte[] bytesToBeDecrypted, string EncodedPassword)
-        {
-            try
-            {
-                // make passwordBytes array out of string H@rdH@tC2P@$$w0rd!
-                byte[] passwordBytes = SHA256.HashData(Encoding.UTF8.GetBytes("H@rdH@tC2P@$$w0rd!"));
-                //byte[] passwordBytes = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(EncodedPassword));
-
-                byte[] decryptedBytes = null;
-                byte[] saltBytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
-                using MemoryStream ms = new MemoryStream();
-                using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
-                {
-                    aes.KeySize = 256;
-                    aes.BlockSize = 128;
-                    var key = new Rfc2898DeriveBytes(passwordBytes, saltBytes, 1000);
-                    aes.Key = key.GetBytes(aes.KeySize / 8);
-                    aes.IV = key.GetBytes(aes.BlockSize / 8);
-                    aes.Mode = CipherMode.CBC;
-                    aes.Padding = PaddingMode.PKCS7;
-                    using (var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Write))
-                    {
-                        cs.Write(bytesToBeDecrypted, 0, bytesToBeDecrypted.Length);
-                        cs.Close();
-                    }
-                    aes.Clear();
-                }
-                decryptedBytes = ms.ToArray();
-                return decryptedBytes;
-            }
-            catch (System.Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                return null;
-            }
-        }
         
         //a function that takes in a string and xor's it with the UniversialMetadataKey and returns the encrypted string this string is the implant type 
         public static string EncryptImplantName(string implant_type)
@@ -146,6 +64,17 @@ namespace HardHatCore.TeamServer.Utilities
             }
         }
 
+        //takes in a byte array and a key to xor the data with, typically used for C2Messages but can be used for anything
+        public static byte[] XorMessage(byte[] message, string key)
+        {
+            byte[] output = new byte[message.Length];
+            for (int i = 0; i < message.Length; i++)
+            {
+                output[i] = (byte)(message[i] ^ key[i % key.Length]);
+            }
+            return output;
+        }
+
         public static byte[] GeneratePasswordBytes(string password)
         {
             return SHA256.HashData(Encoding.UTF8.GetBytes(password));
@@ -164,7 +93,7 @@ namespace HardHatCore.TeamServer.Utilities
             // generate a random key for the metadata id
             UniversialMetadataKey = GenerateRandomString(32);
             // generate a random key for the path message
-            UniversialMessagePathKey = GenerateRandomString(32);
+            UniversialMessageKey = GenerateRandomString(32);
             //task encryption key used during first check in 
             UniversalTaskEncryptionKey = GenerateRandomString(32);
             
@@ -173,7 +102,7 @@ namespace HardHatCore.TeamServer.Utilities
                 DatabaseService.ConnectDb();
             }
             DatabaseService.AsyncConnection.InsertAsync(new EncryptionKeys_DAO(){ItemID = "UniversialMetadataKey", Key = UniversialMetadataKey});
-            DatabaseService.AsyncConnection.InsertAsync(new EncryptionKeys_DAO(){ItemID = "UniversialMessagePathKey", Key = UniversialMessagePathKey});
+            DatabaseService.AsyncConnection.InsertAsync(new EncryptionKeys_DAO(){ItemID = "UniversialMessageKey", Key = UniversialMessageKey});
             DatabaseService.AsyncConnection.InsertAsync(new EncryptionKeys_DAO(){ItemID = "UniversalTaskEncryptionKey", Key = UniversalTaskEncryptionKey});
             
         }

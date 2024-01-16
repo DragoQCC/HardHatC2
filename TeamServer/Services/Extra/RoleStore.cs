@@ -1,8 +1,7 @@
-﻿using Microsoft.AspNetCore.Identity;
-using System.Collections.Generic;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using HardHatCore.TeamServer.Models.Database;
+using Microsoft.AspNetCore.Identity;
 
 namespace HardHatCore.TeamServer.Services.Extra
 {

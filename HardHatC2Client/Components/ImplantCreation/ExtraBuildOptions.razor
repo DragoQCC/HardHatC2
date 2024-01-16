@@ -1,0 +1,80 @@
+﻿@using HardHatCore.ApiModels.Shared
+@using System.Text
+@using HardHatCore.HardHatC2Client.Utilities
+@inherits ImplantCreation;
+
+@if(OptionalBuildExtras != null && OptionalBuildExtras.Any())
+{
+    // foreach item create a matching UI element based on the client UI type, assign it the value from the item and the name from the itemName property
+    @foreach (var extra in OptionalBuildExtras)
+    {
+        formData.Extras.Add(new SerializedExtras { ItemName = extra.ItemName, ClientUIType = extra.ClientUIType, ItemValue = extra.ItemValue });
+        @switch (extra.ClientUIType)
+        {
+            case SerialzedExtraClientUIType.CheckBox:
+                <MudCheckBox T="bool" @onchange="@((ChangeEventArgs e) => OnInput(e,extra.ItemName))">@extra.ItemName</MudCheckBox>
+                break;
+            case SerialzedExtraClientUIType.ColorPicker:
+                <MudColorPicker @onchange="@((ChangeEventArgs e) => OnInput(e,extra.ItemName))" />
+                break;
+            case SerialzedExtraClientUIType.DatePicker:
+                <MudDatePicker @onchange="@((ChangeEventArgs e) => OnInput(e,extra.ItemName))" />
+                break;
+            case SerialzedExtraClientUIType.DateTimePicker:
+                <MudTimePicker @onchange="@((ChangeEventArgs e) => OnInput(e,extra.ItemName))" PickerVariant="PickerVariant.Static" />
+                break;
+            case SerialzedExtraClientUIType.NumericField:
+                <MudNumericField T="int" @onchange="@((ChangeEventArgs e) => OnInput(e,extra.ItemName))" />
+                break;
+            case SerialzedExtraClientUIType.SingleSelect:
+                <MudSelect T="string" @onchange="@((ChangeEventArgs e) => OnInput(e,extra.ItemName))">
+                    @* Add options here *@
+                </MudSelect>
+                break;
+            case SerialzedExtraClientUIType.MultiSelect:
+                <MudSelect T="string" MultiSelection="true" @onchange="@((ChangeEventArgs e) => OnInput(e,extra.ItemName))">
+                    @* Add options here *@
+                </MudSelect>
+                break;
+            case SerialzedExtraClientUIType.TextField:
+                <MudTextField T="string" @onchange="@((ChangeEventArgs e) => OnInput(e,extra.ItemName))" />
+                break;
+            case SerialzedExtraClientUIType.ToggleSwitch:
+                <MudSwitch T="bool" @onchange="@((ChangeEventArgs e) => OnInput(e,extra.ItemName))" />
+                break;
+            default:
+                <p>Unknown type</p>
+                break;
+        }
+    }
+    
+}
+
+@code {
+    public List<SerializedExtras>? OptionalBuildExtras = null;
+    private Dictionary<string,byte[]>? tempListOfExtras = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        //this is where you can add extra build options that is not part of the base class
+        //this is an example of how to add a checkbox to the UI
+        OptionalBuildExtras = new List<SerializedExtras>()
+        { 
+            new SerializedExtras {
+                ItemName = "Debug Build",
+                ClientUIType = SerialzedExtraClientUIType.CheckBox,
+                ItemValue = Encoding.UTF8.GetBytes("false")
+            },
+        };
+    }
+
+    public void OnInput(ChangeEventArgs e, string itemName)
+    {
+        SerializedExtras boundItem = formData.Extras.FirstOrDefault(x => x.ItemName == itemName);
+        if (boundItem != null)
+        {
+            boundItem.ItemValue = e.Value.Serialize();
+        }
+    }
+
+}

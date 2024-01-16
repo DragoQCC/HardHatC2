@@ -1,6 +1,7 @@
 ﻿@page "/Index"
+@implements IDisposable
+@inject HotKeys HotKeys
 @inject IDialogService DialogService
-@using HardHatCore.HardHatC2Client.Components;
 
 <PageTitle>Index</PageTitle>
 <!--Insert table with 2 rows -->
@@ -9,7 +10,7 @@
         <Authorized>
             <!--Top Images -->
             <div class = "row-cols-md-auto">
-                <img class="rounded mx-auto d-block responsive-image" src="Images/MainIcon_Orange_shadows.png"/>
+                <img class="rounded mx-auto d-block responsive-image" src="Images/HardHat C2-Orange logo4K-1.svg" style="height: 40vh; Width: 30vw;" />
                 <hr>
             </div>
     
@@ -28,7 +29,7 @@
                         Engineers serve as the connection from the target machine. They connect back to the Manager and send the commands to the target machine and send back the results to the Teamserver.
                     </MudExpansionPanel>
                     <MudExpansionPanel Text="More Help.">
-                        For more in depth details visit the docs at <a href="https://docs.hardhat-c2.net/">Docs.</a>
+                        For more in depth details visit the docs at <a href="https://docs.hhcore.io/">Docs.</a>
                     </MudExpansionPanel>
                 </MudExpansionPanels>
                 <br>
@@ -39,7 +40,7 @@
             <div class="container-lg mt-xxl-5 text-center mb-lg-5 pb-lg-5">
                 <button class="btn btn-outline-success btn-lg pt-xl-5 pb-xl-5 px-xl-4 mx-lg-4 shadow-lg" style="display:inline-block" onclick="window.location.href='/Managers'">Create Manager</button>
                 <button class="btn btn-outline-warning btn-lg pt-xl-5 pb-xl-5 px-xl-4 mx-lg-4 shadow-lg" style="display:inline-block" onclick="window.location.href='/Implants'">Create Engineer</button>	
-                <button class="btn btn-outline-primary btn-lg pt-xl-5 pb-xl-5 px-xl-5 mx-lg-4 shadow-lg" style="display:inline-block" onclick="window.location.href='/Interact'">Interact</button>
+                <button class="btn btn-outline-primary btn-lg pt-xl-5 pb-xl-5 px-xl-5 mx-lg-4 shadow-lg" style="display:inline-block" onclick="window.location.href='/ImplantInteract'">Interact</button>
             </div>
             <br>
         </Authorized>
@@ -63,7 +64,7 @@
     [Inject]
     public NavigationManager Nav { get; set; }
 
-
+    private HotKeysContext? HotKeysContext;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -71,7 +72,7 @@
         if (firstRender)
         {
             if(Login.SignedInUser == null)
-{
+            {
                 await DialogService.ShowMessageBox("Please Login", "You must login to use HardHat C2");
                 Nav.NavigateTo("Login");
             }
@@ -81,6 +82,17 @@
                 Nav.NavigateTo("Settings");
             }
         }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        
+    }
+
+
+    public void Dispose()
+    {
+        this.HotKeysContext?.Dispose();
     }
 }
 

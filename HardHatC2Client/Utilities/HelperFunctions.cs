@@ -1,9 +1,9 @@
-﻿using System.Text.RegularExpressions;
-using System.Reflection.Metadata;
+﻿using System.Security;
+using System.Text.RegularExpressions;
 using HardHatCore.ApiModels.Plugin_BaseClasses;
 using HardHatCore.ApiModels.Plugin_Interfaces;
-using System.Security;
 using HardHatCore.HardHatC2Client.Plugin_Interfaces;
+using ElectronNET;
 
 namespace HardHatCore.HardHatC2Client.Utilities
 {
@@ -12,10 +12,14 @@ namespace HardHatCore.HardHatC2Client.Utilities
 
         public static string PlatPathSeperator = Path.DirectorySeparatorChar.ToString();
         public static string PathingTraverseUpString = ".." + PlatPathSeperator;
+        private static string baseFolder = "";
 
         public static string GetBaseFolderLocation()
         {
-            string baseFolder = "";
+            if(String.IsNullOrWhiteSpace(baseFolder) is false)
+            {
+                return baseFolder;
+            }
             try
             {
                 baseFolder = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
@@ -24,21 +28,28 @@ namespace HardHatCore.HardHatC2Client.Utilities
             {
                 baseFolder = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
             }
-            string[] basefolderarray = baseFolder.Replace("\\", PlatPathSeperator).Split("bin");
-            return basefolderarray[0];
+            if(string.IsNullOrWhiteSpace(baseFolder) && Program.isElectron)
+            {
+                //use the electron api to get the base folder
+                baseFolder = ElectronNET.API.Electron.App.GetAppPathAsync().Result;
+            }
+            Console.WriteLine($"base folder path is {baseFolder}");
+            string[] basefolderarray = baseFolder.Replace("\\", PlatPathSeperator).Split("HardHatC2Client");
+            baseFolder = basefolderarray[0] + PlatPathSeperator + "HardHatC2Client" + PlatPathSeperator;
+            return baseFolder;
         }
 
         //finds the target plugin by name and returns the first one it finds or the default if it cant find the target
-        public static Lazy<T1, T2> GetPluginEnumerableResult<T1, T2>(this IEnumerable<Lazy<T1, T2>> plugins, string targetName) where T2 : IClientPluginData
+        public static T GetPluginEnumerableResult<T>(this IEnumerable<T> plugins, string targetName) where T : IClientPlugin
         {
             if (targetName == null || targetName == string.Empty)
             {
-                return plugins.First(x => x.Metadata.Name.Equals("Default", StringComparison.CurrentCultureIgnoreCase));
+                return plugins.First(x => x.Name.Equals("Default", StringComparison.CurrentCultureIgnoreCase));
             }
             else
             {
-                return plugins.FirstOrDefault(x => x.Metadata.Name.Equals(targetName, StringComparison.CurrentCultureIgnoreCase))
-                    ?? plugins.First(x => x.Metadata.Name.Equals("Default", StringComparison.CurrentCultureIgnoreCase));
+                return plugins.FirstOrDefault(x => x.Name.Equals(targetName, StringComparison.CurrentCultureIgnoreCase))
+                    ?? plugins.First(x => x.Name.Equals("Default", StringComparison.CurrentCultureIgnoreCase));
             }
         }
 

@@ -1,5 +1,4 @@
 ﻿using HardHatCore.ApiModels.Plugin_Interfaces;
-using HardHatCore.ApiModels.Shared;
 
 namespace HardHatCore.TeamServer.Models.TaskResultTypes
 {

@@ -1,12 +1,12 @@
 ﻿using System;
-using System.IO;
-using System.Text.Json;
-using NetSerializer;
 using System.Collections.Generic;
-using HardHatCore.ApiModels.Requests;
+using System.IO;
 using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
 using HardHatCore.ApiModels.Shared;
 using HardHatCore.TeamServer.Models.Extras;
+using NetSerializer;
 
 namespace HardHatCore.TeamServer.Utilities
 {
@@ -45,7 +45,25 @@ namespace HardHatCore.TeamServer.Utilities
                 return null;
             }
         }
-        
+
+        public static async Task<byte[]> SerializeAsync<T>(this T data)
+        {
+            try
+            {
+                using (var ms = new MemoryStream())
+                {
+                    await JsonSerializer.SerializeAsync(ms, data);
+                    return ms.ToArray();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
+                return null;
+            }
+        }
+
         public static byte[] ProSerialiseForDatabase<T>(this T data)
         {
             try

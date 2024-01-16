@@ -1,18 +1,13 @@
 ﻿using HardHatCore.ApiModels.Plugin_BaseClasses;
-using HardHatCore.ApiModels.Plugin_Interfaces;
-using HardHatCore.ApiModels.Responses;
 using HardHatCore.ApiModels.Shared;
 using HardHatCore.ApiModels.Shared.TaskResultTypes;
-using HardHatCore.HardHatC2Client.Components;
-using HardHatCore.HardHatC2Client.Pages;
-using HardHatCore.HardHatC2Client.Plugin_Interfaces;
-using ICSharpCode.Decompiler.CSharp.Syntax;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.SignalR.Client;
-using System.Security;
 using HardHatCore.HardHatC2Client.Models;
+using HardHatCore.HardHatC2Client.Pages;
 using HardHatCore.HardHatC2Client.Plugin_BaseClasses;
+using HardHatCore.HardHatC2Client.Plugin_Management;
 using HardHatCore.HardHatC2Client.Utilities;
+using HardHatCore.HardHatC2Client.Components;
+using Microsoft.AspNetCore.SignalR.Client;
 
 namespace HardHatCore.HardHatC2Client.Services
 {
@@ -35,6 +30,21 @@ namespace HardHatCore.HardHatC2Client.Services
         public class Hub
         {
             public HubConnection _hubConnection { get; private set; } // this way only the hub vlass can set the connection details but our other classes can still see what they are set to and the status. 
+
+            public async Task<bool> TryReconnect()
+            {
+                await _hubConnection.StartAsync();
+                //check if reconnected 
+                if (_hubConnection.State == HubConnectionState.Connected)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                    Console.WriteLine("Failed to reconnect to SignalR Server");
+                }
+            }
 
             public async Task Connect()
             {
@@ -59,6 +69,28 @@ namespace HardHatCore.HardHatC2Client.Services
                     })
                     .WithAutomaticReconnect()
                     .Build();
+                _hubConnection.HandshakeTimeout = TimeSpan.FromSeconds(120);
+
+                _hubConnection.Closed += ((Exception ex) => 
+                {
+                    //try to reconnect
+                    Console.WriteLine("SignalR Connection Closed to Server");
+                    Console.WriteLine("trying to reconnect...");
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        if (_hub.TryReconnect().Result)
+                        {
+                            Console.WriteLine("Reconnected to SignalR Server");
+                            break;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Failed to reconnect to SignalR Server, trying again in 5 seconds.");
+                            Thread.Sleep(5000);
+                        }
+                    }
+                    return Task.CompletedTask;
+                });
 
                 //hubConnection.On is used to let the teamserver invoke things on the client
 
@@ -184,9 +216,17 @@ namespace HardHatCore.HardHatC2Client.Services
                     AliasEdit_Dialog.inputAlises = aliases;
                 });
 
-                _hubConnection.On<ExtImplant_Base,List<string>>("SendTaskResults",async (implant, taskIds) =>
+                _hubConnection.On<ExtImplant_Base,List<string>>("SendTaskResultsIds",async (implant, taskIds) =>
                 {
                     await ImplantInteract.UpdateTaskResponse(implant,taskIds);
+                });
+                _hubConnection.On<ExtImplant_Base, List<ExtImplantTaskResult_Base>>("SendTaskResults", async (implant, taskResults) =>
+                {
+                    await ImplantInteract.UpdateTaskResults(implant, taskResults);
+                });
+                _hubConnection.On<ExtImplant_Base, ExtImplantTaskResult_Base>("SendTaskResult", async (implant, taskResult) =>
+                {
+                    await ImplantInteract.UpdateTaskResult(implant, taskResult);
                 });
                 _hubConnection.On<string, string>("NotifyTaskDeletion", async (implantId, taskid) =>
                 {
@@ -218,6 +258,15 @@ namespace HardHatCore.HardHatC2Client.Services
                         Console.WriteLine(ex.Message);
                     }
                     
+                });
+
+                _hubConnection.On<AssetNotification>("HandleAssetNotification", async (notif) =>
+                {
+                    //find the asset based on the asset id
+                    var asset = Implants.ImplantList.FirstOrDefault(x => x.Metadata.Id == notif.AssetId);
+                    //get the IAssetNotificationService for the asset
+                    await PluginService.GetAssetNotifService(asset.ImplantType).ProcessAssetNotification(notif);
+
                 });
 
                 await _hubConnection.StartAsync();
