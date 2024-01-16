@@ -1,0 +1,110 @@
+﻿@using HardHatCore.HardHatC2Client.Utilities
+@using MudBlazor.Extensions.Core
+@using MudBlazor.Extensions.Helper
+@using MudBlazor.Extensions.Options
+@using MudBlazor.Utilities
+
+@if(globalPaletteMode is GlobalPaletteMode.Search)
+{
+    <div style="width:30vw">
+        <MudTextField Style="border-width:0px; border-radius:20px; font-size:14px; background-color:#1A1A27" @ref="_textField" @bind-Value="docSearchUtil.GlobalSearch" Label="Search" Placeholder="(Ctrl + S to search Ctrl + P for command palette)" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" Adornment="Adornment.End" IconSize="Size.Small" OnAdornmentClick="@(() => _textField.BlurAsync())" AdornmentIcon="@Icons.Material.Filled.Search" />
+    </div>
+
+    @if (docSearchUtil.searchResults.Count > 0)
+    {
+        <MudPopover Open="true" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter" Style="position:absolute;">
+            <br>
+            <MudListExtended  T="string" Clickable="true" DisableGutters="false">
+                @foreach (var result in docSearchUtil.searchResults)
+                {
+                    <MudListItemExtended OnClick="(m) => OnSelectedItemChanged(m,result.Key)" T="string" Text="@result.Value" SecondaryText="@result.Key" Icon="@Icons.Material.Filled.Bookmark" />
+                }
+            </MudListExtended>
+        </MudPopover>
+    }
+}
+else if(globalPaletteMode is GlobalPaletteMode.Command)
+{
+    <div style="width:30vw">
+        <MudTextField T="string" Style="border-width:0px; border-radius:20px; font-size:14px; background-color:#1A1A27" @ref="_textField" Label="Command" Placeholder="(Ctrl + S to search Ctrl + P for command palette)" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" Adornment="Adornment.End" IconSize="Size.Small" OnAdornmentClick="@(() => Console.WriteLine("command mode activated"))" AdornmentIcon="@Icons.Material.Filled.KeyboardCommandKey" />
+    </div>
+}
+
+
+@code {
+
+    public MudTextField<string> _textField;
+    private MudListItemExtended<string> selectedItem;
+    private MudColor _diagBackgroundColor;
+    public DocSearchUtil docSearchUtil { get; set; } = new DocSearchUtil();
+    [Inject]
+    public IDialogService _DialogService { get; set; }
+    [Inject]
+    public IJSRuntime JsRuntime { get; set; }
+    public DialogOptionsEx? Options { get; set; }
+    public static bool DialogOpen { get; set; } = false;
+    public EventHandler<string>? _DocSearchSelectedFileChanged;
+    public GlobalPaletteMode? globalPaletteMode { get; set; } = GlobalPaletteMode.Search;
+
+    public enum GlobalPaletteMode
+    {
+        Command,
+        Search
+    }
+
+    public async Task OnSelectedItemChanged(MouseEventArgs args, string path)
+    {
+        await InvokeAsync( async () =>
+         {
+             await _textField.Clear();
+             docSearchUtil.GlobalSearch = "";
+             StateHasChanged();
+             if(DialogOpen is false)
+             {
+                 Options = new DialogOptionsEx()
+                {
+                    MaximizeButton = true,
+                    CloseButton = true,
+                    FullHeight = true,
+                    CloseOnEscapeKey = true,
+                    MaxWidth = MaxWidth.False,
+                    MaxHeight = MaxHeight.False,
+                    FullWidth = true,
+                    Resizeable = true,
+                    DragMode = MudDialogDragMode.Simple,
+                    DialogAppearance = MudExAppearance.FromCss(MudExCss.Classes.Dialog.Glass)
+                        .WithStyle(b => b.WithSize(80, CssUnit.Percentage)
+                            .WithBoxShadow($" 0 8px 32px 0 {_diagBackgroundColor.SetAlpha(0.4).ToString(MudColorOutputFormats.RGBA)}")
+                            .WithBackgroundColor(_diagBackgroundColor.SetAlpha(0.8))
+                    ),
+                    DialogBackgroundAppearance = MudExAppearance.FromCss(MudExCss.Classes.Backgrounds.Blur),
+                };
+
+                Console.WriteLine("Dialog is not open");
+                Console.WriteLine($"Selected item value is {path}");
+                var _parameters = new DialogParameters();
+                _parameters.Add("selectedDoc", path);
+                DialogOpen = true;
+                var dialog = await _DialogService.ShowEx<DocSearchResult_dialog>("Search Result Item", _parameters, Options);
+             }
+             else
+             {
+                 Console.WriteLine("Dialog is open");
+                 Console.WriteLine($"Selected item value is {path}");
+                 _DocSearchSelectedFileChanged?.Invoke(this, path);
+             }
+         });
+
+    }
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if(firstRender)
+        {
+            _diagBackgroundColor = new MudColor("#1A1A27");
+            docSearchUtil.SearchValueChanged += (async (sender, e) => await (InvokeAsync(StateHasChanged)));
+        }
+    }
+
+}
