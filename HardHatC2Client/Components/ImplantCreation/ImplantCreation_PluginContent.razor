@@ -45,14 +45,14 @@
         if (Stepper.GetActiveIndex() == 1)
         {
             _loading = true;
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);
             await Task.Delay(100);
             await _form2.Validate();
             //check that all the required commands are selected
             if (selectedImpCommandList.Intersect(RequiredImpCommandList).Count() != RequiredImpCommandList.Count())
             {
                 _loading = false;
-                StateHasChanged();
+                InvokeAsync(StateHasChanged);
                 StringBuilder sb = new();
                 foreach (var item in RequiredImpCommandList)
                 {
@@ -65,46 +65,46 @@
                 return true;
             }
             _loading = false;
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);
            // Console.WriteLine("Moving from step 2 to 3 " + _form2.IsValid);
             return !_form2.IsValid;
         }
         else if (Stepper.GetActiveIndex() == 2)
         {
             _loading = true;
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);
             await Task.Delay(100);
             await _form3.Validate();
             bool CommandsAndModulesPaired = await CheckCommandModulePairs();
             if (!CommandsAndModulesPaired)
             {
                 _loading = false;
-                StateHasChanged();
+                InvokeAsync(StateHasChanged);
                 return true;
             }
             _loading = false;
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);
            // Console.WriteLine("Moving from step 3 to 4 " + _form3.IsValid);
             return !_form3.IsValid;
         }
         else if (Stepper.GetActiveIndex() == 3)
         {
             _loading = true;
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);
             await Task.Delay(100);
             await _form4.Validate();
             _loading = false;
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);
            // Console.WriteLine("Moving from step 4 to 5 " + _form4.IsValid);
             return !_form4.IsValid;
         }
         else if (Stepper.GetActiveIndex() == 4)
         {
             _loading = true;
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);
             await Task.Delay(100);
             _loading = false;
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);
             return false;
         }
         else

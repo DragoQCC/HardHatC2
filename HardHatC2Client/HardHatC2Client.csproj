@@ -38,7 +38,7 @@
     <PackageReference Include="MudBlazor.Markdown" Version="0.1.2" />
     <PackageReference Include="RestSharp" Version="110.2.0" />
     <PackageReference Include="System.ComponentModel.Composition" Version="7.0.0" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.0.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.3.0" />
     <PackageReference Include="Z.Blazor.Diagrams" Version="3.0.0" />
   </ItemGroup>
 

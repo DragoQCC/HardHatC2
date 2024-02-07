@@ -128,11 +128,11 @@
         if (Stepper.GetActiveIndex() == 0)
         {
             _loading = true;
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);
             await Task.Delay(100);
             await _form1.Validate();
             _loading = false;
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);
            // Console.WriteLine("Moving from step 1 to 2 " + _form1.IsValid);
             return !_form1.IsValid;
         }
