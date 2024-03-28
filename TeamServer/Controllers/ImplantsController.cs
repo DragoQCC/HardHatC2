@@ -306,5 +306,19 @@ namespace HardHatCore.TeamServer.Controllers
 
         }
 
+
+		[HttpDelete("{ImplantId}", Name = "DeleteImplant")]
+		public IActionResult DeleteImplant(string ImplantId)
+		{
+            var _ImplantSvc = PluginService.GetImpServicePlugin("Default");
+            
+            if (_ImplantSvc.DeleteAssetById(ImplantId))
+			{
+                HardHatHub.AlertEventHistory(new HistoryEvent { Event = $"implant {ImplantId} deleted", Status = "info" });
+                LoggingService.TaskLogger.Information($"implant {ImplantId} deleted");
+                return Ok();
+            }
+            return NotFound();
+        }
 	}
 }

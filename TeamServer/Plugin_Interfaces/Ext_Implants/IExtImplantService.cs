@@ -65,6 +65,8 @@ namespace HardHatCore.TeamServer.Plugin_Interfaces.Ext_Implants
         IEnumerable<ExtImplant_Base> GetExtImplants();
         ExtImplant_Base GetExtImplant(string id);
         void RemoveExtImplant(ExtImplant_Base Implant);
+        bool DeleteAssetById(string id);
+
         bool CreateExtImplant(IExtImplantCreateRequest request, out string result_message);
         bool AddExtImplantToDatabase(ExtImplant_Base implant);
         Httpmanager GetImplantsManager(IExtImplantMetadata extImplantMetadata);

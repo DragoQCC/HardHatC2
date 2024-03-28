@@ -33,6 +33,18 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
             IExtImplantService._extImplants.Remove(Implant);
         }
 
+        public virtual bool DeleteAssetById(string id)
+        {
+            var asset = IExtImplantService._extImplants.FirstOrDefault(x => x.Metadata.Id == id);
+            if (asset != null)
+            {
+                IExtImplantService._extImplants.Remove(asset);
+                RemoveAssetFromDatabase(id);
+                return true;
+            }
+            return false;
+        }
+
         public virtual bool CreateExtImplant(IExtImplantCreateRequest request, out string result_message)
         {
            //3rd party devs will have to override this and provide their own code to create the implant
@@ -96,7 +108,25 @@ namespace HardHatCore.TeamServer.Plugin_BaseClasses
                 Console.WriteLine(ex.Message);
                 return false;
             }
-           
+        }
+
+        public virtual bool RemoveAssetFromDatabase(string id)
+        {
+            try
+            {
+                if (DatabaseService.AsyncConnection == null)
+                {
+                    DatabaseService.ConnectDb();
+                }
+                DatabaseService.AsyncConnection.DeleteAsync<ExtImplant_DAO>(id);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error removing implant from database");
+                Console.WriteLine(ex.Message);
+                return false;
+            }
         }
 
         public virtual void LogImplantFirstCheckin(ExtImplant_Base implant)
